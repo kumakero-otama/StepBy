@@ -65,7 +65,7 @@ function applyProfileUser(user) {
     return;
   }
   const username = user.username || "username";
-  const iconUrl = user.iconUrl == null ? "/assets/account_default.png" : user.iconUrl;
+  const iconUrl = user.iconUrl == null ? AppPath.toApp("/assets/account_default.png") : user.iconUrl;
   const totalTactile = user.totalTactileLength || 0;
   const totalRoadPosts = user.totalRoadPosts || 0;
   const totalHearts = user.totalHearts || 0;
@@ -99,21 +99,21 @@ async function loadProfile() {
     });
     if (!res.ok) {
       clearAccessToken();
-      window.location.replace("/auth/login.html");
+      window.location.replace(AppPath.toApp("/auth/login.html"));
       return;
     }
     const payload = await res.json();
     const user = payload && payload.user ? payload.user : null;
     if (!user) {
       clearAccessToken();
-      window.location.replace("/auth/login.html");
+      window.location.replace(AppPath.toApp("/auth/login.html"));
       return;
     }
     applyProfileUser(user);
     saveCachedProfileUser(user);
   } catch {
     clearAccessToken();
-    window.location.replace("/auth/login.html");
+    window.location.replace(AppPath.toApp("/auth/login.html"));
   }
 }
 
@@ -129,7 +129,7 @@ async function logout() {
     // Always redirect so the user can recover by logging in again.
   }
   clearAccessToken();
-  window.location.replace("/auth/login.html");
+  window.location.replace(AppPath.toApp("/auth/login.html"));
 }
 
 if (logoutBtnEl) {
@@ -144,7 +144,7 @@ if (logoutBtnEl) {
 
 if (editBtnEl) {
   editBtnEl.addEventListener("click", () => {
-    window.location.href = "/profile/edit.html";
+    window.location.href = AppPath.toApp("/profile/edit.html");
   });
 }
 

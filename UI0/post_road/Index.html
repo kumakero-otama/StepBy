@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>道情報の投稿</title>
-    <link rel="stylesheet" href="/appbar.css" />
+    <link rel="stylesheet" href="../appbar.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
       /* ページ全体で使う色と余白の基準値 */
@@ -441,14 +441,14 @@
     <header class="app-bar">
       <h1 class="app-bar-title">道情報の投稿</h1>
       <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="/map/Index.html" aria-label="ホーム">
-          <img src="/assets/buttons/home.png" alt="" />
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+          <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/profile/Index.html" aria-label="プロフィール">
-          <img src="/assets/buttons/account.png" alt="" />
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+          <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/otasuke/Index.html" aria-label="設定">
-          <img src="/assets/buttons/setting.png" alt="" />
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+          <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
@@ -506,7 +506,8 @@
         <div class="submit-loading-spinner" aria-hidden="true"></div>
       </div>
     </main>
-    <script src="/auth/token_client.js"></script>
+    <script src="../config.js"></script>
+    <script src="../auth/token_client.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // 投稿画面の状態管理・画像処理・送信を扱うメインスクリプト。

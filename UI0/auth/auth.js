@@ -197,7 +197,7 @@ function cacheProfileUser(user) {
 
 async function loginWithGoogle(idToken) {
   try {
-    const res = await fetch("/auth/google", {
+    const res = await fetch(AppPath.toApi("/auth/google"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_token: idToken }),
@@ -209,7 +209,7 @@ async function loginWithGoogle(idToken) {
       if (errorMessage === "account_not_found") {
         setPendingSignupIdToken(idToken);
         setGoogleStatus("未登録のGoogleアカウントです。サインアップ画面へ移動します...");
-        window.location.href = "/auth/signup_profile.html";
+        window.location.href = AppPath.toApp("/auth/signup_profile.html");
         return false;
       }
       if (errorMessage === "invalid_token") {
@@ -235,12 +235,12 @@ async function loginWithGoogle(idToken) {
     }
     if (!username || !String(username).trim()) {
       setGoogleStatus("ログイン成功。サインアップ画面へ移動します...");
-      window.location.href = "/auth/signup_profile.html";
+      window.location.href = AppPath.toApp("/auth/signup_profile.html");
       return true;
     }
 
     setGoogleStatus("ログイン成功。地図画面へ移動します...");
-    window.location.href = "/map/Index.html";
+    window.location.href = AppPath.toApp("/map/Index.html");
     return true;
   } catch {
     setGoogleStatus("ネットワークエラーでGoogleログインに失敗しました。");
@@ -261,22 +261,22 @@ async function ensureSignupProfileSession() {
   try {
     const res = await authFetch("/auth/me");
     if (!res.ok) {
-      window.location.replace("/auth/login.html");
+      window.location.replace(AppPath.toApp("/auth/login.html"));
       return null;
     }
     const payload = await res.json();
     const user = payload && payload.user ? payload.user : null;
     if (!user) {
-      window.location.replace("/auth/login.html");
+      window.location.replace(AppPath.toApp("/auth/login.html"));
       return null;
     }
     if (user.username && String(user.username).trim()) {
-      window.location.replace("/map/Index.html");
+      window.location.replace(AppPath.toApp("/map/Index.html"));
       return null;
     }
     return user;
   } catch {
-    window.location.replace("/auth/login.html");
+    window.location.replace(AppPath.toApp("/auth/login.html"));
     return null;
   }
 }
@@ -327,7 +327,7 @@ async function initSignupProfilePage() {
     }
     agreementContent.textContent = "読み込み中...";
     try {
-      const res = await fetch("/assets/user_agreement.md", { cache: "no-store" });
+      const res = await fetch(AppPath.toApp("/assets/user_agreement.md"), { cache: "no-store" });
       if (!res.ok) {
         agreementContent.textContent = "利用規約の読み込みに失敗しました。";
         return;
@@ -407,7 +407,7 @@ async function initSignupProfilePage() {
       const iconDataUrl = await fileToDataUrl(iconFile);
       let res;
       if (deferredSignupMode) {
-        res = await fetch("/auth/google/signup", {
+        res = await fetch(AppPath.toApi("/auth/google/signup"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -448,14 +448,14 @@ async function initSignupProfilePage() {
         if (errorMessage === "account_not_found") {
           clearPendingSignupIdToken();
           setGoogleStatus("登録状態の確認に失敗しました。ログイン画面からやり直してください。");
-          window.location.replace("/auth/login.html");
+          window.location.replace(AppPath.toApp("/auth/login.html"));
           return;
         }
         if (errorMessage === "invalid_token") {
           clearPendingSignupIdToken();
           clearAccessToken();
           setGoogleStatus("Google認証の有効期限が切れました。ログイン画面から再度お試しください。");
-          window.location.replace("/auth/login.html");
+          window.location.replace(AppPath.toApp("/auth/login.html"));
           return;
         }
         setGoogleStatus(`保存に失敗しました: ${errorMessage}`);
@@ -475,7 +475,7 @@ async function initSignupProfilePage() {
       }
       clearPendingSignupIdToken();
       setGoogleStatus("保存しました。地図画面へ移動します...");
-      window.location.href = "/map/Index.html";
+      window.location.href = AppPath.toApp("/map/Index.html");
     } catch {
       setGoogleStatus("ネットワークエラーで保存に失敗しました。");
     }
@@ -493,7 +493,7 @@ async function handleGoogleCredential(response) {
   if (signupPage) {
     setPendingSignupIdToken(idToken);
     setGoogleStatus("サインアップ画面へ移動します...");
-    window.location.href = "/auth/signup_profile.html";
+    window.location.href = AppPath.toApp("/auth/signup_profile.html");
     return;
   }
   await loginWithGoogle(idToken);

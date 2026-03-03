@@ -1,5 +1,9 @@
 
 if ("serviceWorker" in navigator) {
+  const appConfig = window.APP_CONFIG || {};
+  const appBasePath = String(appConfig.APP_BASE_PATH || "/StepBy/UI0").replace(/\/+$/, "");
+  const swPath = `${appBasePath}/sw.js`;
+
   // 同一ページ内で多重リロードしないためのフラグ。
   // controllerchange は環境によって複数回発火し得るため、1回だけ reload する。
   let refreshing = false;
@@ -17,7 +21,7 @@ if ("serviceWorker" in navigator) {
     // ページロード完了後にSWを登録。
     // 初回アクセスではインストール、既存環境ではアップデート確認の起点になる。
     navigator.serviceWorker
-      .register("/sw.js")
+      .register(swPath)
       .then((registration) => {
         console.log("[PWA] Service Worker registered");
 

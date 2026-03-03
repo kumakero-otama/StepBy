@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ログイン | Draggable Map</title>
     <meta name="theme-color" content="#0f766e" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/auth/auth.css" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="auth.css" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
@@ -14,7 +14,7 @@
       <section class="auth-card" aria-labelledby="login-title">
         <div class="actions">
           <div id="google-signin-button" class="google-signin-button"></div>
-          <a class="btn btn-debug" href="/map/Index.html?debug=1">ホーム画面に移動（デバッグ用）</a>
+          <a class="btn btn-debug" href="../map/Index.html?debug=1">ホーム画面に移動（デバッグ用）</a>
         </div>
         <p id="google-auth-status" class="helper-text"></p>
       </section>
@@ -22,10 +22,11 @@
         <span id="app-version">v1.18.0</span>
       </footer>
     </main>
+    <script src="../config.js"></script>
 
-    <script src="/auth/token_client.js"></script>
-    <script src="/auth/auth.js?v=20260228"></script>
-    <script src="/version.js"></script>
-    <script src="/pwa.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="auth.js?v=20260228"></script>
+    <script src="../version.js"></script>
+    <script src="../pwa.js"></script>
   </body>
 </html>

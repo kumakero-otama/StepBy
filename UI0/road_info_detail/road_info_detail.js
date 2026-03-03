@@ -22,6 +22,7 @@ const commentResultOkBtn = document.getElementById("comment-result-ok-btn");
 const selectedCommentImages = [];
 let currentPointId = null;
 const authTokenApi = window.AuthToken || null;
+const deleteButtonIconUrl = AppPath.toApp("/assets/buttons/delete.png");
 
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
@@ -102,7 +103,7 @@ function renderPosts(posts) {
       const authorName = post && post.authorUsername ? post.authorUsername : "ユーザー";
       const authorIconUrl = post && post.authorIconUrl
         ? post.authorIconUrl
-        : "/assets/account_default.png";
+        : AppPath.toApp("/assets/account_default.png");
       const mediaHtml = media
         .map((item) => `<img src="${escapeHtml(item.url)}" alt="投稿画像" loading="lazy" />`)
         .join("");
@@ -165,7 +166,7 @@ function renderCommentImagePreview() {
           aria-label="この画像を削除"
           data-remove-image-id="${escapeHtml(item.id)}"
         >
-          <img src="/assets/buttons/delete.png" alt="" />
+          <img src="${escapeHtml(deleteButtonIconUrl)}" alt="" />
         </button>
         <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.name || "投稿画像")}" loading="lazy" />
       </div>
@@ -429,7 +430,7 @@ function initActions() {
         window.history.back();
         return;
       }
-      window.location.assign("/map/Index.html");
+      window.location.assign(AppPath.toApp("/map/Index.html"));
     });
   }
 }

@@ -77,18 +77,18 @@ async function loadCurrentProfile() {
     });
     if (!res.ok) {
       clearAccessToken();
-      window.location.replace("/auth/login.html");
+      window.location.replace(AppPath.toApp("/auth/login.html"));
       return;
     }
     const payload = await res.json();
     const user = payload && payload.user ? payload.user : null;
     if (!user) {
       clearAccessToken();
-      window.location.replace("/auth/login.html");
+      window.location.replace(AppPath.toApp("/auth/login.html"));
       return;
     }
     const username = user.username || "";
-    const iconUrl = user.iconUrl == null ? "/assets/account_default.png" : user.iconUrl;
+    const iconUrl = user.iconUrl == null ? AppPath.toApp("/assets/account_default.png") : user.iconUrl;
 
     if (usernameInputEl) {
       usernameInputEl.value = username;
@@ -100,7 +100,7 @@ async function loadCurrentProfile() {
     saveCachedProfileUser(user);
   } catch {
     clearAccessToken();
-    window.location.replace("/auth/login.html");
+    window.location.replace(AppPath.toApp("/auth/login.html"));
   }
 }
 
@@ -147,7 +147,7 @@ async function saveProfile() {
     }
     showSaveToast();
     window.setTimeout(() => {
-      window.location.replace("/profile/Index.html");
+      window.location.replace(AppPath.toApp("/profile/Index.html"));
     }, 2000);
   } catch (err) {
     saving = false;
@@ -168,7 +168,7 @@ if (uploadInputEl) {
 
 if (backBtnEl) {
   backBtnEl.addEventListener("click", () => {
-    window.location.replace("/profile/Index.html");
+    window.location.replace(AppPath.toApp("/profile/Index.html"));
   });
 }
 

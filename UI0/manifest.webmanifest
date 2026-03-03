@@ -1,13 +1,14 @@
 {
   "name": "Barrierfree Map",
   "short_name": "BF Map",
-  "start_url": "/auth/login.html",
+  "start_url": "/StepBy/UI0/auth/login.html",
+  "scope": "/StepBy/UI0/",
   "display": "standalone",
   "background_color": "#f7f5f0",
   "theme_color": "#222222",
   "icons": [
     {
-      "src": "/assets/otamap_logo.png",
+      "src": "/StepBy/UI0/assets/otamap_logo.png",
       "sizes": "150x150",
       "type": "image/png",
       "purpose": "any maskable"

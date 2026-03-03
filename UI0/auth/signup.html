@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>サインアップ | Draggable Map</title>
     <meta name="theme-color" content="#0f766e" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/auth/auth.css" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="auth.css" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
@@ -20,13 +20,14 @@
         <p id="google-auth-status" class="helper-text"></p>
         <p class="auth-footer">
           すでにアカウントをお持ちですか？
-          <a href="/auth/login.html">ログイン画面へ</a>
+          <a href="../auth/login.html">ログイン画面へ</a>
         </p>
       </section>
     </main>
+    <script src="../config.js"></script>
 
-    <script src="/auth/token_client.js"></script>
-    <script src="/auth/auth.js?v=20260228"></script>
-    <script src="/pwa.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="auth.js?v=20260228"></script>
+    <script src="../pwa.js"></script>
   </body>
 </html>

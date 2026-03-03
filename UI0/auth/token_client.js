@@ -1,5 +1,62 @@
 (function initAuthTokenClient(globalScope) {
   const ACCESS_TOKEN_KEY = "access_token.v1";
+  const DEFAULT_APP_BASE_PATH = "/StepBy/UI0";
+  const DEFAULT_API_BASE_URL = "https://barrierfree-map.loophole.site";
+
+  function getConfig() {
+    const config = globalScope.APP_CONFIG || {};
+    return {
+      appBasePath: normalizeBasePath(
+        typeof config.APP_BASE_PATH === "string" ? config.APP_BASE_PATH : DEFAULT_APP_BASE_PATH
+      ),
+      apiBaseUrl: normalizeBaseUrl(
+        typeof config.API_BASE_URL === "string" ? config.API_BASE_URL : DEFAULT_API_BASE_URL
+      ),
+    };
+  }
+
+  function normalizeBasePath(value) {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) {
+      return "";
+    }
+    const withLeading = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return withLeading.replace(/\/+$/, "");
+  }
+
+  function normalizeBaseUrl(value) {
+    return String(value || "").trim().replace(/\/+$/, "");
+  }
+
+  function toApp(path) {
+    const safePath = String(path || "");
+    if (!safePath) {
+      return getConfig().appBasePath || "/";
+    }
+    if (/^https?:\/\//i.test(safePath)) {
+      return safePath;
+    }
+    const { appBasePath } = getConfig();
+    if (!safePath.startsWith("/")) {
+      return safePath;
+    }
+    return `${appBasePath}${safePath}`;
+  }
+
+  function toApi(path) {
+    const safePath = String(path || "");
+    if (!safePath) {
+      return safePath;
+    }
+    if (/^https?:\/\//i.test(safePath)) {
+      return safePath;
+    }
+    const { apiBaseUrl } = getConfig();
+    if (safePath.startsWith("/api/") || safePath.startsWith("/auth/")) {
+      return `${apiBaseUrl}${safePath}`;
+    }
+    return safePath;
+  }
 
   function setAccessToken(token) {
     if (!token || typeof token !== "string") {
@@ -39,10 +96,19 @@
   }
 
   function authFetch(input, init) {
+    let target = input;
+    if (typeof input === "string") {
+      target = toApi(input);
+    }
     const options = { ...(init || {}) };
     options.headers = buildAuthHeaders(options.headers);
-    return fetch(input, options);
+    return fetch(target, options);
   }
+
+  globalScope.AppPath = {
+    toApp,
+    toApi,
+  };
 
   globalScope.AuthToken = {
     setAccessToken,
@@ -52,4 +118,3 @@
     authFetch,
   };
 })(window);
-

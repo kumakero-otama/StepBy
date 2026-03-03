@@ -5,22 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>プロフィール</title>
     <meta name="theme-color" content="#348f82" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/appbar.css" />
-    <link rel="stylesheet" href="/profile/profile.css" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="profile.css" />
   </head>
   <body>
     <header class="app-bar">
       <h1 class="app-bar-title">PROFILE</h1>
       <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="/map/Index.html" aria-label="ホーム">
-          <img src="/assets/buttons/home.png" alt="" />
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+          <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/profile/Index.html" aria-label="プロフィール">
-          <img src="/assets/buttons/account.png" alt="" />
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+          <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/otasuke/Index.html" aria-label="設定">
-          <img src="/assets/buttons/setting.png" alt="" />
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+          <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
@@ -32,15 +32,15 @@
           <img
             id="profile-avatar"
             class="profile-avatar"
-            src="/assets/account_default.png"
+            src="../assets/account_default.png"
             alt="プロフィールアイコン"
           />
           <div class="profile-mini-actions" aria-label="プロフィール操作">
             <button id="profile-edit-btn" class="profile-mini-btn" type="button" aria-label="プロフィール編集">
-              <img src="/assets/buttons/profile_edit.png" alt="" />
+              <img src="../assets/buttons/profile_edit.png" alt="" />
             </button>
             <button id="profile-logout-btn" class="profile-mini-btn" type="button" aria-label="ログアウト">
-              <img src="/assets/buttons/logout.png" alt="" />
+              <img src="../assets/buttons/logout.png" alt="" />
             </button>
           </div>
         </div>
@@ -55,9 +55,10 @@
         </ul>
       </section>
     </main>
+    <script src="../config.js"></script>
 
-    <script src="/auth/token_client.js"></script>
-    <script src="/profile/profile.js"></script>
-    <script src="/pwa.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="profile.js"></script>
+    <script src="../pwa.js"></script>
   </body>
 </html>

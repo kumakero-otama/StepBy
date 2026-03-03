@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>サインアップ | Draggable Map</title>
     <meta name="theme-color" content="#0f766e" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/auth/auth.css" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="auth.css" />
   </head>
   <body>
     <main class="auth-shell">
@@ -58,16 +58,17 @@
           <div class="agreement-header">
             <h2 id="user-agreement-title">利用規約</h2>
             <button id="close-user-agreement" type="button" class="agreement-close-btn" aria-label="閉じる">
-              <img src="/assets/buttons/close.png" alt="" />
+              <img src="../assets/buttons/close.png" alt="" />
             </button>
           </div>
           <div id="user-agreement-content" class="agreement-content">読み込み中...</div>
         </div>
       </section>
     </main>
+    <script src="../config.js"></script>
 
-    <script src="/auth/token_client.js"></script>
-    <script src="/auth/auth.js?v=20260228"></script>
-    <script src="/pwa.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="auth.js?v=20260228"></script>
+    <script src="../pwa.js"></script>
   </body>
 </html>

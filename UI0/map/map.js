@@ -287,10 +287,10 @@ map.on("click", (event) => {
       lat: lat.toString(),
       lng: lng.toString(),
     });
-    window.location.assign(`/post_road/Index.html?${params.toString()}`);
+    window.location.assign(AppPath.toApp(`/post_road/Index.html?${params.toString()}`));
     return;
   }
-  window.location.assign("/post_road/Index.html");
+  window.location.assign(AppPath.toApp("/post_road/Index.html"));
 });
 
 initMapControlsPanelGesture();
@@ -312,14 +312,14 @@ async function loadCurrentUserId() {
   const res = await authFetch("/auth/me");
   if (!res.ok) {
     clearAccessToken();
-    window.location.replace("/auth/login.html");
+    window.location.replace(AppPath.toApp("/auth/login.html"));
     throw new Error("unauthorized");
   }
   const payload = await res.json();
   const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
   if (!Number.isFinite(userId) || userId <= 0) {
     clearAccessToken();
-    window.location.replace("/auth/login.html");
+    window.location.replace(AppPath.toApp("/auth/login.html"));
     throw new Error("invalid_user");
   }
   currentUserId = userId;
@@ -1019,7 +1019,7 @@ function showRoadInfoPointsOnMap(points) {
       if (!Number.isInteger(pointId) || pointId <= 0) {
         return;
       }
-      window.location.assign(`/road_info_detail/Index.html?pointId=${pointId}`);
+      window.location.assign(AppPath.toApp(`/road_info_detail/Index.html?pointId=${pointId}`));
     });
     roadInfoMarkers.push(pin);
   });

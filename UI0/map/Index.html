@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Draggable Map</title>
     <meta name="theme-color" content="#222222" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="/appbar.css" />
+    <link rel="stylesheet" href="../appbar.css" />
     <link rel="stylesheet" href="../style.css" />
     <link rel="stylesheet" href="map.css" />
   </head>
@@ -15,19 +15,20 @@
     <header class="app-bar">
       <h1 class="app-bar-title">HOME</h1>
       <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="/map/Index.html" aria-label="ホーム">
-          <img src="/assets/buttons/home.png" alt="" />
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+          <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/profile/Index.html" aria-label="プロフィール">
-          <img src="/assets/buttons/account.png" alt="" />
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+          <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/otasuke/Index.html" aria-label="設定">
-          <img src="/assets/buttons/setting.png" alt="" />
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+          <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
     <div class="app-bar-spacer" aria-hidden="true"></div>
-    <script src="/auth/token_client.js"></script>
+    <script src="../config.js"></script>
+    <script src="../auth/token_client.js"></script>
     <script>
       // 認証機能未実装の暫定対応:
       // 明示的なデバッグ遷移（?debug=1）または有効なセッションがある場合のみ表示する。
@@ -45,7 +46,7 @@
             if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
               window.AuthToken.clearAccessToken();
             }
-            window.location.replace("/auth/login.html");
+            window.location.replace(AppPath.toApp("/auth/login.html"));
             return;
           }
           const payload = await res.json();
@@ -53,13 +54,13 @@
             if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
               window.AuthToken.clearAccessToken();
             }
-            window.location.replace("/auth/login.html");
+            window.location.replace(AppPath.toApp("/auth/login.html"));
           }
         } catch {
           if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
             window.AuthToken.clearAccessToken();
           }
-          window.location.replace("/auth/login.html");
+          window.location.replace(AppPath.toApp("/auth/login.html"));
         }
       })();
     </script>
@@ -142,6 +143,6 @@
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="map.js"></script>
-    <script src="/pwa.js"></script>
+    <script src="../pwa.js"></script>
   </body>
 </html>

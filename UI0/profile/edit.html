@@ -5,22 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>プロフィール編集</title>
     <meta name="theme-color" content="#348f82" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/appbar.css" />
-    <link rel="stylesheet" href="/profile/edit.css" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="edit.css" />
   </head>
   <body>
     <header class="app-bar">
       <h1 class="app-bar-title">プロフィール編集</h1>
       <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="/map/Index.html" aria-label="ホーム">
-          <img src="/assets/buttons/home.png" alt="" />
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+          <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/profile/Index.html" aria-label="プロフィール">
-          <img src="/assets/buttons/account.png" alt="" />
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+          <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="/otasuke/Index.html" aria-label="設定">
-          <img src="/assets/buttons/setting.png" alt="" />
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+          <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
@@ -36,7 +36,7 @@
           <img
             id="profile-icon-preview"
             class="icon-preview"
-            src="/assets/account_default.png"
+            src="../assets/account_default.png"
             alt="現在のアイコン"
           />
           <div class="icon-action-col">
@@ -57,9 +57,10 @@
     <div id="profile-save-toast" class="save-toast" role="status" aria-live="polite">
       プロフィールの変更を保存しました！
     </div>
+    <script src="../config.js"></script>
 
-    <script src="/auth/token_client.js"></script>
-    <script src="/profile/edit.js"></script>
-    <script src="/pwa.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="edit.js"></script>
+    <script src="../pwa.js"></script>
   </body>
 </html>
