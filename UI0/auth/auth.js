@@ -242,8 +242,9 @@ async function loginWithGoogle(idToken) {
     setGoogleStatus("ログイン成功。地図画面へ移動します...");
     window.location.href = AppPath.toApp("/map/Index.html");
     return true;
-  } catch {
-    setGoogleStatus("ネットワークエラーでGoogleログインに失敗しました。");
+  } catch (err) {
+    const detail = err && err.message ? String(err.message) : "unknown_error";
+    setGoogleStatus(`エラーが出てGoogleログインに失敗しました: ${detail}`);
     return false;
   }
 }
