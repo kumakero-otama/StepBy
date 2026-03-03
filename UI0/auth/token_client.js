@@ -58,6 +58,21 @@
     return safePath;
   }
 
+  function toApiAsset(path) {
+    const safePath = String(path || "");
+    if (!safePath) {
+      return safePath;
+    }
+    if (/^https?:\/\//i.test(safePath) || safePath.startsWith("data:")) {
+      return safePath;
+    }
+    const { apiBaseUrl } = getConfig();
+    if (safePath.startsWith("/")) {
+      return `${apiBaseUrl}${safePath}`;
+    }
+    return safePath;
+  }
+
   function setAccessToken(token) {
     if (!token || typeof token !== "string") {
       return;
@@ -108,6 +123,7 @@
   globalScope.AppPath = {
     toApp,
     toApi,
+    toApiAsset,
   };
 
   globalScope.AuthToken = {

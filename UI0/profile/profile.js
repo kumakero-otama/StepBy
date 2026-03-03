@@ -65,7 +65,9 @@ function applyProfileUser(user) {
     return;
   }
   const username = user.username || "username";
-  const iconUrl = user.iconUrl == null ? AppPath.toApp("/assets/account_default.png") : user.iconUrl;
+  const iconUrl = user.iconUrl == null
+    ? AppPath.toApp("/assets/account_default.png")
+    : AppPath.toApiAsset(user.iconUrl);
   const totalTactile = user.totalTactileLength || 0;
   const totalRoadPosts = user.totalRoadPosts || 0;
   const totalHearts = user.totalHearts || 0;

@@ -102,10 +102,10 @@ function renderPosts(posts) {
       const media = Array.isArray(post.media) ? post.media : [];
       const authorName = post && post.authorUsername ? post.authorUsername : "ユーザー";
       const authorIconUrl = post && post.authorIconUrl
-        ? post.authorIconUrl
+        ? AppPath.toApiAsset(post.authorIconUrl)
         : AppPath.toApp("/assets/account_default.png");
       const mediaHtml = media
-        .map((item) => `<img src="${escapeHtml(item.url)}" alt="投稿画像" loading="lazy" />`)
+        .map((item) => `<img src="${escapeHtml(AppPath.toApiAsset(item.url))}" alt="投稿画像" loading="lazy" />`)
         .join("");
       return `
         <article class="post-card">

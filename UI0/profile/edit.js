@@ -88,7 +88,9 @@ async function loadCurrentProfile() {
       return;
     }
     const username = user.username || "";
-    const iconUrl = user.iconUrl == null ? AppPath.toApp("/assets/account_default.png") : user.iconUrl;
+    const iconUrl = user.iconUrl == null
+      ? AppPath.toApp("/assets/account_default.png")
+      : AppPath.toApiAsset(user.iconUrl);
 
     if (usernameInputEl) {
       usernameInputEl.value = username;
