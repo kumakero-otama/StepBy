@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="../language_redirect.js"></script>
-    <title>道情報の投稿</title>
+    <title>Post Road Info</title>
     <link rel="stylesheet" href="../appbar.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -45,7 +45,7 @@
         font-size: 1rem;
       }
 
-      /* 投稿地点を決める地図枠 */
+      /* Post地点を決める地図枠 */
       .location-map-wrap {
         position: relative;
         border: 1px solid var(--line);
@@ -157,7 +157,7 @@
         transform: translateX(22px);
       }
 
-      /* タグ検索・選択の入力領域 */
+      /* Tags検索・選択の入力領域 */
       .tag-panel {
         border: 1px solid var(--line);
         border-radius: 12px;
@@ -363,7 +363,7 @@
         cursor: not-allowed;
       }
 
-      /* 画面下部の戻る/投稿ボタン */
+      /* 画面下部のBack/Postボタン */
       .actions {
         position: fixed;
         left: 50%;
@@ -440,57 +440,57 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">道情報の投稿</h1>
-      <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+      <h1 class="app-bar-title">Post Road Info</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
     <div class="app-bar-spacer" aria-hidden="true"></div>
-    <!-- 道情報投稿フォーム全体 -->
+    <!-- 道情報Postフォーム全体 -->
     <main class="page">
-      <section aria-label="位置の微調整">
+      <section aria-label="Fine-tune location">
         <div class="location-map-wrap">
           <div id="post-map"></div>
           <div class="map-center-mark" aria-hidden="true"></div>
         </div>
-        <p id="map-center-coords" class="map-center-coords">中心座標: Lat --, Lng --</p>
-        <div class="record-toggle" role="group" aria-label="現在地の中央表示 toggle">
-          <span class="record-title">現在地の中央表示:</span>
+        <p id="map-center-coords" class="map-center-coords">Center coordinates: Lat --, Lng --</p>
+        <div class="record-toggle" role="group" aria-label="Center on current location toggle">
+          <span class="record-title">Center on current location:</span>
           <span class="record-label">OFF</span>
           <label class="switch">
-            <input id="toggle-center-current" type="checkbox" aria-label="現在地の中央表示" />
+            <input id="toggle-center-current" type="checkbox" aria-label="Center on current location" />
             <span class="slider"></span>
           </label>
           <span class="record-label">ON</span>
         </div>
       </section>
 
-      <h2>タグ</h2>
-      <section class="tag-panel" aria-label="タグ選択">
-        <input id="tag-search" class="tag-search" type="text" placeholder="検索または追加..." enterkeyhint="done" />
+      <h2>Tags</h2>
+      <section class="tag-panel" aria-label="Tag selection">
+        <input id="tag-search" class="tag-search" type="text" placeholder="Search or add..." enterkeyhint="done" />
         <div id="tag-selected" class="tag-selected"></div>
         <div id="tag-list" class="tag-list"></div>
       </section>
 
-      <h2>詳細</h2>
-      <textarea class="detail-input" placeholder="ここにテキストを入力..."></textarea>
+      <h2>Details</h2>
+      <textarea class="detail-input" placeholder="Enter text here..."></textarea>
 
-      <h2>画像アップロード</h2>
+      <h2>Upload Image</h2>
       <div class="upload-row">
         <div id="image-preview" class="preview">
-          <div class="preview-empty">選択された画像がここに表示されます</div>
+          <div class="preview-empty">Selected images are shown here</div>
         </div>
         <div class="upload-buttons">
-          <button id="photo-library-button" type="button">写真ライブラリ</button>
-          <button id="camera-capture-button" type="button">カメラで撮影</button>
+          <button id="photo-library-button" type="button">Photo Library</button>
+          <button id="camera-capture-button" type="button">Take Photo</button>
           <!-- 共通バージョン表示 -->
         </div>
       </div>
@@ -498,12 +498,12 @@
       <input id="camera-capture-input" class="file-input-hidden" type="file" accept="image/*" capture="environment" />
 
       <div class="actions">
-        <button id="back-button" type="button">戻る</button>
-        <button type="button" class="submit not-ready" aria-disabled="true">投稿</button>
+        <button id="back-button" type="button">Back</button>
+        <button type="button" class="submit not-ready" aria-disabled="true">Post</button>
       </div>
 
       <div id="submit-loading" class="submit-loading" aria-live="polite" aria-hidden="true">
-        <div class="submit-loading-text">投稿しています...</div>
+        <div class="submit-loading-text">Posting...</div>
         <div class="submit-loading-spinner" aria-hidden="true"></div>
       </div>
     </main>
@@ -511,7 +511,7 @@
     <script src="../auth/token_client.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-      // 投稿画面の状態管理・画像処理・送信を扱うメインスクリプト。
+      // Post画面の状態管理・画像処理・送信を扱うメインスクリプト。
       const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
         ? window.AuthToken.authFetch
         : fetch;
@@ -562,7 +562,7 @@
       enablePressFeedback(backButton);
       enablePressFeedback(submitButton);
 
-      // 投稿中はローディング表示へ切り替え、二重送信を抑止する。
+      // Post中はローディング表示へ切り替え、二重送信を抑止する。
       function setSubmittingUi(active) {
         if (!submitLoadingEl) {
           return;
@@ -571,7 +571,7 @@
         submitLoadingEl.setAttribute("aria-hidden", active ? "false" : "true");
       }
 
-      // タグ表示などで使う最小限のHTMLエスケープ。
+      // Tags表示などで使う最小限のHTMLエスケープ。
       function escapeHtml(text) {
         return text
           .replaceAll("&", "&amp;")
@@ -581,7 +581,7 @@
           .replaceAll("'", "&#39;");
       }
 
-      // API/ローカル定義のタグを同じ形式に揃える。
+      // API/ローカル定義のTagsを同じ形式に揃える。
       function normalizeTags(rawTags) {
         return rawTags
           .map((tag, index) => {
@@ -598,7 +598,7 @@
           .filter(Boolean);
       }
 
-      // 検索語と選択状態から、表示対象タグを絞り込む。
+      // 検索語と選択状態から、表示対象Tagsを絞り込む。
       function getVisibleTags() {
         const query = tagSearchEl ? tagSearchEl.value.trim().toLowerCase() : "";
         const filtered = query
@@ -615,14 +615,14 @@
         return filtered;
       }
 
-      // 選択済みタグを上段のチップとして描画する。
+      // 選択済みTagsを上段のチップとして描画する。
       function renderSelectedTags() {
         if (!tagSelectedEl) {
           return;
         }
         const selectedTags = allTags.filter((tag) => selectedTagIds.has(tag.id));
         if (selectedTags.length === 0) {
-          tagSelectedEl.innerHTML = '<div class="tag-selected-empty">未選択</div>';
+          tagSelectedEl.innerHTML = '<div class="tag-selected-empty">None selected</div>';
           return;
         }
         tagSelectedEl.innerHTML = selectedTags
@@ -630,14 +630,14 @@
           .join("");
       }
 
-      // 候補タグ一覧を検索条件に合わせて描画する。
+      // 候補Tags一覧を検索条件に合わせて描画する。
       function renderTagList() {
         if (!tagListEl) {
           return;
         }
         const visibleTags = getVisibleTags();
         if (visibleTags.length === 0) {
-          tagListEl.innerHTML = '<div class="tag-list-empty">一致するタグがありません</div>';
+          tagListEl.innerHTML = '<div class="tag-list-empty">No matching tags</div>';
           return;
         }
         tagListEl.innerHTML = visibleTags
@@ -647,13 +647,13 @@
           .join("");
       }
 
-      // タグ表示全体（選択済み + 候補一覧）を更新する。
+      // Tags表示全体（選択済み + 候補一覧）を更新する。
       function renderTagUi() {
         renderSelectedTags();
         renderTagList();
       }
 
-      // サーバー設定から画像の上限バイト数を取得する。
+      // サーバーSettingsから画像の上限バイト数を取得する。
       async function refreshImageLimitFromConfig() {
         try {
           const res = await authFetch("/api/config");
@@ -729,7 +729,7 @@
             renderTagUi();
           } catch (err) {
             console.warn("[post_road] create tag failed:", err);
-            alert("タグの追加に失敗しました。時間をおいて再度お試しください。");
+            alert("Failed to add the tag. Please try again later.");
           }
         };
 
@@ -799,7 +799,7 @@
             return;
           }
           if (!currentMapCenter || !Number.isFinite(currentMapCenter.lat) || !Number.isFinite(currentMapCenter.lng)) {
-            alert("地図の中心座標が取得できません。少し待って再度お試しください。");
+            alert("Could not get map center coordinates. Please wait and try again.");
             return;
           }
 
@@ -824,7 +824,7 @@
               throw new Error(`submit_failed:${res.status}`);
             }
 
-            alert("投稿を保存しました。");
+            alert("Post saved.");
             if (detailInputEl) {
               detailInputEl.value = "";
             }
@@ -841,10 +841,10 @@
           } catch (err) {
             console.warn("[post_road] submit failed:", err);
             if (err && err.message === "image_too_large") {
-              alert("画像サイズが大きすぎます。より小さい画像で再度お試しください。");
+              alert("Image size is too large. Please use a smaller image.");
               return;
             }
-            alert("投稿の保存に失敗しました。時間をおいて再度お試しください。");
+            alert("Failed to save the post. Please try again later.");
           } finally {
             isSubmitting = false;
             submitButton.disabled = false;
@@ -863,7 +863,7 @@
           inputEl.click();
         } catch (err) {
           console.warn(`[post_road] ${permissionLabel} picker open error:`, err);
-          alert(`${permissionLabel}の権限が必要です。端末設定で許可してください。`);
+          alert(`${permissionLabel} permission is required. Please allow it in your device settings.`);
         }
       }
 
@@ -881,14 +881,14 @@
           return true;
         } catch (err) {
           console.warn("[post_road] camera permission denied:", err);
-          alert("カメラの権限が必要です。端末設定でカメラを許可してください。");
+          alert("Camera permission is required. Please allow camera access in your device settings.");
           return false;
         }
       }
 
       if (photoLibraryButton && photoLibraryInput) {
         photoLibraryButton.addEventListener("click", () => {
-          openInputPicker(photoLibraryInput, "写真ライブラリ");
+          openInputPicker(photoLibraryInput, "Photo Library");
         });
       }
 
@@ -898,7 +898,7 @@
           if (!granted) {
             return;
           }
-          openInputPicker(cameraCaptureInput, "カメラ");
+          openInputPicker(cameraCaptureInput, "Camera");
         });
       }
 
@@ -911,7 +911,7 @@
           const imageId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
           selectedImages.push({
             id: imageId,
-            name: file.name || "選択された画像",
+            name: file.name || "Selected image",
             url: URL.createObjectURL(file),
             file,
           });
@@ -961,7 +961,7 @@
         return Math.floor((base64.length * 3) / 4);
       }
 
-      // 上限サイズに収まるまで段階的に縮小して投稿用データを作る。
+      // 上限サイズに収まるまで段階的に縮小してPost用データを作る。
       async function createCompressedImagePayload(file, nameHint) {
         const image = await loadImageFromFile(file);
         let scale = 1;
@@ -1002,7 +1002,7 @@
         };
       }
 
-      // 選択済み画像を投稿API用の配列へ変換する。
+      // 選択済み画像をPostAPI用の配列へ変換する。
       async function buildImagePayloads() {
         const payloads = [];
         for (const image of selectedImages) {
@@ -1031,7 +1031,7 @@
         }
 
         if (selectedImages.length === 0) {
-          imagePreview.innerHTML = '<div class="preview-empty">選択された画像がここに表示されます</div>';
+          imagePreview.innerHTML = '<div class="preview-empty">Selected images are shown here</div>';
           return;
         }
 
@@ -1039,8 +1039,8 @@
           .map((item) => {
             const safeId = escapeHtml(item.id);
             const safeSrc = escapeHtml(item.url);
-            const safeAlt = escapeHtml(item.name || "選択された画像");
-            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" data-remove-image-id="${safeId}">削除</button></div>`;
+            const safeAlt = escapeHtml(item.name || "Selected image");
+            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" data-remove-image-id="${safeId}">Delete</button></div>`;
           })
           .join("")}</div>`;
       }
@@ -1127,7 +1127,7 @@
           }
           const center = postMap.getCenter();
           currentMapCenter = { lat: center.lat, lng: center.lng };
-          mapCenterCoordsEl.textContent = `中心座標: Lat ${center.lat.toFixed(6)}, Lng ${center.lng.toFixed(6)}`;
+          mapCenterCoordsEl.textContent = `Center coordinates: Lat ${center.lat.toFixed(6)}, Lng ${center.lng.toFixed(6)}`;
         };
 
         postMap.on("move", updateCenterCoords);

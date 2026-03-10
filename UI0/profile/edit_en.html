@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="../language_redirect.js"></script>
-    <title>プロフィール編集</title>
+    <title>Edit Profile</title>
     <meta name="theme-color" content="#348f82" />
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="../appbar.css" />
@@ -12,15 +12,15 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">プロフィール編集</h1>
-      <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+      <h1 class="app-bar-title">Edit Profile</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
@@ -29,20 +29,20 @@
 
     <main class="profile-edit-page">
       <section class="profile-edit-card">
-        <label class="form-label" for="profile-username-input">ユーザー名</label>
+        <label class="form-label" for="profile-username-input">Username</label>
         <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
 
-        <p class="form-label icon-label">アイコン画像</p>
+        <p class="form-label icon-label">Profile Icon</p>
         <div class="icon-row">
           <img
             id="profile-icon-preview"
             class="icon-preview"
             src="../assets/account_default.png"
-            alt="現在のアイコン"
+            alt="Current icon"
           />
           <div class="icon-action-col">
-            <label class="choice-btn" for="profile-icon-camera-input">写真を撮影</label>
-            <label class="choice-btn" for="profile-icon-upload-input">画像アップロード</label>
+            <label class="choice-btn" for="profile-icon-camera-input">Take Photo</label>
+            <label class="choice-btn" for="profile-icon-upload-input">Upload Image</label>
           </div>
         </div>
       </section>
@@ -52,11 +52,11 @@
     <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />
 
     <footer class="edit-footer">
-      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">戻る</button>
-      <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">変更を保存</button>
+      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">Back</button>
+      <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">Save changes</button>
     </footer>
     <div id="profile-save-toast" class="save-toast" role="status" aria-live="polite">
-      プロフィールの変更を保存しました！
+      Profile changes were saved!
     </div>
     <script src="../config.js"></script>
 
