@@ -1,77 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html lang="hi">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="../language_redirect.js"></script>
-    <title>Road Info Detail</title>
+    <title>सड़क जानकारी विवरण</title>
     <link rel="stylesheet" href="../appbar.css" />
     <link rel="stylesheet" href="../style.css" />
     <link rel="stylesheet" href="road_info_detail.css" />
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">Road Info Detail</h1>
-      <div class="app-bar-actions" aria-label="App menu">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+      <h1 class="app-bar-title">सड़क जानकारी विवरण</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
     <div class="app-bar-spacer" aria-hidden="true"></div>
-    <!-- 道情報Details（Tags・Post・画像）の表示画面 -->
+    <!-- 道情報Details（टैग・Post・画像）の表示画面 -->
     <main class="detail-wrap">
       <div class="detail-main">
         <p id="detail-error" class="detail-error hidden"></p>
         <section id="detail-content" class="hidden">
           <div class="tags-block">
-            <h2 class="section-label">Tags</h2>
+            <h2 class="section-label">टैग</h2>
             <ul id="tags-list" class="tags-list"></ul>
           </div>
 
           <div class="posts-head">
-            <h2 class="section-label">Post <span id="post-count" class="post-count">(0 total)</span></h2>
+            <h2 class="section-label">पोस्ट <span id="post-count" class="post-count">(कुल 0)</span></h2>
           </div>
 
           <div id="posts-list" class="posts-list"></div>
         </section>
-        <section id="detail-loading">Loading...</section>
+        <section id="detail-loading">लोड हो रहा है...</section>
       </div>
 
       <!-- 画面下部の固定操作ボタン -->
       <div class="bottom-actions">
-        <button id="post-self-btn" class="btn btn-primary" type="button">Post here too</button>
-        <button id="back-btn" class="btn" type="button">Back</button>
+        <button id="post-self-btn" class="btn btn-primary" type="button">यहां भी पोस्ट करें</button>
+        <button id="back-btn" class="btn" type="button">वापस</button>
       </div>
       <!-- 共通バージョン表示 -->
     </main>
-    <div id="comment-modal" class="comment-modal hidden" role="dialog" aria-modal="true" aria-label="Post comment">
+    <div id="comment-modal" class="comment-modal hidden" role="dialog" aria-modal="true" aria-label="टिप्पणी पोस्ट करें">
       <div class="comment-window">
         <div class="comment-window-head">
-          <div class="comment-window-title">Post comment</div>
-          <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="Close">×</button>
+          <div class="comment-window-title">टिप्पणी पोस्ट करें</div>
+          <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="बंद करें">×</button>
         </div>
         <div class="comment-window-body">
-          <label class="comment-label" for="comment-body-input">Body</label>
+          <label class="comment-label" for="comment-body-input">विवरण</label>
           <textarea
             id="comment-body-input"
             class="comment-body-input"
-            placeholder="Enter the comment body here"
+            placeholder="टिप्पणी का विवरण यहां लिखें"
           ></textarea>
 
-          <div class="comment-label">Upload Image</div>
+          <div class="comment-label">छवि अपलोड</div>
           <div class="comment-upload-buttons">
-            <button id="comment-photo-library-btn" class="btn" type="button">Photo Library</button>
-            <button id="comment-camera-btn" class="btn" type="button">Take Photo</button>
+            <button id="comment-photo-library-btn" class="btn" type="button">फोटो लाइब्रेरी</button>
+            <button id="comment-camera-btn" class="btn" type="button">फोटो लें</button>
           </div>
           <div id="comment-image-preview" class="comment-image-preview">
-            <div class="comment-image-empty">Selected images are shown here</div>
+            <div class="comment-image-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
           </div>
 
           <input
@@ -90,19 +90,19 @@
           />
         </div>
         <div class="comment-window-foot">
-          <button id="comment-submit-btn" class="btn btn-primary" type="button">Post</button>
+          <button id="comment-submit-btn" class="btn btn-primary" type="button">पोस्ट</button>
         </div>
       </div>
     </div>
     <div id="comment-submit-loading" class="comment-submit-loading hidden" aria-live="polite" aria-busy="true">
-      <div class="comment-submit-text">Posting comment...</div>
+      <div class="comment-submit-text">टिप्पणी पोस्ट की जा रही है...</div>
       <div class="comment-submit-spinner" aria-hidden="true"></div>
     </div>
-    <div id="comment-result-modal" class="comment-result-modal hidden" role="dialog" aria-modal="true" aria-label="Comment post result">
+    <div id="comment-result-modal" class="comment-result-modal hidden" role="dialog" aria-modal="true" aria-label="टिप्पणी पोस्ट परिणाम">
       <div class="comment-result-panel">
         <p id="comment-result-message" class="comment-result-message"></p>
         <div class="comment-result-actions">
-          <button id="comment-result-ok-btn" class="btn" type="button">OK</button>
+          <button id="comment-result-ok-btn" class="btn" type="button">ठीक है</button>
         </div>
       </div>
     </div>

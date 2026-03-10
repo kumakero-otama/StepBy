@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="hi">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="../language_redirect.js"></script>
-    <title>Draggable Map</title>
+    <title>मानचित्र | Draggable Map</title>
     <meta name="theme-color" content="#222222" />
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,15 +14,15 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">HOME</h1>
-      <div class="app-bar-actions" aria-label="App menu">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+      <h1 class="app-bar-title">होम</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
@@ -68,77 +68,77 @@
     <main id="map-layout" class="wrap map-layout">
       <!-- 地図本体 -->
       <div class="map-row">
-        <div id="map" aria-label="Map"></div>
+        <div id="map" aria-label="मानचित्र"></div>
       </div>
       <!-- 共通バージョン表示 -->
-      <section id="map-controls-panel" class="map-controls-panel" aria-label="Map controls">
+      <section id="map-controls-panel" class="map-controls-panel" aria-label="मानचित्र controls">
         <button
           id="map-controls-handle"
           class="map-controls-handle"
           type="button"
-          aria-label="Toggle map controls"
+          aria-label="मानचित्र नियंत्रण दिखाएं/छुपाएं"
           aria-expanded="true"
         >
           <span class="map-controls-handle-bar"></span>
         </button>
         <div id="map-controls-content" class="map-controls-content">
           <div class="meta">
-            <div id="last-updated">Last update: --:--:--</div>
-            <div class="record-toggle" role="group" aria-label="Record toggle">
-              <span class="record-title">Tactile block recording:</span>
-              <span class="record-label">OFF</span>
+            <div id="last-updated">अंतिम अपडेट: --:--:--</div>
+            <div class="record-toggle" role="group" aria-label="रिकॉर्ड टॉगल">
+              <span class="record-title">स्पर्श मार्ग रिकॉर्डिंग:</span>
+              <span class="record-label">बंद</span>
               <label class="switch">
-                <input id="toggle-record" type="checkbox" aria-label="Record" />
+                <input id="toggle-record" type="checkbox" aria-label="रिकॉर्ड" />
                 <span class="slider"></span>
               </label>
-              <span class="record-label">ON</span>
+              <span class="record-label">चालू</span>
             </div>
-            <div class="record-toggle" role="group" aria-label="Show map info toggle">
-              <span class="record-title">Show map info:</span>
-              <span class="record-label">OFF</span>
+            <div class="record-toggle" role="group" aria-label="मानचित्र जानकारी टॉगल">
+              <span class="record-title">मानचित्र जानकारी दिखाएं:</span>
+              <span class="record-label">बंद</span>
               <label class="switch">
-                <input id="toggle-show-map-info" type="checkbox" aria-label="Show map info" />
+                <input id="toggle-show-map-info" type="checkbox" aria-label="मानचित्र जानकारी दिखाएं" />
                 <span class="slider"></span>
               </label>
-              <span class="record-label">ON</span>
+              <span class="record-label">चालू</span>
             </div>
-            <div class="record-toggle" role="group" aria-label="Center on current location toggle">
-              <span class="record-title">Center on current location:</span>
-              <span class="record-label">OFF</span>
+            <div class="record-toggle" role="group" aria-label="वर्तमान स्थान केंद्रित टॉगल">
+              <span class="record-title">वर्तमान स्थान केंद्र में रखें:</span>
+              <span class="record-label">बंद</span>
               <label class="switch">
                 <input
                   id="toggle-center-current"
                   type="checkbox"
-                  aria-label="Center on current location"
+                  aria-label="वर्तमान स्थान केंद्र में रखें"
                   checked
                 />
                 <span class="slider"></span>
               </label>
-              <span class="record-label">ON</span>
+              <span class="record-label">चालू</span>
             </div>
-            <div id="coords">Lat: --, Lng: --</div>
-            <div id="raw-coords">Raw: --, --</div>
+            <div id="coords">अक्षांश: --, देशांतर: --</div>
+            <div id="raw-coords">रॉ: --, --</div>
           </div>
         </div>
       </section>
     </main>
     <div id="osm-loading-overlay" class="osm-loading-overlay hidden" aria-live="polite" aria-busy="true">
       <div class="osm-loading-spinner" aria-hidden="true"></div>
-      <div class="osm-loading-text">Loading OSM data...</div>
+      <div class="osm-loading-text">OSM डेटा लोड हो रहा है...</div>
     </div>
     <div id="records-loading-overlay" class="records-loading-overlay hidden" aria-live="polite" aria-busy="true">
       <div class="records-loading-spinner" aria-hidden="true"></div>
-      <div class="records-loading-text">Loading tactile block data...</div>
+      <div class="records-loading-text">स्पर्श मार्ग डेटा लोड हो रहा है...</div>
     </div>
     <!-- 記録停止時の確認モーダル -->
     <div id="trace-confirm-modal" class="trace-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trace-confirm-title">
       <div class="trace-confirm-panel">
-        <h2 id="trace-confirm-title">Save this route?</h2>
-        <p id="trace-confirm-message">Showing fitted route for the whole session.</p>
-        <div id="trace-confirm-map" aria-label="Route preview before saving"></div>
+        <h2 id="trace-confirm-title">क्या इस मार्ग को सहेजें?</h2>
+        <p id="trace-confirm-message">पूरे सत्र के लिए फिट किया गया मार्ग दिखाया जा रहा है।</p>
+        <div id="trace-confirm-map" aria-label="सहेजने से पहले मार्ग पूर्वावलोकन"></div>
         <div class="trace-confirm-actions">
-          <button id="trace-confirm-ok" class="btn" type="button">OK</button>
-          <button id="trace-confirm-cancel" class="btn secondary" type="button">Cancel</button>
+          <button id="trace-confirm-ok" class="btn" type="button">ठीक है</button>
+          <button id="trace-confirm-cancel" class="btn secondary" type="button">रद्द करें</button>
         </div>
       </div>
     </div>

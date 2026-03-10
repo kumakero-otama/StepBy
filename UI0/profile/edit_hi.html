@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="hi">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="../language_redirect.js"></script>
-    <title>Edit Profile</title>
+    <title>प्रोफ़ाइल संपादन</title>
     <meta name="theme-color" content="#348f82" />
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="../appbar.css" />
@@ -12,15 +12,15 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">Edit Profile</h1>
-      <div class="app-bar-actions" aria-label="App menu">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+      <h1 class="app-bar-title">प्रोफ़ाइल संपादन</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
@@ -29,20 +29,20 @@
 
     <main class="profile-edit-page">
       <section class="profile-edit-card">
-        <label class="form-label" for="profile-username-input">Username</label>
+        <label class="form-label" for="profile-username-input">उपयोगकर्ता नाम</label>
         <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
 
-        <p class="form-label icon-label">Profile Icon</p>
+        <p class="form-label icon-label">प्रोफ़ाइल आइकन</p>
         <div class="icon-row">
           <img
             id="profile-icon-preview"
             class="icon-preview"
             src="../assets/account_default.png"
-            alt="Current icon"
+            alt="वर्तमान आइकन"
           />
           <div class="icon-action-col">
-            <label class="choice-btn" for="profile-icon-camera-input">Take Photo</label>
-            <label class="choice-btn" for="profile-icon-upload-input">Upload Image</label>
+            <label class="choice-btn" for="profile-icon-camera-input">फोटो लें</label>
+            <label class="choice-btn" for="profile-icon-upload-input">छवि अपलोड करें</label>
           </div>
         </div>
       </section>
@@ -52,11 +52,11 @@
     <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />
 
     <footer class="edit-footer">
-      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">Back</button>
-      <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">Save changes</button>
+      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">वापस</button>
+      <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">बदलाव सहेजें</button>
     </footer>
     <div id="profile-save-toast" class="save-toast" role="status" aria-live="polite">
-      Profile changes were saved!
+      प्रोफ़ाइल बदलाव सहेजे गए!
     </div>
     <script src="../config.js"></script>
 

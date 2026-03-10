@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="../language_redirect.js"></script>
-    <title>Post Road Info</title>
+    <title>सड़क जानकारी पोस्ट करें</title>
     <link rel="stylesheet" href="../appbar.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -440,15 +440,15 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">Post Road Info</h1>
-      <div class="app-bar-actions" aria-label="App menu">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+      <h1 class="app-bar-title">सड़क जानकारी पोस्ट करें</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
@@ -456,41 +456,41 @@
     <div class="app-bar-spacer" aria-hidden="true"></div>
     <!-- 道情報Postフォーム全体 -->
     <main class="page">
-      <section aria-label="Fine-tune location">
+      <section aria-label="स्थान समायोजन">
         <div class="location-map-wrap">
           <div id="post-map"></div>
           <div class="map-center-mark" aria-hidden="true"></div>
         </div>
-        <p id="map-center-coords" class="map-center-coords">Center coordinates: Lat --, Lng --</p>
-        <div class="record-toggle" role="group" aria-label="Center on current location toggle">
-          <span class="record-title">Center on current location:</span>
-          <span class="record-label">OFF</span>
+        <p id="map-center-coords" class="map-center-coords">केंद्र निर्देशांक: अक्षांश --, देशांतर --</p>
+        <div class="record-toggle" role="group" aria-label="वर्तमान स्थान केंद्र में रखें टॉगल">
+          <span class="record-title">वर्तमान स्थान केंद्र में रखें:</span>
+          <span class="record-label">बंद</span>
           <label class="switch">
-            <input id="toggle-center-current" type="checkbox" aria-label="Center on current location" />
+            <input id="toggle-center-current" type="checkbox" aria-label="वर्तमान स्थान केंद्र में रखें" />
             <span class="slider"></span>
           </label>
-          <span class="record-label">ON</span>
+          <span class="record-label">चालू</span>
         </div>
       </section>
 
-      <h2>Tags</h2>
-      <section class="tag-panel" aria-label="Tag selection">
-        <input id="tag-search" class="tag-search" type="text" placeholder="Search or add..." enterkeyhint="done" />
+      <h2>टैग</h2>
+      <section class="tag-panel" aria-label="टैग चयन">
+        <input id="tag-search" class="tag-search" type="text" placeholder="खोजें या जोड़ें..." enterkeyhint="done" />
         <div id="tag-selected" class="tag-selected"></div>
         <div id="tag-list" class="tag-list"></div>
       </section>
 
-      <h2>Details</h2>
-      <textarea class="detail-input" placeholder="Enter text here..."></textarea>
+      <h2>विवरण</h2>
+      <textarea class="detail-input" placeholder="यहां पाठ दर्ज करें..."></textarea>
 
-      <h2>Upload Image</h2>
+      <h2>छवि अपलोड</h2>
       <div class="upload-row">
         <div id="image-preview" class="preview">
-          <div class="preview-empty">Selected images are shown here</div>
+          <div class="preview-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
         </div>
         <div class="upload-buttons">
-          <button id="photo-library-button" type="button">Photo Library</button>
-          <button id="camera-capture-button" type="button">Take Photo</button>
+          <button id="photo-library-button" type="button">फोटो लाइब्रेरी</button>
+          <button id="camera-capture-button" type="button">फोटो लें</button>
           <!-- 共通バージョン表示 -->
         </div>
       </div>
@@ -498,12 +498,12 @@
       <input id="camera-capture-input" class="file-input-hidden" type="file" accept="image/*" capture="environment" />
 
       <div class="actions">
-        <button id="back-button" type="button">Back</button>
-        <button type="button" class="submit not-ready" aria-disabled="true">Post</button>
+        <button id="back-button" type="button">वापस</button>
+        <button type="button" class="submit not-ready" aria-disabled="true">पोस्ट</button>
       </div>
 
       <div id="submit-loading" class="submit-loading" aria-live="polite" aria-hidden="true">
-        <div class="submit-loading-text">Posting...</div>
+        <div class="submit-loading-text">पोस्ट किया जा रहा है...</div>
         <div class="submit-loading-spinner" aria-hidden="true"></div>
       </div>
     </main>
@@ -516,14 +516,14 @@
         ? window.AuthToken.authFetch
         : fetch;
       const fallbackTags = [
-        { id: "step", label: "段差" },
-        { id: "construction", label: "工事中" },
-        { id: "tactile", label: "点字ブロック" },
-        { id: "slope", label: "スロープあり" },
-        { id: "caution", label: "通行注意" },
-        { id: "rough_surface", label: "路面が悪い" },
-        { id: "crowded", label: "混雑" },
-        { id: "dark_at_night", label: "夜間暗い" }
+        { id: "step", label: "सीढ़ी" },
+        { id: "construction", label: "निर्माण कार्य" },
+        { id: "tactile", label: "स्पर्श मार्ग" },
+        { id: "slope", label: "ढलान उपलब्ध" },
+        { id: "caution", label: "सावधानी" },
+        { id: "rough_surface", label: "खराब सतह" },
+        { id: "crowded", label: "भीड़" },
+        { id: "dark_at_night", label: "रात में अंधेरा" }
       ];
       const tagSearchEl = document.getElementById("tag-search");
       const tagSelectedEl = document.getElementById("tag-selected");
@@ -622,7 +622,7 @@
         }
         const selectedTags = allTags.filter((tag) => selectedTagIds.has(tag.id));
         if (selectedTags.length === 0) {
-          tagSelectedEl.innerHTML = '<div class="tag-selected-empty">None selected</div>';
+          tagSelectedEl.innerHTML = '<div class="tag-selected-empty">कोई चयन नहीं</div>';
           return;
         }
         tagSelectedEl.innerHTML = selectedTags
@@ -637,7 +637,7 @@
         }
         const visibleTags = getVisibleTags();
         if (visibleTags.length === 0) {
-          tagListEl.innerHTML = '<div class="tag-list-empty">No matching tags</div>';
+          tagListEl.innerHTML = '<div class="tag-list-empty">कोई मिलते-जुलते टैग नहीं</div>';
           return;
         }
         tagListEl.innerHTML = visibleTags
@@ -729,7 +729,7 @@
             renderTagUi();
           } catch (err) {
             console.warn("[post_road] create tag failed:", err);
-            alert("Failed to add the tag. Please try again later.");
+            alert("टैग जोड़ने में विफल। कृपया बाद में पुनः प्रयास करें।");
           }
         };
 
@@ -799,7 +799,7 @@
             return;
           }
           if (!currentMapCenter || !Number.isFinite(currentMapCenter.lat) || !Number.isFinite(currentMapCenter.lng)) {
-            alert("Could not get map center coordinates. Please wait and try again.");
+            alert("मानचित्र का केंद्र निर्देशांक नहीं मिला। कृपया थोड़ी देर बाद पुनः प्रयास करें।");
             return;
           }
 
@@ -824,7 +824,7 @@
               throw new Error(`submit_failed:${res.status}`);
             }
 
-            alert("Post saved.");
+            alert("पोस्ट सहेजा गया।");
             if (detailInputEl) {
               detailInputEl.value = "";
             }
@@ -841,10 +841,10 @@
           } catch (err) {
             console.warn("[post_road] submit failed:", err);
             if (err && err.message === "image_too_large") {
-              alert("Image size is too large. Please use a smaller image.");
+              alert("छवि का आकार बहुत बड़ा है। कृपया छोटी छवि का उपयोग करें।");
               return;
             }
-            alert("Failed to save the post. Please try again later.");
+            alert("पोस्ट सहेजने में विफल। कृपया बाद में पुनः प्रयास करें।");
           } finally {
             isSubmitting = false;
             submitButton.disabled = false;
@@ -863,7 +863,7 @@
           inputEl.click();
         } catch (err) {
           console.warn(`[post_road] ${permissionLabel} picker open error:`, err);
-          alert(`${permissionLabel} permission is required. Please allow it in your device settings.`);
+          alert(`${permissionLabel} की अनुमति आवश्यक है। कृपया डिवाइस सेटिंग्स में अनुमति दें।`);
         }
       }
 
@@ -881,7 +881,7 @@
           return true;
         } catch (err) {
           console.warn("[post_road] camera permission denied:", err);
-          alert("Camera permission is required. Please allow camera access in your device settings.");
+          alert("कैमरा अनुमति आवश्यक है। कृपया डिवाइस सेटिंग्स में कैमरा अनुमति दें।");
           return false;
         }
       }
@@ -898,7 +898,7 @@
           if (!granted) {
             return;
           }
-          openInputPicker(cameraCaptureInput, "Camera");
+          openInputPicker(cameraCaptureInput, "कैमरा");
         });
       }
 
@@ -911,7 +911,7 @@
           const imageId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
           selectedImages.push({
             id: imageId,
-            name: file.name || "Selected image",
+            name: file.name || "चयनित छवि",
             url: URL.createObjectURL(file),
             file,
           });
@@ -1031,7 +1031,7 @@
         }
 
         if (selectedImages.length === 0) {
-          imagePreview.innerHTML = '<div class="preview-empty">Selected images are shown here</div>';
+          imagePreview.innerHTML = '<div class="preview-empty">चयनित छवियां यहां दिखाई जाएंगी</div>';
           return;
         }
 
@@ -1039,8 +1039,8 @@
           .map((item) => {
             const safeId = escapeHtml(item.id);
             const safeSrc = escapeHtml(item.url);
-            const safeAlt = escapeHtml(item.name || "Selected image");
-            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" data-remove-image-id="${safeId}">Delete</button></div>`;
+            const safeAlt = escapeHtml(item.name || "चयनित छवि");
+            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" data-remove-image-id="${safeId}">हटाएं</button></div>`;
           })
           .join("")}</div>`;
       }
@@ -1127,7 +1127,7 @@
           }
           const center = postMap.getCenter();
           currentMapCenter = { lat: center.lat, lng: center.lng };
-          mapCenterCoordsEl.textContent = `Center coordinates: Lat ${center.lat.toFixed(6)}, Lng ${center.lng.toFixed(6)}`;
+          mapCenterCoordsEl.textContent = `केंद्र निर्देशांक: अक्षांश ${center.lat.toFixed(6)}, देशांतर ${center.lng.toFixed(6)}`;
         };
 
         postMap.on("move", updateCenterCoords);
