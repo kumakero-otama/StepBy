@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>設定 | Draggable Map</title>
+    <title>Settings | Draggable Map</title>
     <link rel="stylesheet" href="../appbar.css" />
     <style>
       html,
@@ -148,19 +148,20 @@
         margin: 0;
         accent-color: #222;
       }
+
     </style>
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">SETTING</h1>
-      <div class="app-bar-actions" aria-label="アプリメニュー">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+      <h1 class="app-bar-title">SETTINGS</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
           <img src="../assets/buttons/home.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+        <a class="app-bar-icon-link" href="../otasuke/Index_en.html" aria-label="Settings">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
@@ -168,64 +169,64 @@
     <div class="app-bar-spacer" aria-hidden="true"></div>
 
     <main class="settings-wrap">
-      <section class="settings-card" aria-label="設定一覧">
+      <section class="settings-card" aria-label="Settings list">
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-map-display">
-            地図の表示
+            Map display
           </button>
           <div id="panel-map-display" class="accordion-panel" hidden>
-            <div class="record-toggle" role="group" aria-label="自分で投稿した点字ブロック toggle">
-              <span class="record-title">自分で投稿した点字ブロック</span>
+            <div class="record-toggle" role="group" aria-label="My tactile blocks toggle">
+              <span class="record-title">My tactile blocks</span>
               <span class="record-label">OFF</span>
               <label class="switch">
                 <input
                   id="setting-show-only-my-tactile"
                   type="checkbox"
-                  aria-label="自分で投稿した点字ブロック"
+                  aria-label="My tactile blocks"
                 />
                 <span class="slider"></span>
               </label>
               <span class="record-label">ON</span>
             </div>
-            <div class="record-toggle" role="group" aria-label="アプリで投稿された点字ブロック toggle">
-              <span class="record-title">アプリで投稿された点字ブロック</span>
+            <div class="record-toggle" role="group" aria-label="App tactile blocks toggle">
+              <span class="record-title">Tactile blocks posted in app</span>
               <span class="record-label">OFF</span>
               <label class="switch">
-                <input id="setting-show-app-tactile" type="checkbox" aria-label="アプリで投稿された点字ブロック" />
+                <input id="setting-show-app-tactile" type="checkbox" aria-label="Tactile blocks posted in app" />
                 <span class="slider"></span>
               </label>
               <span class="record-label">ON</span>
             </div>
-            <div class="record-toggle" role="group" aria-label="OSMで投稿された点字ブロック toggle">
-              <span class="record-title">OSMで投稿された点字ブロック</span>
+            <div class="record-toggle" role="group" aria-label="OSM tactile blocks toggle">
+              <span class="record-title">Tactile blocks from OSM</span>
               <span class="record-label">OFF</span>
               <label class="switch">
-                <input id="setting-show-osm-tactile" type="checkbox" aria-label="OSMで投稿された点字ブロック" />
+                <input id="setting-show-osm-tactile" type="checkbox" aria-label="Tactile blocks from OSM" />
                 <span class="slider"></span>
               </label>
               <span class="record-label">ON</span>
             </div>
-            <div class="record-toggle" role="group" aria-label="自分で投稿した道情報 toggle">
-              <span class="record-title">自分で投稿した道情報</span>
+            <div class="record-toggle" role="group" aria-label="My road info toggle">
+              <span class="record-title">My road info</span>
               <span class="record-label">OFF</span>
               <label class="switch">
                 <input
                   id="setting-show-only-my-road-info"
                   type="checkbox"
-                  aria-label="自分で投稿した道情報"
+                  aria-label="My road info"
                 />
                 <span class="slider"></span>
               </label>
               <span class="record-label">ON</span>
             </div>
-            <div class="record-toggle" role="group" aria-label="すべての道情報 toggle">
-              <span class="record-title">すべての道情報</span>
+            <div class="record-toggle" role="group" aria-label="All road info toggle">
+              <span class="record-title">All road info</span>
               <span class="record-label">OFF</span>
               <label class="switch">
                 <input
                   id="setting-show-all-road-info"
                   type="checkbox"
-                  aria-label="すべての道情報"
+                  aria-label="All road info"
                 />
                 <span class="slider"></span>
               </label>
@@ -236,25 +237,25 @@
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-theme">
-            ダーク/ライト
+            Dark / Light
           </button>
           <div id="panel-theme" class="accordion-panel placeholder-panel" hidden></div>
         </div>
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-language">
-            言語の設定
+            Language settings
           </button>
           <div id="panel-language" class="accordion-panel placeholder-panel" hidden>
             <fieldset class="language-options">
-              <legend class="record-title">表示言語</legend>
+              <legend class="record-title">Display language</legend>
               <label class="language-option" for="language-ja">
                 <input id="language-ja" type="radio" name="display-language" value="ja" />
-                <span>日本語</span>
+                <span>Japanese</span>
               </label>
               <label class="language-option" for="language-en">
                 <input id="language-en" type="radio" name="display-language" value="en" />
-                <span>英語</span>
+                <span>English</span>
               </label>
             </fieldset>
           </div>
@@ -314,8 +315,8 @@
       const settings = loadSettings();
       const selectedLanguage = loadLanguageSetting();
       const isEnglishPage = window.location.pathname.endsWith("/otasuke/Index_en.html");
-      if (selectedLanguage === "en" && !isEnglishPage) {
-        window.location.replace(EN_SETTINGS_PATH);
+      if (selectedLanguage === "ja" && isEnglishPage) {
+        window.location.replace(JA_SETTINGS_PATH);
       }
       const appTactileToggle = document.getElementById("setting-show-app-tactile");
       const osmTactileToggle = document.getElementById("setting-show-osm-tactile");
