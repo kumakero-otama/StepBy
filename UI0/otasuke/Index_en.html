@@ -258,6 +258,10 @@
                 <input id="language-en" type="radio" name="display-language" value="en" />
                 <span>English</span>
               </label>
+              <label class="language-option" for="language-hi">
+                <input id="language-hi" type="radio" name="display-language" value="hi" />
+                <span>Hindi</span>
+              </label>
             </fieldset>
           </div>
         </div>
@@ -280,6 +284,7 @@
       const DEFAULT_LANGUAGE = "ja";
       const JA_SETTINGS_PATH = "../otasuke/Index.html";
       const EN_SETTINGS_PATH = "../otasuke/Index_en.html";
+      const HI_SETTINGS_PATH = "../otasuke/Index_hi.html";
 
       function loadSettings() {
         try {
@@ -306,7 +311,7 @@
 
       function loadLanguageSetting() {
         const savedLanguage = localStorage.getItem(LANGUAGE_SETTINGS_KEY);
-        return ["ja", "en"].includes(savedLanguage) ? savedLanguage : DEFAULT_LANGUAGE;
+        return ["ja", "en", "hi"].includes(savedLanguage) ? savedLanguage : DEFAULT_LANGUAGE;
       }
 
       function saveLanguageSetting(language) {
@@ -318,6 +323,8 @@
       const isEnglishPage = window.location.pathname.endsWith("/otasuke/Index_en.html");
       if (selectedLanguage === "ja" && isEnglishPage) {
         window.location.replace(JA_SETTINGS_PATH);
+      } else if (selectedLanguage === "hi") {
+        window.location.replace(HI_SETTINGS_PATH);
       }
       const appTactileToggle = document.getElementById("setting-show-app-tactile");
       const osmTactileToggle = document.getElementById("setting-show-osm-tactile");
@@ -355,6 +362,8 @@
             saveLanguageSetting(option.value);
             if (option.value === "en") {
               window.location.replace(EN_SETTINGS_PATH);
+            } else if (option.value === "hi") {
+              window.location.replace(HI_SETTINGS_PATH);
             } else {
               window.location.replace(JA_SETTINGS_PATH);
             }

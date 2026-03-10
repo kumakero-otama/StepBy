@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>Draggable Map</title>
+    <meta name="theme-color" content="#222222" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="map.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">HOME</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+    <script src="../config.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script>
+      // 認証機能未実装の暫定対応:
+      // 明示的なデバッグ遷移（?debug=1）または有効なセッションがある場合のみ表示する。
+      (async () => {
+        const query = new URLSearchParams(window.location.search);
+        if (query.get("debug") === "1") {
+          return;
+        }
+        try {
+          const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
+            ? window.AuthToken.authFetch
+            : fetch;
+          const res = await authFetch("/auth/me");
+          if (!res.ok) {
+            if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
+              window.AuthToken.clearAccessToken();
+            }
+            window.location.replace(AppPath.toApp("/auth/login.html"));
+            return;
+          }
+          const payload = await res.json();
+          if (!payload || !payload.authenticated) {
+            if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
+              window.AuthToken.clearAccessToken();
+            }
+            window.location.replace(AppPath.toApp("/auth/login.html"));
+          }
+        } catch {
+          if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
+            window.AuthToken.clearAccessToken();
+          }
+          window.location.replace(AppPath.toApp("/auth/login.html"));
+        }
+      })();
+    </script>
+    <main id="map-layout" class="wrap map-layout">
+      <!-- 地図本体 -->
+      <div class="map-row">
+        <div id="map" aria-label="Map"></div>
+      </div>
+      <!-- 共通バージョン表示 -->
+      <section id="map-controls-panel" class="map-controls-panel" aria-label="Map controls">
+        <button
+          id="map-controls-handle"
+          class="map-controls-handle"
+          type="button"
+          aria-label="Toggle map controls"
+          aria-expanded="true"
+        >
+          <span class="map-controls-handle-bar"></span>
+        </button>
+        <div id="map-controls-content" class="map-controls-content">
+          <div class="meta">
+            <div id="last-updated">Last update: --:--:--</div>
+            <div class="record-toggle" role="group" aria-label="Record toggle">
+              <span class="record-title">Tactile block recording:</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input id="toggle-record" type="checkbox" aria-label="Record" />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div class="record-toggle" role="group" aria-label="Show map info toggle">
+              <span class="record-title">Show map info:</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input id="toggle-show-map-info" type="checkbox" aria-label="Show map info" />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div class="record-toggle" role="group" aria-label="Center on current location toggle">
+              <span class="record-title">Center on current location:</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input
+                  id="toggle-center-current"
+                  type="checkbox"
+                  aria-label="Center on current location"
+                  checked
+                />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div id="coords">Lat: --, Lng: --</div>
+            <div id="raw-coords">Raw: --, --</div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="osm-loading-overlay" class="osm-loading-overlay hidden" aria-live="polite" aria-busy="true">
+      <div class="osm-loading-spinner" aria-hidden="true"></div>
+      <div class="osm-loading-text">Loading OSM data...</div>
+    </div>
+    <div id="records-loading-overlay" class="records-loading-overlay hidden" aria-live="polite" aria-busy="true">
+      <div class="records-loading-spinner" aria-hidden="true"></div>
+      <div class="records-loading-text">Loading tactile block data...</div>
+    </div>
+    <!-- 記録停止時の確認モーダル -->
+    <div id="trace-confirm-modal" class="trace-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trace-confirm-title">
+      <div class="trace-confirm-panel">
+        <h2 id="trace-confirm-title">Save this route?</h2>
+        <p id="trace-confirm-message">Showing fitted route for the whole session.</p>
+        <div id="trace-confirm-map" aria-label="Route preview before saving"></div>
+        <div class="trace-confirm-actions">
+          <button id="trace-confirm-ok" class="btn" type="button">OK</button>
+          <button id="trace-confirm-cancel" class="btn secondary" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="map.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

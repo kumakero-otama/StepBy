@@ -1,27 +1,40 @@
 (() => {
   const LANGUAGE_SETTINGS_KEY = "displayLanguage.v1";
   const DEFAULT_LANGUAGE = "ja";
+  const HINDI_UNSUPPORTED_PREFIXES = ["/home/", "/analog/"];
 
   function loadLanguageSetting() {
     try {
       const savedLanguage = window.localStorage.getItem(LANGUAGE_SETTINGS_KEY);
-      return ["ja", "en"].includes(savedLanguage) ? savedLanguage : DEFAULT_LANGUAGE;
+      return ["ja", "en", "hi"].includes(savedLanguage) ? savedLanguage : DEFAULT_LANGUAGE;
     } catch {
       return DEFAULT_LANGUAGE;
     }
   }
 
-  function buildTargetPathname(pathname, toEnglish) {
+  function getLanguageNeutralPath(pathname) {
     if (typeof pathname !== "string" || !pathname) {
       return pathname;
     }
-    if (toEnglish) {
-      if (/_en\.html?$/.test(pathname)) {
-        return pathname;
-      }
-      return pathname.replace(/\.html?$/, "_en.html");
+    return pathname.replace(/_(en|hi)\.html?$/, ".html");
+  }
+
+  function buildTargetPathname(pathname, language) {
+    const neutralPath = getLanguageNeutralPath(pathname);
+    if (language === "ja") {
+      return neutralPath;
     }
-    return pathname.replace(/_en\.html?$/, ".html");
+    if (language === "en") {
+      return neutralPath.replace(/\.html?$/, "_en.html");
+    }
+    if (language === "hi") {
+      return neutralPath.replace(/\.html?$/, "_hi.html");
+    }
+    return pathname;
+  }
+
+  function isHindiUnsupportedPath(pathname) {
+    return HINDI_UNSUPPORTED_PREFIXES.some((prefix) => pathname.includes(prefix));
   }
 
   function applyLanguageRedirect() {
@@ -30,21 +43,13 @@
       return;
     }
     const selectedLanguage = loadLanguageSetting();
-    const isEnglishPage = /_en\.html?$/.test(currentPath);
-
-    if (selectedLanguage === "en" && !isEnglishPage) {
-      const targetPath = buildTargetPathname(currentPath, true);
-      if (targetPath !== currentPath) {
-        window.location.replace(`${targetPath}${window.location.search}${window.location.hash}`);
-      }
+    if (selectedLanguage === "hi" && isHindiUnsupportedPath(currentPath)) {
       return;
     }
 
-    if (selectedLanguage === "ja" && isEnglishPage) {
-      const targetPath = buildTargetPathname(currentPath, false);
-      if (targetPath !== currentPath) {
-        window.location.replace(`${targetPath}${window.location.search}${window.location.hash}`);
-      }
+    const targetPath = buildTargetPathname(currentPath, selectedLanguage);
+    if (targetPath !== currentPath) {
+      window.location.replace(`${targetPath}${window.location.search}${window.location.hash}`);
     }
   }
 
