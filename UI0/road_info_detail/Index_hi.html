@@ -65,6 +65,19 @@
             placeholder="टिप्पणी का विवरण यहां लिखें"
           ></textarea>
 
+          <div class="comment-label">टैग जोड़ें (वैकल्पिक)</div>
+          <section class="comment-tag-panel" aria-label="टैग चयन">
+            <input
+              id="comment-tag-search"
+              class="comment-tag-search"
+              type="text"
+              placeholder="खोजें या जोड़ें..."
+              enterkeyhint="done"
+            />
+            <div id="comment-tag-selected" class="comment-tag-selected"></div>
+            <div id="comment-tag-list" class="comment-tag-list"></div>
+          </section>
+
           <div class="comment-label">छवि अपलोड</div>
           <div class="comment-upload-buttons">
             <button id="comment-photo-library-btn" class="btn" type="button">फोटो लाइब्रेरी</button>

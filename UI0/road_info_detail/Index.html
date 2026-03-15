@@ -65,6 +65,19 @@
             placeholder="ここに本文を入力してください"
           ></textarea>
 
+          <div class="comment-label">追加タグ（任意）</div>
+          <section class="comment-tag-panel" aria-label="タグ選択">
+            <input
+              id="comment-tag-search"
+              class="comment-tag-search"
+              type="text"
+              placeholder="検索または追加..."
+              enterkeyhint="done"
+            />
+            <div id="comment-tag-selected" class="comment-tag-selected"></div>
+            <div id="comment-tag-list" class="comment-tag-list"></div>
+          </section>
+
           <div class="comment-label">画像アップロード</div>
           <div class="comment-upload-buttons">
             <button id="comment-photo-library-btn" class="btn" type="button">写真ライブラリ</button>

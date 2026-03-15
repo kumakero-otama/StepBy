@@ -15,11 +15,24 @@ const commentCameraBtn = document.getElementById("comment-camera-btn");
 const commentPhotoLibraryInput = document.getElementById("comment-photo-library-input");
 const commentCameraInput = document.getElementById("comment-camera-input");
 const commentImagePreviewEl = document.getElementById("comment-image-preview");
+const commentTagSearchEl = document.getElementById("comment-tag-search");
+const commentTagSelectedEl = document.getElementById("comment-tag-selected");
+const commentTagListEl = document.getElementById("comment-tag-list");
 const commentSubmitLoadingEl = document.getElementById("comment-submit-loading");
 const commentResultModalEl = document.getElementById("comment-result-modal");
 const commentResultMessageEl = document.getElementById("comment-result-message");
 const commentResultOkBtn = document.getElementById("comment-result-ok-btn");
 const selectedCommentImages = [];
+const selectedCommentTagIds = new Set();
+const fallbackCommentTags = [
+  { id: "barrier", label: "障害物あり" },
+  { id: "steps", label: "段差あり" },
+  { id: "slope", label: "急な坂" },
+  { id: "pavement", label: "路面が荒い" },
+  { id: "lighting", label: "夜間は暗い" },
+];
+let allCommentTags = [];
+let hasLoadedCommentTags = false;
 let currentPointId = null;
 const authTokenApi = window.AuthToken || null;
 const deleteButtonIconUrl = AppPath.toApp("/assets/buttons/delete.png");
@@ -142,9 +155,143 @@ function setCommentModalOpen(open) {
   }
   if (open) {
     commentModalEl.classList.remove("hidden");
+    void loadCommentTags();
     return;
   }
   commentModalEl.classList.add("hidden");
+}
+
+function normalizeCommentTags(rawTags) {
+  return rawTags
+    .map((tag, index) => {
+      if (!tag || typeof tag !== "object") {
+        return null;
+      }
+      const idFromApi = typeof tag.id === "string" && tag.id.trim() ? tag.id.trim() : "";
+      const codeFromApi = typeof tag.code === "string" && tag.code.trim() ? tag.code.trim() : "";
+      const id = idFromApi || codeFromApi || `tag_${index}`;
+      const labelCandidates = [tag.label, tag.labelJa, tag.labelEn, tag.labelHi, codeFromApi, idFromApi];
+      const label = labelCandidates.find((v) => typeof v === "string" && v.trim()) || id;
+      return { id, label: label.trim() };
+    })
+    .filter(Boolean);
+}
+
+function getVisibleCommentTags() {
+  const query = commentTagSearchEl ? commentTagSearchEl.value.trim().toLowerCase() : "";
+  const source = query
+    ? allCommentTags.filter((tag) => tag.label.toLowerCase().includes(query) || tag.id.toLowerCase().includes(query))
+    : allCommentTags.slice();
+  return source.sort((a, b) => {
+    const aSelected = selectedCommentTagIds.has(a.id);
+    const bSelected = selectedCommentTagIds.has(b.id);
+    if (aSelected !== bSelected) {
+      return aSelected ? -1 : 1;
+    }
+    return a.label.localeCompare(b.label, "ja");
+  });
+}
+
+function renderSelectedCommentTags() {
+  if (!commentTagSelectedEl) {
+    return;
+  }
+  const selectedTags = allCommentTags.filter((tag) => selectedCommentTagIds.has(tag.id));
+  if (selectedTags.length < 1) {
+    commentTagSelectedEl.innerHTML = '<div class="comment-tag-selected-empty">未選択</div>';
+    return;
+  }
+  commentTagSelectedEl.innerHTML = selectedTags
+    .map((tag) => `<button type="button" class="comment-tag-item" data-remove-tag-id="${escapeHtml(tag.id)}">${escapeHtml(tag.label)} ×</button>`)
+    .join("");
+}
+
+function renderCommentTagList() {
+  if (!commentTagListEl) {
+    return;
+  }
+  const visibleTags = getVisibleCommentTags();
+  if (visibleTags.length < 1) {
+    commentTagListEl.innerHTML = '<div class="comment-tag-list-empty">一致するタグがありません</div>';
+    return;
+  }
+  commentTagListEl.innerHTML = visibleTags
+    .map((tag) => `<button type="button" class="comment-tag-option" data-tag-id="${escapeHtml(tag.id)}">${escapeHtml(tag.label)}</button>`)
+    .join("");
+}
+
+function renderCommentTagUi() {
+  renderSelectedCommentTags();
+  renderCommentTagList();
+}
+
+async function loadCommentTags() {
+  if (hasLoadedCommentTags) {
+    return;
+  }
+  try {
+    const res = await authFetch("/api/post-tags");
+    if (!res.ok) {
+      throw new Error(`load_comment_tags_failed:${res.status}`);
+    }
+    const payload = await res.json();
+    const tags = normalizeCommentTags(Array.isArray(payload && payload.tags) ? payload.tags : []);
+    allCommentTags = tags.length > 0 ? tags : fallbackCommentTags.slice();
+  } catch {
+    allCommentTags = fallbackCommentTags.slice();
+  } finally {
+    hasLoadedCommentTags = true;
+    renderCommentTagUi();
+  }
+}
+
+async function handleCommentTagSearchSubmit() {
+  if (!commentTagSearchEl) {
+    return;
+  }
+  const raw = commentTagSearchEl.value.trim();
+  if (!raw) {
+    return;
+  }
+
+  const existing = allCommentTags.find((tag) => tag.label === raw || tag.id === raw);
+  if (existing) {
+    selectedCommentTagIds.add(existing.id);
+    commentTagSearchEl.value = "";
+    renderCommentTagUi();
+    return;
+  }
+
+  try {
+    const res = await authFetch("/api/post-tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: raw }),
+    });
+    if (!res.ok) {
+      throw new Error(`create_tag_failed:${res.status}`);
+    }
+    const payload = await res.json();
+    const normalized = normalizeCommentTags(payload && payload.tag ? [payload.tag] : []);
+    if (normalized.length < 1) {
+      throw new Error("invalid_created_tag");
+    }
+    const [tag] = normalized;
+    if (!allCommentTags.some((item) => item.id === tag.id)) {
+      allCommentTags.push(tag);
+    }
+    selectedCommentTagIds.add(tag.id);
+  } catch (err) {
+    // /api/road-info が未登録コードを自動作成するため、POST失敗時は入力値をそのまま送信対象に残す。
+    const fallbackTag = { id: raw, label: raw };
+    if (!allCommentTags.some((item) => item.id === fallbackTag.id)) {
+      allCommentTags.push(fallbackTag);
+    }
+    selectedCommentTagIds.add(fallbackTag.id);
+  }
+
+  commentTagSearchEl.value = "";
+  renderCommentTagUi();
 }
 
 // 選択済み画像のプレビューをモーダル内に描画する。
@@ -293,8 +440,8 @@ async function submitComment() {
   }
 
   const detail = commentBodyInputEl ? commentBodyInputEl.value.trim() : "";
-  if (!detail && selectedCommentImages.length < 1) {
-    alert("本文または画像を入力してください。");
+  if (!detail && selectedCommentImages.length < 1 && selectedCommentTagIds.size < 1) {
+    alert("本文・画像・タグのいずれかを入力してください。");
     return;
   }
 
@@ -308,6 +455,7 @@ async function submitComment() {
       body: JSON.stringify({
         pointId: currentPointId,
         detail,
+        tagIds: Array.from(selectedCommentTagIds),
         images,
       }),
     });
@@ -329,6 +477,11 @@ async function submitComment() {
       }
     });
     selectedCommentImages.splice(0, selectedCommentImages.length);
+    selectedCommentTagIds.clear();
+    if (commentTagSearchEl) {
+      commentTagSearchEl.value = "";
+    }
+    renderCommentTagUi();
     renderCommentImagePreview();
     setCommentModalOpen(false);
     loadRoadInfoDetail();
@@ -381,6 +534,59 @@ function initActions() {
         return;
       }
       removeCommentImageById(imageId);
+    });
+  }
+
+  if (commentTagSearchEl) {
+    commentTagSearchEl.addEventListener("input", () => {
+      renderCommentTagList();
+    });
+
+    const onTagSearchEnter = (event) => {
+      const isEnter = event.key === "Enter" || event.keyCode === 13;
+      if (!isEnter) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      void handleCommentTagSearchSubmit();
+    };
+
+    commentTagSearchEl.addEventListener("keydown", onTagSearchEnter);
+    commentTagSearchEl.addEventListener("keypress", onTagSearchEnter);
+  }
+
+  if (commentTagListEl) {
+    commentTagListEl.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      const tagId = target.getAttribute("data-tag-id");
+      if (!tagId) {
+        return;
+      }
+      if (selectedCommentTagIds.has(tagId)) {
+        selectedCommentTagIds.delete(tagId);
+      } else {
+        selectedCommentTagIds.add(tagId);
+      }
+      renderCommentTagUi();
+    });
+  }
+
+  if (commentTagSelectedEl) {
+    commentTagSelectedEl.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      const removeTagId = target.getAttribute("data-remove-tag-id");
+      if (!removeTagId) {
+        return;
+      }
+      selectedCommentTagIds.delete(removeTagId);
+      renderCommentTagUi();
     });
   }
 
@@ -476,5 +682,6 @@ initActions();
 setCommentModalOpen(false);
 setCommentSubmittingVisible(false);
 hideCommentResultModal();
+renderCommentTagUi();
 renderCommentImagePreview();
 loadRoadInfoDetail();

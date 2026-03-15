@@ -65,6 +65,19 @@
             placeholder="Enter the comment body here"
           ></textarea>
 
+          <div class="comment-label">Add Tags (optional)</div>
+          <section class="comment-tag-panel" aria-label="Tag selection">
+            <input
+              id="comment-tag-search"
+              class="comment-tag-search"
+              type="text"
+              placeholder="Search or add..."
+              enterkeyhint="done"
+            />
+            <div id="comment-tag-selected" class="comment-tag-selected"></div>
+            <div id="comment-tag-list" class="comment-tag-list"></div>
+          </section>
+
           <div class="comment-label">Upload Image</div>
           <div class="comment-upload-buttons">
             <button id="comment-photo-library-btn" class="btn" type="button">Photo Library</button>
