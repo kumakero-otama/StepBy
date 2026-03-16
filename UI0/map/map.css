@@ -32,7 +32,9 @@ body {
 
 /* 下部のスワイプ式コントロールパネル */
 .map-controls-panel {
+  --map-controls-handle-height: 28px;
   flex: 0 0 auto;
+  flex-shrink: 0;
   width: 100%;
   margin: 0;
   border: 2px solid #222;
@@ -40,21 +42,26 @@ body {
   overflow: hidden;
   background: #fff;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: var(--map-controls-handle-height) minmax(0, 1fr);
+  min-height: var(--map-controls-handle-height);
   transition: grid-template-rows 0.25s ease;
 }
 
 .map-controls-handle {
   width: 100%;
-  padding: 8px 10px;
+  height: var(--map-controls-handle-height);
+  min-height: var(--map-controls-handle-height);
+  padding: 0 10px;
   border: 0;
   background: #ececec;
   cursor: pointer;
   display: grid;
   place-items: center;
+  z-index: 1;
 }
 
 .map-controls-handle-bar {
+  display: block;
   width: 120px;
   height: 6px;
   border-radius: 999px;
@@ -79,7 +86,7 @@ body {
 }
 
 .map-controls-panel.collapsed {
-  grid-template-rows: auto 0fr;
+  grid-template-rows: var(--map-controls-handle-height) 0fr;
 }
 
 /* トグルと補助情報の縦並び */
