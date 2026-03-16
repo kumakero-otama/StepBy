@@ -129,6 +129,7 @@ let roadInfoLoadRequestSeq = 0;
 const MAP_TAP_SUPPRESS_AFTER_ZOOM_MS = 400;
 const MAP_DISPLAY_SETTINGS_KEY = "mapDisplaySettings.v1";
 const MAP_CONTROLS_COLLAPSED_KEY = "mapControlsCollapsed.v1";
+const LAST_LOCATION_CACHE_KEY = "lastKnownLocation.v1";
 const DEFAULT_MAP_DISPLAY_SETTINGS = {
   showAppTactile: true,
   showOsmTactile: true,
@@ -182,6 +183,60 @@ function saveMapControlsCollapsed(collapsed) {
   } catch {
     // ignore storage failure
   }
+}
+
+function saveLastKnownLocation(lat, lng) {
+  try {
+    localStorage.setItem(
+      LAST_LOCATION_CACHE_KEY,
+      JSON.stringify({
+        lat,
+        lng,
+        savedAt: Date.now(),
+      })
+    );
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function loadLastKnownLocation() {
+  try {
+    const raw = localStorage.getItem(LAST_LOCATION_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const lat = Number(parsed && parsed.lat);
+    const lng = Number(parsed && parsed.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null;
+    }
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
+function applyCachedLocation(cached) {
+  if (!cached || !Number.isFinite(cached.lat) || !Number.isFinite(cached.lng)) {
+    return false;
+  }
+  latestLocation = { lat: cached.lat, lng: cached.lng };
+  latestSnappedLocation = { lat: cached.lat, lng: cached.lng };
+  updateTimestamp();
+  coordsEl.textContent = `Lat: ${cached.lat.toFixed(6)}, Lng: ${cached.lng.toFixed(6)}`;
+  rawCoordsEl.textContent = `Raw: ${cached.lat.toFixed(6)}, ${cached.lng.toFixed(6)}`;
+  if (!marker) {
+    marker = L.marker([cached.lat, cached.lng], { icon: redPinIcon }).addTo(map);
+  } else {
+    marker.setLatLng([cached.lat, cached.lng]);
+  }
+  if (isCenterCurrentEnabled()) {
+    const currentZoom = map.getZoom();
+    map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
+  }
+  return true;
 }
 
 function setMapControlsCollapsed(collapsed) {
@@ -628,6 +683,7 @@ function requestSnappedLocation(latitude, longitude) {
 function handleNewLocation(latitude, longitude) {
   // 位置情報を変数に保存するだけ（書き込み）
   latestLocation = { lat: latitude, lng: longitude };
+  saveLastKnownLocation(latitude, longitude);
 }
 
 function pollAndSendLocation() {
@@ -1132,8 +1188,13 @@ if ("geolocation" in navigator) {
     );
   }
 
-  // 初期化中の表示
-  coordsEl.textContent = "Lat: locating..., Lng: locating...";
+  // 起動時はまずローカルキャッシュの位置を表示し、無ければ従来どおりGPS待ち表示にする。
+  const cachedLocation = loadLastKnownLocation();
+  const hasCachedLocation = applyCachedLocation(cachedLocation);
+  if (!hasCachedLocation) {
+    coordsEl.textContent = "Lat: locating..., Lng: locating...";
+    rawCoordsEl.textContent = "Raw: locating..., locating...";
+  }
 
   // 設定を読み込んでから位置情報取得を開始
   loadConfig().then(async () => {
@@ -1217,6 +1278,11 @@ if ("geolocation" in navigator) {
     
   });
 } else {
-  coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
-  lastUpdatedEl.textContent = "Last update: --:--:--";
+  const cachedLocation = loadLastKnownLocation();
+  const hasCachedLocation = applyCachedLocation(cachedLocation);
+  if (!hasCachedLocation) {
+    coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
+    rawCoordsEl.textContent = "Raw: unavailable, unavailable";
+    lastUpdatedEl.textContent = "Last update: --:--:--";
+  }
 }
