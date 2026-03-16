@@ -26,6 +26,64 @@
         padding: 16px;
         color: #111;
       }
+
+      .help-section + .help-section {
+        margin-top: 18px;
+      }
+
+      .section-title {
+        margin: 0 0 10px;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .faq-item + .faq-item {
+        margin-top: 10px;
+      }
+
+      .faq-trigger {
+        width: 100%;
+        border: 1px solid #222;
+        border-radius: 10px;
+        background: #fff;
+        color: #111;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: left;
+        padding: 12px 14px;
+        cursor: pointer;
+      }
+
+      .faq-trigger::after {
+        content: "＋";
+        float: right;
+      }
+
+      .faq-trigger[aria-expanded="true"]::after {
+        content: "－";
+      }
+
+      .faq-answer {
+        margin: 8px 0 0;
+        padding: 12px 14px;
+        border: 1px solid #d8d8d8;
+        border-radius: 10px;
+        background: #f9f9f9;
+        line-height: 1.6;
+      }
+
+      .faq-answer[hidden] {
+        display: none;
+      }
+
+      .help-list {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .help-list li + li {
+        margin-top: 10px;
+      }
     </style>
   </head>
   <body>
@@ -47,13 +105,70 @@
 
     <main class="help-wrap">
       <section class="help-card" aria-label="सहायता">
-        <p>सहायता पेज</p>
+        <section class="help-section" aria-label="FAQ">
+          <h2 class="section-title">FAQ</h2>
+          <div class="faq-item">
+            <button class="faq-trigger" type="button" aria-expanded="false" aria-controls="faq-answer-1-hi">
+              Q1. StepBy क्या है?
+            </button>
+            <p id="faq-answer-1-hi" class="faq-answer" hidden>
+              A1. StepBy एक ऐप है जिसमें आप मानचित्र पर स्पर्श मार्ग और सड़क जानकारी देख व पोस्ट कर सकते हैं।
+            </p>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" type="button" aria-expanded="false" aria-controls="faq-answer-2-hi">
+              Q2. सेटिंग्स कहाँ से बदल सकते हैं?
+            </button>
+            <p id="faq-answer-2-hi" class="faq-answer" hidden>
+              A2. आप ऊपर दाईं ओर के सेटिंग्स आइकन से सेटिंग्स स्क्रीन खोल सकते हैं।
+            </p>
+          </div>
+        </section>
+
+        <section class="help-section" aria-label="ऐप का उपयोग">
+          <h2 class="section-title">ऐप का उपयोग</h2>
+          <ul class="help-list">
+            <li>
+              ऐप विवरण वीडियो:
+              <a href="https://drive.google.com/file/d/1mu7Pg66f_OTjb1eTBp93KYheRiE9v9VQ/view?usp=sharing" target="_blank" rel="noopener noreferrer">https://drive.google.com/file/d/1mu7Pg66f_OTjb1eTBp93KYheRiE9v9VQ/view?usp=sharing</a>
+            </li>
+            <li>
+              ऐप का विस्तृत परिचय पेज:
+              <a href="https://protopedia.net/prototype/8070" target="_blank" rel="noopener noreferrer">https://protopedia.net/prototype/8070</a>
+            </li>
+          </ul>
+        </section>
+
+        <section class="help-section" aria-label="फॉर्म सूची">
+          <h2 class="section-title">फॉर्म सूची</h2>
+          <ul class="help-list">
+            <li>
+              StepBy उपयोग सर्वेक्षण:
+              <a href="https://forms.gle/hUGfTrXDmqXiUkSB6" target="_blank" rel="noopener noreferrer">https://forms.gle/hUGfTrXDmqXiUkSB6</a>
+            </li>
+            <li>StepBy बग रिपोर्ट फॉर्म: (अभी लिंक उपलब्ध नहीं है)</li>
+          </ul>
+        </section>
       </section>
       <footer class="version-footer">
         <span id="app-version">v1.18.0</span>
       </footer>
     </main>
 
+    <script>
+      document.querySelectorAll(".faq-trigger").forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const targetId = trigger.getAttribute("aria-controls");
+          const panel = targetId ? document.getElementById(targetId) : null;
+          if (!panel) {
+            return;
+          }
+          const expanded = trigger.getAttribute("aria-expanded") === "true";
+          trigger.setAttribute("aria-expanded", expanded ? "false" : "true");
+          panel.hidden = expanded;
+        });
+      });
+    </script>
     <script src="../version.js"></script>
     <script src="../config.js"></script>
     <script src="../pwa.js"></script>
