@@ -322,6 +322,30 @@ function shouldIgnoreMapTap(event) {
   return originalEvent.type === "dblclick" || originalEvent.type === "wheel" || originalEvent.type === "mousewheel";
 }
 
+function initImmersiveFullscreenHint() {
+  if (!document.documentElement || typeof document.documentElement.requestFullscreen !== "function") {
+    return;
+  }
+  if (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches) {
+    return;
+  }
+  if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
+    return;
+  }
+  const requestOnce = () => {
+    if (document.fullscreenElement) {
+      return;
+    }
+    document.documentElement.requestFullscreen().catch(() => {
+      // ignore rejection (user gesture policy / unsupported environment)
+    });
+    window.removeEventListener("pointerdown", requestOnce);
+    window.removeEventListener("keydown", requestOnce);
+  };
+  window.addEventListener("pointerdown", requestOnce, { once: true });
+  window.addEventListener("keydown", requestOnce, { once: true });
+}
+
 map.on("zoomstart", () => {
   isZooming = true;
   suppressMapTapUntil = Date.now() + MAP_TAP_SUPPRESS_AFTER_ZOOM_MS;
@@ -351,6 +375,7 @@ map.on("click", (event) => {
 });
 
 initMapControlsPanelGesture();
+initImmersiveFullscreenHint();
 window.addEventListener("pageshow", () => {
   refreshMapDisplaySettings();
   applyMapInfoVisibility();

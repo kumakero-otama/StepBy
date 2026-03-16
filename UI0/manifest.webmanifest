@@ -3,7 +3,8 @@
   "short_name": "BF Map",
   "start_url": "/StepBy/UI0/map/Index.html",
   "scope": "/StepBy/UI0/",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "background_color": "#f7f5f0",
   "theme_color": "#222222",
   "icons": [
