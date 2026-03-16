@@ -322,28 +322,32 @@ function shouldIgnoreMapTap(event) {
   return originalEvent.type === "dblclick" || originalEvent.type === "wheel" || originalEvent.type === "mousewheel";
 }
 
-function initImmersiveFullscreenHint() {
-  if (!document.documentElement || typeof document.documentElement.requestFullscreen !== "function") {
-    return;
+function measureSystemUiBottomInset() {
+  if (!window.visualViewport) {
+    return 0;
   }
-  if (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches) {
-    return;
+  const viewportHeight = Number(window.innerHeight);
+  const visualHeight = Number(window.visualViewport.height);
+  const visualOffsetTop = Number(window.visualViewport.offsetTop);
+  if (!Number.isFinite(viewportHeight) || !Number.isFinite(visualHeight) || !Number.isFinite(visualOffsetTop)) {
+    return 0;
   }
-  if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
-    return;
+  return Math.max(0, Math.round(viewportHeight - (visualHeight + visualOffsetTop)));
+}
+
+function applySystemUiBottomInset() {
+  const inset = measureSystemUiBottomInset();
+  document.documentElement.style.setProperty("--system-ui-bottom", `${inset}px`);
+}
+
+function initSystemUiInsetSync() {
+  applySystemUiBottomInset();
+  window.addEventListener("resize", applySystemUiBottomInset);
+  window.addEventListener("orientationchange", applySystemUiBottomInset);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", applySystemUiBottomInset);
+    window.visualViewport.addEventListener("scroll", applySystemUiBottomInset);
   }
-  const requestOnce = () => {
-    if (document.fullscreenElement) {
-      return;
-    }
-    document.documentElement.requestFullscreen().catch(() => {
-      // ignore rejection (user gesture policy / unsupported environment)
-    });
-    window.removeEventListener("pointerdown", requestOnce);
-    window.removeEventListener("keydown", requestOnce);
-  };
-  window.addEventListener("pointerdown", requestOnce, { once: true });
-  window.addEventListener("keydown", requestOnce, { once: true });
 }
 
 map.on("zoomstart", () => {
@@ -375,8 +379,9 @@ map.on("click", (event) => {
 });
 
 initMapControlsPanelGesture();
-initImmersiveFullscreenHint();
+initSystemUiInsetSync();
 window.addEventListener("pageshow", () => {
+  applySystemUiBottomInset();
   refreshMapDisplaySettings();
   applyMapInfoVisibility();
 });
