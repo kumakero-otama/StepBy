@@ -150,6 +150,20 @@
         accent-color: #222;
       }
 
+      .help-link {
+        display: block;
+        margin-top: 14px;
+        border: 2px solid #222;
+        border-radius: 12px;
+        background: #fff;
+        color: #111;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        padding: 14px 16px;
+      }
+
     </style>
   </head>
   <body>
@@ -245,18 +259,18 @@
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-language">
-            भाषा सेटिंग्स
+            Language
           </button>
           <div id="panel-language" class="accordion-panel placeholder-panel" hidden>
             <fieldset class="language-options">
-              <legend class="record-title">प्रदर्शन भाषा</legend>
+              <legend class="record-title">Language</legend>
               <label class="language-option" for="language-ja">
                 <input id="language-ja" type="radio" name="display-language" value="ja" />
-                <span>जापानी</span>
+                <span>日本語</span>
               </label>
               <label class="language-option" for="language-en">
                 <input id="language-en" type="radio" name="display-language" value="en" />
-                <span>अंग्रेज़ी</span>
+                <span>English</span>
               </label>
               <label class="language-option" for="language-hi">
                 <input id="language-hi" type="radio" name="display-language" value="hi" />
@@ -266,6 +280,9 @@
           </div>
         </div>
       </section>
+      <a class="help-link" href="../help/Index_hi.html" aria-label="सहायता पेज पर जाएं">
+        सहायता पेज पर जाएं
+      </a>
       <footer class="version-footer">
         <span id="app-version">v1.18.0</span>
       </footer>

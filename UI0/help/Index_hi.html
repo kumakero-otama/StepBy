@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>सहायता | Draggable Map</title>
+    <link rel="stylesheet" href="../appbar.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f7f7f7;
+      }
+
+      .help-wrap {
+        width: min(860px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 16px 0 28px;
+      }
+
+      .help-card {
+        border: 2px solid #222;
+        border-radius: 14px;
+        background: #fff;
+        padding: 16px;
+        color: #111;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">सहायता</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index_hi.html" aria-label="सेटिंग्स">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="help-wrap">
+      <section class="help-card" aria-label="सहायता">
+        <p>सहायता पेज</p>
+      </section>
+      <footer class="version-footer">
+        <span id="app-version">v1.18.0</span>
+      </footer>
+    </main>
+
+    <script src="../version.js"></script>
+    <script src="../config.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>
