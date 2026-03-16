@@ -244,11 +244,13 @@ function shouldShowRoadInfo() {
 }
 
 function shouldShowOnlyMyTactile() {
-  return Boolean(mapDisplaySettings.showOnlyMyTactile);
+  // 「全体表示」がONのときは「自分のみ」は無効化して常に全件表示する。
+  return Boolean(mapDisplaySettings.showOnlyMyTactile) && !Boolean(mapDisplaySettings.showAppTactile);
 }
 
 function shouldShowOnlyMyRoadInfo() {
-  return Boolean(mapDisplaySettings.showOnlyMyRoadInfo);
+  // 「全ての道情報」がONのときは「自分のみ」は無効化して常に全件表示する。
+  return Boolean(mapDisplaySettings.showOnlyMyRoadInfo) && !Boolean(mapDisplaySettings.showAllRoadInfo);
 }
 
 function shouldIgnoreMapTap(event) {
