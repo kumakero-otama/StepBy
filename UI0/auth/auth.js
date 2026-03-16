@@ -176,6 +176,36 @@ function authFetch(input, init) {
   return fetch(input, init);
 }
 
+async function redirectIfAlreadyAuthenticated() {
+  if (signupPage || signupProfilePage) {
+    return false;
+  }
+  if (!authTokenApi || typeof authTokenApi.getAccessToken !== "function") {
+    return false;
+  }
+  const token = authTokenApi.getAccessToken();
+  if (!token) {
+    return false;
+  }
+  try {
+    const res = await authFetch("/auth/me");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        clearAccessToken();
+      }
+      return false;
+    }
+    const payload = await res.json();
+    if (payload && payload.authenticated) {
+      window.location.replace(AppPath.toApp("/map/Index.html"));
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function cacheProfileUser(user) {
   if (!user || typeof user !== "object") {
     return;
@@ -534,8 +564,14 @@ function initGoogleSignIn() {
   window.addEventListener("load", initialize, { once: true });
 }
 
-if (signupProfilePage) {
-  initSignupProfilePage();
-} else {
+(async () => {
+  if (signupProfilePage) {
+    initSignupProfilePage();
+    return;
+  }
+  const redirected = await redirectIfAlreadyAuthenticated();
+  if (redirected) {
+    return;
+  }
   initGoogleSignIn();
-}
+})();

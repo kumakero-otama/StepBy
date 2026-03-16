@@ -44,7 +44,9 @@
             : fetch;
           const res = await authFetch("/auth/me");
           if (!res.ok) {
-            if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
+            if ((res.status === 401 || res.status === 403)
+              && window.AuthToken
+              && typeof window.AuthToken.clearAccessToken === "function") {
               window.AuthToken.clearAccessToken();
             }
             window.location.replace(AppPath.toApp("/auth/login.html"));
@@ -58,9 +60,7 @@
             window.location.replace(AppPath.toApp("/auth/login.html"));
           }
         } catch {
-          if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
-            window.AuthToken.clearAccessToken();
-          }
+          // 一時的な通信障害ではトークンを消さず、次回の再試行余地を残す。
           window.location.replace(AppPath.toApp("/auth/login.html"));
         }
       })();

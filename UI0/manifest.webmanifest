@@ -1,7 +1,7 @@
 {
   "name": "Barrierfree Map",
   "short_name": "BF Map",
-  "start_url": "/StepBy/UI0/auth/login.html",
+  "start_url": "/StepBy/UI0/map/Index.html",
   "scope": "/StepBy/UI0/",
   "display": "standalone",
   "background_color": "#f7f5f0",
