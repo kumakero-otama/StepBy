@@ -1,5 +1,6 @@
 :root {
   --system-ui-bottom: 0px;
+  --handle-visibility-buffer: 80px;
 }
 
 body {
@@ -12,7 +13,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px max(12px, calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom)));
+  padding: 10px 12px max(var(--handle-visibility-buffer), calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom)));
 }
 
 /* 地図エリア */
@@ -266,8 +267,12 @@ body {
 }
 
 @media (max-width: 720px) {
+  :root {
+    --handle-visibility-buffer: 96px;
+  }
+
   .map-layout {
-    padding: 8px 8px max(12px, calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom)));
+    padding: 8px 8px max(var(--handle-visibility-buffer), calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom)));
   }
 
   .record-title {
