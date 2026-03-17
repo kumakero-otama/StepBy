@@ -326,13 +326,17 @@ function measureSystemUiBottomInset() {
   if (!window.visualViewport) {
     return 0;
   }
-  const viewportHeight = Number(window.innerHeight);
+  const layoutViewportHeight = Number(document.documentElement ? document.documentElement.clientHeight : 0);
+  const windowViewportHeight = Number(window.innerHeight);
   const visualHeight = Number(window.visualViewport.height);
   const visualOffsetTop = Number(window.visualViewport.offsetTop);
-  if (!Number.isFinite(viewportHeight) || !Number.isFinite(visualHeight) || !Number.isFinite(visualOffsetTop)) {
+  const baseHeight = Number.isFinite(layoutViewportHeight) && layoutViewportHeight > 0
+    ? layoutViewportHeight
+    : windowViewportHeight;
+  if (!Number.isFinite(baseHeight) || !Number.isFinite(visualHeight) || !Number.isFinite(visualOffsetTop)) {
     return 0;
   }
-  return Math.max(0, Math.round(viewportHeight - (visualHeight + visualOffsetTop)));
+  return Math.max(0, Math.round(baseHeight - (visualHeight + visualOffsetTop)));
 }
 
 function applySystemUiBottomInset() {
@@ -340,13 +344,26 @@ function applySystemUiBottomInset() {
   document.documentElement.style.setProperty("--system-ui-bottom", `${inset}px`);
 }
 
-function initSystemUiInsetSync() {
+function scheduleSystemUiInsetStabilize() {
   applySystemUiBottomInset();
-  window.addEventListener("resize", applySystemUiBottomInset);
-  window.addEventListener("orientationchange", applySystemUiBottomInset);
+  window.setTimeout(applySystemUiBottomInset, 120);
+  window.setTimeout(applySystemUiBottomInset, 360);
+  window.setTimeout(applySystemUiBottomInset, 900);
+}
+
+function initSystemUiInsetSync() {
+  scheduleSystemUiInsetStabilize();
+  window.addEventListener("resize", scheduleSystemUiInsetStabilize);
+  window.addEventListener("orientationchange", scheduleSystemUiInsetStabilize);
+  window.addEventListener("focus", scheduleSystemUiInsetStabilize);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      scheduleSystemUiInsetStabilize();
+    }
+  });
   if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", applySystemUiBottomInset);
-    window.visualViewport.addEventListener("scroll", applySystemUiBottomInset);
+    window.visualViewport.addEventListener("resize", scheduleSystemUiInsetStabilize);
+    window.visualViewport.addEventListener("scroll", scheduleSystemUiInsetStabilize);
   }
 }
 
@@ -381,7 +398,7 @@ map.on("click", (event) => {
 initMapControlsPanelGesture();
 initSystemUiInsetSync();
 window.addEventListener("pageshow", () => {
-  applySystemUiBottomInset();
+  scheduleSystemUiInsetStabilize();
   refreshMapDisplaySettings();
   applyMapInfoVisibility();
 });

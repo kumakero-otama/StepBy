@@ -12,7 +12,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom));
+  padding: 10px 12px max(12px, calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom)));
 }
 
 /* 地図エリア */
@@ -41,7 +41,7 @@ body {
   flex-shrink: 0;
   width: 100%;
   margin: 0;
-  margin-bottom: calc(env(safe-area-inset-bottom) + var(--system-ui-bottom));
+  margin-bottom: max(8px, calc(env(safe-area-inset-bottom) + var(--system-ui-bottom)));
   border: 2px solid #222;
   border-radius: 12px;
   overflow: hidden;
@@ -267,7 +267,7 @@ body {
 
 @media (max-width: 720px) {
   .map-layout {
-    padding: 8px 8px calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom));
+    padding: 8px 8px max(12px, calc(12px + env(safe-area-inset-bottom) + var(--system-ui-bottom)));
   }
 
   .record-title {
