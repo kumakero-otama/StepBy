@@ -1,5 +1,6 @@
 const map = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
 const mapLayoutEl = document.getElementById("map-layout");
+const appBarSpacerEl = document.querySelector(".app-bar-spacer");
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
 const lastUpdatedEl = document.getElementById("last-updated");
@@ -322,33 +323,46 @@ function shouldIgnoreMapTap(event) {
   return originalEvent.type === "dblclick" || originalEvent.type === "wheel" || originalEvent.type === "mousewheel";
 }
 
-function measureSystemUiBottomInset() {
-  if (!window.visualViewport) {
+function measureVisibleViewportHeight() {
+  if (window.visualViewport && Number.isFinite(window.visualViewport.height) && window.visualViewport.height > 0) {
+    return Number(window.visualViewport.height);
+  }
+  const fallback = Number(window.innerHeight);
+  if (!Number.isFinite(fallback) || fallback <= 0) {
     return 0;
   }
-  const layoutViewportHeight = Number(document.documentElement ? document.documentElement.clientHeight : 0);
-  const windowViewportHeight = Number(window.innerHeight);
-  const visualHeight = Number(window.visualViewport.height);
-  const visualOffsetTop = Number(window.visualViewport.offsetTop);
-  const baseHeight = Number.isFinite(layoutViewportHeight) && layoutViewportHeight > 0
-    ? layoutViewportHeight
-    : windowViewportHeight;
-  if (!Number.isFinite(baseHeight) || !Number.isFinite(visualHeight) || !Number.isFinite(visualOffsetTop)) {
-    return 0;
-  }
-  return Math.max(0, Math.round(baseHeight - (visualHeight + visualOffsetTop)));
+  return fallback;
 }
 
-function applySystemUiBottomInset() {
-  const inset = measureSystemUiBottomInset();
-  document.documentElement.style.setProperty("--system-ui-bottom", `${inset}px`);
+function measureAppBarSpacerHeight() {
+  if (appBarSpacerEl) {
+    const rect = appBarSpacerEl.getBoundingClientRect();
+    if (Number.isFinite(rect.height) && rect.height > 0) {
+      return rect.height;
+    }
+  }
+  return 56;
+}
+
+function applyLayoutViewportMetrics() {
+  const viewportHeight = measureVisibleViewportHeight();
+  const spacerHeight = measureAppBarSpacerHeight();
+  if (viewportHeight > 0) {
+    const layoutHeight = Math.max(220, Math.round(viewportHeight - spacerHeight));
+    document.documentElement.style.setProperty("--map-layout-height", `${layoutHeight}px`);
+  }
+  document.documentElement.style.setProperty("--system-ui-bottom", "0px");
+  requestAnimationFrame(() => {
+    map.invalidateSize();
+    recenterToLatestLocation();
+  });
 }
 
 function scheduleSystemUiInsetStabilize() {
-  applySystemUiBottomInset();
-  window.setTimeout(applySystemUiBottomInset, 120);
-  window.setTimeout(applySystemUiBottomInset, 360);
-  window.setTimeout(applySystemUiBottomInset, 900);
+  applyLayoutViewportMetrics();
+  window.setTimeout(applyLayoutViewportMetrics, 120);
+  window.setTimeout(applyLayoutViewportMetrics, 360);
+  window.setTimeout(applyLayoutViewportMetrics, 900);
 }
 
 function initSystemUiInsetSync() {
