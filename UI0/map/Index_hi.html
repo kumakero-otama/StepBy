@@ -77,12 +77,20 @@
           <span id="record-action-icon" class="record-action-icon record-action-icon-circle" aria-hidden="true"></span>
           <span class="record-action-text">रिकॉर्ड</span>
         </button>
-        <button id="pause-action-btn" class="record-action-btn pause-btn" type="button" disabled aria-disabled="true">
-          <span class="pause-icon" aria-hidden="true">
+        <button
+          id="pause-action-btn"
+          class="record-action-btn pause-btn"
+          type="button"
+          disabled
+          aria-disabled="true"
+          data-pause-label="रोकें"
+          data-resume-label="रिकॉर्ड फिर शुरू"
+        >
+          <span id="pause-action-icon" class="pause-icon" aria-hidden="true">
             <span class="pause-bar"></span>
             <span class="pause-bar"></span>
           </span>
-          <span class="record-action-text">रोकें</span>
+          <span id="pause-action-text" class="record-action-text">रोकें</span>
         </button>
       </div>
       <!-- 共通バージョン表示 -->

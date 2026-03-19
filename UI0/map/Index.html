@@ -77,12 +77,20 @@
           <span id="record-action-icon" class="record-action-icon record-action-icon-circle" aria-hidden="true"></span>
           <span class="record-action-text">記録</span>
         </button>
-        <button id="pause-action-btn" class="record-action-btn pause-btn" type="button" disabled aria-disabled="true">
-          <span class="pause-icon" aria-hidden="true">
+        <button
+          id="pause-action-btn"
+          class="record-action-btn pause-btn"
+          type="button"
+          disabled
+          aria-disabled="true"
+          data-pause-label="一時停止"
+          data-resume-label="記録再開"
+        >
+          <span id="pause-action-icon" class="pause-icon" aria-hidden="true">
             <span class="pause-bar"></span>
             <span class="pause-bar"></span>
           </span>
-          <span class="record-action-text">一時停止</span>
+          <span id="pause-action-text" class="record-action-text">一時停止</span>
         </button>
       </div>
       <!-- 共通バージョン表示 -->

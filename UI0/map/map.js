@@ -9,6 +9,8 @@ const mapControlsHandleEl = document.getElementById("map-controls-handle");
 const recordActionBtn = document.getElementById("record-action-btn");
 const recordActionIconEl = document.getElementById("record-action-icon");
 const pauseActionBtn = document.getElementById("pause-action-btn");
+const pauseActionIconEl = document.getElementById("pause-action-icon");
+const pauseActionTextEl = document.getElementById("pause-action-text");
 const toggleShowMapInfoBtn = document.getElementById("toggle-show-map-info");
 const toggleCenterCurrentBtn = document.getElementById("toggle-center-current");
 const osmLoadingOverlayEl = document.getElementById("osm-loading-overlay");
@@ -466,6 +468,21 @@ function updateRecordButton() {
     pauseActionBtn.disabled = !recordEnabled;
     pauseActionBtn.setAttribute("aria-disabled", recordEnabled ? "false" : "true");
     pauseActionBtn.setAttribute("aria-pressed", recordPaused ? "true" : "false");
+    const pauseLabel = pauseActionBtn.dataset.pauseLabel || "一時停止";
+    const resumeLabel = pauseActionBtn.dataset.resumeLabel || "記録再開";
+    const nextLabel = recordPaused ? resumeLabel : pauseLabel;
+    pauseActionBtn.setAttribute("aria-label", nextLabel);
+    if (pauseActionTextEl) {
+      pauseActionTextEl.textContent = nextLabel;
+    }
+  }
+  if (pauseActionIconEl) {
+    pauseActionIconEl.classList.toggle("play-icon", recordPaused);
+    if (recordPaused) {
+      pauseActionIconEl.innerHTML = '<span class="play-triangle"></span>';
+    } else {
+      pauseActionIconEl.innerHTML = '<span class="pause-bar"></span><span class="pause-bar"></span>';
+    }
   }
 }
 

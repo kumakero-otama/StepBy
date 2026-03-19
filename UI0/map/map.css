@@ -100,6 +100,18 @@ body {
   background: currentColor;
 }
 
+.pause-icon.play-icon {
+  gap: 0;
+}
+
+.play-triangle {
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid currentColor;
+}
+
 .record-action-text {
   white-space: nowrap;
 }
