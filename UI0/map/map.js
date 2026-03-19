@@ -65,6 +65,7 @@ let lastSent = null;
 let lastRequestTime = 0;
 let recordEnabled = false;
 let recordedRawPoints = []; // レコード中のrawデータをメモリに保存
+let recordedSnappedPoints = []; // レコード中のsnappedデータをメモリに保存（終了時トレース用）
 let tracePolyline = null; // trace_attributesの結果を表示する黄緑線
 let currentSessionId = null;
 let currentSessionStartedAt = null;
@@ -460,6 +461,13 @@ function updateRecordButton() {
   }
 }
 
+function getTraceSourcePoints() {
+  const sourcePoints = recordedSnappedPoints.length >= 2 ? recordedSnappedPoints : recordedRawPoints;
+  return sourcePoints.filter(
+    (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)
+  );
+}
+
 function postSessionLifecycle(action, payload) {
   return authFetch(`/api/session/${action}`, {
     method: "POST",
@@ -542,14 +550,17 @@ function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
 }
 
 // trace_attributesでフィッティングしてマップに表示
-function processAndDisplayTrace(sessionId = null) {
-  if (recordedRawPoints.length < 2) {
-    console.log("[processAndDisplayTrace] Not enough points:", recordedRawPoints.length);
+function processAndDisplayTrace(sessionId = null, sourcePoints = null) {
+  const tracePoints = Array.isArray(sourcePoints) && sourcePoints.length > 0
+    ? sourcePoints
+    : getTraceSourcePoints();
+  if (tracePoints.length < 2) {
+    console.log("[processAndDisplayTrace] Not enough points:", tracePoints.length);
     alert("記録されたポイントが少なすぎます（最低2点必要）");
     return Promise.resolve(null);
   }
 
-  const shape = recordedRawPoints.map((p) => ({ lat: p.lat, lon: p.lng }));
+  const shape = tracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
   return requestTraceData(shape, { sessionId, persist: Boolean(sessionId) })
     .then((data) => {
       const coords = extractTraceCoordinates(data, shape);
@@ -642,7 +653,8 @@ async function handleRecordStopWithConfirmation(finishedSessionId) {
     return;
   }
 
-  if (recordedRawPoints.length < 2) {
+  const tracePoints = getTraceSourcePoints();
+  if (tracePoints.length < 2) {
     alert("記録されたポイントが少なすぎます（最低2点必要）");
     await postSessionLifecycle("cancel", {
       sessionId: finishedSessionId,
@@ -650,7 +662,7 @@ async function handleRecordStopWithConfirmation(finishedSessionId) {
     return;
   }
 
-  const shape = recordedRawPoints.map((p) => ({ lat: p.lat, lon: p.lng }));
+  const shape = tracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
   let previewData;
   try {
     previewData = await requestTraceData(shape);
@@ -678,11 +690,17 @@ async function handleRecordStopWithConfirmation(finishedSessionId) {
 
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
+    const persisted = await processAndDisplayTrace(finishedSessionId, tracePoints);
+    if (!persisted) {
+      await postSessionLifecycle("cancel", {
+        sessionId: finishedSessionId,
+      });
+      return;
+    }
     await postSessionLifecycle("end", {
       sessionId: finishedSessionId,
       endedAt: new Date().toISOString(),
     });
-    await processAndDisplayTrace(finishedSessionId);
     return;
   }
 
@@ -824,6 +842,13 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   coordsEl.textContent = `Lat: ${snappedLat.toFixed(6)}, Lng: ${snappedLng.toFixed(6)}`;
   rawCoordsEl.textContent = `Raw: ${rawLat.toFixed(6)}, ${rawLng.toFixed(6)}`;
   latestSnappedLocation = { lat: snappedLat, lng: snappedLng };
+  if (recordEnabled) {
+    const lastSnapped = recordedSnappedPoints[recordedSnappedPoints.length - 1];
+    if (!lastSnapped || lastSnapped.lat !== snappedLat || lastSnapped.lng !== snappedLng) {
+      recordedSnappedPoints.push({ lat: snappedLat, lng: snappedLng });
+      console.log(`[Record] Saved snapped point: ${recordedSnappedPoints.length} points`);
+    }
+  }
 
   // 「現在地の中央表示」がONのときのみ地図の表示位置を更新
   if (isCenterCurrentEnabled()) {
@@ -1303,6 +1328,7 @@ if ("geolocation" in navigator) {
               tracePolyline = null;
             }
             recordedRawPoints = [];
+            recordedSnappedPoints = [];
             currentSessionId = generateUUID();
             currentSessionStartedAt = new Date().toISOString();
             await postSessionLifecycle("start", {
@@ -1323,7 +1349,7 @@ if ("geolocation" in navigator) {
             });
 
             updateRecordButton();
-            console.log(`[Record] Stopped recording. ${recordedRawPoints.length} points collected. session=${finishedSessionId}`);
+            console.log(`[Record] Stopped recording. raw=${recordedRawPoints.length}, snapped=${recordedSnappedPoints.length}, session=${finishedSessionId}`);
             currentSessionId = null;
             currentSessionStartedAt = null;
             await handleRecordStopWithConfirmation(finishedSessionId);
