@@ -24,6 +24,86 @@ body {
   margin: 0;
 }
 
+.record-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.record-action-btn {
+  height: 46px;
+  border: 2px solid #222;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.record-main-btn {
+  flex: 2 1 0;
+}
+
+.pause-btn {
+  flex: 1 1 0;
+}
+
+.record-main-btn.is-recording {
+  background: #ffd8d8;
+}
+
+.record-action-btn:disabled {
+  cursor: not-allowed;
+  background: #ececec;
+  border-color: #9a9a9a;
+  color: #7a7a7a;
+  opacity: 1;
+}
+
+.record-action-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  border: 2px solid currentColor;
+}
+
+.record-action-icon-circle {
+  border-radius: 50%;
+}
+
+.record-action-icon-square {
+  border-radius: 3px;
+}
+
+.pause-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pause-bar {
+  width: 5px;
+  height: 16px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.record-action-text {
+  white-space: nowrap;
+}
+
 /* 地図キャンバスの見た目 */
 #map {
   width: 100%;
@@ -273,6 +353,11 @@ body {
 
   .record-title {
     font-size: 12px;
+  }
+
+  .record-action-btn {
+    height: 42px;
+    font-size: 13px;
   }
 
 }

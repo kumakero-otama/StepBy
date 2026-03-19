@@ -6,7 +6,9 @@ const rawCoordsEl = document.getElementById("raw-coords");
 const lastUpdatedEl = document.getElementById("last-updated");
 const mapControlsPanelEl = document.getElementById("map-controls-panel");
 const mapControlsHandleEl = document.getElementById("map-controls-handle");
-const toggleRecordBtn = document.getElementById("toggle-record");
+const recordActionBtn = document.getElementById("record-action-btn");
+const recordActionIconEl = document.getElementById("record-action-icon");
+const pauseActionBtn = document.getElementById("pause-action-btn");
 const toggleShowMapInfoBtn = document.getElementById("toggle-show-map-info");
 const toggleCenterCurrentBtn = document.getElementById("toggle-center-current");
 const osmLoadingOverlayEl = document.getElementById("osm-loading-overlay");
@@ -444,7 +446,18 @@ async function loadCurrentUserId() {
 }
 
 function updateRecordButton() {
-  toggleRecordBtn.checked = recordEnabled;
+  if (recordActionBtn) {
+    recordActionBtn.setAttribute("aria-pressed", recordEnabled ? "true" : "false");
+    recordActionBtn.classList.toggle("is-recording", recordEnabled);
+  }
+  if (recordActionIconEl) {
+    recordActionIconEl.classList.toggle("record-action-icon-circle", !recordEnabled);
+    recordActionIconEl.classList.toggle("record-action-icon-square", recordEnabled);
+  }
+  if (pauseActionBtn) {
+    pauseActionBtn.disabled = !recordEnabled;
+    pauseActionBtn.setAttribute("aria-disabled", recordEnabled ? "false" : "true");
+  }
 }
 
 function postSessionLifecycle(action, payload) {
@@ -1272,53 +1285,61 @@ if ("geolocation" in navigator) {
     }
     
     // レコードボタンのイベントハンドラー
-    toggleRecordBtn.addEventListener("change", async () => {
-      if (isHandlingRecordToggle) {
-        updateRecordButton();
-        return;
-      }
-      isHandlingRecordToggle = true;
-      toggleRecordBtn.disabled = true;
-
-      const nextEnabled = toggleRecordBtn.checked;
-      try {
-        if (nextEnabled) {
-          // レコードON：前回の黄緑線を削除し、新しいセッション開始
-          if (tracePolyline) {
-            map.removeLayer(tracePolyline);
-            tracePolyline = null;
-          }
-          recordedRawPoints = [];
-          currentSessionId = generateUUID();
-          currentSessionStartedAt = new Date().toISOString();
-          await postSessionLifecycle("start", {
-            sessionId: currentSessionId,
-            startedAt: currentSessionStartedAt,
-          });
-          recordEnabled = true;
+    if (recordActionBtn) {
+      recordActionBtn.addEventListener("click", async () => {
+        if (isHandlingRecordToggle) {
           updateRecordButton();
-          console.log(`[Record] Started recording session=${currentSessionId}`);
-        } else {
-          // レコードOFF：確認モーダルで保存可否を決定
-          const finishedSessionId = currentSessionId;
-          recordEnabled = false;
-
-          // 過去のドットをすべて黒色に変更
-          trail.forEach((dot) => {
-            dot.setStyle({ color: "#111", fillColor: "#111" });
-          });
-
-          updateRecordButton();
-          console.log(`[Record] Stopped recording. ${recordedRawPoints.length} points collected. session=${finishedSessionId}`);
-          currentSessionId = null;
-          currentSessionStartedAt = null;
-          await handleRecordStopWithConfirmation(finishedSessionId);
+          return;
         }
-      } finally {
-        isHandlingRecordToggle = false;
-        toggleRecordBtn.disabled = false;
-      }
-    });
+        isHandlingRecordToggle = true;
+        recordActionBtn.disabled = true;
+
+        const nextEnabled = !recordEnabled;
+        try {
+          if (nextEnabled) {
+            // レコードON：前回の黄緑線を削除し、新しいセッション開始
+            if (tracePolyline) {
+              map.removeLayer(tracePolyline);
+              tracePolyline = null;
+            }
+            recordedRawPoints = [];
+            currentSessionId = generateUUID();
+            currentSessionStartedAt = new Date().toISOString();
+            await postSessionLifecycle("start", {
+              sessionId: currentSessionId,
+              startedAt: currentSessionStartedAt,
+            });
+            recordEnabled = true;
+            updateRecordButton();
+            console.log(`[Record] Started recording session=${currentSessionId}`);
+          } else {
+            // レコードOFF：確認モーダルで保存可否を決定
+            const finishedSessionId = currentSessionId;
+            recordEnabled = false;
+
+            // 過去のドットをすべて黒色に変更
+            trail.forEach((dot) => {
+              dot.setStyle({ color: "#111", fillColor: "#111" });
+            });
+
+            updateRecordButton();
+            console.log(`[Record] Stopped recording. ${recordedRawPoints.length} points collected. session=${finishedSessionId}`);
+            currentSessionId = null;
+            currentSessionStartedAt = null;
+            await handleRecordStopWithConfirmation(finishedSessionId);
+          }
+        } finally {
+          isHandlingRecordToggle = false;
+          recordActionBtn.disabled = false;
+          updateRecordButton();
+        }
+      });
+    }
+    if (pauseActionBtn) {
+      pauseActionBtn.addEventListener("click", () => {
+        console.log("[Pause] Not implemented yet.");
+      });
+    }
     
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {

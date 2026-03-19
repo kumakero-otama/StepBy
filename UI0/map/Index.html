@@ -72,6 +72,19 @@
       <div class="map-row">
         <div id="map" aria-label="Map"></div>
       </div>
+      <div class="record-actions" role="group" aria-label="点字ブロック記録操作">
+        <button id="record-action-btn" class="record-action-btn record-main-btn" type="button" aria-pressed="false">
+          <span id="record-action-icon" class="record-action-icon record-action-icon-circle" aria-hidden="true"></span>
+          <span class="record-action-text">記録</span>
+        </button>
+        <button id="pause-action-btn" class="record-action-btn pause-btn" type="button" disabled aria-disabled="true">
+          <span class="pause-icon" aria-hidden="true">
+            <span class="pause-bar"></span>
+            <span class="pause-bar"></span>
+          </span>
+          <span class="record-action-text">一時停止</span>
+        </button>
+      </div>
       <!-- 共通バージョン表示 -->
       <section id="map-controls-panel" class="map-controls-panel" aria-label="地図コントロール">
         <button
@@ -86,15 +99,6 @@
         <div id="map-controls-content" class="map-controls-content">
           <div class="meta">
             <div id="last-updated">Last update: --:--:--</div>
-            <div class="record-toggle" role="group" aria-label="Record toggle">
-              <span class="record-title">点字ブロック記録:</span>
-              <span class="record-label">OFF</span>
-              <label class="switch">
-                <input id="toggle-record" type="checkbox" aria-label="Record" />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">ON</span>
-            </div>
             <div class="record-toggle" role="group" aria-label="地図の情報を表示 toggle">
               <span class="record-title">地図の情報を表示:</span>
               <span class="record-label">OFF</span>

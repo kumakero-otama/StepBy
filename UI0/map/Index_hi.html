@@ -72,6 +72,19 @@
       <div class="map-row">
         <div id="map" aria-label="मानचित्र"></div>
       </div>
+      <div class="record-actions" role="group" aria-label="स्पर्श मार्ग रिकॉर्डिंग क्रियाएं">
+        <button id="record-action-btn" class="record-action-btn record-main-btn" type="button" aria-pressed="false">
+          <span id="record-action-icon" class="record-action-icon record-action-icon-circle" aria-hidden="true"></span>
+          <span class="record-action-text">रिकॉर्ड</span>
+        </button>
+        <button id="pause-action-btn" class="record-action-btn pause-btn" type="button" disabled aria-disabled="true">
+          <span class="pause-icon" aria-hidden="true">
+            <span class="pause-bar"></span>
+            <span class="pause-bar"></span>
+          </span>
+          <span class="record-action-text">रोकें</span>
+        </button>
+      </div>
       <!-- 共通バージョン表示 -->
       <section id="map-controls-panel" class="map-controls-panel" aria-label="मानचित्र controls">
         <button
@@ -86,15 +99,6 @@
         <div id="map-controls-content" class="map-controls-content">
           <div class="meta">
             <div id="last-updated">अंतिम अपडेट: --:--:--</div>
-            <div class="record-toggle" role="group" aria-label="रिकॉर्ड टॉगल">
-              <span class="record-title">स्पर्श मार्ग रिकॉर्डिंग:</span>
-              <span class="record-label">बंद</span>
-              <label class="switch">
-                <input id="toggle-record" type="checkbox" aria-label="रिकॉर्ड" />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">चालू</span>
-            </div>
             <div class="record-toggle" role="group" aria-label="मानचित्र जानकारी टॉगल">
               <span class="record-title">मानचित्र जानकारी दिखाएं:</span>
               <span class="record-label">बंद</span>
