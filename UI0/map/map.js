@@ -64,14 +64,21 @@ let lastDot = null;
 let lastSent = null;
 let lastRequestTime = 0;
 let recordEnabled = false;
-let recordedRawPoints = []; // レコード中のrawデータをメモリに保存
-let recordedSnappedPoints = []; // レコード中のsnappedデータをメモリに保存（終了時トレース用）
+let recordPaused = false;
+let recordedRawPoints = []; // 記録開始から終了までのrawデータ（全セッション合算）
+let recordedSnappedPoints = []; // 記録開始から終了までのsnappedデータ（全セッション合算）
+let currentSessionRawPoints = []; // 現在セッションのrawデータ
+let currentSessionSnappedPoints = []; // 現在セッションのsnappedデータ
+let currentSessionRawStartIndex = 0;
+let currentSessionSnappedStartIndex = 0;
+let recordingSessionIds = []; // 記録開始から終了までに作成したセッションID一覧
 let tracePolyline = null; // trace_attributesの結果を表示する黄緑線
 let currentSessionId = null;
 let currentSessionStartedAt = null;
 let traceConfirmMap = null;
 let traceConfirmPathLayer = null;
 let isHandlingRecordToggle = false;
+let isHandlingPauseToggle = false;
 let currentUserId = null;
 let latestSnappedLocation = null;
 let mapLayoutSyncTimer = null;
@@ -458,14 +465,87 @@ function updateRecordButton() {
   if (pauseActionBtn) {
     pauseActionBtn.disabled = !recordEnabled;
     pauseActionBtn.setAttribute("aria-disabled", recordEnabled ? "false" : "true");
+    pauseActionBtn.setAttribute("aria-pressed", recordPaused ? "true" : "false");
   }
 }
 
-function getTraceSourcePoints() {
-  const sourcePoints = recordedSnappedPoints.length >= 2 ? recordedSnappedPoints : recordedRawPoints;
+function isRecordingActive() {
+  return Boolean(recordEnabled && !recordPaused && currentSessionId);
+}
+
+function getTraceSourcePoints(snappedPoints, rawPoints) {
+  const sourcePoints = snappedPoints.length >= 2 ? snappedPoints : rawPoints;
   return sourcePoints.filter(
     (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)
   );
+}
+
+function getCurrentSessionTracePoints() {
+  return getTraceSourcePoints(currentSessionSnappedPoints, currentSessionRawPoints);
+}
+
+function getAllRecordingTracePoints() {
+  return getTraceSourcePoints(recordedSnappedPoints, recordedRawPoints);
+}
+
+function clearCurrentSessionPoints() {
+  currentSessionRawPoints = [];
+  currentSessionSnappedPoints = [];
+  currentSessionRawStartIndex = recordedRawPoints.length;
+  currentSessionSnappedStartIndex = recordedSnappedPoints.length;
+}
+
+function rollbackCurrentSessionPointsFromRecording() {
+  recordedRawPoints = recordedRawPoints.slice(0, currentSessionRawStartIndex);
+  recordedSnappedPoints = recordedSnappedPoints.slice(0, currentSessionSnappedStartIndex);
+  clearCurrentSessionPoints();
+}
+
+function resetRecordingState() {
+  recordEnabled = false;
+  recordPaused = false;
+  currentSessionId = null;
+  currentSessionStartedAt = null;
+  recordedRawPoints = [];
+  recordedSnappedPoints = [];
+  clearCurrentSessionPoints();
+  recordingSessionIds = [];
+}
+
+function markTrailDotsAsIdle() {
+  trail.forEach((dot) => {
+    dot.setStyle({ color: "#111", fillColor: "#111" });
+  });
+}
+
+function appendUniquePoint(points, lat, lng) {
+  const last = points[points.length - 1];
+  if (!last || last.lat !== lat || last.lng !== lng) {
+    points.push({ lat, lng });
+  }
+}
+
+async function startRecordingSession() {
+  currentSessionId = generateUUID();
+  currentSessionStartedAt = new Date().toISOString();
+  clearCurrentSessionPoints();
+  recordingSessionIds.push(currentSessionId);
+  await postSessionLifecycle("start", {
+    sessionId: currentSessionId,
+    startedAt: currentSessionStartedAt,
+  });
+  console.log(`[Record] Started recording session=${currentSessionId}`);
+}
+
+async function cancelRecordingSessions(sessionIds) {
+  const uniqueSessionIds = [...new Set(sessionIds.filter(Boolean))];
+  for (const sessionId of uniqueSessionIds) {
+    try {
+      await postSessionLifecycle("cancel", { sessionId });
+    } catch (err) {
+      console.error(`[Record] Failed to cancel session=${sessionId}:`, err);
+    }
+  }
 }
 
 function postSessionLifecycle(action, payload) {
@@ -553,7 +633,7 @@ function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
 function processAndDisplayTrace(sessionId = null, sourcePoints = null) {
   const tracePoints = Array.isArray(sourcePoints) && sourcePoints.length > 0
     ? sourcePoints
-    : getTraceSourcePoints();
+    : getAllRecordingTracePoints();
   if (tracePoints.length < 2) {
     console.log("[processAndDisplayTrace] Not enough points:", tracePoints.length);
     alert("記録されたポイントが少なすぎます（最低2点必要）");
@@ -648,65 +728,81 @@ function openTraceConfirmModal(coordinates) {
   });
 }
 
-async function handleRecordStopWithConfirmation(finishedSessionId) {
-  if (!finishedSessionId) {
-    return;
+async function persistCurrentSessionWithoutConfirmation() {
+  if (!currentSessionId) {
+    return { success: true, skipped: true };
   }
-
-  const tracePoints = getTraceSourcePoints();
+  const sessionId = currentSessionId;
+  const tracePoints = getCurrentSessionTracePoints();
   if (tracePoints.length < 2) {
+    await postSessionLifecycle("cancel", { sessionId });
+    rollbackCurrentSessionPointsFromRecording();
+    return { success: true, canceled: true };
+  }
+
+  const persisted = await processAndDisplayTrace(sessionId, tracePoints);
+  if (!persisted) {
+    await postSessionLifecycle("cancel", { sessionId });
+    rollbackCurrentSessionPointsFromRecording();
+    return { success: false };
+  }
+  await postSessionLifecycle("end", {
+    sessionId,
+    endedAt: new Date().toISOString(),
+  });
+  return { success: true, ended: true };
+}
+
+async function handleRecordStopWithConfirmation() {
+  const activeSessionId = currentSessionId;
+  const allSessionIds = [...recordingSessionIds];
+  if (activeSessionId && !allSessionIds.includes(activeSessionId)) {
+    allSessionIds.push(activeSessionId);
+  }
+
+  const allTracePoints = getAllRecordingTracePoints();
+  if (allTracePoints.length < 2) {
     alert("記録されたポイントが少なすぎます（最低2点必要）");
-    await postSessionLifecycle("cancel", {
-      sessionId: finishedSessionId,
-    });
+    await cancelRecordingSessions(allSessionIds);
+    if (tracePolyline) {
+      map.removeLayer(tracePolyline);
+      tracePolyline = null;
+    }
     return;
   }
 
-  const shape = tracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
+  const shape = allTracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
   let previewData;
   try {
     previewData = await requestTraceData(shape);
   } catch (err) {
     console.error("[Record] preview trace error:", err);
     alert(`保存確認用の経路生成に失敗しました: ${err.message}`);
-    await postSessionLifecycle("cancel", {
-      sessionId: finishedSessionId,
-    });
+    await cancelRecordingSessions(allSessionIds);
     return;
   }
 
   const previewCoords = extractTraceCoordinates(previewData, shape);
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
     alert("保存確認用の経路を生成できませんでした。");
-    await postSessionLifecycle("cancel", {
-      sessionId: finishedSessionId,
-    });
+    await cancelRecordingSessions(allSessionIds);
     return;
   }
 
   if (traceConfirmMessageEl) {
-    traceConfirmMessageEl.textContent = "セッション全体でフィッティングした経路を黄緑線で表示しています。";
+    traceConfirmMessageEl.textContent = "記録開始以降の全セッションをまとめてフィッティングした経路を表示しています。";
   }
 
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
-    const persisted = await processAndDisplayTrace(finishedSessionId, tracePoints);
-    if (!persisted) {
-      await postSessionLifecycle("cancel", {
-        sessionId: finishedSessionId,
-      });
-      return;
+    const persistResult = await persistCurrentSessionWithoutConfirmation();
+    if (!persistResult.success) {
+      await cancelRecordingSessions(allSessionIds);
     }
-    await postSessionLifecycle("end", {
-      sessionId: finishedSessionId,
-      endedAt: new Date().toISOString(),
-    });
     return;
   }
 
-  await postSessionLifecycle("cancel", {
-    sessionId: finishedSessionId,
-  });
+  await cancelRecordingSessions(allSessionIds);
   if (tracePolyline) {
     map.removeLayer(tracePolyline);
     tracePolyline = null;
@@ -722,7 +818,7 @@ function requestSnappedLocation(latitude, longitude) {
     lng: longitude.toString(),
     userId: String(currentUserId),
   });
-  if (recordEnabled) {
+  if (isRecordingActive()) {
     params.set("record", "1");
     if (currentSessionId) {
       params.set("sessionId", currentSessionId);
@@ -783,10 +879,11 @@ function pollAndSendLocation() {
 
   const { lat, lng } = latestLocation;
 
-  // レコードON時はrawデータをメモリに保存
-  if (recordEnabled) {
+  // 記録アクティブ時はrawデータをメモリへ保存（全体 + 現在セッション）
+  if (isRecordingActive()) {
     recordedRawPoints.push({ lat, lng });
-    console.log(`[Record] Saved raw point: ${recordedRawPoints.length} points`);
+    currentSessionRawPoints.push({ lat, lng });
+    console.log(`[Record] Saved raw point: total=${recordedRawPoints.length}, current=${currentSessionRawPoints.length}`);
   }
 
   // サーバーへ送信（読み取り）
@@ -842,12 +939,12 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   coordsEl.textContent = `Lat: ${snappedLat.toFixed(6)}, Lng: ${snappedLng.toFixed(6)}`;
   rawCoordsEl.textContent = `Raw: ${rawLat.toFixed(6)}, ${rawLng.toFixed(6)}`;
   latestSnappedLocation = { lat: snappedLat, lng: snappedLng };
-  if (recordEnabled) {
-    const lastSnapped = recordedSnappedPoints[recordedSnappedPoints.length - 1];
-    if (!lastSnapped || lastSnapped.lat !== snappedLat || lastSnapped.lng !== snappedLng) {
-      recordedSnappedPoints.push({ lat: snappedLat, lng: snappedLng });
-      console.log(`[Record] Saved snapped point: ${recordedSnappedPoints.length} points`);
-    }
+  if (isRecordingActive()) {
+    appendUniquePoint(recordedSnappedPoints, snappedLat, snappedLng);
+    appendUniquePoint(currentSessionSnappedPoints, snappedLat, snappedLng);
+    console.log(
+      `[Record] Saved snapped point: total=${recordedSnappedPoints.length}, current=${currentSessionSnappedPoints.length}`
+    );
   }
 
   // 「現在地の中央表示」がONのときのみ地図の表示位置を更新
@@ -869,7 +966,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   }
 
   // ドット（点）だけを表示
-  const dotColor = recordEnabled ? "#9acd32" : "#111";
+  const dotColor = isRecordingActive() ? "#9acd32" : "#111";
   const dot = L.circleMarker([snappedLat, snappedLng], {
     radius: 3,
     color: dotColor,
@@ -1312,12 +1409,15 @@ if ("geolocation" in navigator) {
     // レコードボタンのイベントハンドラー
     if (recordActionBtn) {
       recordActionBtn.addEventListener("click", async () => {
-        if (isHandlingRecordToggle) {
+        if (isHandlingRecordToggle || isHandlingPauseToggle) {
           updateRecordButton();
           return;
         }
         isHandlingRecordToggle = true;
         recordActionBtn.disabled = true;
+        if (pauseActionBtn) {
+          pauseActionBtn.disabled = true;
+        }
 
         const nextEnabled = !recordEnabled;
         try {
@@ -1327,43 +1427,72 @@ if ("geolocation" in navigator) {
               map.removeLayer(tracePolyline);
               tracePolyline = null;
             }
-            recordedRawPoints = [];
-            recordedSnappedPoints = [];
-            currentSessionId = generateUUID();
-            currentSessionStartedAt = new Date().toISOString();
-            await postSessionLifecycle("start", {
-              sessionId: currentSessionId,
-              startedAt: currentSessionStartedAt,
-            });
+            resetRecordingState();
             recordEnabled = true;
+            recordPaused = false;
+            await startRecordingSession();
             updateRecordButton();
             console.log(`[Record] Started recording session=${currentSessionId}`);
           } else {
-            // レコードOFF：確認モーダルで保存可否を決定
-            const finishedSessionId = currentSessionId;
+            // レコードOFF：記録開始以降の全セッションをまとめて確認
             recordEnabled = false;
-
-            // 過去のドットをすべて黒色に変更
-            trail.forEach((dot) => {
-              dot.setStyle({ color: "#111", fillColor: "#111" });
-            });
+            recordPaused = false;
 
             updateRecordButton();
-            console.log(`[Record] Stopped recording. raw=${recordedRawPoints.length}, snapped=${recordedSnappedPoints.length}, session=${finishedSessionId}`);
-            currentSessionId = null;
-            currentSessionStartedAt = null;
-            await handleRecordStopWithConfirmation(finishedSessionId);
+            console.log(
+              `[Record] Stop requested. totalRaw=${recordedRawPoints.length}, totalSnapped=${recordedSnappedPoints.length}, activeSession=${currentSessionId || "none"}`
+            );
+            await handleRecordStopWithConfirmation();
+            markTrailDotsAsIdle();
+            resetRecordingState();
           }
         } finally {
           isHandlingRecordToggle = false;
           recordActionBtn.disabled = false;
+          if (pauseActionBtn) {
+            pauseActionBtn.disabled = false;
+          }
           updateRecordButton();
         }
       });
     }
     if (pauseActionBtn) {
-      pauseActionBtn.addEventListener("click", () => {
-        console.log("[Pause] Not implemented yet.");
+      pauseActionBtn.addEventListener("click", async () => {
+        if (!recordEnabled || isHandlingRecordToggle || isHandlingPauseToggle) {
+          return;
+        }
+        isHandlingPauseToggle = true;
+        pauseActionBtn.disabled = true;
+        if (recordActionBtn) {
+          recordActionBtn.disabled = true;
+        }
+        try {
+          if (!recordPaused) {
+            const pausedSessionId = currentSessionId;
+            const persistResult = await persistCurrentSessionWithoutConfirmation();
+            if (!persistResult.success) {
+              alert("一時停止時の保存に失敗しました。通信状況を確認してもう一度お試しください。");
+              return;
+            }
+            currentSessionId = null;
+            currentSessionStartedAt = null;
+            clearCurrentSessionPoints();
+            recordPaused = true;
+            markTrailDotsAsIdle();
+            console.log(`[Pause] Paused. session=${pausedSessionId || "none"}`);
+          } else {
+            await startRecordingSession();
+            recordPaused = false;
+            console.log(`[Pause] Resumed with session=${currentSessionId}`);
+          }
+        } finally {
+          isHandlingPauseToggle = false;
+          pauseActionBtn.disabled = false;
+          if (recordActionBtn) {
+            recordActionBtn.disabled = false;
+          }
+          updateRecordButton();
+        }
       });
     }
     
