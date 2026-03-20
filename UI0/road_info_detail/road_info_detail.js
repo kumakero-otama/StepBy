@@ -553,13 +553,10 @@ async function submitComment() {
     const images = await buildCommentImagePayloads();
     const selectedTagIds = Array.from(selectedCommentTagIds);
     const hasCompleteSelection = selectedTagIds.some((tagId) => COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId)));
-    const normalizedTagIds = selectedTagIds.filter(
-      (tagId) => !COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId))
-    );
     const payload = {
       pointId: currentPointId,
       detail,
-      tagIds: normalizedTagIds,
+      tagIds: selectedTagIds,
       images,
     };
     if (hasCompleteSelection) {
