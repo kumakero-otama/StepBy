@@ -560,7 +560,7 @@ async function submitComment() {
       images,
     };
     if (hasCompleteSelection) {
-      payload.status = "inactive";
+      payload.status = "hidden";
     }
     const res = await authFetch("/api/road-info", {
       method: "POST",
