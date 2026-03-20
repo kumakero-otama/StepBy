@@ -1268,6 +1268,9 @@ function showRoadInfoPointsOnMap(points) {
   // 既存ピンを消してから最新結果だけを表示する。
   clearRoadInfoPointsFromMap();
   const visiblePoints = points.filter((point) => {
+    if (String(point && point.status || "").toLowerCase() === "inactive") {
+      return false;
+    }
     if (!shouldShowOnlyMyRoadInfo()) {
       return true;
     }

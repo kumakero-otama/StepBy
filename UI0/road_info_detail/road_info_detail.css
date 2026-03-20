@@ -295,6 +295,34 @@ h1 {
   font-size: 13px;
 }
 
+.comment-complete-tag-wrap {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+}
+
+.comment-complete-tag-btn {
+  width: 100%;
+  border: 1px solid #9a8a4f;
+  border-radius: 10px;
+  background: #fff7d7;
+  color: #4c3f13;
+  font-weight: 700;
+  padding: 9px 12px;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.comment-complete-tag-btn:hover {
+  background: #fff1b8;
+}
+
+.comment-complete-tag-btn.selected {
+  background: #ffe8a1;
+  border-color: #7f6a1d;
+}
+
 .comment-upload-buttons {
   display: flex;
   gap: 8px;

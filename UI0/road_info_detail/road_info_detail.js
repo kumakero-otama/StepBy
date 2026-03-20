@@ -18,6 +18,7 @@ const commentImagePreviewEl = document.getElementById("comment-image-preview");
 const commentTagSearchEl = document.getElementById("comment-tag-search");
 const commentTagSelectedEl = document.getElementById("comment-tag-selected");
 const commentTagListEl = document.getElementById("comment-tag-list");
+const commentCompleteTagBtn = document.getElementById("comment-complete-tag-btn");
 const commentSubmitLoadingEl = document.getElementById("comment-submit-loading");
 const commentResultModalEl = document.getElementById("comment-result-modal");
 const commentResultMessageEl = document.getElementById("comment-result-message");
@@ -36,6 +37,9 @@ let hasLoadedCommentTags = false;
 let currentPointId = null;
 const authTokenApi = window.AuthToken || null;
 const deleteButtonIconUrl = AppPath.toApp("/assets/buttons/delete.png");
+const COMPLETE_TAG_CODE = "complete";
+const COMPLETE_TAG_LABEL = "完了";
+const COMPLETE_TAG_CODE_ALIASES = new Set(["complete", "completed", "done", "resolved", "inactive"]);
 
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
@@ -177,11 +181,78 @@ function normalizeCommentTags(rawTags) {
     .filter(Boolean);
 }
 
+function normalizeTagId(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function normalizeTagLabel(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function isCompleteTag(tag) {
+  if (!tag || typeof tag !== "object") {
+    return false;
+  }
+  const tagId = normalizeTagId(tag.id);
+  const label = normalizeTagLabel(tag.label);
+  return COMPLETE_TAG_CODE_ALIASES.has(tagId) || label === normalizeTagLabel(COMPLETE_TAG_LABEL);
+}
+
+function ensureCompleteTagPresent() {
+  if (allCommentTags.some((tag) => normalizeTagId(tag.id) === COMPLETE_TAG_CODE)) {
+    return;
+  }
+  allCommentTags.push({ id: COMPLETE_TAG_CODE, label: COMPLETE_TAG_LABEL });
+}
+
+function hasCompleteTagSelected() {
+  return Array.from(selectedCommentTagIds).some((tagId) => COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId)));
+}
+
+function setCompleteTagSelected(selected) {
+  if (selected) {
+    selectedCommentTagIds.add(COMPLETE_TAG_CODE);
+    return;
+  }
+  Array.from(selectedCommentTagIds).forEach((tagId) => {
+    if (COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId))) {
+      selectedCommentTagIds.delete(tagId);
+    }
+  });
+}
+
+function confirmCompleteTagSelection() {
+  if (!commentCompleteTagBtn) {
+    return false;
+  }
+  const message = commentCompleteTagBtn.dataset.confirmMessage
+    || "このタグがついた道情報は非表示になります。よろしいですか";
+  return window.confirm(message);
+}
+
+function handleCompleteTagToggle() {
+  if (hasCompleteTagSelected()) {
+    setCompleteTagSelected(false);
+    renderCommentTagUi();
+    return;
+  }
+  if (!confirmCompleteTagSelection()) {
+    return;
+  }
+  setCompleteTagSelected(true);
+  renderCommentTagUi();
+}
+
 function getVisibleCommentTags() {
   const query = commentTagSearchEl ? commentTagSearchEl.value.trim().toLowerCase() : "";
   const source = query
-    ? allCommentTags.filter((tag) => tag.label.toLowerCase().includes(query) || tag.id.toLowerCase().includes(query))
-    : allCommentTags.slice();
+    ? allCommentTags.filter((tag) => {
+      if (isCompleteTag(tag)) {
+        return false;
+      }
+      return tag.label.toLowerCase().includes(query) || tag.id.toLowerCase().includes(query);
+    })
+    : allCommentTags.filter((tag) => !isCompleteTag(tag));
   return source.sort((a, b) => {
     const aSelected = selectedCommentTagIds.has(a.id);
     const bSelected = selectedCommentTagIds.has(b.id);
@@ -223,6 +294,9 @@ function renderCommentTagList() {
 function renderCommentTagUi() {
   renderSelectedCommentTags();
   renderCommentTagList();
+  if (commentCompleteTagBtn) {
+    commentCompleteTagBtn.classList.toggle("selected", hasCompleteTagSelected());
+  }
 }
 
 async function loadCommentTags() {
@@ -240,6 +314,7 @@ async function loadCommentTags() {
   } catch {
     allCommentTags = fallbackCommentTags.slice();
   } finally {
+    ensureCompleteTagPresent();
     hasLoadedCommentTags = true;
     renderCommentTagUi();
   }
@@ -253,10 +328,25 @@ async function handleCommentTagSearchSubmit() {
   if (!raw) {
     return;
   }
+  const normalizedRaw = normalizeTagId(raw);
+  if (COMPLETE_TAG_CODE_ALIASES.has(normalizedRaw) || normalizeTagLabel(raw) === normalizeTagLabel(COMPLETE_TAG_LABEL)) {
+    if (confirmCompleteTagSelection()) {
+      setCompleteTagSelected(true);
+    }
+    commentTagSearchEl.value = "";
+    renderCommentTagUi();
+    return;
+  }
 
   const existing = allCommentTags.find((tag) => tag.label === raw || tag.id === raw);
   if (existing) {
-    selectedCommentTagIds.add(existing.id);
+    if (isCompleteTag(existing)) {
+      if (confirmCompleteTagSelection()) {
+        setCompleteTagSelected(true);
+      }
+    } else {
+      selectedCommentTagIds.add(existing.id);
+    }
     commentTagSearchEl.value = "";
     renderCommentTagUi();
     return;
@@ -280,14 +370,26 @@ async function handleCommentTagSearchSubmit() {
     if (!allCommentTags.some((item) => item.id === tag.id)) {
       allCommentTags.push(tag);
     }
-    selectedCommentTagIds.add(tag.id);
+    if (isCompleteTag(tag)) {
+      if (confirmCompleteTagSelection()) {
+        setCompleteTagSelected(true);
+      }
+    } else {
+      selectedCommentTagIds.add(tag.id);
+    }
   } catch (err) {
     // /api/road-info が未登録コードを自動作成するため、POST失敗時は入力値をそのまま送信対象に残す。
     const fallbackTag = { id: raw, label: raw };
     if (!allCommentTags.some((item) => item.id === fallbackTag.id)) {
       allCommentTags.push(fallbackTag);
     }
-    selectedCommentTagIds.add(fallbackTag.id);
+    if (isCompleteTag(fallbackTag)) {
+      if (confirmCompleteTagSelection()) {
+        setCompleteTagSelected(true);
+      }
+    } else {
+      selectedCommentTagIds.add(fallbackTag.id);
+    }
   }
 
   commentTagSearchEl.value = "";
@@ -449,15 +551,19 @@ async function submitComment() {
   setCommentSubmittingVisible(true);
   try {
     const images = await buildCommentImagePayloads();
+    const payload = {
+      pointId: currentPointId,
+      detail,
+      tagIds: Array.from(selectedCommentTagIds),
+      images,
+    };
+    if (hasCompleteTagSelected()) {
+      payload.status = "inactive";
+    }
     const res = await authFetch("/api/road-info", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pointId: currentPointId,
-        detail,
-        tagIds: Array.from(selectedCommentTagIds),
-        images,
-      }),
+      body: JSON.stringify(payload),
     });
     if (res.status === 404) {
       throw new Error("point_not_found");
@@ -566,12 +672,22 @@ function initActions() {
       if (!tagId) {
         return;
       }
+      if (COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId))) {
+        handleCompleteTagToggle();
+        return;
+      }
       if (selectedCommentTagIds.has(tagId)) {
         selectedCommentTagIds.delete(tagId);
       } else {
         selectedCommentTagIds.add(tagId);
       }
       renderCommentTagUi();
+    });
+  }
+
+  if (commentCompleteTagBtn) {
+    commentCompleteTagBtn.addEventListener("click", () => {
+      handleCompleteTagToggle();
     });
   }
 
