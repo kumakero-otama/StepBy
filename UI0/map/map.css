@@ -79,7 +79,9 @@ body {
 }
 
 .record-action-icon-circle {
+  border: 0;
   border-radius: 50%;
+  background: #d93a3a;
 }
 
 .record-action-icon-square {
