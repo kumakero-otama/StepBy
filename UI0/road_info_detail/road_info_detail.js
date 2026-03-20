@@ -551,13 +551,18 @@ async function submitComment() {
   setCommentSubmittingVisible(true);
   try {
     const images = await buildCommentImagePayloads();
+    const selectedTagIds = Array.from(selectedCommentTagIds);
+    const hasCompleteSelection = selectedTagIds.some((tagId) => COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId)));
+    const normalizedTagIds = selectedTagIds.filter(
+      (tagId) => !COMPLETE_TAG_CODE_ALIASES.has(normalizeTagId(tagId))
+    );
     const payload = {
       pointId: currentPointId,
       detail,
-      tagIds: Array.from(selectedCommentTagIds),
+      tagIds: normalizedTagIds,
       images,
     };
-    if (hasCompleteTagSelected()) {
+    if (hasCompleteSelection) {
       payload.status = "inactive";
     }
     const res = await authFetch("/api/road-info", {
