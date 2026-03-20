@@ -8,6 +8,7 @@ const mapControlsPanelEl = document.getElementById("map-controls-panel");
 const mapControlsHandleEl = document.getElementById("map-controls-handle");
 const recordActionBtn = document.getElementById("record-action-btn");
 const recordActionIconEl = document.getElementById("record-action-icon");
+const recordActionTextEl = document.getElementById("record-action-text");
 const pauseActionBtn = document.getElementById("pause-action-btn");
 const pauseActionIconEl = document.getElementById("pause-action-icon");
 const pauseActionTextEl = document.getElementById("pause-action-text");
@@ -459,6 +460,13 @@ function updateRecordButton() {
   if (recordActionBtn) {
     recordActionBtn.setAttribute("aria-pressed", recordEnabled ? "true" : "false");
     recordActionBtn.classList.toggle("is-recording", recordEnabled);
+    const startLabel = recordActionBtn.dataset.startLabel || "記録";
+    const stopLabel = recordActionBtn.dataset.stopLabel || "記録終了";
+    const currentLabel = recordEnabled ? stopLabel : startLabel;
+    recordActionBtn.setAttribute("aria-label", currentLabel);
+    if (recordActionTextEl) {
+      recordActionTextEl.textContent = currentLabel;
+    }
   }
   if (recordActionIconEl) {
     recordActionIconEl.classList.toggle("record-action-icon-circle", !recordEnabled);
