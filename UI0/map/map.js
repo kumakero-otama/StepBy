@@ -1489,15 +1489,20 @@ if ("geolocation" in navigator) {
         try {
           if (!recordPaused) {
             const pausedSessionId = currentSessionId;
+            // 表示だけ先に切り替えて、体感遅延をなくす。
+            recordPaused = true;
+            updateRecordButton();
+
             const persistResult = await persistCurrentSessionWithoutConfirmation();
             if (!persistResult.success) {
+              recordPaused = false;
+              updateRecordButton();
               alert("一時停止時の保存に失敗しました。通信状況を確認してもう一度お試しください。");
               return;
             }
             currentSessionId = null;
             currentSessionStartedAt = null;
             clearCurrentSessionPoints();
-            recordPaused = true;
             markTrailDotsAsIdle();
             console.log(`[Pause] Paused. session=${pausedSessionId || "none"}`);
           } else {
