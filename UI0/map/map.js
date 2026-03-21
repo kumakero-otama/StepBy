@@ -239,8 +239,12 @@ function applyCachedLocation(cached) {
   latestLocation = { lat: cached.lat, lng: cached.lng };
   latestSnappedLocation = { lat: cached.lat, lng: cached.lng };
   updateTimestamp();
-  coordsEl.textContent = `Lat: ${cached.lat.toFixed(6)}, Lng: ${cached.lng.toFixed(6)}`;
-  rawCoordsEl.textContent = `Raw: ${cached.lat.toFixed(6)}, ${cached.lng.toFixed(6)}`;
+  if (coordsEl) {
+    coordsEl.textContent = `Lat: ${cached.lat.toFixed(6)}, Lng: ${cached.lng.toFixed(6)}`;
+  }
+  if (rawCoordsEl) {
+    rawCoordsEl.textContent = `Raw: ${cached.lat.toFixed(6)}, ${cached.lng.toFixed(6)}`;
+  }
   if (!marker) {
     marker = L.marker([cached.lat, cached.lng], { icon: redPinIcon }).addTo(map);
   } else {
@@ -961,8 +965,12 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   // 地図の再描画に合わせて時刻を更新
   updateTimestamp();
 
-  coordsEl.textContent = `Lat: ${snappedLat.toFixed(6)}, Lng: ${snappedLng.toFixed(6)}`;
-  rawCoordsEl.textContent = `Raw: ${rawLat.toFixed(6)}, ${rawLng.toFixed(6)}`;
+  if (coordsEl) {
+    coordsEl.textContent = `Lat: ${snappedLat.toFixed(6)}, Lng: ${snappedLng.toFixed(6)}`;
+  }
+  if (rawCoordsEl) {
+    rawCoordsEl.textContent = `Raw: ${rawLat.toFixed(6)}, ${rawLng.toFixed(6)}`;
+  }
   latestSnappedLocation = { lat: snappedLat, lng: snappedLng };
   if (isRecordingActive()) {
     appendUniquePoint(recordedSnappedPoints, snappedLat, snappedLng);
@@ -1387,7 +1395,9 @@ if ("geolocation" in navigator) {
       },
       (err) => {
         console.error("[Geolocation] getCurrentPosition error:", err);
-        coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
+        if (coordsEl) {
+          coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
+        }
         lastUpdatedEl.textContent = "Last update: error";
       },
       options
@@ -1416,8 +1426,12 @@ if ("geolocation" in navigator) {
   const cachedLocation = loadLastKnownLocation();
   const hasCachedLocation = applyCachedLocation(cachedLocation);
   if (!hasCachedLocation) {
-    coordsEl.textContent = "Lat: locating..., Lng: locating...";
-    rawCoordsEl.textContent = "Raw: locating..., locating...";
+    if (coordsEl) {
+      coordsEl.textContent = "Lat: locating..., Lng: locating...";
+    }
+    if (rawCoordsEl) {
+      rawCoordsEl.textContent = "Raw: locating..., locating...";
+    }
   }
 
   // 設定を読み込んでから位置情報取得を開始
@@ -1551,8 +1565,12 @@ if ("geolocation" in navigator) {
   const cachedLocation = loadLastKnownLocation();
   const hasCachedLocation = applyCachedLocation(cachedLocation);
   if (!hasCachedLocation) {
-    coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
-    rawCoordsEl.textContent = "Raw: unavailable, unavailable";
+    if (coordsEl) {
+      coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
+    }
+    if (rawCoordsEl) {
+      rawCoordsEl.textContent = "Raw: unavailable, unavailable";
+    }
     lastUpdatedEl.textContent = "Last update: --:--:--";
   }
 }
