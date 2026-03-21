@@ -19,7 +19,6 @@ const osmLoadingOverlayEl = document.getElementById("osm-loading-overlay");
 const recordsLoadingOverlayEl = document.getElementById("records-loading-overlay");
 const traceConfirmModalEl = document.getElementById("trace-confirm-modal");
 const traceConfirmMapEl = document.getElementById("trace-confirm-map");
-const traceConfirmMessageEl = document.getElementById("trace-confirm-message");
 const traceConfirmOkBtn = document.getElementById("trace-confirm-ok");
 const traceConfirmCancelBtn = document.getElementById("trace-confirm-cancel");
 const authTokenApi = window.AuthToken || null;
@@ -88,6 +87,7 @@ let latestSnappedLocation = null;
 let mapLayoutSyncTimer = null;
 let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
+let lastGpsUpdateStamp = "";
 
 // Valhallaの6桁精度ポリラインをデコードする関数
 function decodePolyline(str, precision) {
@@ -821,10 +821,6 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
-  if (traceConfirmMessageEl) {
-    traceConfirmMessageEl.textContent = "記録開始以降の全セッションをまとめてフィッティングした経路を表示しています。";
-  }
-
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
     const persistResult = await persistCurrentSessionWithoutConfirmation();
@@ -923,16 +919,16 @@ function pollAndSendLocation() {
 }
 
 function updateTimestamp() {
-  if (!lastUpdatedEl) {
-    return;
-  }
   const now = new Date();
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
-  const nextLabel = `Last update: ${hh}:${mm}:${ss}`;
-  const hasChanged = lastUpdatedEl.textContent !== nextLabel;
-  lastUpdatedEl.textContent = nextLabel;
+  const currentStamp = `${hh}:${mm}:${ss}`;
+  const hasChanged = lastGpsUpdateStamp !== currentStamp;
+  lastGpsUpdateStamp = currentStamp;
+  if (lastUpdatedEl) {
+    lastUpdatedEl.textContent = `Last update: ${currentStamp}`;
+  }
   if (hasChanged && gpsIndicatorEl) {
     gpsIndicatorEl.classList.add("is-blinking");
     if (gpsBlinkTimer !== null) {
@@ -1416,7 +1412,9 @@ if ("geolocation" in navigator) {
         if (coordsEl) {
           coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
         }
-        lastUpdatedEl.textContent = "Last update: error";
+        if (lastUpdatedEl) {
+          lastUpdatedEl.textContent = "Last update: error";
+        }
       },
       options
     );
@@ -1589,6 +1587,8 @@ if ("geolocation" in navigator) {
     if (rawCoordsEl) {
       rawCoordsEl.textContent = "Raw: unavailable, unavailable";
     }
-    lastUpdatedEl.textContent = "Last update: --:--:--";
+    if (lastUpdatedEl) {
+      lastUpdatedEl.textContent = "Last update: --:--:--";
+    }
   }
 }
