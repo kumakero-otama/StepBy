@@ -21,6 +21,8 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/manifest.webmanifest`,
   `${APP_BASE_PATH}/assets/icon.svg`,
   `${APP_BASE_PATH}/assets/otamap_logo.png`,
+  `${APP_BASE_PATH}/assets/StepBy_icon_192.png`,
+  `${APP_BASE_PATH}/assets/StepBy_icon_512.png`,
   `${APP_BASE_PATH}/auth/login.html`,
   `${APP_BASE_PATH}/auth/signup.html`,
   `${APP_BASE_PATH}/auth/auth.css`,

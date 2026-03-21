@@ -8,8 +8,14 @@
   "theme_color": "#222222",
   "icons": [
     {
-      "src": "/StepBy/UI0/assets/otamap_logo.png",
-      "sizes": "150x150",
+      "src": "/StepBy/UI0/assets/StepBy_icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/StepBy/UI0/assets/StepBy_icon_512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
