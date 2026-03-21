@@ -1,0 +1,568 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>プロフィール編集 — StepBy</title>
+    <link rel="stylesheet" href="/StepBy/UI1/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ---- Form Card ---- */
+        .form-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            padding: 20px 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .form-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-card-title i {
+            color: var(--primary);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-bg);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-label .lock-icon {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--bg-white);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 158, 143, 0.1);
+        }
+
+        /* ---- Radio Group ---- */
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .radio-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .radio-option input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .radio-option label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-white);
+        }
+
+        .radio-option input:checked+label {
+            border-color: var(--primary);
+            background: var(--primary-bg);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        /* ---- Date Row ---- */
+        .date-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .date-select {
+            flex: 1;
+            padding: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--bg-white);
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            transition: border-color 0.2s;
+        }
+
+        .date-select:focus {
+            border-color: var(--primary);
+        }
+
+        .form-hint {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 6px;
+        }
+
+        /* ---- Icon Upload ---- */
+        .icon-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-preview {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--bg-gray);
+            border: 2px dashed var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 32px;
+            color: var(--text-light);
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .icon-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .icon-no-image {
+            position: absolute;
+            bottom: 10px;
+            font-size: 8px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .icon-buttons {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .icon-btn {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 500;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .icon-btn:active {
+            background: var(--primary-bg);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            transform: scale(0.97);
+        }
+
+        /* ---- Submit Area ---- */
+        .submit-area {
+            padding: 0 16px 16px;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn-back {
+            flex: 0 0 auto;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--border);
+            background: var(--bg-white);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-back:active {
+            background: var(--bg-gray);
+            transform: scale(0.97);
+        }
+
+        .pad-bottom {
+            padding-bottom: 8px;
+        }
+
+        /* ---- Password Section ---- */
+        .pw-current-wrap {
+            position: relative;
+        }
+
+        .pw-masked {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--bg-gray);
+            outline: none;
+            letter-spacing: 3px;
+        }
+
+        .pw-current-wrap .pw-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .pw-current-wrap .pw-toggle:active {
+            color: var(--primary);
+        }
+
+        .pw-input-wrap {
+            position: relative;
+        }
+
+        .pw-input-wrap .form-input {
+            padding-right: 44px;
+        }
+
+        .pw-input-wrap .pw-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .pw-input-wrap .pw-toggle:active {
+            color: var(--primary);
+        }
+
+        .pw-forgot {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            margin-top: 8px;
+        }
+
+        .pw-forgot:hover {
+            text-decoration: underline;
+        }
+
+        .pw-strength {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--bg-gray);
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .pw-strength-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <!-- Header -->
+        <header class="top-bar">
+            <div class="top-bar-title">プロフィール編集</div>
+            <div class="top-bar-right">
+                <a href="/StepBy/UI1/map/Index.html" class="top-bar-btn"><i class="fas fa-home"></i></a>
+                <a href="/StepBy/UI1/profile/Index.html" class="top-bar-btn"><i class="fas fa-user-circle"></i></a>
+            </div>
+        </header>
+
+        <div class="scroll-content">
+            <!-- Basic Info -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="fas fa-user"></i> 基本情報
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ユーザー名</label>
+                    <input type="text" class="form-input" value="otama" id="edit-username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">性別 <i class="fas fa-lock lock-icon"></i></label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" name="gender" id="g-male" value="male">
+                            <label for="g-male">男性</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="gender" id="g-female" value="female" checked>
+                            <label for="g-female">女性</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="gender" id="g-other" value="other">
+                            <label for="g-other">回答しない</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">生年月日 <i class="fas fa-lock lock-icon"></i></label>
+                    <div class="date-row">
+                        <select class="date-select" id="birth-year"></select>
+                        <select class="date-select" id="birth-month"></select>
+                        <select class="date-select" id="birth-day"></select>
+                    </div>
+                    <div class="form-hint" id="age-display"></div>
+                </div>
+            </div>
+
+            <!-- Icon -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="fas fa-camera"></i> アイコン画像
+                </div>
+                <div class="icon-upload">
+                    <div class="icon-preview">
+                        <i class="fas fa-user"></i>
+                        <span class="icon-no-image">NO IMAGE</span>
+                    </div>
+                    <div class="icon-buttons">
+                        <button type="button" class="icon-btn"><i class="fas fa-camera"></i> 写真を撮影</button>
+                        <button type="button" class="icon-btn"><i class="fas fa-image"></i> 画像アップロード</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="fas fa-lock"></i> パスワード変更
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">現在のパスワード</label>
+                    <div class="pw-current-wrap">
+                        <input type="password" class="pw-masked" value="password123" id="current-pw" readonly>
+                        <span class="pw-toggle" id="toggle-current-pw"><i class="fas fa-eye-slash"></i></span>
+                    </div>
+                    <a href="#" class="pw-forgot"><i class="fas fa-question-circle"></i> パスワードを忘れた場合</a>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">新しいパスワード</label>
+                    <div class="pw-input-wrap">
+                        <input type="password" class="form-input" placeholder="8文字以上" id="new-pw">
+                        <span class="pw-toggle" id="toggle-new-pw"><i class="fas fa-eye-slash"></i></span>
+                    </div>
+                    <div class="pw-strength">
+                        <div class="pw-strength-bar" id="pw-strength-bar"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">新しいパスワード（確認）</label>
+                    <div class="pw-input-wrap">
+                        <input type="password" class="form-input" placeholder="もう一度入力" id="confirm-pw">
+                        <span class="pw-toggle" id="toggle-confirm-pw"><i class="fas fa-eye-slash"></i></span>
+                    </div>
+                    <div class="form-hint" id="pw-match-hint"></div>
+                </div>
+            </div>
+
+            <div class="pad-bottom"></div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-area">
+            <button class="btn-back" onclick="history.back()">戻る</button>
+            <button class="btn-primary" style="flex:1">変更を保存</button>
+        </div>
+    </div>
+
+    <script>
+        // Populate date selects
+        const yearSel = document.getElementById('birth-year');
+        const monthSel = document.getElementById('birth-month');
+        const daySel = document.getElementById('birth-day');
+        const now = new Date();
+
+        for (let y = now.getFullYear(); y >= 1920; y--) {
+            const o = document.createElement('option');
+            o.value = y; o.textContent = y + '年';
+            if (y === 2014) o.selected = true;
+            yearSel.appendChild(o);
+        }
+        for (let m = 1; m <= 12; m++) {
+            const o = document.createElement('option');
+            o.value = m; o.textContent = m + '月';
+            if (m === 2) o.selected = true;
+            monthSel.appendChild(o);
+        }
+        for (let d = 1; d <= 31; d++) {
+            const o = document.createElement('option');
+            o.value = d; o.textContent = d + '日';
+            if (d === 28) o.selected = true;
+            daySel.appendChild(o);
+        }
+
+        function calcAge() {
+            const y = parseInt(yearSel.value);
+            const m = parseInt(monthSel.value);
+            const d = parseInt(daySel.value);
+            if (!y || !m || !d) return;
+            const bday = new Date(y, m - 1, d);
+            let age = now.getFullYear() - bday.getFullYear();
+            const mDiff = now.getMonth() - bday.getMonth();
+            if (mDiff < 0 || (mDiff === 0 && now.getDate() < bday.getDate())) age--;
+            document.getElementById('age-display').textContent = `現在の年齢は：${age}歳です`;
+        }
+        yearSel.addEventListener('change', calcAge);
+        monthSel.addEventListener('change', calcAge);
+        daySel.addEventListener('change', calcAge);
+        calcAge();
+
+        // ---- Password toggles ----
+        function setupPwToggle(toggleId, inputId) {
+            const toggle = document.getElementById(toggleId);
+            if (!toggle) return;
+            toggle.addEventListener('click', () => {
+                const pw = document.getElementById(inputId);
+                const icon = toggle.querySelector('i');
+                if (pw.type === 'password') {
+                    pw.type = 'text';
+                    icon.className = 'fas fa-eye';
+                } else {
+                    pw.type = 'password';
+                    icon.className = 'fas fa-eye-slash';
+                }
+            });
+        }
+        setupPwToggle('toggle-current-pw', 'current-pw');
+        setupPwToggle('toggle-new-pw', 'new-pw');
+        setupPwToggle('toggle-confirm-pw', 'confirm-pw');
+
+        // ---- Password strength ----
+        const newPw = document.getElementById('new-pw');
+        const strengthBar = document.getElementById('pw-strength-bar');
+        newPw.addEventListener('input', () => {
+            const val = newPw.value;
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (val.length >= 12) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+
+            const pct = Math.min(score / 5 * 100, 100);
+            const colors = ['#FF6B6B', '#FF6B6B', '#FFB847', '#4DBFB0', '#2E9E5F', '#2E9E5F'];
+            strengthBar.style.width = pct + '%';
+            strengthBar.style.background = colors[score];
+            checkMatch();
+        });
+
+        // ---- Confirm match ----
+        const confirmPw = document.getElementById('confirm-pw');
+        const matchHint = document.getElementById('pw-match-hint');
+        function checkMatch() {
+            if (!confirmPw.value) { matchHint.textContent = ''; return; }
+            if (confirmPw.value === newPw.value) {
+                matchHint.textContent = '✓ パスワードが一致しています';
+                matchHint.style.color = 'var(--success)';
+            } else {
+                matchHint.textContent = '✗ パスワードが一致しません';
+                matchHint.style.color = 'var(--danger)';
+            }
+        }
+        confirmPw.addEventListener('input', checkMatch);
+    </script>
+</body>
+
+</html>

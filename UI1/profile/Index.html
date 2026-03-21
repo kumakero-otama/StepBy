@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>プロフィール — StepBy</title>
+    <link rel="stylesheet" href="/StepBy/UI1/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ---- Profile Header ---- */
+        .profile-hero {
+            background: linear-gradient(135deg, #0d3535 0%, #1a5c5c 25%, #2E9E8F 55%, #3BB49F 80%, #4BDBB4 100%);
+            padding: 36px 20px 44px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-hero::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -40px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: floatOrb 6s ease-in-out infinite;
+        }
+
+        .profile-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 184, 71, 0.08) 0%, transparent 70%);
+            animation: floatOrb 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatOrb {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(10px, -15px) scale(1.1);
+            }
+        }
+
+        .profile-avatar-wrap {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 14px;
+            position: relative;
+        }
+
+        .profile-avatar-wrap img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .profile-avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            animation: avatarGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes avatarGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(255, 255, 255, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 0 0 8px rgba(255, 255, 255, 0.05);
+            }
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .profile-badge-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .profile-badge-pill {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.12);
+            padding: 4px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .profile-edit-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 24px;
+            border-radius: 24px;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .profile-edit-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        /* ---- Info Sections ---- */
+        .info-section {
+            padding: 20px 16px 0;
+        }
+
+        .info-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            padding: 18px 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+
+        .info-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-card-title i {
+            color: var(--primary);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-bg);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .info-row+.info-row {
+            border-top: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: var(--text-mid);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* ---- Stats Row ---- */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            padding: 0 16px;
+            margin-top: 14px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: var(--bg-white);
+            border-radius: var(--radius-md);
+            padding: 16px 10px 14px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .stat-card:nth-child(1)::before {
+            background: linear-gradient(90deg, #2E9E8F, #4DBFB0);
+        }
+
+        .stat-card:nth-child(2)::before {
+            background: linear-gradient(90deg, #FFB847, #FFD700);
+        }
+
+        .stat-card:nth-child(3)::before {
+            background: linear-gradient(90deg, #FF6B6B, #FF8E8E);
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'Inter', monospace;
+            line-height: 1.2;
+        }
+
+        .stat-card:nth-child(1) .stat-value {
+            color: var(--primary);
+        }
+
+        .stat-card:nth-child(2) .stat-value {
+            color: #D4930A;
+        }
+
+        .stat-card:nth-child(3) .stat-value {
+            color: #FF6B6B;
+        }
+
+        .stat-value small {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-light);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* ---- Settings Menu ---- */
+        .settings-menu {
+            padding: 20px 16px;
+        }
+
+        .settings-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--bg-white);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .settings-item:active {
+            transform: scale(0.98);
+            background: var(--bg-gray);
+        }
+
+        .settings-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .settings-icon.teal {
+            background: linear-gradient(135deg, #2E9E8F, #3BB49F);
+        }
+
+        .settings-icon.blue {
+            background: linear-gradient(135deg, #4A90D9, #3B7DDD);
+        }
+
+        .settings-icon.purple {
+            background: linear-gradient(135deg, #9B59B6, #8E44AD);
+        }
+
+        .settings-icon.orange {
+            background: linear-gradient(135deg, #FFB847, #F5A623);
+        }
+
+        .settings-icon.red {
+            background: linear-gradient(135deg, #FF6B6B, #E74C3C);
+        }
+
+        .settings-text {
+            flex: 1;
+        }
+
+        .settings-text .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .settings-text .desc {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .settings-arrow {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .pad-bottom {
+            padding-bottom: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <!-- Header -->
+        <header class="top-bar">
+            <div class="top-bar-title">プロフィール</div>
+            <div class="top-bar-right">
+                <a href="/StepBy/UI1/map/Index.html" class="top-bar-btn"><i class="fas fa-home"></i></a>
+                <a href="/StepBy/UI1/settings/language.html" class="top-bar-btn"><i class="fas fa-cog"></i></a>
+            </div>
+        </header>
+
+        <div class="scroll-content">
+            <!-- Profile Hero -->
+            <div class="profile-hero">
+                <div class="profile-avatar-wrap">
+                    <div class="profile-avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <div class="profile-name" id="profile-name">otama</div>
+                <div class="profile-badge-row">
+                    <span class="profile-badge-pill">🌟 上位30%</span>
+                    <span class="profile-badge-pill">👟 6.27km</span>
+                </div>
+                <a href="/StepBy/UI1/profile_edit/Index.html" class="profile-edit-btn">
+                    <i class="fas fa-pen"></i> プロフィール編集
+                </a>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value">6.27<small>km</small></div>
+                    <div class="stat-label">総点字ブロック記録</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><span id="total-posts-count">21</span><small>件</small></div>
+                    <div class="stat-label">総道情報投稿</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">7<small>♥</small></div>
+                    <div class="stat-label">送られたハート</div>
+                </div>
+            </div>
+
+            <!-- Detail Info -->
+            <div class="info-section">
+                <div class="info-card">
+                    <div class="info-card-title">
+                        <i class="fas fa-id-card"></i> 詳細
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">ユーザー名</span>
+                        <span class="info-value" id="profile-username">otama</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">生年月日</span>
+                        <span class="info-value" id="profile-birthday">非公開</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">性別</span>
+                        <span class="info-value" id="profile-gender">女性</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Menu -->
+            <div class="settings-menu">
+                <a href="/StepBy/UI1/my_posts/Index.html" class="settings-item">
+                    <div class="settings-icon orange"><i class="fas fa-list-ul"></i></div>
+                    <div class="settings-text">
+                        <div class="title">自分の投稿履歴</div>
+                        <div class="desc">過去の投稿の確認・編集・削除</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="/StepBy/UI1/profile_edit/Index.html" class="settings-item">
+                    <div class="settings-icon teal"><i class="fas fa-user-pen"></i></div>
+                    <div class="settings-text">
+                        <div class="title">プロフィール編集</div>
+                        <div class="desc">名前・アイコン・性別の変更</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="/StepBy/UI1/settings/language.html" class="settings-item">
+                    <div class="settings-icon blue"><i class="fas fa-language"></i></div>
+                    <div class="settings-text">
+                        <div class="title">言語設定</div>
+                        <div class="desc">日本語・English・हिंदी</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="/StepBy/UI1/settings/display.html" class="settings-item">
+                    <div class="settings-icon purple"><i class="fas fa-palette"></i></div>
+                    <div class="settings-text">
+                        <div class="title">表示設定</div>
+                        <div class="desc">テーマ・文字サイズ</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="/StepBy/UI1/help/Index.html" class="settings-item">
+                    <div class="settings-icon blue"><i class="fas fa-circle-question"></i></div>
+                    <div class="settings-text">
+                        <div class="title">ヘルプ</div>
+                        <div class="desc">使い方・よくある質問</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="#" class="settings-item"
+                    onclick="if(confirm('ログアウトしますか？')){location.href='/StepBy/UI1/signup/Index.html';}return false;">
+                    <div class="settings-icon red"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="settings-text">
+                        <div class="title">ログアウト</div>
+                        <div class="desc">アカウントからサインアウト</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+            </div>
+            <div class="pad-bottom"></div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <nav class="bottom-nav">
+            <a href="/StepBy/UI1/map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
+            <a href="/StepBy/UI1/post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
+            <a href="/StepBy/UI1/posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
+            <a href="/StepBy/UI1/profile/Index.html" class="nav-item active"><i class="fas fa-user-circle"></i><span>MY</span></a>
+            <a href="/StepBy/UI1/settings/display.html" class="nav-item "><i class="fas fa-cog"></i><span>設定</span></a>
+        </nav>
+    </div>
+</body>
+
+</html>
