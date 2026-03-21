@@ -1,6 +1,6 @@
 {
-  "name": "Barrierfree Map",
-  "short_name": "BF Map",
+  "name": "StepBy",
+  "short_name": "StepBy",
   "start_url": "/StepBy/UI0/map/Index.html",
   "scope": "/StepBy/UI0/",
   "display": "standalone",
