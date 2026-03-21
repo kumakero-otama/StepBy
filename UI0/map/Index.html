@@ -107,28 +107,35 @@
         <div id="map-controls-content" class="map-controls-content">
           <div class="meta">
             <div id="last-updated">Last update: --:--:--</div>
-            <div class="record-toggle" role="group" aria-label="地図の情報を表示 toggle">
-              <span class="record-title">地図の情報を表示:</span>
-              <span class="record-label">OFF</span>
-              <label class="switch">
-                <input id="toggle-show-map-info" type="checkbox" aria-label="地図の情報を表示" />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">ON</span>
-            </div>
-            <div class="record-toggle" role="group" aria-label="現在地の中央表示 toggle">
-              <span class="record-title">現在地の中央表示:</span>
-              <span class="record-label">OFF</span>
-              <label class="switch">
-                <input
-                  id="toggle-center-current"
-                  type="checkbox"
-                  aria-label="現在地の中央表示"
-                  checked
-                />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">ON</span>
+            <div class="meta-controls">
+              <div class="meta-toggles">
+                <div class="record-toggle" role="group" aria-label="地図の情報を表示 toggle">
+                  <span class="record-title">地図の情報を表示:</span>
+                  <span class="record-label">OFF</span>
+                  <label class="switch">
+                    <input id="toggle-show-map-info" type="checkbox" aria-label="地図の情報を表示" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="record-label">ON</span>
+                </div>
+                <div class="record-toggle" role="group" aria-label="現在地の中央表示 toggle">
+                  <span class="record-title">現在地の中央表示:</span>
+                  <span class="record-label">OFF</span>
+                  <label class="switch">
+                    <input
+                      id="toggle-center-current"
+                      type="checkbox"
+                      aria-label="現在地の中央表示"
+                      checked
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="record-label">ON</span>
+                </div>
+              </div>
+              <div id="gps-indicator" class="gps-indicator" aria-hidden="true">
+                <img src="../assets/GPS.png" alt="" />
+              </div>
             </div>
           </div>
         </div>

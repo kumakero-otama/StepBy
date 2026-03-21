@@ -4,6 +4,7 @@ const appBarSpacerEl = document.querySelector(".app-bar-spacer");
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
 const lastUpdatedEl = document.getElementById("last-updated");
+const gpsIndicatorEl = document.getElementById("gps-indicator");
 const mapControlsPanelEl = document.getElementById("map-controls-panel");
 const mapControlsHandleEl = document.getElementById("map-controls-handle");
 const recordActionBtn = document.getElementById("record-action-btn");
@@ -85,6 +86,8 @@ let isHandlingPauseToggle = false;
 let currentUserId = null;
 let latestSnappedLocation = null;
 let mapLayoutSyncTimer = null;
+let gpsBlinkTimer = null;
+const GPS_BLINK_DURATION_MS = 80;
 
 // Valhallaの6桁精度ポリラインをデコードする関数
 function decodePolyline(str, precision) {
@@ -920,11 +923,26 @@ function pollAndSendLocation() {
 }
 
 function updateTimestamp() {
+  if (!lastUpdatedEl) {
+    return;
+  }
   const now = new Date();
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
-  lastUpdatedEl.textContent = `Last update: ${hh}:${mm}:${ss}`;
+  const nextLabel = `Last update: ${hh}:${mm}:${ss}`;
+  const hasChanged = lastUpdatedEl.textContent !== nextLabel;
+  lastUpdatedEl.textContent = nextLabel;
+  if (hasChanged && gpsIndicatorEl) {
+    gpsIndicatorEl.classList.add("is-blinking");
+    if (gpsBlinkTimer !== null) {
+      clearTimeout(gpsBlinkTimer);
+    }
+    gpsBlinkTimer = setTimeout(() => {
+      gpsIndicatorEl.classList.remove("is-blinking");
+      gpsBlinkTimer = null;
+    }, GPS_BLINK_DURATION_MS);
+  }
 }
 
 function isCenterCurrentEnabled() {

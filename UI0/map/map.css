@@ -198,6 +198,20 @@ body {
   gap: 10px;
 }
 
+.meta-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.meta-toggles {
+  display: grid;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* ON/OFFトグル共通スタイル */
 .record-toggle {
   display: inline-flex;
@@ -258,6 +272,27 @@ body {
 
 .switch input:checked + .slider::before {
   transform: translateX(22px);
+}
+
+.gps-indicator {
+  width: 54px;
+  min-width: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-indicator img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  opacity: 1;
+  transition: opacity 0.08s linear;
+}
+
+.gps-indicator.is-blinking img {
+  opacity: 0;
 }
 
 #last-updated {
@@ -373,6 +408,16 @@ body {
   .record-action-btn {
     height: 42px;
     font-size: 13px;
+  }
+
+  .gps-indicator {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .gps-indicator img {
+    width: 34px;
+    height: 34px;
   }
 
 }
