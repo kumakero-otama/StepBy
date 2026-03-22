@@ -83,3 +83,67 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
+
+const authTokenApi = window.AuthToken || null;
+
+function authFetch(input, init) {
+  if (authTokenApi && typeof authTokenApi.authFetch === "function") {
+    return authTokenApi.authFetch(input, init);
+  }
+  return fetch(input, init);
+}
+
+function parseIsPro(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  if (typeof payload.isPro === "boolean") {
+    return payload.isPro;
+  }
+  if (typeof payload.is_pro === "boolean") {
+    return payload.is_pro;
+  }
+  if (payload.data && typeof payload.data === "object") {
+    if (typeof payload.data.isPro === "boolean") {
+      return payload.data.isPro;
+    }
+    if (typeof payload.data.is_pro === "boolean") {
+      return payload.data.is_pro;
+    }
+  }
+  return null;
+}
+
+async function applyGlobalProBadge() {
+  const titleEl = document.querySelector(".app-bar .app-bar-title");
+  if (!titleEl) {
+    return;
+  }
+
+  let badgeEl = titleEl.querySelector(".pro-badge");
+  if (!badgeEl) {
+    badgeEl = document.createElement("span");
+    badgeEl.className = "pro-badge";
+    badgeEl.textContent = "PRO";
+    titleEl.appendChild(badgeEl);
+  }
+  badgeEl.hidden = true;
+
+  try {
+    const res = await authFetch("/api/pro-status", { cache: "no-store" });
+    if (!res.ok) {
+      return;
+    }
+    const payload = await res.json().catch(() => null);
+    const isPro = parseIsPro(payload);
+    badgeEl.hidden = !Boolean(isPro);
+  } catch {
+    badgeEl.hidden = true;
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", applyGlobalProBadge);
+} else {
+  applyGlobalProBadge();
+}

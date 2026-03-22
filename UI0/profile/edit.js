@@ -134,6 +134,8 @@ async function loadCurrentProStatus(user) {
   if (!proToggleInputEl) {
     return;
   }
+  // 取得前はOFF基準にして、API結果で最終状態を上書きする。
+  proToggleInputEl.checked = false;
   proToggleInputEl.disabled = true;
   try {
     const res = await authFetch("/api/pro-status", { cache: "no-store" });

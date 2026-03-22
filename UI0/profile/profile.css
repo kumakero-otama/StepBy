@@ -56,25 +56,12 @@ body {
 }
 
 .profile-username {
-  margin: 0;
+  margin: 16px 0 12px;
   text-align: center;
   font-size: 3rem;
   font-weight: 800;
   color: #3d5368;
   line-height: 1.15;
-}
-
-.profile-name-row {
-  margin: 16px 0 12px;
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.profile-pro-badge {
-  transform: translateY(2px);
 }
 
 .achievement-title {
@@ -122,10 +109,6 @@ body {
 
   .profile-username {
     font-size: 2rem;
-  }
-
-  .profile-name-row {
-    gap: 8px;
   }
 
   .achievement-title {
