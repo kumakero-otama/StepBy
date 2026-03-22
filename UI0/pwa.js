@@ -108,19 +108,19 @@
       badgeEl.textContent = "PRO";
       titleEl.appendChild(badgeEl);
     }
-    badgeEl.hidden = true;
+    badgeEl.style.display = "none";
 
     try {
       const res = await authFetch("/api/pro-status", { cache: "no-store" });
       if (!res.ok) {
-        badgeEl.hidden = true;
+        badgeEl.style.display = "none";
         return;
       }
       const payload = await res.json().catch(() => null);
       const isPro = parseIsPro(payload);
-      badgeEl.hidden = !Boolean(isPro);
+      badgeEl.style.display = isPro === true ? "inline-flex" : "none";
     } catch {
-      badgeEl.hidden = true;
+      badgeEl.style.display = "none";
     }
   }
 
