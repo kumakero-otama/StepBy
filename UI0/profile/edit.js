@@ -2,6 +2,7 @@ const usernameInputEl = document.getElementById("profile-username-input");
 const iconPreviewEl = document.getElementById("profile-icon-preview");
 const cameraInputEl = document.getElementById("profile-icon-camera-input");
 const uploadInputEl = document.getElementById("profile-icon-upload-input");
+const proToggleInputEl = document.getElementById("profile-pro-toggle-input");
 const backBtnEl = document.getElementById("profile-edit-back-btn");
 const saveBtnEl = document.getElementById("profile-edit-save-btn");
 const saveToastEl = document.getElementById("profile-save-toast");
@@ -32,6 +33,7 @@ function saveCachedProfileUser(user) {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
@@ -100,9 +102,82 @@ async function loadCurrentProfile() {
       iconPreviewEl.alt = `${username || "ユーザー"}のアイコン`;
     }
     saveCachedProfileUser(user);
+    await loadCurrentProStatus(user);
   } catch {
     clearAccessToken();
     window.location.replace(AppPath.toApp("/auth/login.html"));
+  }
+}
+
+function parseIsPro(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  if (typeof payload.isPro === "boolean") {
+    return payload.isPro;
+  }
+  if (typeof payload.is_pro === "boolean") {
+    return payload.is_pro;
+  }
+  if (payload.data && typeof payload.data === "object") {
+    if (typeof payload.data.isPro === "boolean") {
+      return payload.data.isPro;
+    }
+    if (typeof payload.data.is_pro === "boolean") {
+      return payload.data.is_pro;
+    }
+  }
+  return null;
+}
+
+async function loadCurrentProStatus(user) {
+  if (!proToggleInputEl) {
+    return;
+  }
+  proToggleInputEl.disabled = true;
+  try {
+    const res = await authFetch("/api/pro-status", { cache: "no-store" });
+    if (res.status === 401) {
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      return;
+    }
+    if (!res.ok) {
+      return;
+    }
+    const payload = await res.json().catch(() => null);
+    const isPro = parseIsPro(payload);
+    if (typeof isPro === "boolean") {
+      proToggleInputEl.checked = isPro;
+      if (user && typeof user === "object") {
+        saveCachedProfileUser({ ...user, isPro });
+      }
+    }
+  } finally {
+    proToggleInputEl.disabled = false;
+  }
+}
+
+async function saveProStatus() {
+  if (!proToggleInputEl) {
+    return;
+  }
+  const res = await authFetch("/api/pro-status", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isPro: Boolean(proToggleInputEl.checked) }),
+  });
+  if (!res.ok) {
+    let reason = `status_${res.status}`;
+    try {
+      const payload = await res.json();
+      if (payload && payload.error) {
+        reason = payload.error;
+      }
+    } catch {
+      // ignore json parse error
+    }
+    throw new Error(`pro_status_update_failed:${reason}`);
   }
 }
 
@@ -145,7 +220,13 @@ async function saveProfile() {
     }
     const payload = await res.json().catch(() => ({}));
     if (payload && payload.user) {
-      saveCachedProfileUser(payload.user);
+      saveCachedProfileUser({
+        ...payload.user,
+        isPro: proToggleInputEl ? Boolean(proToggleInputEl.checked) : null,
+      });
+    }
+    if (proToggleInputEl) {
+      await saveProStatus();
     }
     showSaveToast();
     window.setTimeout(() => {

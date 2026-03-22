@@ -12,7 +12,7 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">HOME</h1>
+      <h1 class="app-bar-title">HOME <span id="home-pro-badge" class="pro-badge" hidden>PRO</span></h1>
       <div class="app-bar-actions" aria-label="アプリメニュー">
         <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
           <img src="../assets/buttons/home.png" alt="" />
@@ -37,8 +37,9 @@
       <a class="btn" href="../map/Index.html">Open draggable map</a>
     </p>
     <!-- 共通バージョン表示 -->
-    <script src="app.js"></script>
     <script src="../config.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="app.js"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>

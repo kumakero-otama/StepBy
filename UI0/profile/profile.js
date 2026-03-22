@@ -1,5 +1,6 @@
 const profileAvatarEl = document.getElementById("profile-avatar");
 const profileUsernameEl = document.getElementById("profile-username");
+const profileProBadgeEl = document.getElementById("profile-pro-badge");
 const totalTactileEl = document.getElementById("total-tactile-length");
 const totalRoadPostsEl = document.getElementById("total-road-posts");
 const totalHeartsEl = document.getElementById("total-hearts");
@@ -37,6 +38,7 @@ function saveCachedProfileUser(user) {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
@@ -79,6 +81,9 @@ function applyProfileUser(user) {
   if (profileUsernameEl) {
     profileUsernameEl.textContent = username;
   }
+  if (profileProBadgeEl && typeof user.isPro === "boolean") {
+    profileProBadgeEl.hidden = !user.isPro;
+  }
   if (totalTactileEl) {
     totalTactileEl.textContent = `${formatMetersFromKm(totalTactile)}m`;
   }
@@ -90,10 +95,57 @@ function applyProfileUser(user) {
   }
 }
 
+function parseIsPro(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  if (typeof payload.isPro === "boolean") {
+    return payload.isPro;
+  }
+  if (typeof payload.is_pro === "boolean") {
+    return payload.is_pro;
+  }
+  if (payload.data && typeof payload.data === "object") {
+    if (typeof payload.data.isPro === "boolean") {
+      return payload.data.isPro;
+    }
+    if (typeof payload.data.is_pro === "boolean") {
+      return payload.data.is_pro;
+    }
+  }
+  return null;
+}
+
+async function loadProStatus(user) {
+  if (!profileProBadgeEl) {
+    return;
+  }
+  profileProBadgeEl.hidden = true;
+  try {
+    const res = await authFetch("/api/pro-status", { cache: "no-store" });
+    if (!res.ok) {
+      return;
+    }
+    const payload = await res.json().catch(() => null);
+    const isPro = parseIsPro(payload);
+    if (typeof isPro === "boolean") {
+      profileProBadgeEl.hidden = !isPro;
+      if (user && typeof user === "object") {
+        saveCachedProfileUser({ ...user, isPro });
+      }
+    }
+  } catch {
+    profileProBadgeEl.hidden = true;
+  }
+}
+
 async function loadProfile() {
   const cached = loadCachedProfileUser();
   if (cached) {
     applyProfileUser(cached);
+    if (profileProBadgeEl && typeof cached.isPro === "boolean") {
+      profileProBadgeEl.hidden = !cached.isPro;
+    }
   }
   try {
     const res = await authFetch("/auth/me", {
@@ -113,6 +165,7 @@ async function loadProfile() {
     }
     applyProfileUser(user);
     saveCachedProfileUser(user);
+    await loadProStatus(user);
   } catch {
     clearAccessToken();
     window.location.replace(AppPath.toApp("/auth/login.html"));

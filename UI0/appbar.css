@@ -21,6 +21,25 @@
   font-size: 1.35rem;
   letter-spacing: 0.02em;
   line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pro-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #7a2d00;
+  background: #ffd56a;
+  border: 1px solid rgba(122, 45, 0, 0.35);
 }
 
 .app-bar-actions {
