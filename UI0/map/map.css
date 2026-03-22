@@ -465,6 +465,101 @@ body {
   overflow: hidden;
 }
 
+.trace-tag-panel {
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.trace-tag-panel.hidden {
+  display: none;
+}
+
+.trace-tag-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+}
+
+.trace-tag-search {
+  width: 100%;
+  border: 1px solid #b6b6b6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.trace-tag-selected {
+  min-height: 38px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trace-tag-selected-empty {
+  font-size: 12px;
+  color: #777;
+}
+
+.trace-tag-item {
+  border: 1px solid #2f7a2f;
+  background: #ecffec;
+  color: #174b17;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.trace-tag-list {
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #fff;
+  max-height: 180px;
+  overflow: auto;
+  display: grid;
+}
+
+.trace-tag-option {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #efefef;
+  background: #fff;
+  color: #222;
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.trace-tag-option:last-child {
+  border-bottom: 0;
+}
+
+.trace-tag-option:hover {
+  background: #f6f6f6;
+}
+
+.trace-tag-list-empty {
+  font-size: 12px;
+  color: #777;
+  padding: 10px;
+}
+
+.trace-tag-error {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c12525;
+}
+
+.trace-tag-error.hidden {
+  display: none;
+}
+
 .trace-confirm-actions {
   display: flex;
   justify-content: flex-end;

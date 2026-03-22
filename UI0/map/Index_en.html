@@ -153,6 +153,19 @@
       <div class="trace-confirm-panel">
         <h2 id="trace-confirm-title">この経路で保存しますか</h2>
         <div id="trace-confirm-map" aria-label="Route preview before saving"></div>
+        <section id="trace-tag-panel" class="trace-tag-panel hidden" aria-label="Tag selection">
+          <h3 class="trace-tag-title">タグ</h3>
+          <input
+            id="trace-tag-search"
+            class="trace-tag-search"
+            type="text"
+            placeholder="検索または追加..."
+            enterkeyhint="done"
+          />
+          <div id="trace-tag-selected" class="trace-tag-selected"></div>
+          <div id="trace-tag-list" class="trace-tag-list"></div>
+          <div id="trace-tag-error" class="trace-tag-error hidden" role="alert" aria-live="assertive"></div>
+        </section>
         <div class="trace-confirm-actions">
           <button id="trace-confirm-ok" class="btn" type="button">OK</button>
           <button id="trace-confirm-cancel" class="btn secondary" type="button">Cancel</button>

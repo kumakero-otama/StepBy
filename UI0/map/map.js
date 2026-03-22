@@ -21,6 +21,11 @@ const traceConfirmModalEl = document.getElementById("trace-confirm-modal");
 const traceConfirmMapEl = document.getElementById("trace-confirm-map");
 const traceConfirmOkBtn = document.getElementById("trace-confirm-ok");
 const traceConfirmCancelBtn = document.getElementById("trace-confirm-cancel");
+const traceTagPanelEl = document.getElementById("trace-tag-panel");
+const traceTagSearchEl = document.getElementById("trace-tag-search");
+const traceTagSelectedEl = document.getElementById("trace-tag-selected");
+const traceTagListEl = document.getElementById("trace-tag-list");
+const traceTagErrorEl = document.getElementById("trace-tag-error");
 const authTokenApi = window.AuthToken || null;
 
 function authFetch(input, init) {
@@ -34,6 +39,55 @@ function clearAccessToken() {
   if (authTokenApi && typeof authTokenApi.clearAccessToken === "function") {
     authTokenApi.clearAccessToken();
   }
+}
+
+function getCurrentLanguage() {
+  const lang = String(document.documentElement && document.documentElement.lang || "").trim().toLowerCase();
+  if (!lang) {
+    return "ja";
+  }
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+  if (lang.startsWith("hi")) {
+    return "hi";
+  }
+  return "ja";
+}
+
+const TRACE_TAG_TEXT = {
+  ja: {
+    noSelection: "未選択",
+    noMatch: "一致するタグがありません",
+    addTagFailed: "タグの追加に失敗しました。時間をおいて再度お試しください。",
+    requiredForPro: "タグを追加してください",
+  },
+  en: {
+    noSelection: "None selected",
+    noMatch: "No matching tags",
+    addTagFailed: "Failed to add tag. Please try again later.",
+    requiredForPro: "Please add at least one tag.",
+  },
+  hi: {
+    noSelection: "कोई चयन नहीं",
+    noMatch: "कोई मिलते-जुलते टैग नहीं",
+    addTagFailed: "टैग जोड़ने में विफल। कृपया बाद में फिर प्रयास करें।",
+    requiredForPro: "タグを追加してください",
+  },
+};
+
+function getTraceTagText() {
+  const language = getCurrentLanguage();
+  return TRACE_TAG_TEXT[language] || TRACE_TAG_TEXT.ja;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -88,6 +142,9 @@ let mapLayoutSyncTimer = null;
 let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
 let lastGpsUpdateStamp = "";
+let isCurrentUserPro = false;
+let traceTagOptions = [];
+const selectedTraceTagIds = new Set();
 
 // Valhallaの6桁精度ポリラインをデコードする関数
 function decodePolyline(str, precision) {
@@ -704,6 +761,277 @@ function displayTraceLine(coordinates) {
   }
 }
 
+function normalizeTactileTags(rawTags) {
+  return (Array.isArray(rawTags) ? rawTags : [])
+    .map((tag, index) => {
+      if (!tag || typeof tag !== "object") {
+        return null;
+      }
+      const idNum = Number(tag.id ?? tag.tagId ?? tag.tag_id);
+      const id = Number.isInteger(idNum) && idNum > 0 ? idNum : null;
+      const code = String(tag.code ?? tag.tagCode ?? tag.tag_code ?? `tag_${index}`).trim();
+      const label = String(tag.labelJa ?? tag.label_ja ?? tag.label ?? "").trim();
+      if (!id || !code || !label) {
+        return null;
+      }
+      return { id, code, label };
+    })
+    .filter(Boolean);
+}
+
+function parseIsProStatus(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  if (typeof payload.isPro === "boolean") {
+    return payload.isPro;
+  }
+  if (typeof payload.is_pro === "boolean") {
+    return payload.is_pro;
+  }
+  if (payload.data && typeof payload.data === "object") {
+    if (typeof payload.data.isPro === "boolean") {
+      return payload.data.isPro;
+    }
+    if (typeof payload.data.is_pro === "boolean") {
+      return payload.data.is_pro;
+    }
+  }
+  return null;
+}
+
+async function loadCurrentUserProStatus() {
+  isCurrentUserPro = false;
+  try {
+    const res = await authFetch("/api/pro-status", { cache: "no-store" });
+    if (!res.ok) {
+      return;
+    }
+    const payload = await res.json().catch(() => null);
+    const parsed = parseIsProStatus(payload);
+    if (typeof parsed === "boolean") {
+      isCurrentUserPro = parsed;
+    }
+  } catch {
+    isCurrentUserPro = false;
+  }
+}
+
+function setTraceTagError(message) {
+  if (!traceTagErrorEl) {
+    return;
+  }
+  const text = String(message || "").trim();
+  traceTagErrorEl.textContent = text;
+  traceTagErrorEl.classList.toggle("hidden", !text);
+}
+
+function getVisibleTraceTags() {
+  const query = traceTagSearchEl ? traceTagSearchEl.value.trim().toLowerCase() : "";
+  if (!query) {
+    return traceTagOptions.slice();
+  }
+  return traceTagOptions.filter((tag) => tag.label.toLowerCase().includes(query));
+}
+
+function renderTraceTagSelected() {
+  if (!traceTagSelectedEl) {
+    return;
+  }
+  const text = getTraceTagText();
+  const selectedTags = traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
+  if (selectedTags.length === 0) {
+    traceTagSelectedEl.innerHTML = `<div class="trace-tag-selected-empty">${escapeHtml(text.noSelection)}</div>`;
+    return;
+  }
+  traceTagSelectedEl.innerHTML = selectedTags
+    .map((tag) => `<button type="button" class="trace-tag-item" data-remove-tag-id="${tag.id}">${escapeHtml(tag.label)} ×</button>`)
+    .join("");
+}
+
+function renderTraceTagList() {
+  if (!traceTagListEl) {
+    return;
+  }
+  const text = getTraceTagText();
+  const visibleTags = getVisibleTraceTags();
+  if (visibleTags.length === 0) {
+    traceTagListEl.innerHTML = `<div class="trace-tag-list-empty">${escapeHtml(text.noMatch)}</div>`;
+    return;
+  }
+  traceTagListEl.innerHTML = visibleTags
+    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)}</button>`)
+    .join("");
+}
+
+function renderTraceTagUi() {
+  renderTraceTagSelected();
+  renderTraceTagList();
+}
+
+async function fetchTactileTags() {
+  const res = await authFetch("/api/tactile-tags?activeOnly=1", { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`tactile_tags_fetch_failed:${res.status}`);
+  }
+  const payload = await res.json().catch(() => ({}));
+  traceTagOptions = normalizeTactileTags(payload && payload.tags);
+}
+
+function buildTagCode(labelJa) {
+  const base = String(labelJa || "")
+    .normalize("NFKD")
+    .replace(/[^\x00-\x7F]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const seed = Date.now().toString(36);
+  return `user_${base || "tag"}_${seed}`.slice(0, 64);
+}
+
+async function createTactileTag(labelJa) {
+  const body = {
+    code: buildTagCode(labelJa),
+    labelJa,
+    sortOrder: 0,
+    isActive: true,
+  };
+  const res = await authFetch("/api/tactile-tags", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`create_tactile_tag_failed:${res.status}`);
+  }
+  const payload = await res.json().catch(() => ({}));
+  const normalized = normalizeTactileTags(payload && payload.tag ? [payload.tag] : []);
+  if (normalized.length === 0) {
+    throw new Error("invalid_created_tactile_tag");
+  }
+  const tag = normalized[0];
+  const existingIndex = traceTagOptions.findIndex((item) => item.id === tag.id);
+  if (existingIndex >= 0) {
+    traceTagOptions[existingIndex] = tag;
+  } else {
+    traceTagOptions.push(tag);
+  }
+  selectedTraceTagIds.add(tag.id);
+}
+
+function initTraceTagUiEvents() {
+  if (traceTagSearchEl) {
+    traceTagSearchEl.addEventListener("input", () => {
+      setTraceTagError("");
+      renderTraceTagList();
+    });
+    traceTagSearchEl.addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      const raw = traceTagSearchEl.value.trim();
+      if (!raw) {
+        return;
+      }
+      const existing = traceTagOptions.find((tag) => tag.label === raw);
+      if (existing) {
+        selectedTraceTagIds.add(existing.id);
+        traceTagSearchEl.value = "";
+        setTraceTagError("");
+        renderTraceTagUi();
+        return;
+      }
+      try {
+        await createTactileTag(raw);
+        traceTagSearchEl.value = "";
+        setTraceTagError("");
+        renderTraceTagUi();
+      } catch (err) {
+        console.warn("[trace_confirm] create tactile tag failed:", err);
+        setTraceTagError(getTraceTagText().addTagFailed);
+      }
+    });
+  }
+
+  if (traceTagListEl) {
+    traceTagListEl.addEventListener("click", (event) => {
+      const target = event.target instanceof HTMLElement ? event.target.closest("[data-tag-id]") : null;
+      if (!target) {
+        return;
+      }
+      const tagId = Number(target.getAttribute("data-tag-id"));
+      if (!Number.isInteger(tagId)) {
+        return;
+      }
+      if (selectedTraceTagIds.has(tagId)) {
+        selectedTraceTagIds.delete(tagId);
+      } else {
+        selectedTraceTagIds.add(tagId);
+      }
+      setTraceTagError("");
+      renderTraceTagUi();
+    });
+  }
+
+  if (traceTagSelectedEl) {
+    traceTagSelectedEl.addEventListener("click", (event) => {
+      const target = event.target instanceof HTMLElement ? event.target.closest("[data-remove-tag-id]") : null;
+      if (!target) {
+        return;
+      }
+      const tagId = Number(target.getAttribute("data-remove-tag-id"));
+      if (!Number.isInteger(tagId)) {
+        return;
+      }
+      selectedTraceTagIds.delete(tagId);
+      setTraceTagError("");
+      renderTraceTagUi();
+    });
+  }
+}
+
+async function prepareTraceTagModal() {
+  if (!traceTagPanelEl) {
+    return;
+  }
+  selectedTraceTagIds.clear();
+  setTraceTagError("");
+  if (traceTagSearchEl) {
+    traceTagSearchEl.value = "";
+  }
+  if (!isCurrentUserPro) {
+    traceTagPanelEl.classList.add("hidden");
+    return;
+  }
+  traceTagPanelEl.classList.remove("hidden");
+  try {
+    await fetchTactileTags();
+    renderTraceTagUi();
+  } catch (err) {
+    console.error("[trace_confirm] tactile tags fetch failed:", err);
+    traceTagOptions = [];
+    renderTraceTagUi();
+  }
+}
+
+async function saveSessionTags(sessionIds) {
+  const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
+  const selectedTags = traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
+  for (const sessionId of uniqueSessionIds) {
+    for (const tag of selectedTags) {
+      const res = await authFetch("/api/session-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, tagId: tag.id }),
+      });
+      if (!res.ok) {
+        throw new Error(`session_tag_save_failed:${res.status}`);
+      }
+    }
+  }
+}
+
 function closeTraceConfirmModal() {
   if (traceConfirmModalEl) {
     traceConfirmModalEl.classList.add("hidden");
@@ -725,38 +1053,54 @@ function openTraceConfirmModal(coordinates) {
       return;
     }
 
-    traceConfirmModalEl.classList.remove("hidden");
-    traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(traceConfirmMap);
+    const setupAndBind = async () => {
+      await prepareTraceTagModal();
 
-    traceConfirmPathLayer = L.polyline(coordinates, {
-      color: "#9acd32",
-      weight: 5,
-      opacity: 0.9,
-    }).addTo(traceConfirmMap);
-    traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
+      traceConfirmModalEl.classList.remove("hidden");
+      traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(traceConfirmMap);
 
-    const cleanupAndResolve = (result) => {
-      traceConfirmOkBtn.removeEventListener("click", onOk);
-      traceConfirmCancelBtn.removeEventListener("click", onCancel);
-      closeTraceConfirmModal();
-      resolve(result);
+      traceConfirmPathLayer = L.polyline(coordinates, {
+        color: "#9acd32",
+        weight: 5,
+        opacity: 0.9,
+      }).addTo(traceConfirmMap);
+      traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
+
+      const cleanupAndResolve = (result) => {
+        traceConfirmOkBtn.removeEventListener("click", onOk);
+        traceConfirmCancelBtn.removeEventListener("click", onCancel);
+        closeTraceConfirmModal();
+        resolve(result);
+      };
+
+      const onOk = () => {
+        if (isCurrentUserPro && selectedTraceTagIds.size === 0) {
+          setTraceTagError(getTraceTagText().requiredForPro);
+          return;
+        }
+        setTraceTagError("");
+        cleanupAndResolve("ok");
+      };
+      const onCancel = () => cleanupAndResolve("cancel");
+
+      traceConfirmOkBtn.addEventListener("click", onOk);
+      traceConfirmCancelBtn.addEventListener("click", onCancel);
+
+      setTimeout(() => {
+        if (traceConfirmMap) {
+          traceConfirmMap.invalidateSize();
+        }
+      }, 0);
     };
 
-    const onOk = () => cleanupAndResolve("ok");
-    const onCancel = () => cleanupAndResolve("cancel");
-
-    traceConfirmOkBtn.addEventListener("click", onOk);
-    traceConfirmCancelBtn.addEventListener("click", onCancel);
-
-    setTimeout(() => {
-      if (traceConfirmMap) {
-        traceConfirmMap.invalidateSize();
-      }
-    }, 0);
+    setupAndBind().catch((err) => {
+      console.error("[trace_confirm] modal setup failed:", err);
+      resolve("cancel");
+    });
   });
 }
 
@@ -823,6 +1167,16 @@ async function handleRecordStopWithConfirmation() {
 
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
+    if (isCurrentUserPro) {
+      try {
+        await saveSessionTags(allSessionIds);
+      } catch (err) {
+        console.error("[Record] save session tags error:", err);
+        alert("タグの保存に失敗しました。通信状況を確認してもう一度お試しください。");
+        await cancelRecordingSessions(allSessionIds);
+        return;
+      }
+    }
     const persistResult = await persistCurrentSessionWithoutConfirmation();
     if (!persistResult.success) {
       await cancelRecordingSessions(allSessionIds);
@@ -1398,6 +1752,8 @@ function loadConfig() {
     });
 }
 
+initTraceTagUiEvents();
+
 if ("geolocation" in navigator) {
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
 
@@ -1453,6 +1809,7 @@ if ("geolocation" in navigator) {
   // 設定を読み込んでから位置情報取得を開始
   loadConfig().then(async () => {
     await loadCurrentUserId();
+    await loadCurrentUserProStatus();
     // 監視を開始
     startWatching();
     
