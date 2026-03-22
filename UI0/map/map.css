@@ -429,8 +429,8 @@ body {
   background: rgba(0, 0, 0, 0.45);
   display: grid;
   place-items: center;
-  z-index: 2000;
-  padding: 16px;
+  z-index: 3000;
+  padding: calc(72px + env(safe-area-inset-top)) 16px 16px;
 }
 
 .trace-confirm-modal.hidden {
@@ -439,7 +439,7 @@ body {
 
 .trace-confirm-panel {
   width: min(860px, 96vw);
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - (96px + env(safe-area-inset-top)));
   background: #fff;
   border: 2px solid #222;
   border-radius: 14px;
