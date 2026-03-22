@@ -439,12 +439,22 @@ body {
 
 .trace-confirm-panel {
   width: min(860px, 96vw);
+  max-height: calc(100dvh - 32px);
   background: #fff;
   border: 2px solid #222;
   border-radius: 14px;
   padding: 14px;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.trace-confirm-scroll {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
   gap: 10px;
+  padding-right: 2px;
 }
 
 #trace-confirm-title {
@@ -459,7 +469,7 @@ body {
 
 #trace-confirm-map {
   width: 100%;
-  height: min(52vh, 420px);
+  height: clamp(200px, 38vh, 340px);
   border: 2px solid #222;
   border-radius: 10px;
   overflow: hidden;
@@ -564,6 +574,9 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+  background: #fff;
 }
 
 .btn.secondary {

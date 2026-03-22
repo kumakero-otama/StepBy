@@ -152,20 +152,22 @@
     <div id="trace-confirm-modal" class="trace-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trace-confirm-title">
       <div class="trace-confirm-panel">
         <h2 id="trace-confirm-title">この経路で保存しますか</h2>
-        <div id="trace-confirm-map" aria-label="保存前の経路プレビュー"></div>
-        <section id="trace-tag-panel" class="trace-tag-panel hidden" aria-label="タグ選択">
-          <h3 class="trace-tag-title">タグ</h3>
-          <input
-            id="trace-tag-search"
-            class="trace-tag-search"
-            type="text"
-            placeholder="検索または追加..."
-            enterkeyhint="done"
-          />
-          <div id="trace-tag-selected" class="trace-tag-selected"></div>
-          <div id="trace-tag-list" class="trace-tag-list"></div>
-          <div id="trace-tag-error" class="trace-tag-error hidden" role="alert" aria-live="assertive"></div>
-        </section>
+        <div class="trace-confirm-scroll">
+          <div id="trace-confirm-map" aria-label="保存前の経路プレビュー"></div>
+          <section id="trace-tag-panel" class="trace-tag-panel hidden" aria-label="タグ選択">
+            <h3 class="trace-tag-title">タグ</h3>
+            <input
+              id="trace-tag-search"
+              class="trace-tag-search"
+              type="text"
+              placeholder="検索または追加..."
+              enterkeyhint="done"
+            />
+            <div id="trace-tag-selected" class="trace-tag-selected"></div>
+            <div id="trace-tag-list" class="trace-tag-list"></div>
+            <div id="trace-tag-error" class="trace-tag-error hidden" role="alert" aria-live="assertive"></div>
+          </section>
+        </div>
         <div class="trace-confirm-actions">
           <button id="trace-confirm-ok" class="btn" type="button">OK</button>
           <button id="trace-confirm-cancel" class="btn secondary" type="button">キャンセル</button>
