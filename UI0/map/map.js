@@ -1167,19 +1167,19 @@ async function handleRecordStopWithConfirmation() {
 
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
+    const persistResult = await persistCurrentSessionWithoutConfirmation();
+    if (!persistResult.success) {
+      await cancelRecordingSessions(allSessionIds);
+      return;
+    }
     if (isCurrentUserPro) {
       try {
         await saveSessionTags(allSessionIds);
       } catch (err) {
         console.error("[Record] save session tags error:", err);
-        alert("タグの保存に失敗しました。通信状況を確認してもう一度お試しください。");
-        await cancelRecordingSessions(allSessionIds);
-        return;
+        // セッション本体は保存済みなので、タグ保存失敗時は記録自体を取り消さない。
+        alert("タグの保存に失敗しました。タグなしで記録は保存されています。");
       }
-    }
-    const persistResult = await persistCurrentSessionWithoutConfirmation();
-    if (!persistResult.success) {
-      await cancelRecordingSessions(allSessionIds);
     }
     return;
   }
