@@ -22,6 +22,7 @@ body {
   min-height: 0;
   width: 100%;
   margin: 0;
+  position: relative;
 }
 
 .record-actions {
@@ -128,6 +129,110 @@ body {
   overflow: hidden;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
   transition: height 0.25s ease;
+}
+
+.tactile-session-card {
+  position: absolute;
+  z-index: 1500;
+  width: min(280px, calc(100% - 24px));
+  min-width: 220px;
+  padding: 10px 12px 12px;
+  border: 2px solid #222;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+.tactile-session-card.hidden {
+  display: none;
+}
+
+.tactile-session-card-header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 24px;
+  align-items: start;
+  gap: 10px;
+}
+
+.tactile-session-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(46, 158, 143, 0.24);
+  object-fit: cover;
+  background: #f2f2f2;
+}
+
+.tactile-session-card-meta {
+  min-width: 0;
+}
+
+.tactile-session-card-time {
+  display: block;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #6d6d6d;
+  margin-bottom: 2px;
+}
+
+.tactile-session-card-username {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #111;
+  word-break: break-word;
+}
+
+.tactile-session-card-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tactile-session-card-close img {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.tactile-session-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tactile-session-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #9fd4ca;
+  background: #e9f8f4;
+  color: #15594f;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tactile-session-card-message {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4d4d4d;
+}
+
+.tactile-session-card-message.is-error {
+  color: #c73b3b;
 }
 
 /* 下部のスワイプ式コントロールパネル */
@@ -408,6 +513,11 @@ body {
   .record-action-btn {
     height: 42px;
     font-size: 13px;
+  }
+
+  .tactile-session-card {
+    min-width: 0;
+    padding: 10px;
   }
 
   .gps-indicator {

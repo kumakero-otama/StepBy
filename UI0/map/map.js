@@ -1,5 +1,6 @@
 const map = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
 const mapLayoutEl = document.getElementById("map-layout");
+const mapRowEl = document.querySelector(".map-row");
 const appBarSpacerEl = document.querySelector(".app-bar-spacer");
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
@@ -88,6 +89,293 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+const TACTILE_SESSION_TEXT = {
+  ja: {
+    title: "点字ブロック記録",
+    loading: "読み込み中...",
+    sessionId: "session_id",
+    tags: "タグ",
+    noTags: "タグなし",
+    unknownUser: "不明",
+    unknownTime: "不明",
+    notFound: "記録情報が見つかりませんでした",
+    fetchFailed: "記録情報の取得に失敗しました",
+  },
+  en: {
+    title: "Tactile Block Record",
+    loading: "Loading...",
+    sessionId: "session_id",
+    tags: "Tags",
+    noTags: "No tags",
+    unknownUser: "Unknown",
+    unknownTime: "Unknown",
+    notFound: "Record information was not found",
+    fetchFailed: "Failed to load record information",
+  },
+  hi: {
+    title: "टैक्टाइल ब्लॉक रिकॉर्ड",
+    loading: "लोड हो रहा है...",
+    sessionId: "session_id",
+    tags: "टैग",
+    noTags: "कोई टैग नहीं",
+    unknownUser: "अज्ञात",
+    unknownTime: "अज्ञात",
+    notFound: "रिकॉर्ड जानकारी नहीं मिली",
+    fetchFailed: "रिकॉर्ड जानकारी लाने में विफल",
+  },
+};
+
+function getTactileSessionText() {
+  const language = getCurrentLanguage();
+  return TACTILE_SESSION_TEXT[language] || TACTILE_SESSION_TEXT.ja;
+}
+
+function formatTactileSessionDate(dateRaw) {
+  const text = getTactileSessionText();
+  const date = new Date(dateRaw);
+  if (Number.isNaN(date.getTime())) {
+    return text.unknownTime;
+  }
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${y}/${m}/${d} ${hh}:${mm}`;
+}
+
+function normalizeAppAssetUrl(url) {
+  if (typeof url !== "string" || !url.trim()) {
+    return "";
+  }
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  return window.location.origin + AppPath.toApp(url.startsWith("/") ? url : `/${url}`);
+}
+
+function buildTactileSessionTagsHtml(tags) {
+  const text = getTactileSessionText();
+  if (!Array.isArray(tags) || tags.length < 1) {
+    return `<span style="color:#8A9BB0;font-size:11px">${escapeHtml(text.noTags)}</span>`;
+  }
+  return tags
+    .map((tag) => {
+      const label = escapeHtml(tag);
+      if (!label) {
+        return "";
+      }
+      return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(46,158,143,0.12);color:#1a7a6e;padding:4px 9px;border-radius:12px;font-size:11px;font-weight:600;margin:2px 2px 2px 0"><span aria-hidden="true">#</span>${label}</span>`;
+    })
+    .join("");
+}
+
+function buildTactileSessionPopupHtml(sessionId, sessionInfo, { loading = false, error = "" } = {}) {
+  const text = getTactileSessionText();
+  if (loading) {
+    return `
+      <div style="font-family:'Noto Sans JP',sans-serif;min-width:220px;max-width:280px">
+        <div style="font-size:12px;font-weight:700;color:#1a3a3a;margin-bottom:8px">${escapeHtml(text.title)}</div>
+        <div style="font-size:12px;color:#5A6B7C">${escapeHtml(text.loading)}</div>
+      </div>`;
+  }
+
+  if (error) {
+    return `
+      <div style="font-family:'Noto Sans JP',sans-serif;min-width:220px;max-width:280px">
+        <div style="font-size:12px;font-weight:700;color:#1a3a3a;margin-bottom:8px">${escapeHtml(text.title)}</div>
+        <div style="font-size:11px;color:#8A9BB0;margin-bottom:8px">${escapeHtml(text.sessionId)}: ${escapeHtml(sessionId)}</div>
+        <div style="font-size:12px;color:#d64545">${escapeHtml(error)}</div>
+      </div>`;
+  }
+
+  const username = escapeHtml(sessionInfo && sessionInfo.username ? sessionInfo.username : text.unknownUser);
+  const createdAt = escapeHtml(formatTactileSessionDate(sessionInfo && sessionInfo.createdAt));
+  const effectiveSessionId = escapeHtml(sessionInfo && sessionInfo.sessionId ? sessionInfo.sessionId : sessionId);
+  const iconUrl = normalizeAppAssetUrl(sessionInfo && sessionInfo.iconUrl);
+  const fallbackIconUrl = escapeHtml(window.location.origin + AppPath.toApp("/assets/account_default.png"));
+  const iconSrc = escapeHtml(iconUrl || window.location.origin + AppPath.toApp("/assets/account_default.png"));
+
+  return `
+    <div style="font-family:'Noto Sans JP',sans-serif;min-width:220px;max-width:280px">
+      <div style="font-size:12px;font-weight:700;color:#1a3a3a;margin-bottom:10px">${escapeHtml(text.title)}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <img src="${iconSrc}" alt="${username}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(46,158,143,0.18)" onerror="this.onerror=null;this.src='${fallbackIconUrl}'">
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:700;color:#1A2B3C;line-height:1.4">${username}</div>
+          <div style="font-size:11px;color:#8A9BB0;margin-top:2px">${escapeHtml(text.sessionId)}: ${effectiveSessionId}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#5A6B7C;margin-bottom:8px">${createdAt}</div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#5A6B7C;margin-bottom:4px">${escapeHtml(text.tags)}</div>
+        <div>${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
+      </div>
+    </div>`;
+}
+
+function buildTactileSessionCardShell(innerHtml) {
+  const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
+  return `
+    <div class="tactile-session-card-header">
+      ${innerHtml}
+      <button class="tactile-session-card-close" type="button" data-close-tactile-session-card aria-label="close">
+        <img src="${closeIconUrl}" alt="">
+      </button>
+    </div>`;
+}
+
+function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, error = "" } = {}) {
+  const text = getTactileSessionText();
+  if (loading) {
+    return buildTactileSessionCardShell(`
+      <div class="tactile-session-card-avatar" aria-hidden="true"></div>
+      <div class="tactile-session-card-meta">
+        <span class="tactile-session-card-time">${escapeHtml(text.sessionId)}: ${escapeHtml(sessionId)}</span>
+        <div class="tactile-session-card-message">${escapeHtml(text.loading)}</div>
+      </div>
+    `);
+  }
+
+  if (error) {
+    return buildTactileSessionCardShell(`
+      <div class="tactile-session-card-avatar" aria-hidden="true"></div>
+      <div class="tactile-session-card-meta">
+        <span class="tactile-session-card-time">${escapeHtml(text.sessionId)}: ${escapeHtml(sessionId)}</span>
+        <div class="tactile-session-card-message is-error">${escapeHtml(error)}</div>
+      </div>
+    `);
+  }
+
+  const username = escapeHtml(sessionInfo && sessionInfo.username ? sessionInfo.username : text.unknownUser);
+  const createdAt = escapeHtml(formatTactileSessionDate(sessionInfo && sessionInfo.createdAt));
+  const iconUrl = normalizeAppAssetUrl(sessionInfo && sessionInfo.iconUrl);
+  const fallbackIconUrl = escapeHtml(AppPath.toApp("/assets/account_default.png"));
+  const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
+  const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
+
+  return `
+    <div class="tactile-session-card-header">
+      <img class="tactile-session-card-avatar" src="${iconSrc}" alt="${username}" onerror="this.onerror=null;this.src='${fallbackIconUrl}'">
+      <div class="tactile-session-card-meta">
+        <span class="tactile-session-card-time">${createdAt}</span>
+        <span class="tactile-session-card-username">${username}</span>
+      </div>
+      <button class="tactile-session-card-close" type="button" data-close-tactile-session-card aria-label="close">
+        <img src="${closeIconUrl}" alt="">
+      </button>
+    </div>
+    <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>`;
+}
+
+function ensureTactileSessionCard() {
+  if (tactileSessionCardEl || !mapRowEl) {
+    return tactileSessionCardEl;
+  }
+  tactileSessionCardEl = document.createElement("section");
+  tactileSessionCardEl.className = "tactile-session-card hidden";
+  tactileSessionCardEl.setAttribute("aria-live", "polite");
+  tactileSessionCardEl.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  tactileSessionCardEl.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+  mapRowEl.appendChild(tactileSessionCardEl);
+  return tactileSessionCardEl;
+}
+
+function hideTactileSessionCard() {
+  tactileSessionCardLatLng = null;
+  if (!tactileSessionCardEl) {
+    return;
+  }
+  tactileSessionCardEl.classList.add("hidden");
+}
+
+function positionTactileSessionCard(latlng) {
+  if (!tactileSessionCardEl || tactileSessionCardEl.classList.contains("hidden") || !latlng || !mapRowEl) {
+    return;
+  }
+  const point = map.latLngToContainerPoint(latlng);
+  const cardRect = tactileSessionCardEl.getBoundingClientRect();
+  const rowRect = mapRowEl.getBoundingClientRect();
+  const gap = 12;
+  const cardWidth = cardRect.width || Math.min(280, Math.max(220, rowRect.width - 24));
+  const cardHeight = cardRect.height || 120;
+  let left = point.x + gap;
+  let top = point.y - cardHeight - gap;
+
+  if (left + cardWidth > rowRect.width - 8) {
+    left = point.x - cardWidth - gap;
+  }
+  if (left < 8) {
+    left = Math.max(8, Math.min(point.x + gap, rowRect.width - cardWidth - 8));
+  }
+  if (top < 8) {
+    top = point.y + gap;
+  }
+  if (top + cardHeight > rowRect.height - 8) {
+    top = Math.max(8, rowRect.height - cardHeight - 8);
+  }
+
+  tactileSessionCardEl.style.left = `${Math.round(left)}px`;
+  tactileSessionCardEl.style.top = `${Math.round(top)}px`;
+}
+
+function renderTactileSessionCard(contentHtml, latlng) {
+  const card = ensureTactileSessionCard();
+  if (!card) {
+    return;
+  }
+  tactileSessionCardLatLng = latlng || null;
+  card.innerHTML = contentHtml;
+  card.classList.remove("hidden");
+  const closeBtn = card.querySelector("[data-close-tactile-session-card]");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hideTactileSessionCard();
+    });
+  }
+  positionTactileSessionCard(tactileSessionCardLatLng);
+}
+
+function fetchTactileSessionInfo(sessionId) {
+  if (!sessionId) {
+    return Promise.reject(new Error("missing_session_id"));
+  }
+  if (tactileSessionInfoCache.has(sessionId)) {
+    const cached = tactileSessionInfoCache.get(sessionId);
+    return cached instanceof Promise ? cached : Promise.resolve(cached);
+  }
+
+  const params = new URLSearchParams({ sessionId });
+  const request = authFetch(`/api/tactile-session-info?${params.toString()}`, { cache: "no-store" })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`tactile-session-info fetch failed: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((payload) => {
+      const session = payload && payload.success ? payload.session : null;
+      if (!session) {
+        throw new Error("session_not_found");
+      }
+      tactileSessionInfoCache.set(sessionId, session);
+      return session;
+    })
+    .catch((err) => {
+      tactileSessionInfoCache.delete(sessionId);
+      throw err;
+    });
+
+  tactileSessionInfoCache.set(sessionId, request);
+  return request;
 }
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -195,6 +483,9 @@ function decodePolyline(str, precision) {
 let allRecordsMarkers = [];
 let osmTactileMarkers = [];
 let roadInfoMarkers = [];
+const tactileSessionInfoCache = new Map();
+let tactileSessionCardEl = null;
+let tactileSessionCardLatLng = null;
 let isZooming = false;
 let suppressMapTapUntil = 0;
 let osmTactileLoadRequestSeq = 0;
@@ -466,6 +757,15 @@ map.on("zoomstart", () => {
 map.on("zoomend", () => {
   isZooming = false;
   suppressMapTapUntil = Date.now() + MAP_TAP_SUPPRESS_AFTER_ZOOM_MS;
+  if (tactileSessionCardLatLng) {
+    positionTactileSessionCard(tactileSessionCardLatLng);
+  }
+});
+
+map.on("move", () => {
+  if (tactileSessionCardLatLng) {
+    positionTactileSessionCard(tactileSessionCardLatLng);
+  }
 });
 
 map.on("click", (event) => {
@@ -1467,7 +1767,36 @@ function showAllSessionPathsOnMap(paths) {
       color: "#00b050",
       weight: 4,
       opacity: 0.85,
+      bubblingMouseEvents: false,
     }).addTo(map);
+    const sessionId = typeof path.session_id === "string" ? path.session_id : "";
+    if (sessionId) {
+      polyline.on("click", (event) => {
+        L.DomEvent.stop(event);
+        renderTactileSessionCard(
+          buildTactileSessionCardHtml(sessionId, null, { loading: true }),
+          event.latlng
+        );
+
+        fetchTactileSessionInfo(sessionId)
+          .then((sessionInfo) => {
+            renderTactileSessionCard(
+              buildTactileSessionCardHtml(sessionId, sessionInfo),
+              event.latlng
+            );
+          })
+          .catch((err) => {
+            const text = getTactileSessionText();
+            const message = err && err.message === "session_not_found"
+              ? text.notFound
+              : text.fetchFailed;
+            renderTactileSessionCard(
+              buildTactileSessionCardHtml(sessionId, null, { error: message }),
+              event.latlng
+            );
+          });
+      });
+    }
     allRecordsMarkers.push(polyline);
   });
 
