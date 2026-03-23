@@ -415,6 +415,14 @@ function fetchTactileSessionInfo(sessionId) {
   return request;
 }
 
+function isNonProVisibleTactileSession(path) {
+  if (isCurrentUserPro) {
+    return true;
+  }
+  const tags = Array.isArray(path && path.tags) ? path.tags : [];
+  return tags.length === 1 && String(tags[0] || "").trim() === "点字ブロック";
+}
+
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: "&copy; OpenStreetMap contributors",
@@ -1772,6 +1780,9 @@ function showAllSessionPathsOnMap(paths) {
   clearAllRecordsFromMap();
   hideTactileSessionCard();
   const visiblePaths = paths.filter((path) => {
+    if (!isNonProVisibleTactileSession(path)) {
+      return false;
+    }
     if (!shouldShowOnlyMyTactile()) {
       return true;
     }
