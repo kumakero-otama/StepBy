@@ -289,10 +289,47 @@ function ensureTactileSessionCard() {
 
 function hideTactileSessionCard() {
   tactileSessionCardLatLng = null;
+  if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
+    activeTactileSessionPolyline.setStyle({
+      color: "#00b050",
+      weight: 4,
+      opacity: 0.85,
+    });
+  }
+  activeTactileSessionPolyline = null;
   if (!tactileSessionCardEl) {
     return;
   }
   tactileSessionCardEl.classList.add("hidden");
+}
+
+function setActiveTactileSessionPolyline(polyline) {
+  if (activeTactileSessionPolyline === polyline) {
+    if (polyline && typeof polyline.bringToFront === "function") {
+      polyline.bringToFront();
+    }
+    return;
+  }
+
+  if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
+    activeTactileSessionPolyline.setStyle({
+      color: "#00b050",
+      weight: 4,
+      opacity: 0.85,
+    });
+  }
+
+  activeTactileSessionPolyline = polyline || null;
+  if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
+    activeTactileSessionPolyline.setStyle({
+      color: "#ff7a00",
+      weight: 8,
+      opacity: 1,
+    });
+    if (typeof activeTactileSessionPolyline.bringToFront === "function") {
+      activeTactileSessionPolyline.bringToFront();
+    }
+  }
 }
 
 function positionTactileSessionCard(latlng) {
@@ -486,6 +523,7 @@ let roadInfoMarkers = [];
 const tactileSessionInfoCache = new Map();
 let tactileSessionCardEl = null;
 let tactileSessionCardLatLng = null;
+let activeTactileSessionPolyline = null;
 let isZooming = false;
 let suppressMapTapUntil = 0;
 let osmTactileLoadRequestSeq = 0;
@@ -1732,6 +1770,7 @@ function loadAndShowAllRecords() {
 // session_pathsの全軌跡を地図上に表示
 function showAllSessionPathsOnMap(paths) {
   clearAllRecordsFromMap();
+  hideTactileSessionCard();
   const visiblePaths = paths.filter((path) => {
     if (!shouldShowOnlyMyTactile()) {
       return true;
@@ -1767,12 +1806,19 @@ function showAllSessionPathsOnMap(paths) {
       color: "#00b050",
       weight: 4,
       opacity: 0.85,
+      interactive: false,
+    }).addTo(map);
+    const hitPolyline = L.polyline(coordinates, {
+      color: "#00b050",
+      weight: 12,
+      opacity: 0,
       bubblingMouseEvents: false,
     }).addTo(map);
     const sessionId = typeof path.session_id === "string" ? path.session_id : "";
     if (sessionId) {
-      polyline.on("click", (event) => {
+      hitPolyline.on("click", (event) => {
         L.DomEvent.stop(event);
+        setActiveTactileSessionPolyline(polyline);
         renderTactileSessionCard(
           buildTactileSessionCardHtml(sessionId, null, { loading: true }),
           event.latlng
@@ -1798,6 +1844,7 @@ function showAllSessionPathsOnMap(paths) {
       });
     }
     allRecordsMarkers.push(polyline);
+    allRecordsMarkers.push(hitPolyline);
   });
 
   console.log(`[showAllSessionPathsOnMap] Displayed ${allRecordsMarkers.length} polylines`);
@@ -1806,6 +1853,7 @@ function showAllSessionPathsOnMap(paths) {
 // 全レコードを地図から削除
 function clearAllRecordsFromMap() {
   console.log(`[clearAllRecordsFromMap] Removing ${allRecordsMarkers.length} displayed paths`);
+  activeTactileSessionPolyline = null;
   allRecordsMarkers.forEach((marker) => {
     map.removeLayer(marker);
   });
