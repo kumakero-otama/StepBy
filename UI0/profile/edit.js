@@ -9,6 +9,24 @@ const saveToastEl = document.getElementById("profile-save-toast");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
 
+function getProfileCacheStorage() {
+  try {
+    if (window.localStorage) {
+      return window.localStorage;
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  try {
+    if (window.sessionStorage) {
+      return window.sessionStorage;
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  return null;
+}
+
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
     return authTokenApi.authFetch(input, init);
@@ -29,19 +47,61 @@ function saveCachedProfileUser(user) {
   if (!user || typeof user !== "object") {
     return;
   }
+  const existing = loadCachedProfileUser();
   const normalized = {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
-    isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : null),
+    isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : existing && typeof existing.isPro === "boolean" ? existing.isPro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
   };
   try {
-    window.sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
+    const storage = getProfileCacheStorage();
+    if (!storage) {
+      return;
+    }
+    storage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
   } catch {
     // ignore storage errors
+  }
+}
+
+function loadCachedProfileUser() {
+  try {
+    const storage = getProfileCacheStorage();
+    if (!storage) {
+      return null;
+    }
+    const raw = storage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function applyCachedProfileUser(user) {
+  if (!user) {
+    return;
+  }
+  const username = user.username || "";
+  const iconUrl = user.iconUrl == null
+    ? AppPath.toApp("/assets/account_default.png")
+    : AppPath.toApiAsset(user.iconUrl);
+
+  if (usernameInputEl && username) {
+    usernameInputEl.value = username;
+  }
+  if (iconPreviewEl) {
+    iconPreviewEl.src = iconUrl;
+    iconPreviewEl.alt = `${username || "ユーザー"}のアイコン`;
+  }
+  if (proToggleInputEl && typeof user.isPro === "boolean") {
+    proToggleInputEl.checked = user.isPro;
   }
 }
 
@@ -73,6 +133,10 @@ async function applySelectedIcon(file) {
 }
 
 async function loadCurrentProfile() {
+  const cached = loadCachedProfileUser();
+  if (cached) {
+    applyCachedProfileUser(cached);
+  }
   try {
     const res = await authFetch("/auth/me", {
       cache: "no-store",

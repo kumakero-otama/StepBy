@@ -8,6 +8,24 @@ const editBtnEl = document.getElementById("profile-edit-btn");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
 
+function getProfileCacheStorage() {
+  try {
+    if (window.localStorage) {
+      return window.localStorage;
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  try {
+    if (window.sessionStorage) {
+      return window.sessionStorage;
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  return null;
+}
+
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
     return authTokenApi.authFetch(input, init);
@@ -33,16 +51,22 @@ function saveCachedProfileUser(user) {
   if (!user || typeof user !== "object") {
     return;
   }
+  const existing = loadCachedProfileUser();
   const normalized = {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : existing && typeof existing.isPro === "boolean" ? existing.isPro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
   };
   try {
-    window.sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
+    const storage = getProfileCacheStorage();
+    if (!storage) {
+      return;
+    }
+    storage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
   } catch {
     // ignore storage errors
   }
@@ -50,13 +74,29 @@ function saveCachedProfileUser(user) {
 
 function loadCachedProfileUser() {
   try {
-    const raw = window.sessionStorage.getItem(PROFILE_CACHE_KEY);
+    const storage = getProfileCacheStorage();
+    if (!storage) {
+      return null;
+    }
+    const raw = storage.getItem(PROFILE_CACHE_KEY);
     if (!raw) {
       return null;
     }
     return JSON.parse(raw);
   } catch {
     return null;
+  }
+}
+
+function clearCachedProfileUser() {
+  try {
+    const storage = getProfileCacheStorage();
+    if (!storage) {
+      return;
+    }
+    storage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // ignore storage errors
   }
 }
 
@@ -131,6 +171,7 @@ async function logout() {
     // Always redirect so the user can recover by logging in again.
   }
   clearAccessToken();
+  clearCachedProfileUser();
   window.location.replace(AppPath.toApp("/auth/login.html"));
 }
 
