@@ -233,7 +233,6 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
     return buildTactileSessionCardShell(`
       <div class="tactile-session-card-avatar" aria-hidden="true"></div>
       <div class="tactile-session-card-meta">
-        <span class="tactile-session-card-time">${escapeHtml(text.sessionId)}: ${escapeHtml(sessionId)}</span>
         <div class="tactile-session-card-message">${escapeHtml(text.loading)}</div>
       </div>
     `);
