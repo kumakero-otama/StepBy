@@ -97,6 +97,7 @@ const TACTILE_SESSION_TEXT = {
     loading: "読み込み中...",
     sessionId: "session_id",
     tags: "タグ",
+    selfLabel: "あなた",
     noTags: "タグなし",
     unknownUser: "不明",
     unknownTime: "不明",
@@ -108,6 +109,7 @@ const TACTILE_SESSION_TEXT = {
     loading: "Loading...",
     sessionId: "session_id",
     tags: "Tags",
+    selfLabel: "You",
     noTags: "No tags",
     unknownUser: "Unknown",
     unknownTime: "Unknown",
@@ -119,6 +121,7 @@ const TACTILE_SESSION_TEXT = {
     loading: "लोड हो रहा है...",
     sessionId: "session_id",
     tags: "टैग",
+    selfLabel: "आप",
     noTags: "कोई टैग नहीं",
     unknownUser: "अज्ञात",
     unknownTime: "अज्ञात",
@@ -172,7 +175,17 @@ function buildTactileSessionTagsHtml(tags) {
     .join("");
 }
 
-function buildTactileSessionPopupHtml(sessionId, sessionInfo, { loading = false, error = "" } = {}) {
+function buildTactileSessionUsername(sessionInfo, ownerUserId = null) {
+  const text = getTactileSessionText();
+  const username = sessionInfo && sessionInfo.username ? String(sessionInfo.username) : text.unknownUser;
+  const normalizedOwnerUserId = Number(ownerUserId);
+  const isOwnRecord = Number.isFinite(normalizedOwnerUserId)
+    && Number.isFinite(currentUserId)
+    && normalizedOwnerUserId === currentUserId;
+  return isOwnRecord ? `${username} (${text.selfLabel})` : username;
+}
+
+function buildTactileSessionPopupHtml(sessionId, sessionInfo, { loading = false, error = "", ownerUserId = null } = {}) {
   const text = getTactileSessionText();
   if (loading) {
     return `
@@ -191,7 +204,7 @@ function buildTactileSessionPopupHtml(sessionId, sessionInfo, { loading = false,
       </div>`;
   }
 
-  const username = escapeHtml(sessionInfo && sessionInfo.username ? sessionInfo.username : text.unknownUser);
+  const username = escapeHtml(buildTactileSessionUsername(sessionInfo, ownerUserId));
   const createdAt = escapeHtml(formatTactileSessionDate(sessionInfo && sessionInfo.createdAt));
   const effectiveSessionId = escapeHtml(sessionInfo && sessionInfo.sessionId ? sessionInfo.sessionId : sessionId);
   const iconUrl = normalizeAppAssetUrl(sessionInfo && sessionInfo.iconUrl);
@@ -227,7 +240,7 @@ function buildTactileSessionCardShell(innerHtml) {
     </div>`;
 }
 
-function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, error = "" } = {}) {
+function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, error = "", ownerUserId = null } = {}) {
   const text = getTactileSessionText();
   if (loading) {
     return buildTactileSessionCardShell(`
@@ -248,7 +261,7 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
     `);
   }
 
-  const username = escapeHtml(sessionInfo && sessionInfo.username ? sessionInfo.username : text.unknownUser);
+  const username = escapeHtml(buildTactileSessionUsername(sessionInfo, ownerUserId));
   const createdAt = escapeHtml(formatTactileSessionDate(sessionInfo && sessionInfo.createdAt));
   const iconUrl = normalizeAppAssetUrl(sessionInfo && sessionInfo.iconUrl);
   const fallbackIconUrl = escapeHtml(AppPath.toApp("/assets/account_default.png"));
@@ -1829,15 +1842,16 @@ function showAllSessionPathsOnMap(paths) {
       hitPolyline.on("click", (event) => {
         L.DomEvent.stop(event);
         setActiveTactileSessionPolyline(polyline);
+        const ownerUserId = Number(path && path.user_id);
         renderTactileSessionCard(
-          buildTactileSessionCardHtml(sessionId, null, { loading: true }),
+          buildTactileSessionCardHtml(sessionId, null, { loading: true, ownerUserId }),
           event.latlng
         );
 
         fetchTactileSessionInfo(sessionId)
           .then((sessionInfo) => {
             renderTactileSessionCard(
-              buildTactileSessionCardHtml(sessionId, sessionInfo),
+              buildTactileSessionCardHtml(sessionId, sessionInfo, { ownerUserId }),
               event.latlng
             );
           })
@@ -1847,7 +1861,7 @@ function showAllSessionPathsOnMap(paths) {
               ? text.notFound
               : text.fetchFailed;
             renderTactileSessionCard(
-              buildTactileSessionCardHtml(sessionId, null, { error: message }),
+              buildTactileSessionCardHtml(sessionId, null, { error: message, ownerUserId }),
               event.latlng
             );
           });
