@@ -1,182 +1,293 @@
-# server ディレクトリ構成
+# API List
 
-このディレクトリは、HTTPサーバー本体（`server.js`）から呼び出されるバックエンド処理を実装しています。  
-ここでは `server/` 配下の各ファイルが何をしているかを、実装ベースで具体的に説明します。
+参照元: `public/docs/openapi.yaml`  
+OpenAPI version: `3.0.3`  
+API version: `1.22.2`
 
-## 全体像
+## 認証
 
-- `server.js` でURLパスごとに `server/api/*.js` のハンドラを呼び分けます。
-- DBアクセスは `server/db.js` の互換ラッパー経由で実行されます。
-- ログは `server/logger.js` のCSVロガーで `logs/*.csv` に追記されます。
-- API仕様書（OpenAPI）は `public/docs/openapi.yaml` に配置されています。
-- Swagger UI は `https://barrierfree-map.loophole.site/docs/index.html`で閲覧できます。
+- 認証付きAPIは `Authorization: Bearer <token>` または `session` Cookie を使用します。
+- OpenAPI上の security 指定がないAPIは、原則として未認証で利用できます。
 
----
+## API 一覧
 
-## `server/` 直下
+| Method | Path | Auth | 概要 |
+| --- | --- | --- | --- |
+| GET | `/api/config` | 不要 | クライアント初期化用設定を取得 |
+| GET | `/api/count` | 不要 | マップマッチング月次カウントを取得 |
+| GET | `/api/match` | 不要 | 1点マップマッチング（Valhalla locate） |
+| POST | `/api/session/start` | 必要 | セッション開始 |
+| POST | `/api/session/end` | 必要 | セッション終了 |
+| POST | `/api/session/cancel` | 必要 | セッション関連データを削除 |
+| POST | `/api/session/deactivate` | 必要 | セッションを論理無効化 |
+| GET | `/api/records` | 条件付き | 保存済み経路一覧を取得 |
+| POST | `/api/trace` | 不要 | Valhalla `trace_attributes` を呼び出し |
+| GET | `/api/osm-tactile-ways` | 不要 | Overpass経由で点字ブロック関連地物を取得 |
+| GET | `/api/post-tags` | 不要 | 投稿タグ一覧を取得 |
+| POST | `/api/post-tags` | 不要 | 投稿タグを追加 |
+| GET | `/api/road-info` | 条件付き | 道情報の一覧または詳細を取得 |
+| POST | `/api/road-info` | 必要 | 道情報を投稿 |
+| GET | `/api/pro-status` | 必要 | 現在ログイン中ユーザーのPRO状態を取得 |
+| PUT | `/api/pro-status` | 必要 | 現在ログイン中ユーザーのPRO状態を更新 |
+| GET | `/api/tactile-tags` | 不要 | `tactile.tags` 一覧を取得 |
+| POST | `/api/tactile-tags` | 必要 | `tactile.tags` にタグを追加 |
+| GET | `/api/session-tags` | 必要 | 現在ログイン中ユーザーの `tactile.session_tags` 一覧を取得 |
+| POST | `/api/session-tags` | 必要 | `tactile.session_tags` に紐づけを追加 |
+| GET | `/api/tactile-session-info` | 不要 | `session_id` から記録ユーザー情報とタグ表示名を取得 |
+| POST | `/auth/google` | 不要 | Google IDトークンでログイン |
+| POST | `/auth/google/signup` | 不要 | Googleアカウントで新規登録またはプロフィール初期設定 |
+| GET | `/auth/me` | 必要 | ログインユーザー情報を取得 |
+| POST | `/auth/logout` | 必要 | ログアウト |
+| POST | `/auth/profile` | 必要 | ユーザープロフィール更新 |
 
-### `server/db.js`
-- PostgreSQL接続を作る共通モジュールです。
-- 主な役割:
-  - `config.yaml` の `db` セクションを読み込み
-  - `pg` の `Pool` を生成
-  - 既存コード互換のため、`?` プレースホルダを PostgreSQL の `$1,$2...` に変換
-  - `INSERT` 時に `RETURNING id` を自動補完し、`insertId` 風の戻り値に変換
-- 返却:
-  - `{ pool, error }` 形式（初期化失敗時は `pool: null`）
+注記:
+- `GET /api/records` は OpenAPI 上で security 指定があります。実装上は `mine=1` 指定時に認証が必要になる想定です。
+- `GET /api/road-info` は OpenAPI 上で security 指定があります。実装上は `mine=1` 指定時など、一部条件で認証が必要になる想定です。
 
-### `server/logger.js`
-- CSV形式でログを追記する軽量ロガーです。
-- 主な役割:
-  - `createLogger(logFilePath)` でロガー生成
-  - `appendLog(level, message)` で `timestamp,level,message` をCSV追記
-  - ログディレクトリを自動作成
+## エンドポイント詳細
 
-### `server/road_info_config.js`
-- `config/road_info.yaml` から道情報投稿の設定を読むモジュールです。
-- 主な役割:
-  - `road_info.image_max_bytes` を読み込み
-  - 不正値やファイル欠損時はデフォルト（2MB）にフォールバック
-- 投稿API（`road_info.js`）と設定API（`config.js`）から利用されます。
+### Config / Match
 
----
+#### `GET /api/config`
+- 概要: クライアント初期化用設定を取得
+- 主なレスポンス:
+  - `200`: `serverMinIntervalMs`, `clientMinIntervalMs`, `roadInfoImageMaxBytes`
+  - `405`: `method_not_allowed`
 
-## `server/api/` 一覧
+#### `GET /api/count`
+- 概要: マップマッチング月次カウントを取得
+- 主なレスポンス:
+  - `200`: `count`, `max`, `month`, `allMonths`
+  - `405`: `method_not_allowed`
 
-### 認証方式（現行）
-- 認証付きAPIは **Bearerトークン**（`Authorization: Bearer <token>`）を優先して受け付けます。
-- 一部エンドポイントでは移行互換のため **session Cookie** でも認証可能です。
-- 実装は `server/auth_token.js`（トークン生成/検証）と `server/auth_user.js`（ユーザー解決）にあります。
+#### `GET /api/match`
+- 概要: 1点マップマッチング（Valhalla locate）
+- 主なクエリ:
+  - 必須: `lat`, `lng`
+  - 任意: `prevLat`, `prevLng`, `sessionId`, `sessionUuid`, `userId`, `deviceUuid`, `seq`, `record=1`
+- 主なレスポンス:
+  - `200`: `lat`, `lng`, `count`, `month`
+  - `204`: 上限到達または上流応答を処理できない場合
+  - `400`: `invalid_coordinates`
+  - `429`: `rate_limited`
 
-### `server/api/config.js`
-- エンドポイント: `GET /api/config`
-- 返す内容:
-  - サーバー側最小送信間隔
-  - クライアント側最小送信間隔
-  - 道情報画像の最大サイズ（バイト）
-- フロント側はこの値を使って投稿画像サイズ制限を行います。
+### Session / Records / Trace
 
-### `server/api/count.js`
-- エンドポイント: `GET /api/count`
-- 返す内容:
-  - 当月のマッチAPI利用回数
-  - 月次上限
-  - 全月のカウント情報
-- `server.js` が保持する月次カウンタ状態をそのまま返します。
+#### `POST /api/session/start`
+- 概要: セッション開始
+- 認証: 必要
+- リクエストBody:
+  - 任意: `sessionId`, `sessionUuid`, `startedAt`
+- 主なレスポンス:
+  - `200`: `success`, `sessionId` など
+  - `400`, `401`, `500`
 
-### `server/api/session.js`
-- エンドポイント:
-  - `POST /api/session/start`
-  - `POST /api/session/end`
-  - `POST /api/session/cancel`
-- 主な役割:
-  - セッション開始・終了の記録（`tactile.sessions`）
-  - キャンセル時の関連データ削除
-    - `tactile.session_path_edges`
-    - `tactile.session_paths`
-    - `tactile.gps_matched`
-    - `tactile.gps_raw`
-    - `tactile.sessions`
-  - `canceledSessionIds` / `deletedSessionKeys` にも反映（後続保存を抑止）
-- 認証:
-  - Bearer または session Cookie が必要（未認証は `401`）
-- ログ:
-  - `logs/sessions.csv` にイベントを追記
+#### `POST /api/session/end`
+- 概要: セッション終了
+- 認証: 必要
+- リクエストBody:
+  - 任意: `sessionId`, `sessionUuid`, `endedAt`
+- 主なレスポンス:
+  - `200`: `success`, `sessionId`, `updated` など
+  - `400`, `401`, `500`
 
-### `server/api/records.js`
-- エンドポイント: `GET /api/records`
-- 主な役割:
-  - `tactile.session_paths` から保存済み経路を取得
-  - `centerLat/centerLng/radiusKm` があれば `ST_DWithin` で範囲絞り込み
-  - `mine=1` 指定時はログインユーザーの経路のみ返却
-  - `ST_AsGeoJSON(geom)` でフロントが扱いやすい形で返却
-- 認証:
-  - 通常取得は不要
-  - `mine=1` 指定時のみ Bearer または session Cookie が必要
+#### `POST /api/session/cancel`
+- 概要: セッション関連データを削除
+- 認証: 必要
+- リクエストBody:
+  - 任意: `sessionId`, `sessionUuid`
+- 主なレスポンス:
+  - `200`: `success`, `sessionId`, `canceled` など
+  - `400`, `401`, `404`, `500`
 
-### `server/api/match_valhalla.js`（現行で使用）
-- エンドポイント: `GET /api/match`
-- 主な役割:
-  - Valhalla `/locate` に座標を投げてスナップ位置を取得
-  - レート制限（端末単位）を適用
-  - 月次使用回数をカウント
-  - 条件が揃うとセッション点を保存
-  - `record=1` のときリアルタイム点を `gps_raw/gps_matched` に保存
-- 依存:
-  - 環境変数 `VALHALLA_HOST`, `VALHALLA_PORT`
-  - DB（保存系）
+#### `POST /api/session/deactivate`
+- 概要: セッションを論理無効化
+- 認証: 必要
+- リクエストBody:
+  - 任意: `sessionId`, `sessionUuid`
+- 補足:
+  - `tactile.sessions.is_active` を `false` に更新
+  - `session_paths` などの関連データは削除しない
+- 主なレスポンス:
+  - `200`: `success`, `sessionId`, `updated` など
+  - `400`, `401`, `404`, `500`
 
-### `server/api/trace.js`
-- エンドポイント: `POST /api/trace`
-- 主な役割:
-  - Valhalla `/trace_attributes` を呼び出し、マッチング結果を返却
-  - `sessionId` 付きなら `tactile.session_paths` と `tactile.session_path_edges` を更新
-  - セッションがキャンセル済みなら保存をスキップ
+#### `GET /api/records`
+- 概要: 保存済み経路一覧を取得
+- 認証: 条件付き
+- 主なクエリ:
+  - 任意: `centerLat`, `centerLng`, `radiusKm`, `mine=1`
+- 主なレスポンス:
+  - `200`: `success`, `count`, `paths[]`
+  - `401`, `405`, `500`, `503`
 
-### `server/api/osm_tactile.js`
-- エンドポイント: `GET /api/osm-tactile-ways`
-- 主な役割:
-  - `config/osm_tactile_rules.yaml` を読み込み
-  - Overpass APIへクエリ送信（中心座標 + 半径）
-  - OSMレスポンスをGeoJSON `FeatureCollection` に整形して返却
-- フロント地図の「OSM点字ブロック表示」トグルで利用されます。
+#### `POST /api/trace`
+- 概要: Valhalla `trace_attributes` を呼び出し
+- リクエストBody:
+  - 必須: `shape[]`
+  - 任意: `userId`, `sessionId`, `source`, `costing`, `shape_match`, `filters`
+- 主なレスポンス:
+  - `200`: Valhallaレスポンスを返却
+  - `400`: `invalid_json`
+  - `405`, `500`
 
-### `server/api/post_tags.js`
-- エンドポイント:
-  - `GET /api/post-tags`（タグ一覧）
-  - `POST /api/post-tags`（タグ追加）
-- 主な役割:
-  - `roadinfo.road_info_tag` をマスタとして参照
-  - ラベル重複チェック
-  - 新規作成時は `code` を自動生成（重複回避）
-  - `sort_order` を末尾追加で採番
+### OSM / RoadInfo / Tags
 
-### `server/api/road_info.js`
-- エンドポイント:
-  - `GET /api/road-info?centerLat=...&centerLng=...&radiusKm=...`  
-    道情報ポイント一覧（地図表示用）
-  - `GET /api/road-info?pointId=...`  
-    道情報詳細（タグ・投稿本文・画像）取得
-  - `POST /api/road-info`  
-    道情報投稿（ポイント・タグ関連付け・説明文・画像）
-- 主な役割:
-  - 投稿時:
-    - `road_info_point` 追加
-    - `road_info_point_tag` 追加
-    - `road_info_note` 追加
-    - `road_info_media` 追加
-    - 画像を `uploads/road_info_media/` に保存
-  - 失敗時:
-    - DBトランザクションをロールバック
-    - 保存済み画像ファイルを削除して整合性維持
-- 認証:
-  - `POST` は Bearer または session Cookie が必要
-  - `GET` は通常不要（`mine=1` 指定時のみ必要）
+#### `GET /api/osm-tactile-ways`
+- 概要: Overpass経由で点字ブロック関連地物を取得
+- 主なクエリ:
+  - 必須: `centerLat`, `centerLng`
+  - 任意: `radiusKm`（既定値 `10`）
+- 主なレスポンス:
+  - `200`: `success`, `centerLat`, `centerLng`, `radiusKm`, `count`, `features[]`
+  - `400`: `invalid_center`
+  - `405`, `500`, `502`
 
-### `server/api/google_auth.js`
-- エンドポイント:
-  - `POST /auth/google`（Google IDトークンでログイン）
-  - `POST /auth/google/signup`（新規登録/初回プロフィール設定）
-  - `GET /auth/me`（ログイン状態とユーザー情報取得）
-  - `POST /auth/logout`（ログアウト）
-  - `POST /auth/profile`（プロフィール更新）
-- 主な役割:
-  - Google IDトークン検証（`google-auth-library`）
-  - アプリ用 Access Token（JWT）発行
-  - session Cookie の発行/削除（互換運用）
-  - `login.*` スキーマのユーザー/セッション管理
-  - アイコン画像保存（`/uploads/user_icons/`）
+#### `GET /api/post-tags`
+- 概要: 投稿タグ一覧を取得
+- 主なレスポンス:
+  - `200`: `success`, `count`, `tags[]`
+  - `405`, `500`, `503`
 
-### `server/api/match_mapbox.js`（現在未使用）
-- 旧方式の `/api/match` 実装（Mapbox Matching API版）です。
-- `server.js` は現在 `match_valhalla.js` を使用しているため、通常運用では呼ばれません。
-- 互換・比較用として残されています。
+#### `POST /api/post-tags`
+- 概要: 投稿タグを追加
+- リクエストBody:
+  - 必須: `label`
+- 主なレスポンス:
+  - `200`: 既存タグを返却
+  - `201`: 新規作成
+  - `400`, `405`, `500`, `503`
 
----
+#### `GET /api/road-info`
+- 概要: 道情報の一覧または詳細を取得
+- 認証: 条件付き
+- 主なクエリ:
+  - 一覧: `centerLat`, `centerLng`, `radiusKm`, `mine=1`
+  - 詳細: `pointId`
+- 補足:
+  - 一覧取得では `status = active` のポイントのみ返却
+  - 詳細取得でも `status = deleted` のポイントは返却しない
+- 主なレスポンス:
+  - `200`: 一覧レスポンスまたは詳細レスポンス
+  - `400`, `401`, `404`, `405`, `500`, `503`
 
-## メンテ時の見る順番（推奨）
+#### `POST /api/road-info`
+- 概要: 道情報を投稿（タグ自動作成対応）
+- 認証: 必要
+- リクエストBody:
+  - 任意: `pointId`, `lat`, `lng`, `detail`, `tagIds[]`, `status`, `images[]`
+- 補足:
+  - 未登録の `tagIds` は自動作成される
+  - 完了系タグが含まれる場合、対象ポイントの `status` は `inactive` に更新される
+  - `status = deleted` 指定時は status 更新のみ行い、note / media / tag の追加は行わない
+- 主なレスポンス:
+  - `201`: `success`, `pointId`, `noteId`, `tagsCount`, `createdTags[]`, `mediaCount`
+  - `400`, `401`, `404`, `405`, `500`, `503`
 
-1. ルーティング確認: `server.js`
-2. DB周り確認: `server/db.js`
-3. 対象APIハンドラ: `server/api/*.js`
-4. 設定値確認: `config.yaml`, `config/road_info.yaml`, `config/osm_tactile_rules.yaml`
+### ProStatus / Tactile
+
+#### `GET /api/pro-status`
+- 概要: 現在ログイン中ユーザーのPRO状態を取得
+- 認証: 必要
+- 主なレスポンス:
+  - `200`: `ProStatusResponse`
+  - `401`, `404`, `405`, `503`
+
+#### `PUT /api/pro-status`
+- 概要: 現在ログイン中ユーザーのPRO状態を更新
+- 認証: 必要
+- リクエストBody:
+  - 必須: `isPro`
+- 主なレスポンス:
+  - `200`: `ok` を含む `ProStatusResponse`
+  - `400`, `401`, `404`, `405`, `503`
+
+#### `GET /api/tactile-tags`
+- 概要: `tactile.tags` 一覧を取得
+- 主なクエリ:
+  - 任意: `activeOnly=1|true`
+- 主なレスポンス:
+  - `200`: `success`, `count`, `tags[]`
+  - `405`, `503`
+
+#### `POST /api/tactile-tags`
+- 概要: `tactile.tags` にタグを追加
+- 認証: 必要
+- リクエストBody:
+  - 必須: `code`, `labelJa`
+  - 任意: `sortOrder`, `isActive`
+- 主なレスポンス:
+  - `200`: 既存タグ
+  - `201`: 新規作成
+  - `400`, `401`, `405`, `500`, `503`
+
+#### `GET /api/session-tags`
+- 概要: 現在ログイン中ユーザーの `tactile.session_tags` 一覧を取得
+- 認証: 必要
+- 主なクエリ:
+  - 任意: `sessionId`, `sessionUuid`
+- 主なレスポンス:
+  - `200`: `success`, `count`, `sessionTags[]`
+  - `401`, `405`, `500`, `503`
+
+#### `POST /api/session-tags`
+- 概要: `tactile.session_tags` に紐づけを追加
+- 認証: 必要
+- リクエストBody:
+  - 必須: `sessionId`
+  - 任意: `sessionUuid`, `tagId`, `tagCode`
+- 主なレスポンス:
+  - `200`: 既存紐づけ
+  - `201`: 新規作成
+  - `400`, `401`, `404`, `405`, `500`, `503`
+
+#### `GET /api/tactile-session-info`
+- 概要: `session_id` から記録ユーザー情報とタグ表示名を取得
+- 主なクエリ:
+  - 必須相当: `sessionId` または `sessionUuid`
+- 主なレスポンス:
+  - `200`: `success`, `session`
+  - `400`, `404`, `405`, `500`, `503`
+
+### Auth
+
+#### `POST /auth/google`
+- 概要: Google IDトークンでログイン
+- リクエストBody:
+  - 必須: `id_token`
+- 主なレスポンス:
+  - `200`: 認証成功、`Set-Cookie` を返す
+  - `400`, `401`, `404`, `405`, `500`
+
+#### `POST /auth/google/signup`
+- 概要: Googleアカウントで新規登録またはプロフィール初期設定
+- リクエストBody:
+  - 必須: `id_token`, `username`, `icon_data_url`
+- 主なレスポンス:
+  - `200`: 認証成功、`updated` を含む。`Set-Cookie` を返す
+  - `400`, `401`, `405`, `500`
+
+#### `GET /auth/me`
+- 概要: ログインユーザー情報を取得
+- 認証: 必要
+- 主なレスポンス:
+  - `200`: `authenticated: true`, `user`
+  - `401`: `authenticated: false`
+  - `405`
+
+#### `POST /auth/logout`
+- 概要: ログアウト
+- 認証: 必要
+- 主なレスポンス:
+  - `200`: `ok: true`、Cookie削除
+  - `401`, `405`
+
+#### `POST /auth/profile`
+- 概要: ユーザープロフィール更新
+- 認証: 必要
+- リクエストBody:
+  - 必須: `username`
+  - 任意: `icon_data_url`
+- 主なレスポンス:
+  - `200`: `ok`, `user`
+  - `400`, `401`, `404`, `405`, `500`

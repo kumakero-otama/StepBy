@@ -211,6 +211,31 @@ body {
   margin-top: 10px;
 }
 
+.tactile-session-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.tactile-session-card-delete {
+  min-width: 84px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid #b43c3c;
+  border-radius: 999px;
+  background: #b43c3c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.tactile-session-card-delete:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .tactile-session-tag {
   display: inline-flex;
   align-items: center;

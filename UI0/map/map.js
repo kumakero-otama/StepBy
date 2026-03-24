@@ -98,6 +98,9 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "タグ",
     selfLabel: "あなた",
+    delete: "削除",
+    deleteConfirm: "本当にこの点字ブロックを削除してよろしいですか？",
+    deleteFailed: "点字ブロックの削除に失敗しました。",
     noTags: "タグなし",
     unknownUser: "不明",
     unknownTime: "不明",
@@ -110,6 +113,9 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "Tags",
     selfLabel: "You",
+    delete: "Delete",
+    deleteConfirm: "Are you sure you want to delete this tactile block?",
+    deleteFailed: "Failed to delete the tactile block.",
     noTags: "No tags",
     unknownUser: "Unknown",
     unknownTime: "Unknown",
@@ -122,6 +128,9 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "टैग",
     selfLabel: "आप",
+    delete: "हटाएं",
+    deleteConfirm: "क्या आप वाकई इस टैक्टाइल ब्लॉक को हटाना चाहते हैं?",
+    deleteFailed: "टैक्टाइल ब्लॉक हटाने में विफल रहा।",
     noTags: "कोई टैग नहीं",
     unknownUser: "अज्ञात",
     unknownTime: "अज्ञात",
@@ -183,6 +192,13 @@ function buildTactileSessionUsername(sessionInfo, ownerUserId = null) {
     && Number.isFinite(currentUserId)
     && normalizedOwnerUserId === currentUserId;
   return isOwnRecord ? `${username} (${text.selfLabel})` : username;
+}
+
+function isOwnTactileSession(ownerUserId = null) {
+  const normalizedOwnerUserId = Number(ownerUserId);
+  return Number.isFinite(normalizedOwnerUserId)
+    && Number.isFinite(currentUserId)
+    && normalizedOwnerUserId === currentUserId;
 }
 
 function buildTactileSessionPopupHtml(sessionId, sessionInfo, { loading = false, error = "", ownerUserId = null } = {}) {
@@ -267,6 +283,12 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const fallbackIconUrl = escapeHtml(AppPath.toApp("/assets/account_default.png"));
   const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
   const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
+  const deleteButtonHtml = isOwnTactileSession(ownerUserId)
+    ? `
+    <div class="tactile-session-card-actions">
+      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">${escapeHtml(text.delete)}</button>
+    </div>`
+    : "";
 
   return `
     <div class="tactile-session-card-header">
@@ -279,7 +301,8 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
         <img src="${closeIconUrl}" alt="">
       </button>
     </div>
-    <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>`;
+    <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
+    ${deleteButtonHtml}`;
 }
 
 function ensureTactileSessionCard() {
@@ -390,7 +413,56 @@ function renderTactileSessionCard(contentHtml, latlng) {
       hideTactileSessionCard();
     });
   }
+  const deleteBtn = card.querySelector("[data-deactivate-tactile-session]");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.currentTarget;
+      const targetSessionId = target instanceof HTMLElement
+        ? String(target.getAttribute("data-deactivate-tactile-session") || "").trim()
+        : "";
+      if (!targetSessionId) {
+        return;
+      }
+      void deactivateTactileSession(targetSessionId, target);
+    });
+  }
   positionTactileSessionCard(tactileSessionCardLatLng);
+}
+
+async function deactivateTactileSession(sessionId, buttonEl) {
+  if (!sessionId) {
+    return;
+  }
+  const text = getTactileSessionText();
+  if (!window.confirm(text.deleteConfirm)) {
+    return;
+  }
+
+  if (buttonEl instanceof HTMLButtonElement) {
+    buttonEl.disabled = true;
+  }
+
+  try {
+    const res = await authFetch("/api/session/deactivate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    });
+    if (!res.ok) {
+      throw new Error(`session deactivate failed: ${res.status}`);
+    }
+    tactileSessionInfoCache.delete(sessionId);
+    hideTactileSessionCard();
+    loadAndShowAllRecords();
+  } catch (err) {
+    console.error("[deactivateTactileSession] Error:", err);
+    if (buttonEl instanceof HTMLButtonElement) {
+      buttonEl.disabled = false;
+    }
+    window.alert(text.deleteFailed);
+  }
 }
 
 function fetchTactileSessionInfo(sessionId) {
