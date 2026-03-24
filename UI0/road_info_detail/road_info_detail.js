@@ -6,6 +6,7 @@ const postsListEl = document.getElementById("posts-list");
 const postCountEl = document.getElementById("post-count");
 const backBtn = document.getElementById("back-btn");
 const postSelfBtn = document.getElementById("post-self-btn");
+const deletePointBtn = document.getElementById("delete-point-btn");
 const commentModalEl = document.getElementById("comment-modal");
 const commentCloseBtn = document.getElementById("comment-close-btn");
 const commentSubmitBtn = document.getElementById("comment-submit-btn");
@@ -35,17 +36,55 @@ const fallbackCommentTags = [
 let allCommentTags = [];
 let hasLoadedCommentTags = false;
 let currentPointId = null;
+let currentPointOwnerUserId = null;
+let currentUserId = null;
 const authTokenApi = window.AuthToken || null;
 const deleteButtonIconUrl = AppPath.toApp("/assets/buttons/delete.png");
 const COMPLETE_TAG_CODE = "complete";
 const COMPLETE_TAG_LABEL = "完了";
 const COMPLETE_TAG_CODE_ALIASES = new Set(["complete", "completed", "done", "resolved", "inactive"]);
+const ROAD_INFO_DETAIL_TEXT = {
+  ja: {
+    deleteConfirm: "本当にこの道情報を削除してよろしいですか？",
+    deleteFailed: "道情報の削除に失敗しました。",
+    deleteSuccess: "道情報を削除しました。",
+  },
+  en: {
+    deleteConfirm: "Are you sure you want to delete this road info?",
+    deleteFailed: "Failed to delete the road info.",
+    deleteSuccess: "The road info has been deleted.",
+  },
+  hi: {
+    deleteConfirm: "क्या आप वाकई इस सड़क जानकारी को हटाना चाहते हैं?",
+    deleteFailed: "सड़क जानकारी हटाने में विफल रहा।",
+    deleteSuccess: "सड़क जानकारी हटा दी गई है।",
+  },
+};
 
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
     return authTokenApi.authFetch(input, init);
   }
   return fetch(input, init);
+}
+
+function getCurrentLanguage() {
+  const lang = String(document.documentElement && document.documentElement.lang || "").trim().toLowerCase();
+  if (!lang) {
+    return "ja";
+  }
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+  if (lang.startsWith("hi")) {
+    return "hi";
+  }
+  return "ja";
+}
+
+function getRoadInfoDetailText() {
+  const language = getCurrentLanguage();
+  return ROAD_INFO_DETAIL_TEXT[language] || ROAD_INFO_DETAIL_TEXT.ja;
 }
 
 // ユーザー投稿本文を安全に表示するためのHTMLエスケープ。
@@ -74,6 +113,8 @@ function formatDate(dateRaw) {
 
 // 読み込み失敗時にエラー文言だけを見せる。
 function setError(message) {
+  currentPointOwnerUserId = null;
+  updateDeletePointButton();
   if (detailLoadingEl) {
     detailLoadingEl.classList.add("hidden");
   }
@@ -150,6 +191,47 @@ function showContent() {
   if (detailContentEl) {
     detailContentEl.classList.remove("hidden");
   }
+}
+
+function resolvePointOwnerUserId(point) {
+  const pointCreatedBy = Number(point && point.createdBy);
+  if (Number.isFinite(pointCreatedBy) && pointCreatedBy > 0) {
+    return pointCreatedBy;
+  }
+  const posts = Array.isArray(point && point.posts) ? point.posts : [];
+  const ownerPost = posts.find((post) => {
+    const createdBy = Number(post && post.createdBy);
+    return Number.isFinite(createdBy) && createdBy > 0;
+  });
+  return ownerPost ? Number(ownerPost.createdBy) : null;
+}
+
+function updateDeletePointButton() {
+  if (!deletePointBtn) {
+    return;
+  }
+  const canDelete = Number.isFinite(currentUserId)
+    && Number.isFinite(currentPointOwnerUserId)
+    && currentUserId === currentPointOwnerUserId;
+  deletePointBtn.classList.toggle("hidden", !canDelete);
+  deletePointBtn.disabled = false;
+}
+
+async function loadCurrentUserId() {
+  try {
+    const res = await authFetch("/auth/me", { cache: "no-store" });
+    if (!res.ok) {
+      currentUserId = null;
+      updateDeletePointButton();
+      return;
+    }
+    const payload = await res.json();
+    const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
+    currentUserId = Number.isFinite(userId) && userId > 0 ? userId : null;
+  } catch {
+    currentUserId = null;
+  }
+  updateDeletePointButton();
 }
 
 // コメント投稿モーダルの表示状態を切り替える。
@@ -603,6 +685,36 @@ async function submitComment() {
   }
 }
 
+async function deleteRoadInfoPoint() {
+  if (!Number.isInteger(currentPointId) || currentPointId <= 0 || !deletePointBtn) {
+    return;
+  }
+  const text = getRoadInfoDetailText();
+  if (!window.confirm(text.deleteConfirm)) {
+    return;
+  }
+
+  deletePointBtn.disabled = true;
+  try {
+    const res = await authFetch("/api/road-info", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pointId: currentPointId,
+        status: "deleted",
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`delete_failed:${res.status}`);
+    }
+    window.alert(text.deleteSuccess);
+    window.location.assign(AppPath.toApp("/map/Index.html"));
+  } catch {
+    deletePointBtn.disabled = false;
+    window.alert(text.deleteFailed);
+  }
+}
+
 // 画面下部ボタンのイベントを初期化する。
 function initActions() {
   if (postSelfBtn) {
@@ -757,6 +869,12 @@ function initActions() {
       window.location.assign(AppPath.toApp("/map/Index.html"));
     });
   }
+
+  if (deletePointBtn) {
+    deletePointBtn.addEventListener("click", () => {
+      void deleteRoadInfoPoint();
+    });
+  }
 }
 
 // URLのpointIdを使って詳細APIを呼び出し、画面に反映する。
@@ -783,6 +901,8 @@ function loadRoadInfoDetail() {
         throw new Error("invalid_payload");
       }
       currentPointId = Number(data.point.id);
+      currentPointOwnerUserId = resolvePointOwnerUserId(data.point);
+      updateDeletePointButton();
       renderTags(data.point.tags);
       renderPosts(data.point.posts);
       showContent();
@@ -802,4 +922,6 @@ setCommentSubmittingVisible(false);
 hideCommentResultModal();
 renderCommentTagUi();
 renderCommentImagePreview();
+updateDeletePointButton();
+void loadCurrentUserId();
 loadRoadInfoDetail();

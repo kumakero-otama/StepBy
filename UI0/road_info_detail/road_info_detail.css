@@ -71,6 +71,18 @@ h1 {
   min-width: 220px;
 }
 
+.btn-danger {
+  background: #b43c3c;
+  color: #fff;
+  border-color: #b43c3c;
+  min-width: 220px;
+}
+
+.btn-danger:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 /* 投稿カード内の本文と画像 */
 .posts-list {
   display: grid;
