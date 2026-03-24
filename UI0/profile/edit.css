@@ -164,6 +164,12 @@ body {
   font-size: 1.8rem;
   font-weight: 700;
   padding: 0 18px;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .footer-btn-light {
@@ -176,6 +182,22 @@ body {
   border: 2px solid #575c63;
   background: #575c63;
   color: #fff;
+}
+
+.footer-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.footer-btn-light:active {
+  background: #dfe3e6;
+  color: #33393f;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.footer-btn-solid:active {
+  background: #464b52;
+  border-color: #464b52;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.16);
 }
 
 .save-toast {
