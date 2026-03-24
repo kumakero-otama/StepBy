@@ -150,10 +150,10 @@ function normalizeAppAssetUrl(url) {
   if (typeof url !== "string" || !url.trim()) {
     return "";
   }
-  if (/^https?:\/\//i.test(url)) {
+  if (/^https?:\/\//i.test(url) || url.startsWith("data:")) {
     return url;
   }
-  return window.location.origin + AppPath.toApp(url.startsWith("/") ? url : `/${url}`);
+  return AppPath.toApiAsset(url.startsWith("/") ? url : `/${url}`);
 }
 
 function buildTactileSessionTagsHtml(tags) {
