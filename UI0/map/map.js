@@ -27,6 +27,8 @@ const traceTagSearchEl = document.getElementById("trace-tag-search");
 const traceTagSelectedEl = document.getElementById("trace-tag-selected");
 const traceTagListEl = document.getElementById("trace-tag-list");
 const traceTagErrorEl = document.getElementById("trace-tag-error");
+const traceMemoPanelEl = document.getElementById("trace-memo-panel");
+const traceMemoInputEl = document.getElementById("trace-memo-input");
 const authTokenApi = window.AuthToken || null;
 
 function authFetch(input, init) {
@@ -77,9 +79,26 @@ const TRACE_TAG_TEXT = {
   },
 };
 
+const TRACE_CONFIRM_TEXT = {
+  ja: {
+    memoSaveFailed: "メモの保存に失敗しました。メモなしで記録は保存されています。",
+  },
+  en: {
+    memoSaveFailed: "Failed to save the memo. The record was saved without the memo.",
+  },
+  hi: {
+    memoSaveFailed: "मेमो सहेजने में विफल रहा। रिकॉर्ड मेमो के बिना सहेजा गया है।",
+  },
+};
+
 function getTraceTagText() {
   const language = getCurrentLanguage();
   return TRACE_TAG_TEXT[language] || TRACE_TAG_TEXT.ja;
+}
+
+function getTraceConfirmText() {
+  const language = getCurrentLanguage();
+  return TRACE_CONFIRM_TEXT[language] || TRACE_CONFIRM_TEXT.ja;
 }
 
 function escapeHtml(value) {
@@ -1432,9 +1451,21 @@ async function prepareTraceTagModal() {
   }
   if (!isCurrentUserPro) {
     traceTagPanelEl.classList.add("hidden");
+    if (traceMemoPanelEl) {
+      traceMemoPanelEl.classList.add("hidden");
+    }
+    if (traceMemoInputEl) {
+      traceMemoInputEl.value = "";
+    }
     return;
   }
   traceTagPanelEl.classList.remove("hidden");
+  if (traceMemoPanelEl) {
+    traceMemoPanelEl.classList.remove("hidden");
+  }
+  if (traceMemoInputEl) {
+    traceMemoInputEl.value = "";
+  }
   try {
     await fetchTactileTags();
     renderTraceTagUi();
@@ -1458,6 +1489,23 @@ async function saveSessionTags(sessionIds) {
       if (!res.ok) {
         throw new Error(`session_tag_save_failed:${res.status}`);
       }
+    }
+  }
+}
+
+async function saveSessionMemo(sessionIds, memo) {
+  const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
+  for (const sessionId of uniqueSessionIds) {
+    const res = await authFetch("/api/session/memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        memo,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`session_memo_save_failed:${res.status}`);
     }
   }
 }
@@ -1597,10 +1645,19 @@ async function handleRecordStopWithConfirmation() {
 
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
+    const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
     const persistResult = await persistCurrentSessionWithoutConfirmation();
     if (!persistResult.success) {
       await cancelRecordingSessions(allSessionIds);
       return;
+    }
+    if (isCurrentUserPro) {
+      try {
+        await saveSessionMemo(allSessionIds, memo);
+      } catch (err) {
+        console.error("[Record] save session memo error:", err);
+        alert(getTraceConfirmText().memoSaveFailed);
+      }
     }
     if (isCurrentUserPro) {
       try {
