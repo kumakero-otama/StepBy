@@ -132,7 +132,7 @@
       .language-options {
         display: grid;
         gap: 10px;
-        padding-top: 12px;
+        padding-top: 0;
       }
 
       .language-option {
@@ -261,8 +261,7 @@
             Language
           </button>
           <div id="panel-language" class="accordion-panel placeholder-panel" hidden>
-            <fieldset class="language-options">
-              <legend class="record-title">Language</legend>
+            <div class="language-options">
               <label class="language-option" for="language-ja">
                 <input id="language-ja" type="radio" name="display-language" value="ja" />
                 <span>日本語</span>
@@ -275,7 +274,7 @@
                 <input id="language-hi" type="radio" name="display-language" value="hi" />
                 <span>हिंदी</span>
               </label>
-            </fieldset>
+            </div>
           </div>
         </div>
       </section>
