@@ -735,6 +735,8 @@ let roadInfoLoadRequestSeq = 0;
 const MAP_TAP_SUPPRESS_AFTER_ZOOM_MS = 400;
 const MAP_DISPLAY_SETTINGS_KEY = "mapDisplaySettings.v1";
 const MAP_CONTROLS_COLLAPSED_KEY = "mapControlsCollapsed.v1";
+const MAP_INFO_VISIBILITY_KEY = "mapInfoVisibility.v1";
+const CENTER_CURRENT_KEY = "centerCurrentEnabled.v1";
 const LAST_LOCATION_CACHE_KEY = "lastKnownLocation.v1";
 const DEFAULT_MAP_DISPLAY_SETTINGS = {
   showAppTactile: true,
@@ -786,6 +788,52 @@ function loadMapControlsCollapsed() {
 function saveMapControlsCollapsed(collapsed) {
   try {
     localStorage.setItem(MAP_CONTROLS_COLLAPSED_KEY, collapsed ? "1" : "0");
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function loadMapInfoVisibility() {
+  try {
+    const raw = localStorage.getItem(MAP_INFO_VISIBILITY_KEY);
+    if (raw === "1") {
+      return true;
+    }
+    if (raw === "0") {
+      return false;
+    }
+  } catch {
+    // ignore storage failure
+  }
+  return false;
+}
+
+function saveMapInfoVisibility(visible) {
+  try {
+    localStorage.setItem(MAP_INFO_VISIBILITY_KEY, visible ? "1" : "0");
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function loadCenterCurrentEnabled() {
+  try {
+    const raw = localStorage.getItem(CENTER_CURRENT_KEY);
+    if (raw === "1") {
+      return true;
+    }
+    if (raw === "0") {
+      return false;
+    }
+  } catch {
+    // ignore storage failure
+  }
+  return true;
+}
+
+function saveCenterCurrentEnabled(enabled) {
+  try {
+    localStorage.setItem(CENTER_CURRENT_KEY, enabled ? "1" : "0");
   } catch {
     // ignore storage failure
   }
@@ -2439,7 +2487,10 @@ if ("geolocation" in navigator) {
 
     updateRecordButton();
     if (toggleShowMapInfoBtn) {
-      toggleShowMapInfoBtn.checked = false;
+      toggleShowMapInfoBtn.checked = loadMapInfoVisibility();
+    }
+    if (toggleCenterCurrentBtn) {
+      toggleCenterCurrentBtn.checked = loadCenterCurrentEnabled();
     }
     
     // レコードボタンのイベントハンドラー
@@ -2540,6 +2591,7 @@ if ("geolocation" in navigator) {
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {
         console.log(`[toggleShowMapInfo] showMapInfo=${toggleShowMapInfoBtn.checked}`);
+        saveMapInfoVisibility(toggleShowMapInfoBtn.checked);
         applyMapInfoVisibility();
       });
     }
@@ -2550,6 +2602,7 @@ if ("geolocation" in navigator) {
     if (toggleCenterCurrentBtn) {
       toggleCenterCurrentBtn.addEventListener("change", () => {
         console.log(`[toggleCenterCurrent] centerCurrentLocation=${toggleCenterCurrentBtn.checked}`);
+        saveCenterCurrentEnabled(toggleCenterCurrentBtn.checked);
         recenterToLatestLocation();
       });
     }

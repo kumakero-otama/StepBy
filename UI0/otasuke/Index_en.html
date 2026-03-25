@@ -275,9 +275,46 @@
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-theme">
-            Dark / Light
+            Light / Dark
           </button>
-          <div id="panel-theme" class="accordion-panel placeholder-panel" hidden></div>
+          <div id="panel-theme" class="accordion-panel placeholder-panel" hidden>
+            <div class="language-options">
+              <label class="language-option" for="theme-light">
+                <input id="theme-light" type="radio" name="theme-mode" value="light" checked />
+                <span>Light</span>
+              </label>
+              <label class="language-option" for="theme-dark">
+                <input id="theme-dark" type="radio" name="theme-mode" value="dark" />
+                <span>Dark</span>
+              </label>
+              <label class="language-option" for="theme-system">
+                <input id="theme-system" type="radio" name="theme-mode" value="system" />
+                <span>Follow device setting</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-text-size">
+            Text size
+          </button>
+          <div id="panel-text-size" class="accordion-panel placeholder-panel" hidden>
+            <div class="language-options">
+              <label class="language-option" for="text-size-small">
+                <input id="text-size-small" type="radio" name="text-size" value="small" checked />
+                <span>Small</span>
+              </label>
+              <label class="language-option" for="text-size-medium">
+                <input id="text-size-medium" type="radio" name="text-size" value="medium" />
+                <span>Medium</span>
+              </label>
+              <label class="language-option" for="text-size-large">
+                <input id="text-size-large" type="radio" name="text-size" value="large" />
+                <span>Large</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="accordion-item">
