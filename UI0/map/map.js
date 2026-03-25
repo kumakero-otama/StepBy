@@ -117,6 +117,9 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "タグ",
     memo: "ひとことメモ",
+    memoEdit: "メモ編集",
+    memoPrompt: "ひとことメモを入力してください",
+    memoSaveFailed: "ひとことメモの保存に失敗しました。",
     selfLabel: "あなた",
     delete: "削除",
     deleteConfirm: "本当にこの点字ブロックを削除してよろしいですか？",
@@ -133,6 +136,9 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "Tags",
     memo: "Short memo",
+    memoEdit: "Edit memo",
+    memoPrompt: "Enter a short memo",
+    memoSaveFailed: "Failed to save the short memo.",
     selfLabel: "You",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this tactile block?",
@@ -149,6 +155,9 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "टैग",
     memo: "छोटा मेमो",
+    memoEdit: "मेमो संपादित करें",
+    memoPrompt: "छोटा मेमो दर्ज करें",
+    memoSaveFailed: "छोटा मेमो सहेजने में विफल रहा।",
     selfLabel: "आप",
     delete: "हटाएं",
     deleteConfirm: "क्या आप वाकई इस टैक्टाइल ब्लॉक को हटाना चाहते हैं?",
@@ -305,11 +314,17 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const fallbackIconUrl = escapeHtml(AppPath.toApp("/assets/account_default.png"));
   const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
   const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
+  const memoEditIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/memo_edit.png"));
   const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
   const memoHtml = isOwnTactileSession(ownerUserId) && memoValue
     ? `
     <div class="tactile-session-card-memo">
-      <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
+      <div class="tactile-session-card-memo-head">
+        <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
+        <button class="tactile-session-card-memo-edit" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}" aria-label="${escapeHtml(text.memoEdit)}">
+          <img src="${memoEditIconUrl}" alt="">
+        </button>
+      </div>
       <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
     </div>`
     : "";
@@ -459,7 +474,72 @@ function renderTactileSessionCard(contentHtml, latlng) {
       void deactivateTactileSession(targetSessionId, target);
     });
   }
+  const memoEditBtn = card.querySelector("[data-edit-tactile-memo]");
+  if (memoEditBtn) {
+    memoEditBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.currentTarget;
+      const targetSessionId = target instanceof HTMLElement
+        ? String(target.getAttribute("data-edit-tactile-memo") || "").trim()
+        : "";
+      if (!targetSessionId) {
+        return;
+      }
+      void editTactileSessionMemo(targetSessionId, target);
+    });
+  }
   positionTactileSessionCard(tactileSessionCardLatLng);
+}
+
+async function editTactileSessionMemo(sessionId, buttonEl) {
+  if (!sessionId) {
+    return;
+  }
+  const text = getTactileSessionText();
+  const cached = tactileSessionInfoCache.get(sessionId);
+  const sessionInfo = cached && !(cached instanceof Promise) ? cached : null;
+  const currentMemo = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo) : "";
+  const nextMemo = window.prompt(text.memoPrompt, currentMemo);
+  if (nextMemo == null || nextMemo === currentMemo) {
+    return;
+  }
+
+  if (buttonEl instanceof HTMLButtonElement) {
+    buttonEl.disabled = true;
+  }
+
+  try {
+    const res = await authFetch("/api/session/memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        memo: nextMemo,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`session memo failed: ${res.status}`);
+    }
+    if (sessionInfo) {
+      const updatedSessionInfo = { ...sessionInfo, memo: nextMemo };
+      tactileSessionInfoCache.set(sessionId, updatedSessionInfo);
+      renderTactileSessionCard(
+        buildTactileSessionCardHtml(sessionId, updatedSessionInfo, {
+          ownerUserId: currentUserId,
+        }),
+        tactileSessionCardLatLng
+      );
+      return;
+    }
+    tactileSessionInfoCache.delete(sessionId);
+  } catch (err) {
+    console.error("[editTactileSessionMemo] Error:", err);
+    if (buttonEl instanceof HTMLButtonElement) {
+      buttonEl.disabled = false;
+    }
+    window.alert(text.memoSaveFailed);
+  }
 }
 
 async function deactivateTactileSession(sessionId, buttonEl) {
