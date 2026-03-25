@@ -217,6 +217,30 @@ body {
   margin-top: 12px;
 }
 
+.tactile-session-card-memo {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #d7e6e2;
+  border-radius: 10px;
+  background: #f7fbfa;
+}
+
+.tactile-session-card-memo-label {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #5a6b7c;
+}
+
+.tactile-session-card-memo-body {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1a2b3c;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .tactile-session-card-delete {
   min-width: 84px;
   min-height: 32px;
@@ -732,6 +756,13 @@ body {
   font-size: 14px;
   line-height: 1.5;
   resize: vertical;
+}
+
+.trace-memo-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #666;
 }
 
 .trace-confirm-actions {

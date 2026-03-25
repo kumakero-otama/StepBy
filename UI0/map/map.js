@@ -116,6 +116,7 @@ const TACTILE_SESSION_TEXT = {
     loading: "読み込み中...",
     sessionId: "session_id",
     tags: "タグ",
+    memo: "ひとことメモ",
     selfLabel: "あなた",
     delete: "削除",
     deleteConfirm: "本当にこの点字ブロックを削除してよろしいですか？",
@@ -131,6 +132,7 @@ const TACTILE_SESSION_TEXT = {
     loading: "Loading...",
     sessionId: "session_id",
     tags: "Tags",
+    memo: "Short memo",
     selfLabel: "You",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this tactile block?",
@@ -146,6 +148,7 @@ const TACTILE_SESSION_TEXT = {
     loading: "लोड हो रहा है...",
     sessionId: "session_id",
     tags: "टैग",
+    memo: "छोटा मेमो",
     selfLabel: "आप",
     delete: "हटाएं",
     deleteConfirm: "क्या आप वाकई इस टैक्टाइल ब्लॉक को हटाना चाहते हैं?",
@@ -302,6 +305,14 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const fallbackIconUrl = escapeHtml(AppPath.toApp("/assets/account_default.png"));
   const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
   const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
+  const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
+  const memoHtml = isOwnTactileSession(ownerUserId) && memoValue
+    ? `
+    <div class="tactile-session-card-memo">
+      <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
+      <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
+    </div>`
+    : "";
   const deleteButtonHtml = isOwnTactileSession(ownerUserId)
     ? `
     <div class="tactile-session-card-actions">
@@ -321,6 +332,7 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
       </button>
     </div>
     <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
+    ${memoHtml}
     ${deleteButtonHtml}`;
 }
 
