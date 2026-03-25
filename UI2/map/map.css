@@ -1,0 +1,719 @@
+:root {
+  --map-layout-height: calc(100dvh - (56px + env(safe-area-inset-top)));
+  --system-ui-bottom: 0px;
+}
+
+body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.map-layout {
+  height: var(--map-layout-height);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px calc(8px + env(safe-area-inset-bottom) + var(--system-ui-bottom));
+}
+
+/* 地図エリア */
+.map-row {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  position: relative;
+}
+
+.record-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.record-action-btn {
+  height: 46px;
+  border: 2px solid #222;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.record-main-btn {
+  flex: 2 1 0;
+}
+
+.pause-btn {
+  flex: 1 1 0;
+}
+
+.record-main-btn.is-recording {
+  background: #ffd8d8;
+}
+
+.record-action-btn:disabled {
+  cursor: not-allowed;
+  background: #ececec;
+  border-color: #9a9a9a;
+  color: #7a7a7a;
+  opacity: 1;
+}
+
+.record-action-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  border: 2px solid currentColor;
+}
+
+.record-action-icon-circle {
+  border: 0;
+  border-radius: 50%;
+  background: #d93a3a;
+}
+
+.record-action-icon-square {
+  border-radius: 3px;
+  background: #fff;
+}
+
+.pause-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pause-bar {
+  width: 5px;
+  height: 16px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.pause-icon.play-icon {
+  gap: 0;
+}
+
+.play-triangle {
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid currentColor;
+}
+
+.record-action-text {
+  white-space: nowrap;
+}
+
+/* 地図キャンバスの見た目 */
+#map {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #222;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  transition: height 0.25s ease;
+}
+
+.tactile-session-card {
+  position: absolute;
+  z-index: 1500;
+  width: min(280px, calc(100% - 24px));
+  min-width: 220px;
+  padding: 10px 12px 12px;
+  border: 2px solid #222;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+.tactile-session-card.hidden {
+  display: none;
+}
+
+.tactile-session-card-header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 24px;
+  align-items: start;
+  gap: 10px;
+}
+
+.tactile-session-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(46, 158, 143, 0.24);
+  object-fit: cover;
+  background: #f2f2f2;
+}
+
+.tactile-session-card-meta {
+  min-width: 0;
+}
+
+.tactile-session-card-time {
+  display: block;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #6d6d6d;
+  margin-bottom: 2px;
+}
+
+.tactile-session-card-username {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #111;
+  word-break: break-word;
+}
+
+.tactile-session-card-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tactile-session-card-close img {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.tactile-session-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tactile-session-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.tactile-session-card-delete {
+  min-width: 84px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid #b43c3c;
+  border-radius: 999px;
+  background: #b43c3c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.tactile-session-card-delete:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.tactile-session-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #9fd4ca;
+  background: #e9f8f4;
+  color: #15594f;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tactile-session-card-message {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4d4d4d;
+}
+
+.tactile-session-card-message.is-error {
+  color: #c73b3b;
+}
+
+/* 下部のスワイプ式コントロールパネル */
+.map-controls-panel {
+  --map-controls-handle-height: 28px;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  width: 100%;
+  margin: 0;
+  margin-bottom: 0;
+  border: 2px solid #222;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  display: grid;
+  grid-template-rows: var(--map-controls-handle-height) minmax(0, 1fr);
+  min-height: var(--map-controls-handle-height);
+  transition: grid-template-rows 0.25s ease;
+  position: relative;
+  z-index: 1400;
+}
+
+.map-controls-handle {
+  width: 100%;
+  height: var(--map-controls-handle-height);
+  min-height: var(--map-controls-handle-height);
+  padding: 0 10px;
+  border: 0;
+  background: #ececec;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.map-controls-handle-bar {
+  display: block;
+  width: 120px;
+  height: 6px;
+  border-radius: 999px;
+  border: 1px solid #989898;
+  background: #d8d8d8;
+}
+
+.map-controls-content {
+  overflow: hidden;
+  min-height: 0;
+  padding: 12px;
+  transition:
+    padding 0.25s ease,
+    opacity 0.2s ease;
+}
+
+.map-controls-panel.collapsed .map-controls-content {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+}
+
+.map-controls-panel.collapsed {
+  grid-template-rows: var(--map-controls-handle-height) 0fr;
+}
+
+/* トグルと補助情報の縦並び */
+.meta {
+  display: grid;
+  gap: 10px;
+}
+
+.meta-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.meta-toggles {
+  display: grid;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ON/OFFトグル共通スタイル */
+.record-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.record-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+}
+
+.record-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ddd;
+  border: 1px solid #222;
+  transition: 0.2s ease;
+  border-radius: 999px;
+}
+
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  top: 2px;
+  background-color: #222;
+  transition: 0.2s ease;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #b9f5c5;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(22px);
+}
+
+.gps-indicator {
+  width: 54px;
+  min-width: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-indicator img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  opacity: 1;
+  transition: opacity 0.08s linear;
+}
+
+.gps-indicator.is-blinking img {
+  opacity: 0;
+}
+
+#last-updated {
+  font-size: 14px;
+  color: #222;
+}
+
+.map-layout .version-footer {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+
+/* OSMデータ取得中に中央へ表示するローディングオーバーレイ */
+.osm-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.osm-loading-overlay.hidden {
+  display: none;
+}
+
+.osm-loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  margin-top: -38px;
+  border-radius: 50%;
+  border: 7px solid #d4e4ff;
+  border-top-color: #0c63ce;
+  animation: osm-spin 0.9s linear infinite;
+}
+
+.osm-loading-text {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 56px);
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  text-align: center;
+}
+
+@keyframes osm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* アプリ点字ブロック（黄線）取得中のローディング表示 */
+.records-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1790;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.records-loading-overlay.hidden {
+  display: none;
+}
+
+.records-loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  margin-top: -38px;
+  border-radius: 50%;
+  border: 7px solid #d4e4ff;
+  border-top-color: #0c63ce;
+  animation: records-spin 0.9s linear infinite;
+}
+
+.records-loading-text {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 56px);
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #111;
+  text-align: center;
+}
+
+@keyframes records-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .map-layout {
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom) + var(--system-ui-bottom));
+  }
+
+  .record-title {
+    font-size: 12px;
+  }
+
+  .record-action-btn {
+    height: 42px;
+    font-size: 13px;
+  }
+
+  .tactile-session-card {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .gps-indicator {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .gps-indicator img {
+    width: 34px;
+    height: 34px;
+  }
+
+}
+
+/* 記録停止時の確認モーダル */
+.trace-confirm-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 3000;
+  padding: calc(72px + env(safe-area-inset-top)) 16px 16px;
+}
+
+.trace-confirm-modal.hidden {
+  display: none;
+}
+
+.trace-confirm-panel {
+  width: min(860px, 96vw);
+  max-height: calc(100dvh - (96px + env(safe-area-inset-top)));
+  background: #fff;
+  border: 2px solid #222;
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.trace-confirm-scroll {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding-right: 2px;
+}
+
+#trace-confirm-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+#trace-confirm-message {
+  margin: 0;
+  font-size: 14px;
+}
+
+#trace-confirm-map {
+  width: 100%;
+  height: clamp(200px, 38vh, 340px);
+  border: 2px solid #222;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.trace-tag-panel {
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.trace-tag-panel.hidden {
+  display: none;
+}
+
+.trace-tag-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+}
+
+.trace-tag-search {
+  width: 100%;
+  border: 1px solid #b6b6b6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.trace-tag-selected {
+  min-height: 38px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trace-tag-selected-empty {
+  font-size: 12px;
+  color: #777;
+}
+
+.trace-tag-item {
+  border: 1px solid #2f7a2f;
+  background: #ecffec;
+  color: #174b17;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.trace-tag-list {
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #fff;
+  max-height: 180px;
+  overflow: auto;
+  display: grid;
+}
+
+.trace-tag-option {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #efefef;
+  background: #fff;
+  color: #222;
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.trace-tag-option:last-child {
+  border-bottom: 0;
+}
+
+.trace-tag-option:hover {
+  background: #f6f6f6;
+}
+
+.trace-tag-list-empty {
+  font-size: 12px;
+  color: #777;
+  padding: 10px;
+}
+
+.trace-tag-error {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c12525;
+}
+
+.trace-tag-error.hidden {
+  display: none;
+}
+
+.trace-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+}
+
+.btn.secondary {
+  background: #fff;
+}

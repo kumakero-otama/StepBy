@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>Profile</title>
+    <meta name="theme-color" content="#348f82" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="profile.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">PROFILE</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="profile-page">
+      <section class="profile-card">
+        <div class="profile-avatar-wrap">
+          <img
+            id="profile-avatar"
+            class="profile-avatar"
+            src="../assets/account_default.png"
+            alt="Profile icon"
+          />
+          <div class="profile-mini-actions" aria-label="Profile actions">
+            <button id="profile-edit-btn" class="profile-mini-btn" type="button" aria-label="Edit profile">
+              <img src="../assets/buttons/profile_edit.png" alt="" />
+            </button>
+            <button id="profile-logout-btn" class="profile-mini-btn" type="button" aria-label="Log out">
+              <img src="../assets/buttons/logout.png" alt="" />
+            </button>
+          </div>
+        </div>
+
+        <h2 id="profile-username" class="profile-username">username</h2>
+
+        <h3 class="achievement-title">Achievements</h3>
+        <ul class="achievement-list">
+          <li>Total tactile block distance: <span id="total-tactile-length">0m</span></li>
+          <li>Total road info posts: <span id="total-road-posts">0件</span></li>
+          <li>Total hearts received: <span id="total-hearts">0個</span></li>
+        </ul>
+      </section>
+    </main>
+    <script src="../config.js"></script>
+
+    <script src="../auth/token_client.js"></script>
+    <script src="profile.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

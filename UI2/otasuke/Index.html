@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>設定 | Draggable Map</title>
+    <link rel="stylesheet" href="../appbar.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f7f7f7;
+      }
+
+      .settings-wrap {
+        width: min(860px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 16px 0 28px;
+      }
+
+      .settings-card {
+        border: 2px solid #222;
+        border-radius: 14px;
+        background: #fff;
+        overflow: hidden;
+      }
+
+      .accordion-item + .accordion-item {
+        border-top: 1px solid #d8d8d8;
+      }
+
+      .accordion-trigger {
+        width: 100%;
+        border: 0;
+        background: #fff;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #111;
+        text-align: left;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .accordion-trigger::after {
+        content: "＋";
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .accordion-trigger[aria-expanded="true"]::after {
+        content: "－";
+      }
+
+      .accordion-panel {
+        padding: 0 16px 16px;
+      }
+
+      .accordion-panel[hidden] {
+        display: none;
+      }
+
+      .record-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .record-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #222;
+      }
+
+      .record-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #222;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #ddd;
+        border: 1px solid #222;
+        border-radius: 999px;
+        transition: 0.2s ease;
+      }
+
+      .slider::before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        top: 2px;
+        background-color: #222;
+        border-radius: 50%;
+        transition: 0.2s ease;
+      }
+
+      .switch input:checked + .slider {
+        background-color: #b9f5c5;
+      }
+
+      .switch input:checked + .slider::before {
+        transform: translateX(22px);
+      }
+
+      .placeholder-panel {
+        min-height: 24px;
+      }
+
+      .language-options {
+        display: grid;
+        gap: 10px;
+        padding-top: 12px;
+      }
+
+      .language-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        color: #111;
+      }
+
+      .language-option input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: #222;
+      }
+
+      .help-link {
+        display: block;
+        margin-top: 14px;
+        border: 2px solid #222;
+        border-radius: 12px;
+        background: #fff;
+        color: #111;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        padding: 14px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">SETTING</h1>
+      <div class="app-bar-actions" aria-label="アプリメニュー">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="プロフィール">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="設定">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="settings-wrap">
+      <section class="settings-card" aria-label="設定一覧">
+        <div class="accordion-item">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-map-display">
+            地図の表示
+          </button>
+          <div id="panel-map-display" class="accordion-panel" hidden>
+            <div class="record-toggle" role="group" aria-label="自分で投稿した点字ブロック toggle">
+              <span class="record-title">自分で投稿した点字ブロック</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input
+                  id="setting-show-only-my-tactile"
+                  type="checkbox"
+                  aria-label="自分で投稿した点字ブロック"
+                />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div class="record-toggle" role="group" aria-label="アプリで投稿された点字ブロック toggle">
+              <span class="record-title">アプリで投稿された点字ブロック</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input id="setting-show-app-tactile" type="checkbox" aria-label="アプリで投稿された点字ブロック" />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div class="record-toggle" role="group" aria-label="OSMで投稿された点字ブロック toggle">
+              <span class="record-title">OSMで投稿された点字ブロック</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input id="setting-show-osm-tactile" type="checkbox" aria-label="OSMで投稿された点字ブロック" />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div class="record-toggle" role="group" aria-label="自分で投稿した道情報 toggle">
+              <span class="record-title">自分で投稿した道情報</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input
+                  id="setting-show-only-my-road-info"
+                  type="checkbox"
+                  aria-label="自分で投稿した道情報"
+                />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+            <div class="record-toggle" role="group" aria-label="すべての道情報 toggle">
+              <span class="record-title">すべての道情報</span>
+              <span class="record-label">OFF</span>
+              <label class="switch">
+                <input
+                  id="setting-show-all-road-info"
+                  type="checkbox"
+                  aria-label="すべての道情報"
+                />
+                <span class="slider"></span>
+              </label>
+              <span class="record-label">ON</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-theme">
+            ダーク/ライト
+          </button>
+          <div id="panel-theme" class="accordion-panel placeholder-panel" hidden></div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-language">
+            Language
+          </button>
+          <div id="panel-language" class="accordion-panel placeholder-panel" hidden>
+            <fieldset class="language-options">
+              <legend class="record-title">Language</legend>
+              <label class="language-option" for="language-ja">
+                <input id="language-ja" type="radio" name="display-language" value="ja" />
+                <span>日本語</span>
+              </label>
+              <label class="language-option" for="language-en">
+                <input id="language-en" type="radio" name="display-language" value="en" />
+                <span>English</span>
+              </label>
+              <label class="language-option" for="language-hi">
+                <input id="language-hi" type="radio" name="display-language" value="hi" />
+                <span>हिंदी</span>
+              </label>
+            </fieldset>
+          </div>
+        </div>
+      </section>
+      <a class="help-link" href="../help/Index.html" aria-label="ヘルプページへ遷移">
+        ヘルプページへ
+      </a>
+      <footer class="version-footer">
+        <span id="app-version">v1.18.4</span>
+      </footer>
+    </main>
+
+    <script>
+      const MAP_DISPLAY_SETTINGS_KEY = "mapDisplaySettings.v1";
+      const LANGUAGE_SETTINGS_KEY = "displayLanguage.v1";
+      const DEFAULT_MAP_DISPLAY_SETTINGS = {
+        showAppTactile: true,
+        showOsmTactile: true,
+        showAllRoadInfo: true,
+        showOnlyMyTactile: false,
+        showOnlyMyRoadInfo: false,
+      };
+      const DEFAULT_LANGUAGE = "ja";
+      const JA_SETTINGS_PATH = "../otasuke/Index.html";
+      const EN_SETTINGS_PATH = "../otasuke/Index_en.html";
+      const HI_SETTINGS_PATH = "../otasuke/Index_hi.html";
+
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem(MAP_DISPLAY_SETTINGS_KEY);
+          if (!raw) {
+            return { ...DEFAULT_MAP_DISPLAY_SETTINGS };
+          }
+          const parsed = JSON.parse(raw);
+          return {
+            showAppTactile: Boolean(parsed && parsed.showAppTactile),
+            showOsmTactile: Boolean(parsed && parsed.showOsmTactile),
+            showAllRoadInfo: Boolean(parsed && parsed.showAllRoadInfo),
+            showOnlyMyTactile: Boolean(parsed && parsed.showOnlyMyTactile),
+            showOnlyMyRoadInfo: Boolean(parsed && parsed.showOnlyMyRoadInfo),
+          };
+        } catch {
+          return { ...DEFAULT_MAP_DISPLAY_SETTINGS };
+        }
+      }
+
+      function saveSettings(next) {
+        localStorage.setItem(MAP_DISPLAY_SETTINGS_KEY, JSON.stringify(next));
+      }
+
+      function loadLanguageSetting() {
+        const savedLanguage = localStorage.getItem(LANGUAGE_SETTINGS_KEY);
+        return ["ja", "en", "hi"].includes(savedLanguage) ? savedLanguage : DEFAULT_LANGUAGE;
+      }
+
+      function saveLanguageSetting(language) {
+        localStorage.setItem(LANGUAGE_SETTINGS_KEY, language);
+      }
+
+      const settings = loadSettings();
+      const selectedLanguage = loadLanguageSetting();
+      const isEnglishPage = window.location.pathname.endsWith("/otasuke/Index_en.html");
+      if (selectedLanguage === "en" && !isEnglishPage) {
+        window.location.replace(EN_SETTINGS_PATH);
+      } else if (selectedLanguage === "hi") {
+        window.location.replace(HI_SETTINGS_PATH);
+      }
+      const appTactileToggle = document.getElementById("setting-show-app-tactile");
+      const osmTactileToggle = document.getElementById("setting-show-osm-tactile");
+      const allRoadInfoToggle = document.getElementById("setting-show-all-road-info");
+      const onlyMyTactileToggle = document.getElementById("setting-show-only-my-tactile");
+      const onlyMyRoadInfoToggle = document.getElementById("setting-show-only-my-road-info");
+      const languageOptions = document.querySelectorAll('input[name="display-language"]');
+
+      appTactileToggle.checked = settings.showAppTactile;
+      osmTactileToggle.checked = settings.showOsmTactile;
+      allRoadInfoToggle.checked = settings.showAllRoadInfo;
+      onlyMyTactileToggle.checked = settings.showOnlyMyTactile;
+      onlyMyRoadInfoToggle.checked = settings.showOnlyMyRoadInfo;
+      languageOptions.forEach((option) => {
+        option.checked = option.value === selectedLanguage;
+      });
+
+      function handleMapDisplayToggleChange() {
+        settings.showAppTactile = Boolean(appTactileToggle.checked);
+        settings.showOsmTactile = Boolean(osmTactileToggle.checked);
+        settings.showAllRoadInfo = Boolean(allRoadInfoToggle.checked);
+        settings.showOnlyMyTactile = Boolean(onlyMyTactileToggle.checked);
+        settings.showOnlyMyRoadInfo = Boolean(onlyMyRoadInfoToggle.checked);
+        saveSettings(settings);
+      }
+
+      appTactileToggle.addEventListener("change", handleMapDisplayToggleChange);
+      osmTactileToggle.addEventListener("change", handleMapDisplayToggleChange);
+      allRoadInfoToggle.addEventListener("change", handleMapDisplayToggleChange);
+      onlyMyTactileToggle.addEventListener("change", handleMapDisplayToggleChange);
+      onlyMyRoadInfoToggle.addEventListener("change", handleMapDisplayToggleChange);
+      languageOptions.forEach((option) => {
+        option.addEventListener("change", () => {
+          if (option.checked) {
+            saveLanguageSetting(option.value);
+            if (option.value === "en") {
+              window.location.replace(EN_SETTINGS_PATH);
+            } else if (option.value === "hi") {
+              window.location.replace(HI_SETTINGS_PATH);
+            } else {
+              window.location.replace(JA_SETTINGS_PATH);
+            }
+          }
+        });
+      });
+
+      document.querySelectorAll(".accordion-trigger").forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const targetId = trigger.getAttribute("aria-controls");
+          const panel = targetId ? document.getElementById(targetId) : null;
+          if (!panel) {
+            return;
+          }
+          const expanded = trigger.getAttribute("aria-expanded") === "true";
+          trigger.setAttribute("aria-expanded", expanded ? "false" : "true");
+          panel.hidden = expanded;
+        });
+      });
+    </script>
+    <script src="../version.js"></script>
+    <script src="../config.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>ログイン | Draggable Map</title>
+    <meta name="theme-color" content="#0f766e" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="auth.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card" aria-labelledby="login-title">
+        <div class="actions">
+          <div id="google-signin-button" class="google-signin-button"></div>
+        </div>
+        <p id="google-auth-status" class="helper-text"></p>
+      </section>
+      <footer class="version-footer">
+        <span id="app-version">v1.18.4</span>
+      </footer>
+    </main>
+    <script src="../config.js"></script>
+
+    <script src="../auth/token_client.js"></script>
+    <script src="auth.js?v=20260228"></script>
+    <script src="../version.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

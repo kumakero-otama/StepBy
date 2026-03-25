@@ -1,0 +1,272 @@
+body {
+  margin: 0;
+  background: #efefef;
+  color: #1f2d3a;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+
+.profile-edit-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px 120px;
+}
+
+.profile-edit-card {
+  display: grid;
+  gap: 14px;
+}
+
+.form-label {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid #777;
+  border-radius: 14px;
+  background: #efefef;
+  color: #2f3f4f;
+  font-size: 1.9rem;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #348f82;
+}
+
+.icon-label {
+  margin-top: 8px;
+}
+
+.icon-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.icon-preview {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 10px solid #6a6e73;
+  background: #fff;
+}
+
+.icon-action-col {
+  display: grid;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.pro-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pro-toggle-label {
+  font-size: 1.5rem;
+  margin-right: 4px;
+}
+
+.toggle-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #d6d6d6;
+  border: 1px solid #6d7076;
+  transition: 0.2s ease;
+  border-radius: 999px;
+}
+
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 2px;
+  top: 2px;
+  background: #3f4348;
+  transition: 0.2s ease;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background: #b9f5c5;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(24px);
+}
+
+.choice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #6d7076;
+  border-radius: 999px;
+  background: #f6f6f6;
+  color: #555;
+  font-size: 1.7rem;
+  min-height: 52px;
+  padding: 0 20px;
+  cursor: pointer;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.edit-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  border-top: 2px solid #9c9c9c;
+  background: #efefef;
+}
+
+.footer-btn {
+  min-width: 130px;
+  height: 52px;
+  border-radius: 999px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  padding: 0 18px;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.footer-btn-light {
+  border: 2px solid #6d7076;
+  background: #efefef;
+  color: #4b4f54;
+}
+
+.footer-btn-solid {
+  border: 2px solid #575c63;
+  background: #575c63;
+  color: #fff;
+}
+
+.footer-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.footer-btn-light:active {
+  background: #dfe3e6;
+  color: #33393f;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.footer-btn-solid:active {
+  background: #464b52;
+  border-color: #464b52;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.16);
+}
+
+.save-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: rgba(41, 47, 56, 0.95);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 2800;
+}
+
+.save-toast.show {
+  opacity: 1;
+}
+
+@media (max-width: 720px) {
+  .profile-edit-page {
+    padding: 16px 12px 108px;
+  }
+
+  .form-label {
+    font-size: 1.55rem;
+  }
+
+  .form-input {
+    font-size: 1.2rem;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .icon-preview {
+    width: 130px;
+    height: 130px;
+    border-width: 7px;
+  }
+
+  .icon-action-col {
+    min-width: 180px;
+  }
+
+  .pro-toggle-row {
+    gap: 8px;
+  }
+
+  .pro-toggle-label {
+    font-size: 1.2rem;
+  }
+
+  .choice-btn {
+    min-height: 42px;
+    font-size: 1.1rem;
+  }
+
+  .footer-btn {
+    min-width: 92px;
+    height: 42px;
+    font-size: 1.2rem;
+  }
+
+  .save-toast {
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    font-size: 0.92rem;
+  }
+}

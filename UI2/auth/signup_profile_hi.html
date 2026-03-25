@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>साइन अप | Draggable Map</title>
+    <meta name="theme-color" content="#0f766e" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="auth.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card" aria-labelledby="signup-profile-title">
+        <h1 id="signup-profile-title">साइन अप</h1>
+        <p class="auth-subtitle">अपना खाता नाम और प्रोफ़ाइल आइकन सेट करें।</p>
+
+        <form id="signup-profile-form" novalidate>
+          <div class="form-row">
+            <label for="signup-profile-username">खाता नाम</label>
+            <input
+              id="signup-profile-username"
+              name="username"
+              type="text"
+              maxlength="50"
+              autocomplete="username"
+            />
+          </div>
+          <div class="form-row">
+            <label for="signup-profile-icon">प्रोफ़ाइल आइकन</label>
+            <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
+            <img
+              id="signup-profile-icon-preview"
+              class="signup-icon-preview hidden"
+              alt="चुने गए प्रोफ़ाइल आइकन का पूर्वावलोकन"
+            />
+          </div>
+          <div class="agreement-row">
+            <label class="agreement-label" for="signup-agreement-checkbox">
+              <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
+              <span>मैं सेवा की शर्तों से सहमत हूं</span>
+            </label>
+            <button id="open-user-agreement" type="button" class="agreement-link">सेवा की शर्तें</button>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="signup-profile-submit" type="submit">रजिस्टर करें</button>
+          </div>
+        </form>
+        <p id="google-auth-status" class="helper-text"></p>
+      </section>
+      <section
+        id="user-agreement-modal"
+        class="agreement-modal hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-agreement-title"
+      >
+        <div class="agreement-panel">
+          <div class="agreement-header">
+            <h2 id="user-agreement-title">सेवा की शर्तें</h2>
+            <button id="close-user-agreement" type="button" class="agreement-close-btn" aria-label="बंद करें">
+              <img src="../assets/buttons/close.png" alt="" />
+            </button>
+          </div>
+          <div id="user-agreement-content" class="agreement-content">लोड हो रहा है...</div>
+        </div>
+      </section>
+    </main>
+    <script src="../config.js"></script>
+
+    <script src="../auth/token_client.js"></script>
+    <script src="auth.js?v=20260228"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>
