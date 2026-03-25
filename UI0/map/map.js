@@ -6,6 +6,8 @@ const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
 const lastUpdatedEl = document.getElementById("last-updated");
 const gpsIndicatorEl = document.getElementById("gps-indicator");
+const mapControlsPanelEl = document.getElementById("map-controls-panel");
+const mapControlsHandleEl = document.getElementById("map-controls-handle");
 const recordActionBtn = document.getElementById("record-action-btn");
 const recordActionIconEl = document.getElementById("record-action-icon");
 const recordActionTextEl = document.getElementById("record-action-text");
@@ -732,6 +734,7 @@ let recordsLoadRequestSeq = 0;
 let roadInfoLoadRequestSeq = 0;
 const MAP_TAP_SUPPRESS_AFTER_ZOOM_MS = 400;
 const MAP_DISPLAY_SETTINGS_KEY = "mapDisplaySettings.v1";
+const MAP_CONTROLS_COLLAPSED_KEY = "mapControlsCollapsed.v1";
 const LAST_LOCATION_CACHE_KEY = "lastKnownLocation.v1";
 const DEFAULT_MAP_DISPLAY_SETTINGS = {
   showAppTactile: true,
@@ -770,6 +773,22 @@ function refreshMapDisplaySettings() {
   mapDisplaySettings.showAllRoadInfo = Boolean(latest.showAllRoadInfo);
   mapDisplaySettings.showOnlyMyTactile = Boolean(latest.showOnlyMyTactile);
   mapDisplaySettings.showOnlyMyRoadInfo = Boolean(latest.showOnlyMyRoadInfo);
+}
+
+function loadMapControlsCollapsed() {
+  try {
+    return localStorage.getItem(MAP_CONTROLS_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveMapControlsCollapsed(collapsed) {
+  try {
+    localStorage.setItem(MAP_CONTROLS_COLLAPSED_KEY, collapsed ? "1" : "0");
+  } catch {
+    // ignore storage failure
+  }
 }
 
 function saveLastKnownLocation(lat, lng) {
@@ -828,6 +847,48 @@ function applyCachedLocation(cached) {
     map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
   }
   return true;
+}
+
+function setMapControlsCollapsed(collapsed) {
+  if (!mapLayoutEl || !mapControlsPanelEl || !mapControlsHandleEl) {
+    return;
+  }
+  mapControlsPanelEl.classList.toggle("collapsed", collapsed);
+  mapLayoutEl.classList.toggle("panel-collapsed", collapsed);
+  mapControlsHandleEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  saveMapControlsCollapsed(collapsed);
+  requestAnimationFrame(() => {
+    map.invalidateSize();
+    recenterToLatestLocation();
+  });
+  if (mapLayoutSyncTimer) {
+    clearTimeout(mapLayoutSyncTimer);
+  }
+  mapLayoutSyncTimer = setTimeout(() => {
+    map.invalidateSize();
+    recenterToLatestLocation();
+  }, 280);
+}
+
+function initMapControlsPanelGesture() {
+  if (!mapControlsPanelEl || !mapControlsHandleEl) {
+    return;
+  }
+
+  mapControlsHandleEl.addEventListener("click", () => {
+    const collapsed = mapControlsPanelEl.classList.contains("collapsed");
+    setMapControlsCollapsed(!collapsed);
+  });
+
+  mapControlsPanelEl.addEventListener("transitionend", (event) => {
+    if (event.propertyName !== "grid-template-rows") {
+      return;
+    }
+    map.invalidateSize();
+    recenterToLatestLocation();
+  });
+
+  setMapControlsCollapsed(loadMapControlsCollapsed());
 }
 
 function isMapInfoEnabled() {
@@ -965,6 +1026,7 @@ map.on("click", (event) => {
   window.location.assign(AppPath.toApp("/post_road/Index.html"));
 });
 
+initMapControlsPanelGesture();
 initSystemUiInsetSync();
 window.addEventListener("pageshow", () => {
   scheduleSystemUiInsetStabilize();
