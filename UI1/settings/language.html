@@ -214,11 +214,36 @@
     </div>
 
     <script>
+        // 保存済み言語を読み込み
+        const savedLang = localStorage.getItem('UI1_language') || 'ja';
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.lang === savedLang);
+        });
+
+        // 言語オプション選択
         document.querySelectorAll('.lang-option').forEach(opt => {
             opt.addEventListener('click', () => {
                 document.querySelectorAll('.lang-option').forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
             });
+        });
+
+        // 変更を保存ボタン
+        document.querySelector('.btn-primary').addEventListener('click', () => {
+            const selected = document.querySelector('.lang-option.selected');
+            if (!selected) return;
+            const lang = selected.dataset.lang;
+            localStorage.setItem('UI1_language', lang);
+
+            // 保存フィードバック
+            const btn = document.querySelector('.btn-primary');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました！';
+            btn.style.background = '#27AE60';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.background = '';
+            }, 1500);
         });
     </script>
 <script src="../common.js"></script>

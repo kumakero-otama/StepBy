@@ -344,18 +344,55 @@
     </div>
 
     <script>
+        // 保存済み設定を読み込み
+        const savedTheme = localStorage.getItem('UI1_theme') || 'light';
+        const savedSize = localStorage.getItem('UI1_fontSize') || 'medium';
+
+        document.querySelectorAll('.option-item[data-group="theme"]').forEach(o => {
+            o.classList.toggle('selected', o.dataset.value === savedTheme);
+        });
+        document.querySelectorAll('.option-item[data-group="size"]').forEach(o => {
+            o.classList.toggle('selected', o.dataset.value === savedSize);
+        });
+
+        // プレビューテキスト初期化
+        const previewEl = document.getElementById('preview-text');
+        if (previewEl) previewEl.className = 'preview-text size-' + savedSize;
+
+        // オプション選択
         document.querySelectorAll('.option-item').forEach(opt => {
             opt.addEventListener('click', () => {
                 const group = opt.dataset.group;
                 document.querySelectorAll(`.option-item[data-group="${group}"]`).forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
 
-                // Update preview for font size
-                if (group === 'size') {
-                    const previewEl = document.getElementById('preview-text');
+                if (group === 'size' && previewEl) {
                     previewEl.className = 'preview-text size-' + opt.dataset.value;
                 }
+                if (group === 'theme') {
+                    // リアルタイムプレビュー
+                    const v = opt.dataset.value;
+                    if (v === 'dark') {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                    }
+                }
             });
+        });
+
+        // 変更を保存ボタン
+        document.querySelector('.btn-primary').addEventListener('click', () => {
+            const theme = document.querySelector('.option-item[data-group="theme"].selected')?.dataset.value || 'light';
+            const size = document.querySelector('.option-item[data-group="size"].selected')?.dataset.value || 'medium';
+            localStorage.setItem('UI1_theme', theme);
+            localStorage.setItem('UI1_fontSize', size);
+
+            const btn = document.querySelector('.btn-primary');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました！';
+            btn.style.background = '#27AE60';
+            setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1500);
         });
     </script>
 <script src="../common.js"></script>

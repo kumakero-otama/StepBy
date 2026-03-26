@@ -32,6 +32,35 @@
   --glass-border: rgba(255, 255, 255, 0.3);
 }
 
+/* ダークモード */
+html[data-theme="dark"] {
+  --primary: #4DBFB0;
+  --primary-light: #6DD5C8;
+  --primary-dark: #2E9E8F;
+  --primary-bg: #1A3330;
+  --primary-glow: rgba(77, 191, 176, 0.25);
+  --accent: #FFB847;
+  --accent-light: #3A2E0F;
+  --danger: #FF6B6B;
+  --success: #4DBFB0;
+  --text-dark: #E8F0F5;
+  --text-mid: #A0B0C0;
+  --text-light: #6A8090;
+  --bg-white: #1A2330;
+  --bg-gray: #121A24;
+  --border: #2A3A4A;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(26, 35, 48, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] body {
+  background: var(--bg-gray);
+  color: var(--text-dark);
+}
+
 * {
   margin: 0;
   padding: 0;
