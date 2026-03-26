@@ -53,9 +53,7 @@ function setError(message) {
     if (detailLoadingEl) detailLoadingEl.classList.add("hidden");
     if (detailContentEl) detailContentEl.classList.add("hidden");
     if (detailErrorEl) { detailErrorEl.textContent = message; detailErrorEl.classList.remove("hidden"); }
-    // エラー時はアクションボタンも非表示にする
-    const actionBtns = document.querySelector(".action-btns");
-    if (actionBtns) actionBtns.style.display = "none";
+    // 消去ボタンは常に表示したままにする（アクションボタンは隠さない）
 }
 
 function renderTags(tags) {
