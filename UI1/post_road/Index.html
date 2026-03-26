@@ -275,10 +275,16 @@
                 </div>
             </div>
 
-            <!-- Detail / Comment -->
-            <div class="section">
-                <div class="section-title"><i class="fas fa-comment"></i> 詳細</div>
+            <!-- Detail / Comment (PRO限定) -->
+            <div class="section" id="detail-section">
+                <div class="section-title">
+                    <i class="fas fa-comment"></i> 詳細
+                    <span id="pro-badge" style="display:none; margin-left:8px; background:linear-gradient(135deg,#FFB847,#FF8C00); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; letter-spacing:0.5px;">PRO限定</span>
+                </div>
                 <textarea class="detail-input" id="detail-input" placeholder="この場所について気づいたことを書いてください..."></textarea>
+                <div id="pro-lock-msg" style="display:none; margin-top:8px; padding:10px 14px; background:#F5F7FA; border-radius:10px; border:1px dashed #ccc; color:#8A9BAC; font-size:13px; text-align:center;">
+                    <i class="fas fa-lock"></i> PROアカウントのみ書き込みできます
+                </div>
             </div>
 
             <!-- Photos -->
@@ -328,6 +334,22 @@
         const locationCoordsEl = document.getElementById("location-coords");
         if (lat && lng) {
             locationCoordsEl.textContent = `中心座標: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
+        }
+
+        // --- PRO check: 詳細欄の制御 ---
+        const isPro = localStorage.getItem('UI1_isPro') === 'true';
+        const detailInput = document.getElementById('detail-input');
+        const proBadge = document.getElementById('pro-badge');
+        const proLockMsg = document.getElementById('pro-lock-msg');
+        if (!isPro) {
+            // 非PROはテキストエリアを無効化
+            detailInput.disabled = true;
+            detailInput.placeholder = '🔒 PROアカウント限定';
+            detailInput.style.background = '#F5F7FA';
+            detailInput.style.color = '#B0BEC5';
+            detailInput.style.cursor = 'not-allowed';
+            proBadge.style.display = 'inline-block';
+            proLockMsg.style.display = 'block';
         }
 
         // --- Tag selection ---
