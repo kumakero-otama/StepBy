@@ -1337,9 +1337,13 @@
         <!-- Bottom drawer (outside map-container, in the app-shell flex column) -->
         <div class="bottom-drawer">
             <div class="drawer-cta">
-                <button class="btn-record" id="btn-record-main" title="点字ブロック記録" style="flex:1">
+                <button class="btn-record" id="btn-record-main" title="点字ブロック記録">
                     <i class="fas fa-circle-dot" id="record-icon"></i>
                     <span id="record-label">記録開始</span>
+                </button>
+                <button class="btn-cta-dream" style="flex:1" onclick="window.location.assign('/StepBy/UI1/post_road/Index.html')">
+                    <i class="fas fa-camera"></i>
+                    道の情報を投稿する
                 </button>
             </div>
             <!-- Hidden checkboxes: map.js uses getElementById to find these -->
