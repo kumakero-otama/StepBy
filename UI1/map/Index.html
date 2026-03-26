@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -1138,12 +1138,6 @@
                 </div>
             </div>
             <div class="header-actions">
-                <a href="../map/Index.html" class="header-action-btn" aria-label="ホーム" style="text-decoration:none;">
-                    <i class="fas fa-home"></i>
-                </a>
-                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール" style="text-decoration:none;">
-                    <i class="fas fa-user-circle"></i>
-                </a>
                 <div class="settings-wrap">
                     <button class="header-action-btn" id="settings-toggle" aria-label="設定">
                         <i class="fas fa-cog"></i>
@@ -1160,11 +1154,11 @@
         <!-- Quick nav chips -->
         <div class="top-bar" style="padding:0 14px 10px; z-index: 99;">
             <div class="header-quicknav">
-                <span class="quicknav-chip" onclick="location.href='/StepBy/UI1/recommend/Index.html'"><i class="fas fa-star"></i>
+                <span class="quicknav-chip" onclick="location.href='../recommend/Index.html'"><i class="fas fa-star"></i>
                     おすすめ</span>
-                <span class="quicknav-chip" onclick="location.href='/StepBy/UI1/recent/Index.html'"><i
+                <span class="quicknav-chip" onclick="location.href='../recent/Index.html'"><i
                         class="fas fa-clock-rotate-left"></i> 最近</span>
-                <span class="quicknav-chip" onclick="location.href='/StepBy/UI1/ranking/Index.html'"><i class="fas fa-trophy"></i>
+                <span class="quicknav-chip" onclick="location.href='../ranking/Index.html'"><i class="fas fa-trophy"></i>
                     バッジ</span>
             </div>
         </div>
@@ -1222,7 +1216,7 @@
                     <i class="fas fa-circle-dot" id="record-icon"></i>
                     <span id="record-label">記録開始</span>
                 </button>
-                <button class="btn-cta-dream" style="flex:1" onclick="window.location.assign('/StepBy/UI1/post_road/Index.html')">
+                <button class="btn-cta-dream" style="flex:1" onclick="window.location.assign('../post_road/Index.html')">
                     <i class="fas fa-camera"></i>
                     道の情報を投稿する
                 </button>
@@ -1272,7 +1266,7 @@
             <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
-            <a href="../settings/display.html" class="nav-item "><i class="fas fa-cog"></i><span>設定</span></a>
+
         </nav>
 
         <!-- Trace confirm modal -->
@@ -1283,9 +1277,54 @@
                     セッション全体でフィッティングした経路を表示しています。
                 </p>
                 <div id="trace-confirm-map"></div>
-                <div class="modal-actions">
+
+                <!-- PRO User Features: Tags & Memo -->
+                <div id="trace-pro-features" class="hidden" style="margin-top: 16px; text-align: left;">
+                    <div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:8px;"><i class="fas fa-crown"></i> PRO特典</div>
+                    
+                    <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">追加タグ <span style="font-size:11px; color:var(--text-light); font-weight:400;">(任意)</span></label>
+                    <div id="trace-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
+                        <span class="tag-chip" style="cursor:pointer; border:1px solid var(--border);" onclick="this.classList.toggle('active'); this.style.background=this.classList.contains('active')?'var(--primary)':''; this.style.color=this.classList.contains('active')?'white':'';">段差あり</span>
+                        <span class="tag-chip" style="cursor:pointer; border:1px solid var(--border);" onclick="this.classList.toggle('active'); this.style.background=this.classList.contains('active')?'var(--primary)':''; this.style.color=this.classList.contains('active')?'white':'';">狭い</span>
+                    </div>
+
+                    <label for="trace-memo-input" style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">ひとことメモ <span style="font-size:11px; color:var(--text-light); font-weight:400;">(任意)</span></label>
+                    <input type="text" id="trace-memo-input" placeholder="点字ブロックに関するメモを入力" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; outline:none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                </div>
+
+                <div class="modal-actions" style="margin-top:16px;">
                     <button id="trace-confirm-ok" class="btn-primary"><i class="fas fa-check"></i>保存する</button>
                     <button id="trace-confirm-cancel" class="btn-secondary">キャンセル</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tactile Trace Detail Modal -->
+        <div id="trace-detail-modal" class="modal-overlay hidden" style="align-items: flex-end; z-index: 2000;">
+            <div class="modal-box" style="margin-bottom: 0; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto;">
+                <button class="modal-close-btn" id="trace-detail-close-btn" style="position: absolute; right: 20px; top: 20px; font-size: 20px; color: var(--text-mid); background: none; border: none; cursor: pointer;"><i class="fas fa-times"></i></button>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                        <i class="fas fa-user" style="color:#ccc;"></i>
+                    </div>
+                    <div>
+                        <div id="trace-detail-user" style="font-weight:700; font-size:15px; color:var(--text-dark);">otama</div>
+                        <div id="trace-detail-time" style="font-size:12px; color:var(--text-light);">2026/03/26 12:00</div>
+                    </div>
+                </div>
+
+                <div id="trace-detail-tags" style="display:none; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+                    <!-- Tags populated here -->
+                </div>
+
+                <div id="trace-detail-memo-container" style="display:none; background:#f9f9f9; padding:12px; border-radius:12px; margin-bottom:16px;">
+                    <div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px;"><i class="fas fa-comment-dots"></i> ひとことメモ</div>
+                    <div id="trace-detail-memo" style="font-size:14px; color:var(--text-dark); line-height:1.5;">特に問題なく通れる点字ブロックです。</div>
+                </div>
+
+                <div id="trace-detail-actions" class="hidden" style="display:flex; gap:10px; margin-top:16px;">
+                    <button id="trace-edit-memo-btn" class="btn-secondary" style="flex:1;"><i class="fas fa-pen"></i> メモを編集</button>
+                    <button id="trace-delete-btn" class="btn-danger" style="flex:1; background:#FF4B4B; color:white; border:none; padding:12px; border-radius:12px; font-weight:600;"><i class="fas fa-trash"></i> 削除</button>
                 </div>
             </div>
         </div>

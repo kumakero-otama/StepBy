@@ -125,10 +125,10 @@ leafletMap.on("click", (event) => {
   const lng = Number(event?.latlng?.lng);
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
     const params = new URLSearchParams({ lat: lat.toString(), lng: lng.toString() });
-    window.location.assign(`/StepBy/UI1/post_road/Index.html?${params.toString()}`);
+    window.location.assign(`../post_road/Index.html?${params.toString()}`);
     return;
   }
-  window.location.assign("/StepBy/UI1/post_road/Index.html");
+  window.location.assign("../post_road/Index.html");
 });
 
 function generateUUID() {
@@ -232,13 +232,45 @@ function closeTraceConfirmModal() {
 
 function openTraceConfirmModal(coordinates) {
   return new Promise((resolve) => {
-    if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) { resolve("cancel"); return; }
+    if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) { resolve({result: "cancel"}); return; }
+    
+    // Check PRO feature visibility
+    const proFeaturesDiv = document.getElementById("trace-pro-features");
+    const traceMemoInput = document.getElementById("trace-memo-input");
+    if (proFeaturesDiv) {
+        if (localStorage.getItem("UI1_isPro") === "true") {
+            proFeaturesDiv.classList.remove("hidden");
+        } else {
+            proFeaturesDiv.classList.add("hidden");
+        }
+    }
+    if (traceMemoInput) traceMemoInput.value = "";
+    document.querySelectorAll(".tag-chip.active").forEach(el => {
+        el.classList.remove("active");
+        el.style.background = "";
+        el.style.color = "";
+    });
+
     traceConfirmModalEl.classList.remove("hidden");
     traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(traceConfirmMap);
     traceConfirmPathLayer = L.polyline(coordinates, { color: "#9acd32", weight: 5, opacity: 0.9 }).addTo(traceConfirmMap);
     traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
-    const cleanupAndResolve = (result) => { traceConfirmOkBtn.removeEventListener("click", onOk); traceConfirmCancelBtn.removeEventListener("click", onCancel); closeTraceConfirmModal(); resolve(result); };
+    
+    const cleanupAndResolve = (resultValue) => { 
+        traceConfirmOkBtn.removeEventListener("click", onOk); 
+        traceConfirmCancelBtn.removeEventListener("click", onCancel); 
+        closeTraceConfirmModal(); 
+        
+        let memo = "";
+        let tags = [];
+        if (resultValue === "ok" && localStorage.getItem("UI1_isPro") === "true") {
+            if (traceMemoInput) memo = traceMemoInput.value.trim();
+            document.querySelectorAll("#trace-tags-container .tag-chip.active").forEach(el => tags.push(el.textContent));
+        }
+        resolve({ result: resultValue, memo, tags }); 
+    };
+    
     const onOk = () => cleanupAndResolve("ok");
     const onCancel = () => cleanupAndResolve("cancel");
     traceConfirmOkBtn.addEventListener("click", onOk);
@@ -268,9 +300,19 @@ async function handleRecordStopWithConfirmation(finishedSessionId) {
     return;
   }
   if (traceConfirmMessageEl) traceConfirmMessageEl.textContent = "セッション全体でフィッティングした経路を黄緑線で表示しています。";
-  const decision = await openTraceConfirmModal(previewCoords);
-  if (decision === "ok") {
+  const decisionData = await openTraceConfirmModal(previewCoords);
+  if (decisionData.result === "ok") {
     await postSessionLifecycle("end", { sessionId: finishedSessionId, endedAt: new Date().toISOString() });
+    
+    // Optional: send memo/tags if PRO
+    if (decisionData.memo) {
+         try {
+             // Fake or real api call
+             // await fetch(`${API_BASE}/api/session/memo?sessionId=${finishedSessionId}`, { method: "PUT", body: JSON.stringify({memo: decisionData.memo}) });
+             console.log("Mock saved memo:", decisionData.memo);
+         } catch(e) {}
+    }
+    
     await processAndDisplayTrace(finishedSessionId);
     return;
   }
@@ -377,8 +419,92 @@ function showAllSessionPathsOnMap(paths) {
     const coordinates = geom.coordinates.map(([lng, lat]) => [lat, lng]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
     if (coordinates.length < 2) return;
     const polyline = L.polyline(coordinates, { color: "#00b050", weight: 4, opacity: 0.85 }).addTo(leafletMap);
+    
+    // Click interaction for detail modal
+    polyline.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        openTraceDetailModal(path);
+    });
+    
     allRecordsMarkers.push(polyline);
   });
+}
+
+function openTraceDetailModal(path) {
+    const modal = document.getElementById("trace-detail-modal");
+    if (!modal) return;
+    
+    disableGpsSnapping();
+
+    const userEl = document.getElementById("trace-detail-user");
+    const timeEl = document.getElementById("trace-detail-time");
+    if (userEl) userEl.textContent = path.owner_name || "ユーザー";
+    if (timeEl) timeEl.textContent = path.created_at ? new Date(path.created_at).toLocaleString('ja-JP', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : new Date().toLocaleString('ja-JP');
+
+    const tagsContainer = document.getElementById("trace-detail-tags");
+    if (tagsContainer) {
+        const rawTags = Array.isArray(path.tags) ? path.tags : [];
+        const tagsHtml = rawTags.map(t => `<span class="tag-chip" style="background:rgba(255,160,0,0.1); color:#8A4000; padding:4px 8px; border-radius:12px; font-size:12px;"><i class="fas fa-tag"></i> ${t.name || t}</span>`).join("");
+        tagsContainer.innerHTML = tagsHtml;
+        tagsContainer.style.display = rawTags.length > 0 ? "flex" : "none";
+    }
+
+    const memoContainer = document.getElementById("trace-detail-memo-container");
+    const memoEl = document.getElementById("trace-detail-memo");
+    if (memoContainer && memoEl) {
+        if (path.memo) {
+            memoEl.textContent = path.memo;
+            memoContainer.style.display = "block";
+        } else {
+            memoContainer.style.display = "none";
+        }
+    }
+
+    const actionsEl = document.getElementById("trace-detail-actions");
+    if (actionsEl) {
+        if (localStorage.getItem("UI1_isPro") === "true") {
+            actionsEl.style.display = "flex";
+            actionsEl.classList.remove("hidden");
+        } else {
+            actionsEl.style.display = "none";
+        }
+    }
+    
+    const closeBtn = document.getElementById("trace-detail-close-btn");
+    if (closeBtn) closeBtn.onclick = () => modal.classList.add("hidden");
+
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.classList.add("hidden");
+    };
+
+    const deleteBtn = document.getElementById("trace-delete-btn");
+    if (deleteBtn) {
+        deleteBtn.onclick = () => {
+            if (confirm("本当にこの点字ブロック記録を削除しますか？")) {
+                alert("削除しました（モック動作）。");
+                modal.classList.add("hidden");
+                // Remove from map: find and remove by ID
+                allRecordsMarkers.forEach((m, i) => {
+                    try { leafletMap.removeLayer(m); } catch (ex) { /* ignore */ }
+                });
+                allRecordsMarkers.length = 0;
+            }
+        };
+    }
+
+    const editBtn = document.getElementById("trace-edit-memo-btn");
+    if (editBtn) {
+        editBtn.onclick = () => {
+            const nextMemo = prompt("メモを編集:", path.memo || "");
+            if (nextMemo !== null) {
+                if (memoEl) memoEl.textContent = nextMemo;
+                if (memoContainer) memoContainer.style.display = nextMemo ? "block" : "none";
+                path.memo = nextMemo;
+            }
+        };
+    }
+
+    modal.classList.remove("hidden");
 }
 
 function clearAllRecordsFromMap() { allRecordsMarkers.forEach((m) => leafletMap.removeLayer(m)); allRecordsMarkers = []; }
@@ -446,7 +572,7 @@ function loadAndShowOsmTactileWays() {
 
       if (toggleShowOsmBtn) {
         toggleShowOsmBtn.checked = false;
-        toggleShowOsmBtn.dispatchEvent(new Event('change'));
+        toggleShowOsmBtn.dispatchEvent(new window.Event('change'));
       }
       clearOsmTactileWaysFromMap();
     })
@@ -667,7 +793,7 @@ function showRoadInfoPointsOnMap(points) {
         </div>
         <div style="margin-bottom:8px;min-height:18px">${currentTags}</div>
         <div>${currentMedia}</div>
-        <a href="/StepBy/UI1/road_info_detail/Index.html?pointId=${pointId}"
+        <a href="../road_info_detail/Index.html?pointId=${pointId}"
           style="display:block;background:linear-gradient(135deg,#2E9E8F,#3BB49F);color:#fff;text-align:center;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:700;text-decoration:none;margin-top:6px"
           onclick="event.stopPropagation()">
           <i class="fas fa-arrow-right"></i> 詳細・コメントを見る

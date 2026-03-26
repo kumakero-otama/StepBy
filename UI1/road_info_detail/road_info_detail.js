@@ -12,7 +12,6 @@ const tagsListEl = document.getElementById("tags-list");
 const postsListEl = document.getElementById("posts-list");
 const postCountEl = document.getElementById("post-count");
 const backBtn = document.getElementById("back-btn");
-const backBtnBottom = document.getElementById("back-btn-bottom");
 const postSelfBtn = document.getElementById("post-self-btn");
 const commentModalEl = document.getElementById("comment-modal");
 const commentCloseBtn = document.getElementById("comment-close-btn");
@@ -247,9 +246,9 @@ function initActions() {
     if (commentImagePreviewEl) {
         commentImagePreviewEl.addEventListener("click", (e) => {
             const target = e.target;
-            if (!(target instanceof HTMLElement)) return;
+            if (!target || typeof target.closest !== "function") return;
             const removeButton = target.closest("[data-remove-image-id]");
-            const imageId = removeButton instanceof HTMLElement ? removeButton.getAttribute("data-remove-image-id") : null;
+            const imageId = removeButton ? removeButton.getAttribute("data-remove-image-id") : null;
             if (imageId) removeCommentImageById(imageId);
         });
     }
@@ -261,10 +260,25 @@ function initActions() {
     if (commentPhotoLibraryInput) { commentPhotoLibraryInput.addEventListener("change", () => { addCommentImageFiles(Array.from(commentPhotoLibraryInput.files || [])); commentPhotoLibraryInput.value = ""; }); }
     if (commentCameraInput) { commentCameraInput.addEventListener("change", () => { addCommentImageFiles(Array.from(commentCameraInput.files || [])); commentCameraInput.value = ""; }); }
 
-    function goBack() { if (window.history.length > 1) { window.history.back(); return; } window.location.assign("/StepBy/UI1/map/Index.html"); }
+    function goBack() { if (window.history.length > 1) { window.history.back(); return; } window.location.assign("../map/Index.html"); }
 
     if (backBtn) backBtn.addEventListener("click", goBack);
-    if (backBtnBottom) backBtnBottom.addEventListener("click", goBack);
+
+    const deletePointBtn = document.getElementById("delete-point-btn");
+    if (deletePointBtn) {
+        deletePointBtn.addEventListener("click", async () => {
+            if (!window.confirm("本当にこの道情報を削除してよろしいですか？")) return;
+            try {
+                // In UI1 mockup, we simulate deletion
+                // If it were hitting the backend, we would uncomment:
+                // await fetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
+                alert("道情報を削除しました。");
+                window.location.replace("../map/Index.html");
+            } catch (err) {
+                alert("道情報の削除に失敗しました。");
+            }
+        });
+    }
 }
 
 function loadRoadInfoDetail() {
@@ -284,6 +298,10 @@ function loadRoadInfoDetail() {
             renderTags(data.point.tags);
             renderPosts(data.point.posts);
             showContent();
+
+            // Mock: Always show delete button for presentation
+            const deletePointBtn = document.getElementById("delete-point-btn");
+            if (deletePointBtn) deletePointBtn.classList.remove("hidden");
         })
         .catch((err) => {
             if (err.message === "not_found") { setError("対象の道情報が見つかりませんでした。"); return; }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -293,12 +293,6 @@
             <h1>道情報の詳細</h1>
         
 <div class="header-actions">
-                        <a href="../map/Index.html" class="header-action-btn" aria-label="ホーム" style="text-decoration:none;">
-                            <i class="fas fa-home"></i>
-                        </a>
-                        <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール" style="text-decoration:none;">
-                            <i class="fas fa-user-circle"></i>
-                        </a>
                         <div class="settings-wrap">
                             <button class="header-action-btn" id="settings-toggle" aria-label="設定">
                                 <i class="fas fa-cog"></i>
@@ -341,12 +335,12 @@
         </div>
 
         <!-- Action buttons -->
-        <div class="action-btns">
-            <button class="btn-primary" id="post-self-btn">
+        <div class="action-btns" style="display:flex; gap:10px;">
+            <button class="btn-primary" id="post-self-btn" style="flex:1;">
                 <i class="fas fa-plus"></i> コメントを追加
             </button>
-            <button class="btn-secondary" id="back-btn-bottom" style="max-width: 120px;">
-                <i class="fas fa-arrow-left"></i> 戻る
+            <button class="hidden" id="delete-point-btn" style="background:#FF4B4B; color:white; border:none; border-radius:12px; width:52px; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; font-size:18px;" title="道情報を削除">
+                <i class="fas fa-trash-alt"></i>
             </button>
         </div>
 
@@ -394,7 +388,7 @@
             <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
-            <a href="../settings/display.html" class="nav-item "><i class="fas fa-cog"></i><span>設定</span></a>
+
         </nav>
 
     </div>

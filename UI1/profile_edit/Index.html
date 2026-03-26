@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -358,12 +358,6 @@
         <header class="top-bar">
             <div class="top-bar-title">プロフィール編集</div>
             <div class="header-actions">
-                    <a href="../map/Index.html" class="header-action-btn" aria-label="ホーム" style="text-decoration:none;">
-                        <i class="fas fa-home"></i>
-                    </a>
-                    <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール" style="text-decoration:none;">
-                        <i class="fas fa-user-circle"></i>
-                    </a>
                     <div class="settings-wrap">
                         <button class="header-action-btn" id="settings-toggle" aria-label="設定">
                             <i class="fas fa-cog"></i>
@@ -425,14 +419,44 @@
                     <i class="fas fa-camera"></i> アイコン画像
                 </div>
                 <div class="icon-upload">
-                    <div class="icon-preview">
-                        <i class="fas fa-user"></i>
-                        <span class="icon-no-image">NO IMAGE</span>
+                    <div class="icon-preview" style="overflow: hidden;">
+                        <img id="icon-preview-img" style="display:none; width:100%; height:100%; object-fit:cover;">
+                        <i class="fas fa-user" id="icon-default-icon"></i>
+                        <span class="icon-no-image" id="icon-no-image-text">NO IMAGE</span>
                     </div>
                     <div class="icon-buttons">
-                        <button type="button" class="icon-btn"><i class="fas fa-camera"></i> 写真を撮影</button>
-                        <button type="button" class="icon-btn"><i class="fas fa-image"></i> 画像アップロード</button>
+                        <label class="icon-btn" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
+                            <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                            <i class="fas fa-camera"></i> 写真を撮影
+                        </label>
+                        <label class="icon-btn" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
+                            <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                            <i class="fas fa-image"></i> 画像アップロード
+                        </label>
                     </div>
+                </div>
+            </div>
+
+            <!-- Account Config -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="fas fa-crown" style="color:#FFA000; background:rgba(255,160,0,0.1);"></i> アカウント設定
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0;">
+                    <div>
+                        <label class="form-label" style="margin-bottom:4px;">PROアカウント <span class="tag-chip" style="background:#FFA000; color:white; font-size:10px; padding:2px 6px;">NEW</span></label>
+                        <div class="form-hint" style="margin-top:0;">特別な機能（ひとことメモなど）が解放されます</div>
+                    </div>
+                    <label class="switch-toggle" style="position:relative; display:inline-block; width:50px; height:28px; flex-shrink:0;">
+                        <input type="checkbox" id="pro-account-toggle" style="opacity:0; width:0; height:0;">
+                        <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; transition:.4s; border-radius:34px;"></span>
+                        <style>
+                            .switch-toggle .slider { background-color: #ccc; }
+                            .switch-toggle input:checked + .slider { background-color: #FFA000; }
+                            .switch-toggle .slider:before { position:absolute; content:""; height:20px; width:20px; left:4px; bottom:4px; background-color:white; transition:.4s; border-radius:50%; }
+                            .switch-toggle input:checked + .slider:before { transform: translateX(22px); }
+                        </style>
+                    </label>
                 </div>
             </div>
 
@@ -477,8 +501,7 @@
 
         <!-- Submit -->
         <div class="submit-area">
-            <button class="btn-back" onclick="history.back()">戻る</button>
-            <button class="btn-primary" style="flex:1">変更を保存</button>
+            <button class="btn-primary" style="flex:1" onclick="location.href='../profile/Index.html'">変更を保存</button>
         </div>
     </div>
 
@@ -577,6 +600,42 @@
             }
         }
         confirmPw.addEventListener('input', checkMatch);
+
+        // ---- PRO Toggle State Handling ----
+        const proToggle = document.getElementById('pro-account-toggle');
+        // Load initial state
+        const isPro = localStorage.getItem('UI1_isPro') === 'true';
+        proToggle.checked = isPro;
+
+        proToggle.addEventListener('change', (e) => {
+            localStorage.setItem('UI1_isPro', e.target.checked ? 'true' : 'false');
+            // If we actually hit the API, we'd do it here:
+            // fetch('/api/pro-status', { method: 'PUT', body: JSON.stringify({ isPro: e.target.checked }) });
+        });
+
+        // ---- Icon Upload Handling ----
+        const fileUpload = document.getElementById('file-upload');
+        const fileCamera = document.getElementById('file-camera');
+        const iconPreviewImg = document.getElementById('icon-preview-img');
+        const iconDefaultIcon = document.getElementById('icon-default-icon');
+        const iconNoImageText = document.getElementById('icon-no-image-text');
+
+        function handleImageSelection(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    iconPreviewImg.src = e.target.result;
+                    iconPreviewImg.style.display = 'block';
+                    iconDefaultIcon.style.display = 'none';
+                    if (iconNoImageText) iconNoImageText.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        if (fileUpload) fileUpload.addEventListener('change', handleImageSelection);
+        if (fileCamera) fileCamera.addEventListener('change', handleImageSelection);
     </script>
 <script src="../common.js"></script>
 </body>
