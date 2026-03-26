@@ -1444,17 +1444,21 @@
         const centerCheckbox = document.getElementById('toggle-center-current');
         let gpsTracking = true;
 
-        gpsBtn.addEventListener('click', () => {
-            gpsTracking = !gpsTracking;
-            centerCheckbox.checked = gpsTracking;
-            centerCheckbox.dispatchEvent(new Event('change'));
-            gpsBtn.classList.toggle('tracking', gpsTracking);
+        if (gpsBtn) {
+            gpsBtn.addEventListener('click', () => {
+                gpsTracking = !gpsTracking;
+                if (centerCheckbox) {
+                    centerCheckbox.checked = gpsTracking;
+                    centerCheckbox.dispatchEvent(new Event('change'));
+                }
+                gpsBtn.classList.toggle('tracking', gpsTracking);
 
-            // If turning on, pan to current position immediately
-            if (gpsTracking && typeof marker !== 'undefined' && marker) {
-                map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
-            }
-        });
+                // If turning on, pan to current position immediately
+                if (gpsTracking && typeof marker !== 'undefined' && marker) {
+                    map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                }
+            });
+        }
 
         // ===== Feature card toggle bridge =====
         document.querySelectorAll('.feature-card[data-toggle]').forEach((card) => {
