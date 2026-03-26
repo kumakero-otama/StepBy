@@ -723,6 +723,9 @@ function decodePolyline(str, precision) {
 let allRecordsMarkers = [];
 let osmTactileMarkers = [];
 let roadInfoMarkers = [];
+let cachedVisibleSessionPaths = [];
+let cachedOsmFeatures = [];
+let cachedVisibleRoadInfoPoints = [];
 const tactileSessionInfoCache = new Map();
 let tactileSessionCardEl = null;
 let tactileSessionCardLatLng = null;
@@ -738,6 +741,8 @@ const MAP_CONTROLS_COLLAPSED_KEY = "mapControlsCollapsed.v1";
 const MAP_INFO_VISIBILITY_KEY = "mapInfoVisibility.v1";
 const CENTER_CURRENT_KEY = "centerCurrentEnabled.v1";
 const LAST_LOCATION_CACHE_KEY = "lastKnownLocation.v1";
+const MAP_RETURN_CACHE_KEY = "mapReturnCache.v1";
+const MAP_RETURN_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const DEFAULT_MAP_DISPLAY_SETTINGS = {
   showAppTactile: true,
   showOsmTactile: true,
@@ -837,6 +842,137 @@ function saveCenterCurrentEnabled(enabled) {
   } catch {
     // ignore storage failure
   }
+}
+
+function cloneSerializable(value) {
+  if (value == null) {
+    return value;
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return null;
+  }
+}
+
+function getVisibleTactilePaths(paths) {
+  if (!Array.isArray(paths)) {
+    return [];
+  }
+  return paths.filter((path) => {
+    if (!isNonProVisibleTactileSession(path)) {
+      return false;
+    }
+    if (!shouldShowOnlyMyTactile()) {
+      return true;
+    }
+    const ownerUserId = Number(path && path.user_id);
+    return Number.isFinite(ownerUserId) && Number.isFinite(currentUserId) && ownerUserId === currentUserId;
+  });
+}
+
+function getVisibleRoadInfoPoints(points) {
+  if (!Array.isArray(points)) {
+    return [];
+  }
+  return points.filter((point) => {
+    if (String(point && point.status || "").toLowerCase() === "inactive") {
+      return false;
+    }
+    if (!shouldShowOnlyMyRoadInfo()) {
+      return true;
+    }
+    const createdBy = Number(point && point.createdBy);
+    return Number.isFinite(createdBy) && Number.isFinite(currentUserId) && createdBy === currentUserId;
+  });
+}
+
+function buildMapReturnCachePayload() {
+  const center = typeof map?.getCenter === "function" ? map.getCenter() : null;
+  const zoom = typeof map?.getZoom === "function" ? map.getZoom() : NaN;
+  const payload = {
+    savedAt: Date.now(),
+    mapInfoEnabled: isMapInfoEnabled(),
+    centerCurrentEnabled: isCenterCurrentEnabled(),
+    mapDisplaySettings: { ...mapDisplaySettings },
+    center: center && Number.isFinite(center.lat) && Number.isFinite(center.lng)
+      ? { lat: center.lat, lng: center.lng }
+      : null,
+    zoom: Number.isFinite(zoom) ? zoom : null,
+    visibleSessionPaths: cloneSerializable(cachedVisibleSessionPaths) || [],
+    osmFeatures: cloneSerializable(cachedOsmFeatures) || [],
+    visibleRoadInfoPoints: cloneSerializable(cachedVisibleRoadInfoPoints) || [],
+  };
+  return payload;
+}
+
+function saveMapReturnCache() {
+  try {
+    sessionStorage.setItem(MAP_RETURN_CACHE_KEY, JSON.stringify(buildMapReturnCachePayload()));
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function loadMapReturnCache() {
+  try {
+    const raw = sessionStorage.getItem(MAP_RETURN_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const savedAt = Number(parsed && parsed.savedAt);
+    if (!Number.isFinite(savedAt) || (Date.now() - savedAt) > MAP_RETURN_CACHE_MAX_AGE_MS) {
+      sessionStorage.removeItem(MAP_RETURN_CACHE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function applyPersistedHomeToggleState() {
+  if (toggleShowMapInfoBtn) {
+    toggleShowMapInfoBtn.checked = loadMapInfoVisibility();
+  }
+  if (toggleCenterCurrentBtn) {
+    toggleCenterCurrentBtn.checked = loadCenterCurrentEnabled();
+  }
+}
+
+function restoreMapReturnCache() {
+  const cached = loadMapReturnCache();
+  if (!cached || !cached.mapInfoEnabled) {
+    return false;
+  }
+
+  if (cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
+    const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
+    map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
+  }
+
+  cachedVisibleSessionPaths = Array.isArray(cached.visibleSessionPaths)
+    ? cloneSerializable(cached.visibleSessionPaths) || []
+    : [];
+  cachedOsmFeatures = Array.isArray(cached.osmFeatures)
+    ? cloneSerializable(cached.osmFeatures) || []
+    : [];
+  cachedVisibleRoadInfoPoints = Array.isArray(cached.visibleRoadInfoPoints)
+    ? cloneSerializable(cached.visibleRoadInfoPoints) || []
+    : [];
+
+  if (shouldShowAppTactile() && cachedVisibleSessionPaths.length > 0) {
+    showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
+  }
+  if (shouldShowOsmTactile() && cachedOsmFeatures.length > 0) {
+    showOsmTactileWaysOnMap(cachedOsmFeatures);
+  }
+  if (shouldShowRoadInfo() && cachedVisibleRoadInfoPoints.length > 0) {
+    showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
+  }
+
+  return true;
 }
 
 function saveLastKnownLocation(lat, lng) {
@@ -1056,6 +1192,10 @@ map.on("move", () => {
   }
 });
 
+window.addEventListener("pagehide", () => {
+  saveMapReturnCache();
+});
+
 map.on("click", (event) => {
   if (shouldIgnoreMapTap(event)) {
     return;
@@ -1068,9 +1208,11 @@ map.on("click", (event) => {
       lat: lat.toString(),
       lng: lng.toString(),
     });
+    saveMapReturnCache();
     window.location.assign(AppPath.toApp(`/post_road/Index.html?${params.toString()}`));
     return;
   }
+  saveMapReturnCache();
   window.location.assign(AppPath.toApp("/post_road/Index.html"));
 });
 
@@ -2038,7 +2180,10 @@ function loadAndShowAllRecords() {
       }
       console.log(`[loadAndShowAllRecords] Loaded ${data.count} paths`);
       if (data.success && Array.isArray(data.paths)) {
-        showAllSessionPathsOnMap(data.paths);
+        const visiblePaths = getVisibleTactilePaths(data.paths);
+        cachedVisibleSessionPaths = cloneSerializable(visiblePaths) || [];
+        saveMapReturnCache();
+        showAllSessionPathsOnMap(visiblePaths, { preFiltered: true });
       }
     })
     .catch((err) => {
@@ -2056,19 +2201,10 @@ function loadAndShowAllRecords() {
 }
 
 // session_pathsの全軌跡を地図上に表示
-function showAllSessionPathsOnMap(paths) {
+function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
   clearAllRecordsFromMap();
   hideTactileSessionCard();
-  const visiblePaths = paths.filter((path) => {
-    if (!isNonProVisibleTactileSession(path)) {
-      return false;
-    }
-    if (!shouldShowOnlyMyTactile()) {
-      return true;
-    }
-    const ownerUserId = Number(path && path.user_id);
-    return Number.isFinite(ownerUserId) && Number.isFinite(currentUserId) && ownerUserId === currentUserId;
-  });
+  const visiblePaths = preFiltered ? paths : getVisibleTactilePaths(paths);
 
   console.log(`[showAllSessionPathsOnMap] Showing ${visiblePaths.length}/${paths.length} paths`);
 
@@ -2190,6 +2326,8 @@ function loadAndShowOsmTactileWays() {
         throw new Error("invalid osm tactile payload");
       }
       console.log(`[loadAndShowOsmTactileWays] Loaded ${data.features.length} ways`);
+      cachedOsmFeatures = cloneSerializable(data.features) || [];
+      saveMapReturnCache();
       showOsmTactileWaysOnMap(data.features);
     })
     .catch((err) => {
@@ -2305,7 +2443,10 @@ function loadAndShowRoadInfoPoints() {
       if (!data || !Array.isArray(data.points)) {
         throw new Error("invalid road-info payload");
       }
-      showRoadInfoPointsOnMap(data.points);
+      const visiblePoints = getVisibleRoadInfoPoints(data.points);
+      cachedVisibleRoadInfoPoints = cloneSerializable(visiblePoints) || [];
+      saveMapReturnCache();
+      showRoadInfoPointsOnMap(visiblePoints, { preFiltered: true });
     })
     .catch((err) => {
       if (requestSeq !== roadInfoLoadRequestSeq) {
@@ -2317,19 +2458,10 @@ function loadAndShowRoadInfoPoints() {
     });
 }
 
-function showRoadInfoPointsOnMap(points) {
+function showRoadInfoPointsOnMap(points, { preFiltered = false } = {}) {
   // 既存ピンを消してから最新結果だけを表示する。
   clearRoadInfoPointsFromMap();
-  const visiblePoints = points.filter((point) => {
-    if (String(point && point.status || "").toLowerCase() === "inactive") {
-      return false;
-    }
-    if (!shouldShowOnlyMyRoadInfo()) {
-      return true;
-    }
-    const createdBy = Number(point && point.createdBy);
-    return Number.isFinite(createdBy) && Number.isFinite(currentUserId) && createdBy === currentUserId;
-  });
+  const visiblePoints = preFiltered ? points : getVisibleRoadInfoPoints(points);
 
   visiblePoints.forEach((point) => {
     const lat = Number(point && point.lat);
@@ -2346,6 +2478,7 @@ function showRoadInfoPointsOnMap(points) {
       if (!Number.isInteger(pointId) || pointId <= 0) {
         return;
       }
+      saveMapReturnCache();
       window.location.assign(AppPath.toApp(`/road_info_detail/Index.html?pointId=${pointId}`));
     });
     roadInfoMarkers.push(pin);
@@ -2486,12 +2619,8 @@ if ("geolocation" in navigator) {
     setInterval(pollAndSendLocation, 2000);
 
     updateRecordButton();
-    if (toggleShowMapInfoBtn) {
-      toggleShowMapInfoBtn.checked = loadMapInfoVisibility();
-    }
-    if (toggleCenterCurrentBtn) {
-      toggleCenterCurrentBtn.checked = loadCenterCurrentEnabled();
-    }
+    applyPersistedHomeToggleState();
+    restoreMapReturnCache();
     
     // レコードボタンのイベントハンドラー
     if (recordActionBtn) {
@@ -2593,6 +2722,7 @@ if ("geolocation" in navigator) {
         console.log(`[toggleShowMapInfo] showMapInfo=${toggleShowMapInfoBtn.checked}`);
         saveMapInfoVisibility(toggleShowMapInfoBtn.checked);
         applyMapInfoVisibility();
+        saveMapReturnCache();
       });
     }
     // 初期化中にユーザーが先にトグルを変更した場合でも表示状態を同期する。
@@ -2604,6 +2734,7 @@ if ("geolocation" in navigator) {
         console.log(`[toggleCenterCurrent] centerCurrentLocation=${toggleCenterCurrentBtn.checked}`);
         saveCenterCurrentEnabled(toggleCenterCurrentBtn.checked);
         recenterToLatestLocation();
+        saveMapReturnCache();
       });
     }
     
