@@ -53,6 +53,9 @@ function setError(message) {
     if (detailLoadingEl) detailLoadingEl.classList.add("hidden");
     if (detailContentEl) detailContentEl.classList.add("hidden");
     if (detailErrorEl) { detailErrorEl.textContent = message; detailErrorEl.classList.remove("hidden"); }
+    // エラー時はアクションボタンも非表示にする
+    const actionBtns = document.querySelector(".action-btns");
+    if (actionBtns) actionBtns.style.display = "none";
 }
 
 function renderTags(tags) {
