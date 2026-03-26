@@ -224,6 +224,13 @@
 
 <body>
     <div class="login-shell">
+        <!-- 言語セレクター -->
+        <div style="position:absolute;top:12px;right:12px;z-index:10;display:flex;gap:6px;">
+            <button onclick="setLang('ja')" id="lang-btn-ja" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:4px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s;">🇯🇵 日本語</button>
+            <button onclick="setLang('en')" id="lang-btn-en" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:4px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s;">🇺🇸 English</button>
+            <button onclick="setLang('hi')" id="lang-btn-hi" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:4px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s;">🇮🇳 हिंदी</button>
+        </div>
+
         <!-- Hero -->
         <div class="login-hero">
             <div class="login-logo">
@@ -279,6 +286,19 @@
     </div>
 
     <script>
+        // 言語セレクター
+        function setLang(lang) {
+            localStorage.setItem('UI1_language', lang);
+            // ボタンのハイライト更新
+            ['ja','en','hi'].forEach(l => {
+                const btn = document.getElementById('lang-btn-' + l);
+                if (btn) btn.style.background = l === lang ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.2)';
+            });
+        }
+        // 現在の言語をハイライト
+        const curLang = localStorage.getItem('UI1_language') || 'ja';
+        setLang(curLang);
+
         document.getElementById('btn-google-login').addEventListener('click', () => {
             window.location.assign('../map/Index.html');
         });

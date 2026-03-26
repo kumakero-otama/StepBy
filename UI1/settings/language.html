@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -171,7 +171,7 @@
                     <i class="fas fa-language"></i> 言誁E
                 </div>
                 <div class="lang-option selected" data-lang="ja">
-                    <div class="lang-flag">�E�E</div>
+                    <div class="lang-flag">�E�E</div>
                     <div class="lang-info">
                         <div class="lang-name">日本誁E/div>
                         <div class="lang-native">Japanese</div>
@@ -179,7 +179,7 @@
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
                 <div class="lang-option" data-lang="en">
-                    <div class="lang-flag">�E�E</div>
+                    <div class="lang-flag">�E�E</div>
                     <div class="lang-info">
                         <div class="lang-name">English</div>
                         <div class="lang-native">英誁E/div>
@@ -187,10 +187,10 @@
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
                 <div class="lang-option" data-lang="hi">
-                    <div class="lang-flag">�E�E</div>
+                    <div class="lang-flag">�E�E</div>
                     <div class="lang-info">
                         <div class="lang-name">हिंदी</div>
-                        <div class="lang-native">ヒンチE��ー誁E/div>
+                        <div class="lang-native">ヒンチE��ー誁E/div>
                     </div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
@@ -228,17 +228,17 @@
             });
         });
 
-        // 変更を保存�Eタン
+        // 変更を保存�Eタン
         document.querySelector('.btn-primary').addEventListener('click', () => {
             const selected = document.querySelector('.lang-option.selected');
             if (!selected) return;
             const lang = selected.dataset.lang;
             localStorage.setItem('UI1_language', lang);
 
-            // 保存フィードバチE��
+            // 保存フィードバチE��
             const btn = document.querySelector('.btn-primary');
             const original = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました�E�E;
+            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました�E�E;
             btn.style.background = '#27AE60';
             setTimeout(() => {
                 btn.innerHTML = original;
