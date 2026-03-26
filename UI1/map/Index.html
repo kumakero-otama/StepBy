@@ -1263,9 +1263,17 @@
                 <a href="/StepBy/UI1/profile/Index.html" class="header-action-btn" aria-label="プロフィール" style="text-decoration:none;">
                     <i class="fas fa-user-circle"></i>
                 </a>
-                <a href="/StepBy/UI1/settings/display.html" class="header-action-btn" aria-label="設定" style="text-decoration:none;">
-                    <i class="fas fa-cog"></i>
-                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="/StepBy/UI1/settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
+                        <a href="/StepBy/UI1/settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="/StepBy/UI1/help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
+                    </div>
+                </div>
             </div>
         </div>
         <!-- Quick nav chips -->
@@ -1467,7 +1475,28 @@
             });
         });
 
-        // No settings dropdown needed on top anymore
+        // ===== Settings dropdown (header) =====
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsDropdown = document.getElementById('settings-dropdown');
+
+        if (settingsToggle && settingsDropdown) {
+            settingsToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                settingsDropdown.classList.toggle('open');
+            });
+        }
+
+        document.addEventListener('click', () => {
+            if (settingsDropdown) settingsDropdown.classList.remove('open');
+        });
+
+        if (settingsDropdown) {
+            settingsDropdown.addEventListener('click', (e) => {
+                // ドロップダウン内のクリックでは閉じさせないようにするが、
+                // aタグのhref遷移は防がないため、stopPropagationのみ行う
+                e.stopPropagation();
+            });
+        }
     </script>
     <script>
         // ===== Record button (prominent, outside panel) =====
