@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>言語設宁E EStepBy</title>
+    <title>言語設定 — StepBy</title>
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -149,17 +149,17 @@
     <div class="app-shell">
         <!-- Header -->
         <header class="top-bar">
-            <div class="top-bar-title">言語設宁E/div>
+            <div class="top-bar-title">言語設定 / Language Settings</div>
             <div class="header-actions">
                     <div class="settings-wrap">
-                        <button class="header-action-btn" id="settings-toggle" aria-label="設宁E>
+                        <button class="header-action-btn" id="settings-toggle" aria-label="設定">
                             <i class="fas fa-cog"></i>
                         </button>
                         <div class="settings-dropdown" id="settings-dropdown">
-                            <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設宁E/a>
-                            <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設宁E/a>
-                            <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設宁E/a>
-                            <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルチE/a>
+                            <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                            <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
+                            <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                            <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
                         </div>
                     </div>
                 </div>
@@ -168,29 +168,29 @@
         <div class="scroll-content">
             <div class="settings-card">
                 <div class="settings-card-title">
-                    <i class="fas fa-language"></i> 言誁E
+                    <i class="fas fa-language"></i> 言語
                 </div>
                 <div class="lang-option selected" data-lang="ja">
-                    <div class="lang-flag">�E�E</div>
+                    <div class="lang-flag">🇯🇵</div>
                     <div class="lang-info">
-                        <div class="lang-name">日本誁E/div>
+                        <div class="lang-name">日本語</div>
                         <div class="lang-native">Japanese</div>
                     </div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
                 <div class="lang-option" data-lang="en">
-                    <div class="lang-flag">�E�E</div>
+                    <div class="lang-flag">🇺🇸</div>
                     <div class="lang-info">
                         <div class="lang-name">English</div>
-                        <div class="lang-native">英誁E/div>
+                        <div class="lang-native">英語</div>
                     </div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
                 <div class="lang-option" data-lang="hi">
-                    <div class="lang-flag">�E�E</div>
+                    <div class="lang-flag">🇮🇳</div>
                     <div class="lang-info">
                         <div class="lang-name">हिंदी</div>
-                        <div class="lang-native">ヒンチE��ー誁E/div>
+                        <div class="lang-native">ヒンディー語</div>
                     </div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
@@ -199,13 +199,13 @@
 
         <!-- Submit -->
         <div class="submit-area">
-            <button class="btn-back" onclick="history.back()">戻めE/button>
-            <button class="btn-primary" style="flex:1">変更を保孁E/button>
+            <button class="btn-back" onclick="history.back()">戻る</button>
+            <button class="btn-primary" style="flex:1">変更を保存</button>
         </div>
 
         <!-- Bottom Nav -->
         <nav class="bottom-nav">
-            <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マッチE/span></a>
+            <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
             <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
@@ -220,7 +220,7 @@
             opt.classList.toggle('selected', opt.dataset.lang === savedLang);
         });
 
-        // 言語オプション選抁E
+        // 言語オプション選択
         document.querySelectorAll('.lang-option').forEach(opt => {
             opt.addEventListener('click', () => {
                 document.querySelectorAll('.lang-option').forEach(o => o.classList.remove('selected'));
@@ -228,17 +228,17 @@
             });
         });
 
-        // 変更を保存�Eタン
+        // 変更を保存ボタン
         document.querySelector('.btn-primary').addEventListener('click', () => {
             const selected = document.querySelector('.lang-option.selected');
             if (!selected) return;
             const lang = selected.dataset.lang;
             localStorage.setItem('UI1_language', lang);
 
-            // 保存フィードバチE��
+            // 保存フィードバック
             const btn = document.querySelector('.btn-primary');
             const original = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました�E�E;
+            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました！';
             btn.style.background = '#27AE60';
             setTimeout(() => {
                 btn.innerHTML = original;
@@ -246,8 +246,7 @@
             }, 1500);
         });
     </script>
-<script src="../i18n.js"></script>
-<script src="../common.js"></script>
+<script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
 
 </html>

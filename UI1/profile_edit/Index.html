@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>プロフィール編雁E EStepBy</title>
+    <title>プロフィール編集 — StepBy</title>
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -356,17 +356,17 @@
     <div class="app-shell">
         <!-- Header -->
         <header class="top-bar">
-            <div class="top-bar-title">プロフィール編雁E/div>
+            <div class="top-bar-title">プロフィール編集</div>
             <div class="header-actions">
                     <div class="settings-wrap">
-                        <button class="header-action-btn" id="settings-toggle" aria-label="設宁E>
+                        <button class="header-action-btn" id="settings-toggle" aria-label="設定">
                             <i class="fas fa-cog"></i>
                         </button>
                         <div class="settings-dropdown" id="settings-dropdown">
-                            <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設宁E/a>
-                            <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設宁E/a>
-                            <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設宁E/a>
-                            <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルチE/a>
+                            <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                            <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
+                            <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                            <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
                         </div>
                     </div>
                 </div>
@@ -376,11 +376,11 @@
             <!-- Basic Info -->
             <div class="form-card">
                 <div class="form-card-title">
-                    <i class="fas fa-user"></i> 基本惁E��
+                    <i class="fas fa-user"></i> 基本情報
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">ユーザー吁E/label>
+                    <label class="form-label">ユーザー名</label>
                     <input type="text" class="form-input" value="otama" id="edit-username">
                 </div>
 
@@ -397,7 +397,7 @@
                         </div>
                         <div class="radio-option">
                             <input type="radio" name="gender" id="g-other" value="other">
-                            <label for="g-other">回答しなぁE/label>
+                            <label for="g-other">回答しない</label>
                         </div>
                     </div>
                 </div>
@@ -416,7 +416,7 @@
             <!-- Icon -->
             <div class="form-card">
                 <div class="form-card-title">
-                    <i class="fas fa-camera"></i> アイコン画僁E
+                    <i class="fas fa-camera"></i> アイコン画像
                 </div>
                 <div class="icon-upload">
                     <div class="icon-preview" style="overflow: hidden;">
@@ -431,7 +431,7 @@
                         </label>
                         <label class="icon-btn" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
                             <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 0; height: 0;">
-                            <i class="fas fa-image"></i> 画像アチE�EローチE
+                            <i class="fas fa-image"></i> 画像アップロード
                         </label>
                     </div>
                 </div>
@@ -440,12 +440,12 @@
             <!-- Account Config -->
             <div class="form-card">
                 <div class="form-card-title">
-                    <i class="fas fa-crown" style="color:#FFA000; background:rgba(255,160,0,0.1);"></i> アカウント設宁E
+                    <i class="fas fa-crown" style="color:#FFA000; background:rgba(255,160,0,0.1);"></i> アカウント設定
                 </div>
                 <div class="form-group" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0;">
                     <div>
-                        <label class="form-label" style="margin-bottom:4px;">PROアカウンチE<span class="tag-chip" style="background:#FFA000; color:white; font-size:10px; padding:2px 6px;">NEW</span></label>
-                        <div class="form-hint" style="margin-top:0;">特別な機�E�E��Eとことメモなど�E�が解放されまぁE/div>
+                        <label class="form-label" style="margin-bottom:4px;">PROアカウント <span class="tag-chip" style="background:#FFA000; color:white; font-size:10px; padding:2px 6px;">NEW</span></label>
+                        <div class="form-hint" style="margin-top:0;">特別な機能（ひとことメモなど）が解放されます</div>
                     </div>
                     <label class="switch-toggle" style="position:relative; display:inline-block; width:50px; height:28px; flex-shrink:0;">
                         <input type="checkbox" id="pro-account-toggle" style="opacity:0; width:0; height:0;">
@@ -467,18 +467,18 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">現在のパスワーチE/label>
+                    <label class="form-label">現在のパスワード</label>
                     <div class="pw-current-wrap">
                         <input type="password" class="pw-masked" value="password123" id="current-pw" readonly>
                         <span class="pw-toggle" id="toggle-current-pw"><i class="fas fa-eye-slash"></i></span>
                     </div>
-                    <a href="#" class="pw-forgot"><i class="fas fa-question-circle"></i> パスワードを忘れた場吁E/a>
+                    <a href="#" class="pw-forgot"><i class="fas fa-question-circle"></i> パスワードを忘れた場合</a>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">新しいパスワーチE/label>
+                    <label class="form-label">新しいパスワード</label>
                     <div class="pw-input-wrap">
-                        <input type="password" class="form-input" placeholder="8斁E��以丁E id="new-pw">
+                        <input type="password" class="form-input" placeholder="8文字以上" id="new-pw">
                         <span class="pw-toggle" id="toggle-new-pw"><i class="fas fa-eye-slash"></i></span>
                     </div>
                     <div class="pw-strength">
@@ -487,9 +487,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">新しいパスワード（確認！E/label>
+                    <label class="form-label">新しいパスワード（確認）</label>
                     <div class="pw-input-wrap">
-                        <input type="password" class="form-input" placeholder="もう一度入劁E id="confirm-pw">
+                        <input type="password" class="form-input" placeholder="もう一度入力" id="confirm-pw">
                         <span class="pw-toggle" id="toggle-confirm-pw"><i class="fas fa-eye-slash"></i></span>
                     </div>
                     <div class="form-hint" id="pw-match-hint"></div>
@@ -501,7 +501,7 @@
 
         <!-- Submit -->
         <div class="submit-area">
-            <button class="btn-primary" style="flex:1" onclick="location.href='../profile/Index.html'">変更を保孁E/button>
+            <button class="btn-primary" style="flex:1" onclick="location.href='../profile/Index.html'">変更を保存</button>
         </div>
     </div>
 
@@ -520,7 +520,7 @@
         }
         for (let m = 1; m <= 12; m++) {
             const o = document.createElement('option');
-            o.value = m; o.textContent = m + '朁E;
+            o.value = m; o.textContent = m + '月';
             if (m === 2) o.selected = true;
             monthSel.appendChild(o);
         }
@@ -540,7 +540,7 @@
             let age = now.getFullYear() - bday.getFullYear();
             const mDiff = now.getMonth() - bday.getMonth();
             if (mDiff < 0 || (mDiff === 0 && now.getDate() < bday.getDate())) age--;
-            document.getElementById('age-display').textContent = `現在の年齢は�E�E{age}歳です`;
+            document.getElementById('age-display').textContent = `現在の年齢は：${age}歳です`;
         }
         yearSel.addEventListener('change', calcAge);
         monthSel.addEventListener('change', calcAge);
@@ -592,10 +592,10 @@
         function checkMatch() {
             if (!confirmPw.value) { matchHint.textContent = ''; return; }
             if (confirmPw.value === newPw.value) {
-                matchHint.textContent = '✁Eパスワードが一致してぁE��ぁE;
+                matchHint.textContent = '✓ パスワードが一致しています';
                 matchHint.style.color = 'var(--success)';
             } else {
-                matchHint.textContent = '✁Eパスワードが一致しません';
+                matchHint.textContent = '✗ パスワードが一致しません';
                 matchHint.style.color = 'var(--danger)';
             }
         }
@@ -637,8 +637,7 @@
         if (fileUpload) fileUpload.addEventListener('change', handleImageSelection);
         if (fileCamera) fileCamera.addEventListener('change', handleImageSelection);
     </script>
-<script src="../i18n.js"></script>
-<script src="../common.js"></script>
+<script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
 
 </html>
