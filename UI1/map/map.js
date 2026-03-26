@@ -3,7 +3,7 @@
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
 
-const API_BASE = "";
+const API_BASE = "https://barrierfree-map.loophole.site";
 const leafletMap = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
@@ -125,10 +125,10 @@ leafletMap.on("click", (event) => {
   const lng = Number(event?.latlng?.lng);
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
     const params = new URLSearchParams({ lat: lat.toString(), lng: lng.toString() });
-    window.location.assign(`/post_road/Index.html?${params.toString()}`);
+    window.location.assign(`/StepBy/UI1/post_road/Index.html?${params.toString()}`);
     return;
   }
-  window.location.assign("/post_road/Index.html");
+  window.location.assign("/StepBy/UI1/post_road/Index.html");
 });
 
 function generateUUID() {
@@ -499,7 +499,7 @@ function fetchAddress(pointId, lat, lng) {
     const val = pointAddressCache.get(pointId);
     return val instanceof Promise ? val : Promise.resolve(val);
   }
-  const promise = fetch(`/api/nominatim?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=ja`)
+  const promise = fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=ja`, { headers: { 'User-Agent': 'StepBy-BarrierFree-App-v2' } })
     .then(r => r.json())
     .then(data => {
       const addr = data.address || {};
@@ -667,7 +667,7 @@ function showRoadInfoPointsOnMap(points) {
         </div>
         <div style="margin-bottom:8px;min-height:18px">${currentTags}</div>
         <div>${currentMedia}</div>
-        <a href="/road_info_detail/Index.html?pointId=${pointId}"
+        <a href="/StepBy/UI1/road_info_detail/Index.html?pointId=${pointId}"
           style="display:block;background:linear-gradient(135deg,#2E9E8F,#3BB49F);color:#fff;text-align:center;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:700;text-decoration:none;margin-top:6px"
           onclick="event.stopPropagation()">
           <i class="fas fa-arrow-right"></i> 詳細・コメントを見る

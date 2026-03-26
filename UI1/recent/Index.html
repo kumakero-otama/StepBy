@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -376,7 +376,7 @@
     </div>
 
     <script>
-        const API_BASE = "";
+        const API_BASE = "https://barrierfree-map.loophole.site";
         const postsListEl = document.getElementById('posts-list');
         const statsText = document.getElementById('stats-text');
         const regionSelect = document.getElementById('region-select');
@@ -485,7 +485,8 @@
             });
 
             div.addEventListener('click', () => {
-                window.location.assign(`/road_info_detail/Index.html?pointId=${pt.id}`);
+                window.location.assign(`/StepBy/UI1/road_info_detail/Index.html?pointId=${pt.id}`);
+
             });
 
             return div;

@@ -639,7 +639,7 @@
             position: absolute;
             top: 12px;
             left: 50px;
-            right: 60px;
+            right: 12px;
             z-index: 400;
         }
 
@@ -1313,10 +1313,7 @@
                 </div>
             </div>
 
-            <!-- GPS button (Google Maps style) -->
-            <button class="map-gps-btn tracking" id="gps-btn" title="現在地">
-                <i class="fas fa-location-arrow"></i>
-            </button>
+
 
             <!-- Voice Nav button -->
             <button class="map-voice-btn" id="voice-nav-btn" title="音声ナビ" aria-label="音声ナビを開始する">
@@ -1340,13 +1337,9 @@
         <!-- Bottom drawer (outside map-container, in the app-shell flex column) -->
         <div class="bottom-drawer">
             <div class="drawer-cta">
-                <button class="btn-record" id="btn-record-main" title="点字ブロック記録">
+                <button class="btn-record" id="btn-record-main" title="点字ブロック記録" style="flex:1">
                     <i class="fas fa-circle-dot" id="record-icon"></i>
                     <span id="record-label">記録開始</span>
-                </button>
-                <button class="btn-cta-dream" style="flex:1" onclick="window.location.assign('/StepBy/UI1/post_road/Index.html')">
-                    <i class="fas fa-camera"></i>
-                    道の情報を投稿する
                 </button>
             </div>
             <!-- Hidden checkboxes: map.js uses getElementById to find these -->

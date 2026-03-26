@@ -3,7 +3,7 @@
 // 既存ロジックを保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
 
-const API_BASE = "";
+const API_BASE = "https://barrierfree-map.loophole.site";
 
 const detailLoadingEl = document.getElementById("detail-loading");
 const detailContentEl = document.getElementById("detail-content");
@@ -261,7 +261,8 @@ function initActions() {
     if (commentPhotoLibraryInput) { commentPhotoLibraryInput.addEventListener("change", () => { addCommentImageFiles(Array.from(commentPhotoLibraryInput.files || [])); commentPhotoLibraryInput.value = ""; }); }
     if (commentCameraInput) { commentCameraInput.addEventListener("change", () => { addCommentImageFiles(Array.from(commentCameraInput.files || [])); commentCameraInput.value = ""; }); }
 
-    function goBack() { if (window.history.length > 1) { window.history.back(); return; } window.location.assign("/map/Index.html"); }
+    function goBack() { if (window.history.length > 1) { window.history.back(); return; } window.location.assign("/StepBy/UI1/map/Index.html"); }
+
     if (backBtn) backBtn.addEventListener("click", goBack);
     if (backBtnBottom) backBtnBottom.addEventListener("click", goBack);
 }

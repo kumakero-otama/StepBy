@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -305,8 +305,10 @@
     </div>
 
     <script>
+        const API_BASE = "https://barrierfree-map.loophole.site";
         // --- URL params ---
         const params = new URLSearchParams(window.location.search);
+
         const lat = params.get("lat");
         const lng = params.get("lng");
         const locationCoordsEl = document.getElementById("location-coords");
@@ -396,7 +398,7 @@
                     images,
                 };
 
-                const res = await fetch("/api/road-info", {
+                const res = await fetch(`${API_BASE}/api/road-info`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -305,7 +305,8 @@
     </div>
 
     <script>
-        const API_BASE = "";
+        const API_BASE = "https://barrierfree-map.loophole.site";
+
         const params = new URLSearchParams(window.location.search);
         const pointId = params.get("pointId");
 
@@ -452,7 +453,7 @@
                     images, // We send new images. Existing images behavior depends on API design (assume API appends or ignores if empty).
                 };
 
-                const res = await fetch("/api/road-info", {
+                const res = await fetch(`${API_BASE}/api/road-info`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
