@@ -282,6 +282,28 @@ function initActions() {
     }
 }
 
+// デモ用フォールバックデータ
+function showDemoContent(pointId) {
+    const demoData = {
+        point: {
+            id: pointId,
+            tags: [
+                { labelJa: "点字ブロック" },
+                { labelJa: "音響信号機" }
+            ],
+            posts: [
+                { id: 1, body: "点字ブロックが整備されています。安全に通れます。", createdAt: "2026-03-16T20:26:00Z", media: [], author: { name: "おたまちゃん" } },
+                { id: 2, body: "音響信号機があり、歩行者に優しい交差点です。", createdAt: "2026-03-16T20:25:00Z", media: [], author: { name: "おたまちゃん" } },
+                { id: 3, body: "スロープも設置されており、車いすでも利用可能です。", createdAt: "2026-03-16T20:24:00Z", media: [], author: { name: "おたまちゃん" } }
+            ]
+        }
+    };
+    currentPointId = pointId;
+    renderTags(demoData.point.tags);
+    renderPosts(demoData.point.posts);
+    showContent();
+}
+
 function loadRoadInfoDetail() {
     const params = new URLSearchParams(window.location.search);
     const pointId = Number(params.get("pointId"));
@@ -299,16 +321,14 @@ function loadRoadInfoDetail() {
             renderTags(data.point.tags);
             renderPosts(data.point.posts);
             showContent();
-
-            // Mock: Always show delete button for presentation
-            const deletePointBtn = document.getElementById("delete-point-btn");
-            if (deletePointBtn) deletePointBtn.classList.remove("hidden");
         })
         .catch((err) => {
             if (err.message === "not_found") { setError("対象の道情報が見つかりませんでした。"); return; }
-            setError("道情報の読み込みに失敗しました。");
+            // API失敗時（認証エラー含む）はデモデータで表示
+            showDemoContent(pointId);
         });
 }
+
 
 initActions();
 setCommentModalOpen(false);
