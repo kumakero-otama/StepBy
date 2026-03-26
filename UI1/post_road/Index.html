@@ -350,6 +350,13 @@
             detailInput.style.cursor = 'not-allowed';
             proBadge.style.display = 'inline-block';
             proLockMsg.style.display = 'block';
+            // 投稿ボタンもグレーアウト
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.style.background = '#B0BEC5';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.innerHTML = '<i class="fas fa-lock"></i> PROアカウント限定';
+            }
         }
 
         // --- Tag selection ---
@@ -407,6 +414,13 @@
 
         document.getElementById("submit-btn").addEventListener("click", async () => {
             const submitBtn = document.getElementById("submit-btn");
+
+            // PRO限定チェック
+            if (!isPro) {
+                alert("🔒 道情報の投稿はPROアカウント限定です。\nプロフィール編集ページからPROに切り替えてください。");
+                return;
+            }
+
             const detail = document.getElementById("detail-input").value.trim();
             const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
                 .map((cb) => cb.value);
@@ -415,6 +429,7 @@
                 alert("タグ、本文、画像のいずれかを入力してください。");
                 return;
             }
+
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> 投稿中...';
