@@ -5,6 +5,23 @@
 const UI1_TRANSLATIONS = {
     ja: {}, // デフォルト（日本語はそのまま）
     en: {
+        // ログインページ
+        'バリアフリーの地図をみんなで作ろう': 'Build a barrier-free map together',
+        'バリアフリーの地図を': 'Build a barrier-free',
+        'みんなで作ろう': 'map together',
+        '地図を確認': 'View Map',
+        '点字ブロック記録': 'Record Tactile Paving',
+        '道情報を投稿': 'Post Road Info',
+        'アカウントでログインしてください': 'Please sign in to continue',
+        'Googleでログイン': 'Sign in with Google',
+        'ゲストとして使う場合': 'Continue as Guest',
+        'ログインせずに地図を見る': 'View map without signing in',
+        'ログインすることで': 'By signing in, you agree to our ',
+        '利用規約': 'Terms of Service',
+        'と': ' and ',
+        'プライバシーポリシー': 'Privacy Policy',
+        'に同意したことになります': '',
+
         // ナビゲーション
         'マップ': 'Map',
         'みんなの投稿': 'All Posts',

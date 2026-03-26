@@ -285,19 +285,20 @@
         </div>
     </div>
 
+    <script src="../i18n.js"></script>
     <script>
         // 言語セレクター
         function setLang(lang) {
             localStorage.setItem('UI1_language', lang);
-            // ボタンのハイライト更新
-            ['ja','en','hi'].forEach(l => {
-                const btn = document.getElementById('lang-btn-' + l);
-                if (btn) btn.style.background = l === lang ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.2)';
-            });
+            // 即座にページをリロードして言語切替
+            window.location.reload();
         }
         // 現在の言語をハイライト
         const curLang = localStorage.getItem('UI1_language') || 'ja';
-        setLang(curLang);
+        ['ja','en','hi'].forEach(l => {
+            const btn = document.getElementById('lang-btn-' + l);
+            if (btn) btn.style.background = l === curLang ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.2)';
+        });
 
         document.getElementById('btn-google-login').addEventListener('click', () => {
             window.location.assign('../map/Index.html');
