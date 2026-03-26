@@ -285,20 +285,65 @@
         </div>
     </div>
 
-    <script src="../i18n.js"></script>
     <script>
-        // 言語セレクター
+        // ===== 言語翻訳データ =====
+        const LANGS = {
+            ja: {
+                sub: 'バリアフリーの地図を<br>みんなで作ろう',
+                feat1: '地図を確認', feat2: '点字ブロック記録', feat3: '道情報を投稿',
+                hint: 'アカウントでログインしてください',
+                google: 'Googleでログイン',
+                divider: 'ゲストとして使う場合',
+                guest: 'ログインせずに地図を見る',
+                note: 'ログインすることで<a href="#">利用規約</a>と<a href="#">プライバシーポリシー</a>に同意したことになります'
+            },
+            en: {
+                sub: 'Build a barrier-free<br>map together',
+                feat1: 'View Map', feat2: 'Record Tactile', feat3: 'Post Info',
+                hint: 'Please sign in to continue',
+                google: 'Sign in with Google',
+                divider: 'Continue as Guest',
+                guest: 'View map without signing in',
+                note: 'By signing in, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>'
+            },
+            hi: {
+                sub: 'बाधा-मुक्त नक्शा<br>मिलकर बनाएं',
+                feat1: 'नक्शा देखें', feat2: 'टैक्टाइल रिकॉर्ड', feat3: 'जानकारी पोस्ट',
+                hint: 'कृपया साइन इन करें',
+                google: 'Google से साइन इन',
+                divider: 'अतिथि के रूप में जारी रखें',
+                guest: 'साइन इन किए बिना नक्शा देखें',
+                note: '<a href="#">नियम</a> और <a href="#">गोपनीयता नीति</a> से सहमत'
+            }
+        };
+
+        function applyLang(lang) {
+            const t = LANGS[lang] || LANGS['ja'];
+            document.querySelector('.login-sub').innerHTML = t.sub;
+            const feats = document.querySelectorAll('.feature-pill span');
+            if (feats[0]) feats[0].textContent = t.feat1;
+            if (feats[1]) feats[1].textContent = t.feat2;
+            if (feats[2]) feats[2].textContent = t.feat3;
+            document.querySelector('.login-card-hint').textContent = t.hint;
+            document.querySelector('#btn-google-login').childNodes[document.querySelector('#btn-google-login').childNodes.length-1].textContent = ' ' + t.google;
+            document.querySelector('.divider span').textContent = t.divider;
+            document.querySelector('#btn-guest').childNodes[document.querySelector('#btn-guest').childNodes.length-1].textContent = ' ' + t.guest;
+            document.querySelector('.login-note').innerHTML = t.note;
+            // ボタンのハイライト更新
+            ['ja','en','hi'].forEach(l => {
+                const btn = document.getElementById('lang-btn-' + l);
+                if (btn) btn.style.background = l === lang ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.2)';
+            });
+        }
+
         function setLang(lang) {
             localStorage.setItem('UI1_language', lang);
-            // 即座にページをリロードして言語切替
-            window.location.reload();
+            applyLang(lang);
         }
-        // 現在の言語をハイライト
+
+        // 初期表示
         const curLang = localStorage.getItem('UI1_language') || 'ja';
-        ['ja','en','hi'].forEach(l => {
-            const btn = document.getElementById('lang-btn-' + l);
-            if (btn) btn.style.background = l === curLang ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.2)';
-        });
+        applyLang(curLang);
 
         document.getElementById('btn-google-login').addEventListener('click', () => {
             window.location.assign('../map/Index.html');
