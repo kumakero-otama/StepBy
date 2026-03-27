@@ -509,11 +509,54 @@
 
         </nav>
     </div>
+    <script src="../config.js"></script>
+    <script src="../token_client.js"></script>
     <script>
         // Check PRO status
         if (localStorage.getItem('UI1_isPro') === 'true') {
             document.getElementById('pro-badge').style.display = 'inline-flex';
         }
+
+        // /auth/me でリアルデータを取得
+        async function loadProfileFromAPI() {
+            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return; // 未ログインはスキップ
+            try {
+                const res = await window.AuthToken.authFetch('/auth/me', { cache: 'no-store' });
+                if (!res.ok) return;
+                const payload = await res.json();
+                const user = payload && payload.user ? payload.user : null;
+                if (!user) return;
+
+                // ユーザー名
+                const nameEl = document.getElementById('profile-name');
+                const userEl = document.getElementById('profile-username');
+                if (nameEl) nameEl.textContent = user.username || 'ユーザー';
+                if (userEl) userEl.textContent = user.username || 'ユーザー';
+
+                // PRO バッジ
+                if (user.isPro || user.is_pro) {
+                    const badge = document.getElementById('pro-badge');
+                    if (badge) badge.style.display = 'inline-flex';
+                    localStorage.setItem('UI1_isPro', 'true');
+                }
+
+                // 統計データ
+                const km = (user.totalTactileLength || user.total_tactile_length || 0);
+                const posts = (user.totalRoadPosts || user.total_road_posts || 0);
+                const hearts = (user.totalHearts || user.total_hearts || 0);
+
+                // stat カードを更新
+                const statCards = document.querySelectorAll('.stat-value');
+                if (statCards[0]) statCards[0].innerHTML = `${Number(km).toFixed(2)}<small>km</small>`;
+                if (statCards[1]) statCards[1].innerHTML = `<span id="total-posts-count">${posts}</span><small>件</small>`;
+                if (statCards[2]) statCards[2].innerHTML = `${hearts}<small>♥</small>`;
+
+            } catch (e) {
+                console.log('Profile API not available:', e.message);
+            }
+        }
+
+        loadProfileFromAPI();
     </script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
