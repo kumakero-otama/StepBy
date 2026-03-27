@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -172,26 +172,37 @@
                 </div>
                 <div class="lang-option selected" data-lang="ja">
                     <div class="lang-flag">🇯🇵</div>
-                    <div class="lang-info">
-                        <div class="lang-name">日本語</div>
-                        <div class="lang-native">Japanese</div>
-                    </div>
+                    <div class="lang-info"><div class="lang-name">日本語</div><div class="lang-native">Japanese</div></div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
                 <div class="lang-option" data-lang="en">
                     <div class="lang-flag">🇺🇸</div>
-                    <div class="lang-info">
-                        <div class="lang-name">English</div>
-                        <div class="lang-native">英語</div>
-                    </div>
+                    <div class="lang-info"><div class="lang-name">English</div><div class="lang-native">英語</div></div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
                 <div class="lang-option" data-lang="hi">
                     <div class="lang-flag">🇮🇳</div>
-                    <div class="lang-info">
-                        <div class="lang-name">हिंदी</div>
-                        <div class="lang-native">ヒンディー語</div>
-                    </div>
+                    <div class="lang-info"><div class="lang-name">हिंदी</div><div class="lang-native">ヒンディー語</div></div>
+                    <i class="fas fa-check-circle lang-check"></i>
+                </div>
+                <div class="lang-option" data-lang="zh-CN">
+                    <div class="lang-flag">🇨🇳</div>
+                    <div class="lang-info"><div class="lang-name">中文</div><div class="lang-native">中国語</div></div>
+                    <i class="fas fa-check-circle lang-check"></i>
+                </div>
+                <div class="lang-option" data-lang="ko">
+                    <div class="lang-flag">🇰🇷</div>
+                    <div class="lang-info"><div class="lang-name">한국어</div><div class="lang-native">韓国語</div></div>
+                    <i class="fas fa-check-circle lang-check"></i>
+                </div>
+                <div class="lang-option" data-lang="es">
+                    <div class="lang-flag">🇪🇸</div>
+                    <div class="lang-info"><div class="lang-name">Español</div><div class="lang-native">スペイン語</div></div>
+                    <i class="fas fa-check-circle lang-check"></i>
+                </div>
+                <div class="lang-option" data-lang="fr">
+                    <div class="lang-flag">🇫🇷</div>
+                    <div class="lang-info"><div class="lang-name">Français</div><div class="lang-native">フランス語</div></div>
                     <i class="fas fa-check-circle lang-check"></i>
                 </div>
             </div>
@@ -213,7 +224,8 @@
         </nav>
     </div>
 
-        <script>
+    <script src="../common.js"></script>
+    <script>
         // 言語オプション選択
         document.querySelectorAll('.lang-option').forEach(opt => {
             opt.addEventListener('click', () => {
@@ -222,12 +234,36 @@
             });
         });
 
-        // Google翻訳を起動する関数
-        function applyGoogleTranslate(langCode) {
-            if (langCode === 'ja') {
-                // 日本語リセット
-                const restore = document.querySelector('.goog-te-menu-value span');
-                if (restore) restore.click();
+        // Google翻訳を直接起動
+        function triggerGT(langCode) {
+            const tryTrigger = () => {
+                const combo = document.querySelector('.goog-te-combo');
+                if (combo) { combo.value = langCode; combo.dispatchEvent(new Event('change')); }
+            };
+            setTimeout(tryTrigger, 500);
+            setTimeout(tryTrigger, 1200);
+        }
+
+        // 保存ボタン
+        document.querySelector('.btn-primary').addEventListener('click', () => {
+            const selected = document.querySelector('.lang-option.selected');
+            if (!selected) return;
+            const lang = selected.dataset.lang;
+
+            if (lang === 'ja') {
+                window.location.reload();
+            } else {
+                triggerGT(lang);
+            }
+
+            const btn = document.querySelector('.btn-primary');
+            btn.innerHTML = '<i class="fas fa-check"></i> Applied!';
+            btn.style.background = '#27AE60';
+            setTimeout(() => history.back(), 1200);
+        });
+    </script>
+</body>
+</html>
                 window.location.href = window.location.href.replace(/#googtrans\([^)]*\)/,'') + '#googtrans(ja)';
                 window.location.reload();
                 return;
