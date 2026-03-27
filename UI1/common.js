@@ -15,66 +15,164 @@
     document.documentElement.setAttribute('data-font-size', size);
 })();
 
-// ===== Google翻訳ウィジェット（全ページ自動注入）=====
+// ===== Google翻訳 + カスタム言語ボタン =====
 (function() {
-    const style = document.createElement('style');
-    style.textContent = `
-        #google_translate_element select {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 10px 12px;
-            cursor: pointer;
-            outline: none;
-            font-family: inherit;
-            -webkit-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 28px;
-        }
-        #google_translate_element select option { color: #333; background: #fff; }
-        /* バナーのみ非表示（ウィジェット自体は表示） */
-        .goog-te-banner-frame { display: none !important; }
-        iframe.goog-te-menu-frame { display: none !important; }
-        body { top: 0 !important; }
-        .goog-te-gadget { color: transparent !important; font-size: 0 !important; }
-        .goog-te-gadget select { font-size: 13px !important; color: #fff !important; }
-    `;
+    const LANGS = [
+        { code: 'ja',    label: '🇯🇵 日本語' },
+        { code: 'en',    label: '🇺🇸 English' },
+        { code: 'hi',    label: '🇮🇳 हिंदी' },
+        { code: 'zh-CN', label: '🇨🇳 中文' },
+        { code: 'ko',    label: '🇰🇷 한국어' },
+        { code: 'es',    label: '🇪🇸 Español' },
+        { code: 'fr',    label: '🇫🇷 Français' },
+        { code: 'ar',    label: '🇸🇦 العربية' },
+    ];
 
+    // Googleウィジェット用の非表示div
     window.googleTranslateElementInit = function() {
         new google.translate.TranslateElement({
             pageLanguage: 'ja',
             includedLanguages: 'en,hi,zh-CN,ko,es,fr,ar',
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false
-        }, 'google_translate_element');
+        }, 'google_translate_hidden');
     };
+
+    // Google翻訳を起動する
+    function triggerTranslate(langCode) {
+        const tryTrigger = () => {
+            const combo = document.querySelector('.goog-te-combo');
+            if (combo) {
+                combo.value = langCode;
+                combo.dispatchEvent(new Event('change'));
+            }
+        };
+        setTimeout(tryTrigger, 300);
+        setTimeout(tryTrigger, 800);
+        setTimeout(tryTrigger, 1500);
+    }
+
+    // カスタム言語ボタンを作成
+    function createLangPicker() {
+        const css = document.createElement('style');
+        css.textContent = `
+            /* Google翻訳のUIを完全非表示 */
+            #google_translate_hidden, .goog-te-banner-frame,
+            .goog-te-gadget-simple, .skiptranslate:not(#stepby-lang-picker):not(#stepby-lang-picker *) {
+                display: none !important;
+            }
+            body { top: 0 !important; }
+
+            /* カスタム言語ピッカー */
+            #stepby-lang-picker {
+                position: fixed;
+                bottom: 80px;
+                right: 12px;
+                z-index: 99999;
+            }
+            #stepby-lang-btn {
+                background: var(--primary, #2E9E8F);
+                color: #fff;
+                border: none;
+                border-radius: 50px;
+                padding: 10px 16px;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-family: inherit;
+                transition: transform 0.15s;
+            }
+            #stepby-lang-btn:active { transform: scale(0.95); }
+            #stepby-lang-dropdown {
+                display: none;
+                position: absolute;
+                bottom: 48px;
+                right: 0;
+                background: #fff;
+                border-radius: 14px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+                overflow: hidden;
+                min-width: 160px;
+            }
+            #stepby-lang-dropdown.open { display: block; }
+            .stepby-lang-option {
+                padding: 12px 16px;
+                font-size: 14px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #333;
+                transition: background 0.15s;
+                font-family: inherit;
+            }
+            .stepby-lang-option:hover { background: #f5f5f5; }
+            .stepby-lang-option.active { color: var(--primary, #2E9E8F); font-weight: 700; }
+        `;
+        document.head.appendChild(css);
+
+        const picker = document.createElement('div');
+        picker.id = 'stepby-lang-picker';
+
+        const btn = document.createElement('button');
+        btn.id = 'stepby-lang-btn';
+        btn.innerHTML = '🌐 Language';
+
+        const dropdown = document.createElement('div');
+        dropdown.id = 'stepby-lang-dropdown';
+
+        LANGS.forEach(lang => {
+            const opt = document.createElement('div');
+            opt.className = 'stepby-lang-option';
+            opt.textContent = lang.label;
+            opt.dataset.code = lang.code;
+            opt.addEventListener('click', () => {
+                dropdown.classList.remove('open');
+                btn.innerHTML = '🌐 ' + lang.label;
+                localStorage.setItem('UI1_language', lang.code);
+                if (lang.code === 'ja') {
+                    window.location.reload();
+                } else {
+                    triggerTranslate(lang.code);
+                }
+            });
+            dropdown.appendChild(opt);
+        });
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+        picker.appendChild(dropdown);
+        picker.appendChild(btn);
+        document.body.appendChild(picker);
+
+        // 保存済み言語を適用
+        const saved = localStorage.getItem('UI1_language');
+        if (saved && saved !== 'ja') {
+            const found = LANGS.find(l => l.code === saved);
+            if (found) btn.innerHTML = '🌐 ' + found.label;
+            triggerTranslate(saved);
+        }
+    }
+
+    // Google翻訳スクリプトを読み込む
+    const hiddenDiv = document.createElement('div');
+    hiddenDiv.id = 'google_translate_hidden';
+    hiddenDiv.style.display = 'none';
 
     const script = document.createElement('script');
     script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
 
     document.addEventListener('DOMContentLoaded', () => {
-        document.head.appendChild(style);
-        // 既存のdivがなければ右下固定で生成
-        if (!document.getElementById('google_translate_element')) {
-            const container = document.createElement('div');
-            container.id = 'google_translate_element';
-            container.style.cssText = 'position:fixed;bottom:80px;right:12px;z-index:99999;background:var(--primary,#2E9E8F);border-radius:50px;box-shadow:0 4px 16px rgba(0,0,0,0.18);overflow:hidden;max-width:180px;opacity:0.95;';
-            document.body.appendChild(container);
-        } else {
-            // 既存のdiv（signup等）にスタイルを付与
-            const el = document.getElementById('google_translate_element');
-            el.style.background = 'rgba(46,158,143,0.9)';
-            el.style.borderRadius = '50px';
-            el.style.overflow = 'hidden';
-            el.style.maxWidth = '180px';
-            el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-        }
+        document.body.appendChild(hiddenDiv);
         document.body.appendChild(script);
+        createLangPicker();
     });
 })();
 
