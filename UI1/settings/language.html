@@ -213,13 +213,7 @@
         </nav>
     </div>
 
-    <script>
-        // 保存済み言語を読み込み
-        const savedLang = localStorage.getItem('UI1_language') || 'ja';
-        document.querySelectorAll('.lang-option').forEach(opt => {
-            opt.classList.toggle('selected', opt.dataset.lang === savedLang);
-        });
-
+        <script>
         // 言語オプション選択
         document.querySelectorAll('.lang-option').forEach(opt => {
             opt.addEventListener('click', () => {
@@ -228,22 +222,40 @@
             });
         });
 
+        // Google翻訳を起動する関数
+        function applyGoogleTranslate(langCode) {
+            if (langCode === 'ja') {
+                // 日本語リセット
+                const restore = document.querySelector('.goog-te-menu-value span');
+                if (restore) restore.click();
+                window.location.href = window.location.href.replace(/#googtrans\([^)]*\)/,'') + '#googtrans(ja)';
+                window.location.reload();
+                return;
+            }
+            const select = document.querySelector('.goog-te-combo');
+            if (select) {
+                select.value = langCode;
+                select.dispatchEvent(new Event('change'));
+            }
+        }
+
         // 変更を保存ボタン
         document.querySelector('.btn-primary').addEventListener('click', () => {
             const selected = document.querySelector('.lang-option.selected');
             if (!selected) return;
             const lang = selected.dataset.lang;
-            localStorage.setItem('UI1_language', lang);
 
-            // 保存フィードバック
+            applyGoogleTranslate(lang);
+
             const btn = document.querySelector('.btn-primary');
-            const original = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました！';
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> 適用しました！';
             btn.style.background = '#27AE60';
             setTimeout(() => {
-                btn.innerHTML = original;
+                btn.innerHTML = orig;
                 btn.style.background = '';
-            }, 1500);
+                history.back();
+            }, 1000);
         });
     </script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
