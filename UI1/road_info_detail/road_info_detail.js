@@ -1,4 +1,4 @@
-// ===============================================
+﻿// ===============================================
 // StepBy — road_info_detail.js
 // 既存ロジックを保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -272,7 +272,7 @@ function initActions() {
             if (!window.confirm("本当にこの道情報を削除してよろしいですか？")) return;
             try {
                 deletePointBtn.disabled = true;
-                await apiFetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
+                await fetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
                 alert("道情報を削除しました。");
                 window.location.replace("../map/Index.html");
             } catch (err) {

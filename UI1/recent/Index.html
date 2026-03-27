@@ -510,7 +510,7 @@
         // --- Dynamic Content Update (photo/tags/text only, no address) ---
         async function fetchPostDetail(pt, el, signal) {
             try {
-                const res = await apiFetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, { signal });
+                const res = await fetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, { signal });
                 const data = await res.json();
                 const point = data.point;
                 const post = (point.posts && point.posts.length > 0) ? point.posts[point.posts.length - 1] : null;
@@ -584,7 +584,7 @@
 
             try {
                 const params = new URLSearchParams({ centerLat, centerLng, radiusKm });
-                const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
+                const res = await fetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
                 const points = data.points || [];
