@@ -62,15 +62,21 @@
             }
             body { top: 0 !important; }
             /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
-            body.translated-ltr [class*="name"],
-            body.translated-ltr [class*="label"],
-            body.translated-ltr [class*="title"] {
-                font-size: 0.82em !important;
+            body.translated-ltr .feature-card-title,
+            body.translated-ltr .feature-pill-label,
+            body.translated-ltr .card-title,
+            body.translated-ltr .type-label,
+            body.translated-ltr [class*="card-title"],
+            body.translated-ltr [class*="card-name"] {
+                font-size: 11px !important;
                 white-space: normal !important;
                 word-break: break-word !important;
                 line-height: 1.2 !important;
                 overflow: visible !important;
                 text-overflow: unset !important;
+                display: -webkit-box !important;
+                -webkit-line-clamp: 2 !important;
+                -webkit-box-orient: vertical !important;
             }
 
             /* カスタム言語ピッカー */
