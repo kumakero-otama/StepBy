@@ -61,6 +61,17 @@
                 display: none !important;
             }
             body { top: 0 !important; }
+            /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
+            body.translated-ltr [class*="name"],
+            body.translated-ltr [class*="label"],
+            body.translated-ltr [class*="title"] {
+                font-size: 0.82em !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                line-height: 1.2 !important;
+                overflow: visible !important;
+                text-overflow: unset !important;
+            }
 
             /* カスタム言語ピッカー */
             #stepby-lang-picker {
