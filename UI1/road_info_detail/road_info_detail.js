@@ -1,4 +1,4 @@
-﻿// ===============================================
+// ===============================================
 // StepBy — road_info_detail.js
 // 既存ロジックを保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -271,13 +271,13 @@ function initActions() {
         deletePointBtn.addEventListener("click", async () => {
             if (!window.confirm("本当にこの道情報を削除してよろしいですか？")) return;
             try {
-                // In UI1 mockup, we simulate deletion
-                // If it were hitting the backend, we would uncomment:
-                // await apiFetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
+                deletePointBtn.disabled = true;
+                await apiFetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
                 alert("道情報を削除しました。");
                 window.location.replace("../map/Index.html");
             } catch (err) {
-                alert("道情報の削除に失敗しました。");
+                alert("道情報の削除に失敗しました。サーバーに接続できないか、削除権限がありません。");
+                deletePointBtn.disabled = false;
             }
         });
     }
