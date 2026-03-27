@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -650,7 +650,7 @@
                 <div class="rank-my-position" id="my-rank-distance">
                     <div class="rank-my-num">12<small>位</small></div>
                     <div class="rank-my-info">
-                        <div class="rank-my-name">otama（あなた）</div>
+                        <div class="rank-my-name" id="rank-my-name-distance">ゲスト（あなた）</div>
                         <div class="rank-my-val">6.27 km</div>
                     </div>
                 </div>
@@ -658,7 +658,7 @@
                 <div class="rank-my-position hidden" id="my-rank-posts">
                     <div class="rank-my-num">8<small>位</small></div>
                     <div class="rank-my-info">
-                        <div class="rank-my-name">otama（あなた）</div>
+                        <div class="rank-my-name" id="rank-my-name-posts">ゲスト（あなた）</div>
                         <div class="rank-my-val">21 件</div>
                     </div>
                 </div>
@@ -826,7 +826,25 @@
             document.getElementById('my-rank-posts').classList.toggle('hidden', type !== 'posts');
         }
     </script>
+<script src="../config.js"></script><script src="../token_client.js"></script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
+<script>
+    // ログイン済みなら名前を更新
+    (async function() {
+        if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+        try {
+            const res = await window.AuthToken.authFetch('/auth/me', { cache: 'no-store' });
+            if (!res.ok) return;
+            const payload = await res.json();
+            const name = payload && payload.user && payload.user.username;
+            if (!name) return;
+            const d = document.getElementById('rank-my-name-distance');
+            const p = document.getElementById('rank-my-name-posts');
+            if (d) d.textContent = `${name}（あなた）`;
+            if (p) p.textContent = `${name}（あなた）`;
+        } catch {}
+    })();
+</script>
 </body>
 
 </html>

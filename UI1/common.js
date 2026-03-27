@@ -211,10 +211,13 @@
     const script = document.createElement('script');
     script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
 
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(hiddenDiv);
         document.body.appendChild(script);
-        createLangPicker();
+        // ボトムナビがないページ（ログイン前ページ）だけに言語ボタンを表示
+        if (!document.querySelector('.bottom-nav')) {
+            createLangPicker();
+        }
     });
 })();
 
