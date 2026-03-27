@@ -1,9 +1,12 @@
-// ===============================================
+﻿// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
 
 const API_BASE = "https://barrierfree-map.loophole.site";
+const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken())
+    ? window.AuthToken.authFetch(url, opts)
+    : fetch(url, opts);
 const leafletMap = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
@@ -155,7 +158,7 @@ function updateRecordButton() {
 }
 
 function postSessionLifecycle(action, payload) {
-  return fetch(`${API_BASE}/api/session/${action}`, {
+  return apiFetch(`${API_BASE}/api/session/${action}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -199,7 +202,7 @@ function extractTraceCoordinates(data, rawShape) {
 function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
   const requestBody = { shape, costing: "pedestrian", shape_match: "map_snap" };
   if (persist && sessionId) { requestBody.sessionId = sessionId; requestBody.source = "valhalla"; }
-  return fetch(`${API_BASE}/api/trace`, {
+  return apiFetch(`${API_BASE}/api/trace`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestBody),
@@ -308,7 +311,7 @@ async function handleRecordStopWithConfirmation(finishedSessionId) {
     if (decisionData.memo) {
          try {
              // Fake or real api call
-             // await fetch(`${API_BASE}/api/session/memo?sessionId=${finishedSessionId}`, { method: "PUT", body: JSON.stringify({memo: decisionData.memo}) });
+             // await apiFetch(`${API_BASE}/api/session/memo?sessionId=${finishedSessionId}`, { method: "PUT", body: JSON.stringify({memo: decisionData.memo}) });
              console.log("Mock saved memo:", decisionData.memo);
          } catch(e) {}
     }
@@ -327,7 +330,7 @@ function requestSnappedLocation(latitude, longitude) {
     if (currentSessionId) params.set("sessionId", currentSessionId);
   }
   if (lastSent) { params.set("prevLat", lastSent.latitude.toString()); params.set("prevLng", lastSent.longitude.toString()); }
-  fetch(`${API_BASE}/api/match?${params.toString()}`)
+  apiFetch(`${API_BASE}/api/match?${params.toString()}`)
     .then((res) => {
       if (res.status === 204) { updateDisplay(latitude, longitude, latitude, longitude, true); return null; }
       if (!res.ok) throw new Error(`match failed with status ${res.status}`);
@@ -400,7 +403,7 @@ function loadAndShowAllRecords() {
   setRecordsLoadingVisible(true);
   const center = leafletMap.getCenter();
   const params = new URLSearchParams({ centerLat: center.lat.toString(), centerLng: center.lng.toString(), radiusKm: "10" });
-  fetch(`${API_BASE}/api/records?${params.toString()}`)
+  apiFetch(`${API_BASE}/api/records?${params.toString()}`)
     .then((res) => { if (!res.ok) throw new Error(`records fetch failed: ${res.status}`); return res.json(); })
     .then((data) => {
       if (requestSeq !== recordsLoadRequestSeq || !toggleShowAllBtn || !toggleShowAllBtn.checked) return;
@@ -604,7 +607,7 @@ function setOsmLoadingVisible(v) { if (!osmLoadingOverlayEl) return; v ? osmLoad
 function loadAndShowRoadInfoPoints() {
   const center = leafletMap.getCenter();
   const params = new URLSearchParams({ centerLat: center.lat.toString(), centerLng: center.lng.toString(), radiusKm: "5" });
-  fetch(`${API_BASE}/api/road-info?${params.toString()}`)
+  apiFetch(`${API_BASE}/api/road-info?${params.toString()}`)
     .then((res) => { if (!res.ok) throw new Error(`road-info fetch failed: ${res.status}`); return res.json(); })
     .then((data) => {
       if (!data || !Array.isArray(data.points)) throw new Error("invalid road-info payload");
@@ -918,7 +921,7 @@ function showRoadInfoPointsOnMap(points) {
 function clearRoadInfoPointsFromMap() { roadInfoMarkers.forEach((m) => leafletMap.removeLayer(m)); roadInfoMarkers = []; }
 
 function loadConfig() {
-  return fetch(`${API_BASE}/api/config`)
+  return apiFetch(`${API_BASE}/api/config`)
     .then((res) => { if (!res.ok) throw new Error("config fetch failed"); return res.json(); })
     .then((config) => { if (typeof config.clientMinIntervalMs === "number") MIN_REQUEST_INTERVAL_MS = config.clientMinIntervalMs; })
     .catch(() => { });
