@@ -17,23 +17,6 @@
 
 // ===== Google翻訳ウィジェット（全ページ自動注入）=====
 (function() {
-    // ウィジェットを格納するdivを右下に作成
-    const container = document.createElement('div');
-    container.id = 'google_translate_element';
-    container.style.cssText = [
-        'position:fixed',
-        'bottom:80px',
-        'right:12px',
-        'z-index:99999',
-        'background:var(--primary,#2E9E8F)',
-        'border-radius:50px',
-        'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
-        'overflow:hidden',
-        'max-width:180px',
-        'opacity:0.95',
-    ].join(';');
-
-    // Googleスタイル上書き（バナー非表示・フォント整理）
     const style = document.createElement('style');
     style.textContent = `
         #google_translate_element select {
@@ -53,11 +36,7 @@
             background-position: right 10px center;
             padding-right: 28px;
         }
-        #google_translate_element select option {
-            color: #333;
-            background: #fff;
-        }
-        /* Googleの翻訳バナーを非表示 */
+        #google_translate_element select option { color: #333; background: #fff; }
         .goog-te-banner-frame, .skiptranslate { display: none !important; }
         body { top: 0 !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0 !important; }
@@ -78,7 +57,21 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(style);
-        document.body.appendChild(container);
+        // 既存のdivがなければ右下固定で生成
+        if (!document.getElementById('google_translate_element')) {
+            const container = document.createElement('div');
+            container.id = 'google_translate_element';
+            container.style.cssText = 'position:fixed;bottom:80px;right:12px;z-index:99999;background:var(--primary,#2E9E8F);border-radius:50px;box-shadow:0 4px 16px rgba(0,0,0,0.18);overflow:hidden;max-width:180px;opacity:0.95;';
+            document.body.appendChild(container);
+        } else {
+            // 既存のdiv（signup等）にスタイルを付与
+            const el = document.getElementById('google_translate_element');
+            el.style.background = 'rgba(46,158,143,0.9)';
+            el.style.borderRadius = '50px';
+            el.style.overflow = 'hidden';
+            el.style.maxWidth = '180px';
+            el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+        }
         document.body.appendChild(script);
     });
 })();
