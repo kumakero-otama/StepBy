@@ -188,7 +188,18 @@
         // 保存済み言語をページ読み込み時に適用
         const saved = localStorage.getItem('UI1_language');
         if (saved && saved !== 'ja') {
+            // 保存済み言語を適用
             window.stepByTriggerLang(saved);
+        } else {
+            // 日本語モード：Google翻訳が自動翻訳するのを防ぐ
+            const resetToJapanese = () => {
+                const combo = document.querySelector('.goog-te-combo');
+                if (combo && combo.value !== '' && combo.value !== 'ja') {
+                    combo.value = '';
+                    combo.dispatchEvent(new Event('change'));
+                }
+            };
+            [800, 1500, 2500].forEach(t => setTimeout(resetToJapanese, t));
         }
     }
 
