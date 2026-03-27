@@ -259,11 +259,8 @@
             <p class="login-card-hint">アカウントでログインしてください</p>
 
             <!-- Googleボタン（Android対応） -->
-            <!-- タブ・ログイン / 新規登録 -->
-            <div style="display:flex;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:16px;">
-                <button id="tab-login" style="flex:1;padding:10px;font-size:13px;font-weight:700;background:var(--primary);color:#fff;border:none;cursor:pointer;">ログイン</button>
-                <button id="tab-register" style="flex:1;padding:10px;font-size:13px;font-weight:600;background:#fff;color:var(--text-mid);border:none;cursor:pointer;">新規登録</button>
-            </div>
+            <!-- タブ（バックエンド準備中は非表示） -->
+            <!-- <div style="display:flex;..."> ... </div> -->
             <div id="google-signin-button" style="display:flex;justify-content:center;margin-bottom:4px;"></div>
             <!-- カスタムフォールバックボタン（renderButtonが動かない場合） -->
             <button id="btn-google-manual" class="btn-google" style="display:none;">
@@ -332,8 +329,8 @@
                 if (!res.ok) {
                     const err = payload.error || 'auth_failed';
                     const messages = {
-                        'account_not_found': 'このGoogleアカウントはまだ登録されていません。「新規登録」タブから登録してください。',
-                        'user_not_found':    'このGoogleアカウントはまだ登録されていません。「新規登録」タブから登録してください。',
+                        'account_not_found': 'このGoogleアカウントはまだ登録されていません。おたまちゃんにアカウントの登録を依頼してください。',
+                        'user_not_found':    'このGoogleアカウントはまだ登録されていません。おたまちゃんにアカウントの登録を依頼してください。',
                         'already_exists':    'このGoogleアカウントはすでに登録済みです。「ログイン」タブからログインしてください。',
                         'invalid_token':     'Googleトークンが無効です。もう一度お試しください。',
                         'auth_failed':       'ログインに失敗しました。しばらく待ってお試しください。',
