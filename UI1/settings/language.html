@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -263,38 +263,4 @@
         });
     </script>
 </body>
-</html>
-                window.location.href = window.location.href.replace(/#googtrans\([^)]*\)/,'') + '#googtrans(ja)';
-                window.location.reload();
-                return;
-            }
-            const select = document.querySelector('.goog-te-combo');
-            if (select) {
-                select.value = langCode;
-                select.dispatchEvent(new Event('change'));
-            }
-        }
-
-        // 変更を保存ボタン
-        document.querySelector('.btn-primary').addEventListener('click', () => {
-            const selected = document.querySelector('.lang-option.selected');
-            if (!selected) return;
-            const lang = selected.dataset.lang;
-
-            applyGoogleTranslate(lang);
-
-            const btn = document.querySelector('.btn-primary');
-            const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i> 適用しました！';
-            btn.style.background = '#27AE60';
-            setTimeout(() => {
-                btn.innerHTML = orig;
-                btn.style.background = '';
-                history.back();
-            }, 1000);
-        });
-    </script>
-<script src="../i18n.js"></script><script src="../common.js"></script>
-</body>
-
 </html>
