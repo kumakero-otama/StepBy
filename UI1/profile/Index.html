@@ -487,8 +487,7 @@
                     </div>
                     <i class="fas fa-chevron-right settings-arrow"></i>
                 </a>
-                <a href="#" class="settings-item"
-                    onclick="if(confirm('ログアウトしますか？')){location.href='../signup/Index.html';}return false;">
+                <a href="#" class="settings-item" id="logout-btn">
                     <div class="settings-icon red"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="settings-text">
                         <div class="title">ログアウト</div>
@@ -557,6 +556,20 @@
         }
 
         loadProfileFromAPI();
+
+        // ログアウト処理
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!confirm('ログアウトしますか？')) return;
+            try {
+                if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                    await window.AuthToken.authFetch('/auth/logout', { method: 'POST' });
+                }
+            } catch {}
+            if (window.AuthToken) window.AuthToken.clearAccessToken();
+            localStorage.removeItem('UI1_isPro');
+            window.location.assign('../signup/Index.html');
+        });
     </script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
 </body>

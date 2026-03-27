@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -389,8 +389,17 @@
 
     </div>
 
+    <script src="../config.js"></script>
+    <script src="../token_client.js"></script>
     <script>
         const API_BASE = "https://barrierfree-map.loophole.site";
+        // ログイン済みならauthFetch、未ログインはfetch
+        const apiFetch = (url, opts) => {
+            if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                return window.AuthToken.authFetch(url, opts);
+            }
+            return fetch(url, opts);
+        };
 
         const postsListEl = document.getElementById('posts-list');
         const statsText = document.getElementById('stats-text');
@@ -597,14 +606,17 @@
             statsText.textContent = "取得中...";
 
             try {
-                // Fetch all posts globally for this demo (mocking "My Posts")
-                const params = new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 100 });
-                const res = await fetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
+                // ログイン済みなら自分の投稿を取得、未ログインはエリア全体から取得
+                const isLoggedIn = window.AuthToken && window.AuthToken.getAccessToken();
+                const params = isLoggedIn
+                    ? new URLSearchParams({ userId: 'me', centerLat: 35.681, centerLng: 139.767, radiusKm: 100 })
+                    : new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 100 });
+                const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
 
-                // Pretend we only show the first 10 points as "My Posts" to mock the specific user's posts
-                const points = (data.points || []).slice(0, 5);
+                // ログイン済みはAPIが自分の投稿を返す、未ログインは最初の5件をデモ
+                const points = isLoggedIn ? (data.points || []) : (data.points || []).slice(0, 5);
 
                 loadingState.classList.add('hidden');
                 if (points.length === 0) {

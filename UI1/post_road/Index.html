@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -324,8 +324,17 @@
 
     </div>
 
+    <script src="../config.js"></script>
+    <script src="../token_client.js"></script>
     <script>
         const API_BASE = "https://barrierfree-map.loophole.site";
+        // ログイン済みならauthFetch、未ログインはfetch
+        const apiFetch = (url, opts) => {
+            if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                return window.AuthToken.authFetch(url, opts);
+            }
+            return fetch(url, opts);
+        };
         // --- URL params ---
         const params = new URLSearchParams(window.location.search);
 
@@ -449,11 +458,17 @@
                     images,
                 };
 
-                const res = await fetch(`${API_BASE}/api/road-info`, {
+                const res = await apiFetch(`${API_BASE}/api/road-info`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
                 });
+
+                if (res.status === 401 || res.status === 403) {
+                    alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
+                    window.location.assign('../signup/Index.html');
+                    return;
+                }
 
                 if (!res.ok) throw new Error(`submit failed: ${res.status}`);
 
