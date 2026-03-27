@@ -214,8 +214,8 @@
 document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(hiddenDiv);
         document.body.appendChild(script);
-        // ボトムナビがないページ（ログイン前ページ）だけに言語ボタンを表示
-        if (!document.querySelector('.bottom-nav')) {
+        // 言語ボタンは各ページで個別に呼び出す（common.jsでは注入しない）
+        if (typeof window._stepByShowLangBtn !== 'undefined' && window._stepByShowLangBtn) {
             createLangPicker();
         }
     });
