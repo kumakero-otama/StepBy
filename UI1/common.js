@@ -141,11 +141,14 @@
 
         const picker = document.createElement('div');
         picker.id = 'stepby-lang-picker';
+        picker.setAttribute('translate', 'no');  // ピッカー全体を翻訳対象外に
+        picker.className = 'notranslate';
 
         const btn = document.createElement('button');
         btn.id = 'stepby-lang-btn';
         btn.innerHTML = '🌐';
         btn.title = 'Language / 言語';
+        btn.setAttribute('translate', 'no');
 
         const dropdown = document.createElement('div');
         dropdown.id = 'stepby-lang-dropdown';
@@ -153,13 +156,17 @@
         LANGS.forEach(lang => {
             const opt = document.createElement('div');
             opt.className = 'stepby-lang-option';
+            opt.setAttribute('translate', 'no');  // Google翻訳対象外
             opt.textContent = lang.label;
             opt.dataset.code = lang.code;
             opt.addEventListener('click', () => {
                 dropdown.classList.remove('open');
                 if (lang.code === 'ja') {
                     localStorage.removeItem('UI1_language');
-                    window.location.reload();
+                    // Google翻訳のCookieをクリアして日本語にリセット
+                    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.github.io';
+                    window.location.reload(true);
                 } else {
                     localStorage.setItem('UI1_language', lang.code);
                     window.stepByTriggerLang(lang.code);
