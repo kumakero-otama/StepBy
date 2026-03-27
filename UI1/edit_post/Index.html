@@ -320,6 +320,7 @@
 
     <script>
         const API_BASE = "https://barrierfree-map.loophole.site";
+        const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
         const params = new URLSearchParams(window.location.search);
         const pointId = params.get("pointId");
@@ -340,7 +341,7 @@
         // --- Fetch existing data ---
         async function loadExistingData() {
             try {
-                const res = await fetch(`${API_BASE}/api/road-info?pointId=${pointId}`);
+                const res = await apiFetch(`${API_BASE}/api/road-info?pointId=${pointId}`);
                 if (!res.ok) throw new Error("データの取得に失敗しました");
                 const data = await res.json();
                 const p = data.point;
@@ -467,7 +468,7 @@
                     images, // We send new images. Existing images behavior depends on API design (assume API appends or ignores if empty).
                 };
 
-                const res = await fetch(`${API_BASE}/api/road-info`, {
+                const res = await apiFetch(`${API_BASE}/api/road-info`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
@@ -489,7 +490,7 @@
             }
         });
     </script>
-<script src="../i18n.js"></script><script src="../common.js"></script>
+<script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
 
 </html>

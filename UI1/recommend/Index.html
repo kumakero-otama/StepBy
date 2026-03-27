@@ -391,6 +391,7 @@
 
     <script>
         const API_BASE = "https://barrierfree-map.loophole.site";
+        const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
         const postsListEl = document.getElementById('posts-list');
         const statsText = document.getElementById('stats-text');
@@ -510,7 +511,7 @@
         // --- Dynamic Content Update (photo/tags/text only, no address) ---
         async function fetchPostDetail(pt, el, signal) {
             try {
-                const res = await fetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, { signal });
+                const res = await apiFetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, { signal });
                 const data = await res.json();
                 const point = data.point;
                 const post = (point.posts && point.posts.length > 0) ? point.posts[point.posts.length - 1] : null;
@@ -584,7 +585,7 @@
 
             try {
                 const params = new URLSearchParams({ centerLat, centerLng, radiusKm });
-                const res = await fetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
+                const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
                 const points = data.points || [];
@@ -653,7 +654,7 @@
 
         loadPosts();
     </script>
-<script src="../i18n.js"></script><script src="../common.js"></script>
+<script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
 
 </html>

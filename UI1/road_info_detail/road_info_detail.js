@@ -1,9 +1,10 @@
-// ===============================================
+﻿// ===============================================
 // StepBy — road_info_detail.js
 // 既存ロジックを保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
 
 const API_BASE = "https://barrierfree-map.loophole.site";
+const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
 const detailLoadingEl = document.getElementById("detail-loading");
 const detailContentEl = document.getElementById("detail-content");
@@ -215,7 +216,7 @@ async function submitComment() {
     setCommentSubmittingVisible(true);
     try {
         const images = await buildCommentImagePayloads();
-        const res = await fetch(`${API_BASE}/api/road-info`, {
+        const res = await apiFetch(`${API_BASE}/api/road-info`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ pointId: currentPointId, detail, images }),
@@ -272,7 +273,7 @@ function initActions() {
             try {
                 // In UI1 mockup, we simulate deletion
                 // If it were hitting the backend, we would uncomment:
-                // await fetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
+                // await apiFetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
                 alert("道情報を削除しました。");
                 window.location.replace("../map/Index.html");
             } catch (err) {
