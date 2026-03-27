@@ -73,15 +73,15 @@
                 background: var(--primary, #2E9E8F);
                 color: #fff;
                 border: none;
-                border-radius: 50px;
-                padding: 10px 16px;
-                font-size: 13px;
-                font-weight: 700;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
                 cursor: pointer;
                 box-shadow: 0 4px 16px rgba(0,0,0,0.2);
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                justify-content: center;
                 font-family: inherit;
                 transition: transform 0.15s;
             }
@@ -119,7 +119,8 @@
 
         const btn = document.createElement('button');
         btn.id = 'stepby-lang-btn';
-        btn.innerHTML = '🌐 Language';
+        btn.innerHTML = '🌐';
+        btn.title = 'Language / 言語';
 
         const dropdown = document.createElement('div');
         dropdown.id = 'stepby-lang-dropdown';
@@ -131,8 +132,8 @@
             opt.dataset.code = lang.code;
             opt.addEventListener('click', () => {
                 dropdown.classList.remove('open');
-                btn.innerHTML = '🌐 ' + lang.label;
-                localStorage.setItem('UI1_language', lang.code);
+                btn.innerHTML = '🌐';
+                localStorage.removeItem('UI1_language');
                 if (lang.code === 'ja') {
                     window.location.reload();
                 } else {
@@ -152,13 +153,8 @@
         picker.appendChild(btn);
         document.body.appendChild(picker);
 
-        // 保存済み言語を適用
-        const saved = localStorage.getItem('UI1_language');
-        if (saved && saved !== 'ja') {
-            const found = LANGS.find(l => l.code === saved);
-            if (found) btn.innerHTML = '🌐 ' + found.label;
-            triggerTranslate(saved);
-        }
+        // 古い手動言語設定はクリア（Google翻訳に統一）
+        localStorage.removeItem('UI1_language');
     }
 
     // Google翻訳スクリプトを読み込む
