@@ -62,21 +62,26 @@
             }
             body { top: 0 !important; }
             /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
-            body.translated-ltr .feature-card-title,
-            body.translated-ltr .feature-pill-label,
-            body.translated-ltr .card-title,
-            body.translated-ltr .type-label,
-            body.translated-ltr [class*="card-title"],
-            body.translated-ltr [class*="card-name"] {
-                font-size: 11px !important;
+            /* Google Translateはhtmlにもbodyにもクラスを付けるため両方対応 */
+            .translated-ltr .feature-card-title,
+            .translated-ltr .feature-pill-label,
+            .translated-ltr [class*="card-title"],
+            html.translated-ltr .feature-card-title,
+            html.translated-ltr [class*="card-title"] {
+                font-size: 10px !important;
                 white-space: normal !important;
                 word-break: break-word !important;
                 line-height: 1.2 !important;
+                max-height: none !important;
                 overflow: visible !important;
                 text-overflow: unset !important;
-                display: -webkit-box !important;
-                -webkit-line-clamp: 2 !important;
-                -webkit-box-orient: vertical !important;
+            }
+            /* Google翻訳のfontタグ対応（翻訳後テキストのみ） */
+            .feature-card-title font,
+            [class*="card-title"] font {
+                white-space: normal !important;
+                font-size: 10px !important;
+                word-break: break-word !important;
             }
 
             /* カスタム言語ピッカー */
