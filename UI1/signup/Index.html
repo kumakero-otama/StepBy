@@ -7,6 +7,8 @@
     <title>ログイン — StepBy</title>
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Sign-In SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         .login-shell {
             display: flex;
@@ -256,17 +258,10 @@
         <div class="login-card">
             <p class="login-card-hint">アカウントでログインしてください</p>
 
-            <button class="btn-google" id="btn-google-login">
-                <!-- Google logo SVG -->
-                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    <path fill="none" d="M0 0h48v48H0z"/>
-                </svg>
-                Googleでログイン
-            </button>
+            <!-- Googleボタンはここにレンダリング -->
+            <div id="google-signin-button" style="display:flex;justify-content:center;margin-bottom:4px;"></div>
+            <p id="google-auth-status" style="text-align:center;font-size:13px;margin:8px 0;display:none;"></p>
+
 
             <div class="divider"><span>ゲストとして使う場合</span></div>
 
@@ -281,14 +276,83 @@
         </div>
     </div>
 
+        <script src="../config.js"></script>
+        <script src="../token_client.js"></script>
         <script src="../common.js"></script>
     <script>
-        document.getElementById('btn-google-login').addEventListener('click', () => {
-            window.location.assign('../map/Index.html');
-        });
+        const GOOGLE_CLIENT_ID = '808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com';
+        const statusEl = document.getElementById('google-auth-status');
+
+        function setStatus(msg, isError) {
+            if (!statusEl) return;
+            statusEl.textContent = msg;
+            statusEl.style.color = isError ? '#e74c3c' : '#2E9E8F';
+            statusEl.style.display = msg ? 'block' : 'none';
+        }
+
+        // Google認証成功時のコールバック
+        async function handleGoogleCredential(response) {
+            const idToken = response && response.credential;
+            if (!idToken) { setStatus('Google認証トークンの取得に失敗しました', true); return; }
+
+            setStatus('Googleログインを確認中...');
+            try {
+                const res = await fetch(window.AppPath.toApi('/auth/google'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_token: idToken }),
+                });
+                const payload = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    const err = payload.error || 'auth_failed';
+                    setStatus(`ログイン失敗: ${err}`, true);
+                    return;
+                }
+
+                // トークンを保存
+                if (payload.access_token) {
+                    window.AuthToken.setAccessToken(payload.access_token);
+                }
+                setStatus('ログイン成功！地図画面へ移動します...');
+                setTimeout(() => window.location.assign('../map/Index.html'), 800);
+
+            } catch (e) {
+                setStatus(`ネットワークエラー: ${e.message}`, true);
+            }
+        }
+
+        // Google Sign-In初期化
+        function initGoogleSignIn() {
+            if (!(window.google && window.google.accounts && window.google.accounts.id)) {
+                setTimeout(initGoogleSignIn, 500);
+                return;
+            }
+            window.google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredential,
+            });
+            // 公式ボタンをレンダリング
+            const container = document.getElementById('google-signin-button');
+            if (container) {
+                window.google.accounts.id.renderButton(container, {
+                    theme: 'outline', size: 'large', shape: 'pill',
+                    text: 'signin_with', width: 300,
+                });
+            }
+        }
+
+        // ゲストボタン
         document.getElementById('btn-guest').addEventListener('click', () => {
             window.location.assign('../map/Index.html');
         });
+
+        // すでにトークンがあればマップへ自動遷移
+        if (window.AuthToken && window.AuthToken.getAccessToken()) {
+            window.location.assign('../map/Index.html');
+        } else {
+            initGoogleSignIn();
+        }
     </script>
 </body>
 
