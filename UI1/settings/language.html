@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -251,15 +251,16 @@
             const lang = selected.dataset.lang;
 
             if (lang === 'ja') {
-                window.location.reload();
+                localStorage.removeItem('UI1_language');
             } else {
-                triggerGT(lang);
+                localStorage.setItem('UI1_language', lang);
             }
 
             const btn = document.querySelector('.btn-primary');
             btn.innerHTML = '<i class="fas fa-check"></i> Applied!';
             btn.style.background = '#27AE60';
-            setTimeout(() => history.back(), 1200);
+            // 戻ったページでcommon.jsが自動で翻訳を適用する
+            setTimeout(() => history.back(), 800);
         });
     </script>
 </body>

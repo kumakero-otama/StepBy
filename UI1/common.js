@@ -37,19 +37,22 @@
         }, 'google_translate_hidden');
     };
 
-    // Google翻訳を起動する
-    function triggerTranslate(langCode) {
+    // Google翻訳を起動する（グローバルに公開）
+    window.stepByTriggerLang = function(langCode) {
         const tryTrigger = () => {
             const combo = document.querySelector('.goog-te-combo');
             if (combo) {
                 combo.value = langCode;
                 combo.dispatchEvent(new Event('change'));
+                return true;
             }
+            return false;
         };
         setTimeout(tryTrigger, 300);
         setTimeout(tryTrigger, 800);
         setTimeout(tryTrigger, 1500);
-    }
+        setTimeout(tryTrigger, 3000);
+    };
 
     // カスタム言語ボタンを作成
     function createLangPicker() {
@@ -154,12 +157,12 @@
             opt.dataset.code = lang.code;
             opt.addEventListener('click', () => {
                 dropdown.classList.remove('open');
-                btn.innerHTML = '🌐';
-                localStorage.removeItem('UI1_language');
                 if (lang.code === 'ja') {
+                    localStorage.removeItem('UI1_language');
                     window.location.reload();
                 } else {
-                    triggerTranslate(lang.code);
+                    localStorage.setItem('UI1_language', lang.code);
+                    window.stepByTriggerLang(lang.code);
                 }
             });
             dropdown.appendChild(opt);
@@ -175,8 +178,11 @@
         picker.appendChild(btn);
         document.body.appendChild(picker);
 
-        // 古い手動言語設定はクリア（Google翻訳に統一）
-        localStorage.removeItem('UI1_language');
+        // 保存済み言語をページ読み込み時に適用
+        const saved = localStorage.getItem('UI1_language');
+        if (saved && saved !== 'ja') {
+            window.stepByTriggerLang(saved);
+        }
     }
 
     // Google翻訳スクリプトを読み込む
