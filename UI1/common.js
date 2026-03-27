@@ -37,7 +37,9 @@
             padding-right: 28px;
         }
         #google_translate_element select option { color: #333; background: #fff; }
-        .goog-te-banner-frame, .skiptranslate { display: none !important; }
+        /* バナーのみ非表示（ウィジェット自体は表示） */
+        .goog-te-banner-frame { display: none !important; }
+        iframe.goog-te-menu-frame { display: none !important; }
         body { top: 0 !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0 !important; }
         .goog-te-gadget select { font-size: 13px !important; color: #fff !important; }
