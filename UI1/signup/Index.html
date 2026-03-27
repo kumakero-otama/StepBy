@@ -259,6 +259,11 @@
             <p class="login-card-hint">アカウントでログインしてください</p>
 
             <!-- Googleボタン（Android対応） -->
+            <!-- タブ・ログイン / 新規登録 -->
+            <div style="display:flex;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:16px;">
+                <button id="tab-login" style="flex:1;padding:10px;font-size:13px;font-weight:700;background:var(--primary);color:#fff;border:none;cursor:pointer;">ログイン</button>
+                <button id="tab-register" style="flex:1;padding:10px;font-size:13px;font-weight:600;background:#fff;color:var(--text-mid);border:none;cursor:pointer;">新規登録</button>
+            </div>
             <div id="google-signin-button" style="display:flex;justify-content:center;margin-bottom:4px;"></div>
             <!-- カスタムフォールバックボタン（renderButtonが動かない場合） -->
             <button id="btn-google-manual" class="btn-google" style="display:none;">
@@ -300,24 +305,40 @@
             const idToken = response && response.credential;
             if (!idToken) { setStatus('Google認証トークンの取得に失敗しました', true); return; }
 
-            setStatus('Googleログインを確認中...');
+            const isRegisterMode = document.getElementById('tab-register').style.background === 'var(--primary)';
+            const endpoint = isRegisterMode ? '/auth/google/register' : '/auth/google';
+            const body = isRegisterMode
+                ? { id_token: idToken, register: true }
+                : { id_token: idToken };
+
+            setStatus(isRegisterMode ? 'Googleで新規登録中...' : 'Googleログインを確認中...');
             try {
-                const res = await fetch(window.AppPath.toApi('/auth/google'), {
+                // まずメインエンドポイントを試みる
+                let res = await fetch(window.AppPath.toApi(endpoint), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id_token: idToken }),
+                    body: JSON.stringify(body),
                 });
+                // 登録エンドポイントが404なら標準エンドポイントで再試行
+                if (isRegisterMode && res.status === 404) {
+                    res = await fetch(window.AppPath.toApi('/auth/google'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id_token: idToken, action: 'register' }),
+                    });
+                }
                 const payload = await res.json().catch(() => ({}));
 
                 if (!res.ok) {
                     const err = payload.error || 'auth_failed';
                     const messages = {
-                        'account_not_found': 'このGoogleアカウントはまだ登録されていません。おたまちゃんのシステムに登録が必要です。',
-                        'user_not_found':    'このGoogleアカウントはまだ登録されていません。おたまちゃんのシステムに登録が必要です。',
+                        'account_not_found': 'このGoogleアカウントはまだ登録されていません。「新規登録」タブから登録してください。',
+                        'user_not_found':    'このGoogleアカウントはまだ登録されていません。「新規登録」タブから登録してください。',
+                        'already_exists':    'このGoogleアカウントはすでに登録済みです。「ログイン」タブからログインしてください。',
                         'invalid_token':     'Googleトークンが無効です。もう一度お試しください。',
                         'auth_failed':       'ログインに失敗しました。しばらく待ってお試しください。',
                     };
-                    setStatus(messages[err] || `ログイン失敗: ${err}`, true);
+                    setStatus(messages[err] || `失敗: ${err}`, true);
                     return;
                 }
 
@@ -325,7 +346,7 @@
                 if (payload.access_token) {
                     window.AuthToken.setAccessToken(payload.access_token);
                 }
-                setStatus('ログイン成功！地図画面へ移動します...');
+                setStatus(isRegisterMode ? '登録完了！地図画面へ移動します...' : 'ログイン成功！地図画面へ移動します...');
                 setTimeout(() => window.location.assign('../map/Index.html'), 800);
 
             } catch (e) {
@@ -360,6 +381,29 @@
                 }
             }, 2000);
         }
+
+        // タブ切り替え
+        function switchTab(mode) {
+            const loginTab = document.getElementById('tab-login');
+            const registerTab = document.getElementById('tab-register');
+            const hint = document.querySelector('.login-card-hint');
+            if (mode === 'register') {
+                registerTab.style.background = 'var(--primary)';
+                registerTab.style.color = '#fff';
+                loginTab.style.background = '#fff';
+                loginTab.style.color = 'var(--text-mid)';
+                if (hint) hint.textContent = 'Googleアカウントで新規登録してください';
+            } else {
+                loginTab.style.background = 'var(--primary)';
+                loginTab.style.color = '#fff';
+                registerTab.style.background = '#fff';
+                registerTab.style.color = 'var(--text-mid)';
+                if (hint) hint.textContent = 'アカウントでログインしてください';
+            }
+            setStatus('', false);
+        }
+        document.getElementById('tab-login').addEventListener('click', () => switchTab('login'));
+        document.getElementById('tab-register').addEventListener('click', () => switchTab('register'));
 
         // ゲストボタン
         document.getElementById('btn-guest').addEventListener('click', () => {
