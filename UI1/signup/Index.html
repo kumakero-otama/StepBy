@@ -311,7 +311,13 @@
 
                 if (!res.ok) {
                     const err = payload.error || 'auth_failed';
-                    setStatus(`ログイン失敗: ${err}`, true);
+                    const messages = {
+                        'account_not_found': 'このGoogleアカウントはまだ登録されていません。おたまちゃんのシステムに登録が必要です。',
+                        'user_not_found':    'このGoogleアカウントはまだ登録されていません。おたまちゃんのシステムに登録が必要です。',
+                        'invalid_token':     'Googleトークンが無効です。もう一度お試しください。',
+                        'auth_failed':       'ログインに失敗しました。しばらく待ってお試しください。',
+                    };
+                    setStatus(messages[err] || `ログイン失敗: ${err}`, true);
                     return;
                 }
 
