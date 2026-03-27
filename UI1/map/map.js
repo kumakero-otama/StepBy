@@ -1,4 +1,4 @@
-﻿// ===============================================
+// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -565,7 +565,7 @@ function loadAndShowOsmTactileWays() {
 
       // Removed blocking alert to avoid white screen lockup
       const errMsg = document.createElement("div");
-      errMsg.textContent = "混雑のため点字ブロックデータを取得できませんでした (429 Error)";
+      errMsg.textContent = "⚠️ 点字ブロックデータの取得に失敗しました。しばらく待ってから再試行してください。";
       errMsg.style.cssText = "position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#e74c3c;color:#fff;padding:10px 20px;border-radius:20px;z-index:9999;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s;text-align:center;width:max-content;max-width:90%;";
       document.body.appendChild(errMsg);
       setTimeout(() => {

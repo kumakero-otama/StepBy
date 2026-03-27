@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -1375,9 +1375,31 @@
                 }
                 gpsBtn.classList.toggle('tracking', gpsTracking);
 
-                // If turning on, pan to current position immediately
-                if (gpsTracking && typeof marker !== 'undefined' && marker) {
-                    map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                if (gpsTracking) {
+                    // 現在地がまだ取得されていない場合は明示的に要求
+                    if (typeof marker !== 'undefined' && marker) {
+                        map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                    } else {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                map.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                            },
+                            (err) => {
+                                if (err.code === 1) {
+                                    alert('位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。');
+                                } else {
+                                    alert('現在地の取得に失敗しました。しばらく待ってやり直してください。');
+                                }
+                                gpsTracking = false;
+                                gpsBtn.classList.remove('tracking');
+                                if (centerCheckbox) {
+                                    centerCheckbox.checked = false;
+                                    centerCheckbox.dispatchEvent(new Event('change'));
+                                }
+                            },
+                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        );
+                    }
                 }
             });
         }

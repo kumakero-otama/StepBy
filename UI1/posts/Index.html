@@ -605,9 +605,13 @@
 
             try {
                 const params = new URLSearchParams({ centerLat, centerLng, radiusKm });
+                // 8秒タイムアウトを設定
+                const timeoutId = setTimeout(() => { if (currentAbortController) currentAbortController.abort(); }, 8000);
                 const res = await fetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
-                if (!res.ok) throw new Error('API Error');
+                clearTimeout(timeoutId);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
+
                 const points = data.points || [];
 
                 loadingState.classList.add('hidden');
@@ -649,6 +653,7 @@
                 if (err.name === 'AbortError') return;
                 loadingState.classList.add('hidden');
                 errorState.classList.remove('hidden');
+                const errMsgEl = document.getElementById('error-message'); if (errMsgEl) errMsgEl.textContent = 'サーバーに接続できません。しばらく待って再試行してください。';
                 statsText.textContent = "エラーが発生しました";
             }
         }
