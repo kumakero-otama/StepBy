@@ -1068,7 +1068,7 @@ if (mapSearchInput) {
 }
 
 function searchLocation(query) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ja`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=ja&countrycodes=jp`;
 
   fetch(url, {
     headers: { "User-Agent": "StepBy-BarrierFreeMap/1.0" }
@@ -1246,6 +1246,7 @@ if (voiceNavBtn) {
     }
   });
 }
+
 
 
 

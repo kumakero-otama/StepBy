@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -366,14 +366,24 @@
         }
 
 
-        // --- 詳細欄のPRO制限 → 全ユーザー投稿可能に変更 ---
-        // const isPro = localStorage.getItem('UI1_isPro') === 'true';
-        // PRO限定を無効化（詳細欄も投稿ボタンも全員使用可能）
+        // --- 詳細欄のPRO制限 ---
+        const isPro = localStorage.getItem('UI1_isPro') === 'true';
         const detailInput = document.getElementById('detail-input');
         const proBadge = document.getElementById('pro-badge');
         const proLockMsg = document.getElementById('pro-lock-msg');
-        if (proBadge) proBadge.style.display = 'none';
-        if (proLockMsg) proLockMsg.style.display = 'none';
+        if (!isPro) {
+            if (proBadge) proBadge.style.display = 'inline-block';
+            if (proLockMsg) proLockMsg.style.display = 'block';
+            if (detailInput) {
+                detailInput.disabled = true;
+                detailInput.placeholder = 'PROアカウントのみ書き込みできます';
+                detailInput.style.opacity = '0.5';
+                detailInput.style.cursor = 'not-allowed';
+            }
+        } else {
+            if (proBadge) proBadge.style.display = 'none';
+            if (proLockMsg) proLockMsg.style.display = 'none';
+        }
 
 
         // --- Tag selection ---
