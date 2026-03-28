@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -1107,6 +1107,8 @@
             position: relative;
         }
     </style>
+
+    <script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </head>
 
 <body>
@@ -1237,8 +1239,7 @@
             <input type="checkbox" id="toggle-show-road-info" style="display:none">
             <input type="checkbox" id="toggle-center-current" style="display:none" checked>
 
-            <div class="drawer-content" style="position: relative;">
-                <div class="drawer-handle" id="drawer-handle-btn"><i class="fas fa-chevron-down" id="drawer-chevron" style="font-size:11px; color:#8A9BB0;"></i></div>
+            <div class="drawer-handle" id="drawer-handle-btn"><i class="fas fa-chevron-down" id="drawer-chevron" style="font-size:12px; color:#8A9BB0;"></i><span id="drawer-handle-label" style="font-size:11px; color:#8A9BB0; font-weight:600;">メニューを閉じる</span></div><div class="drawer-content" style="position: relative;">
                 <div class="feature-scroll">
                     <div class="feature-card theme-green" data-toggle="toggle-show-osm">
                         <div class="feature-card-line"></div>
@@ -1527,21 +1528,20 @@
                 e.stopPropagation();
                 _closed = !_closed;
                 const chevron = document.getElementById('drawer-chevron');
-                content.style.transition = 'max-height 0.35s ease';
+                const label = handle.querySelector('span');
+                content.style.transition = 'max-height 0.35s ease, padding 0.35s ease';
                 if (_closed) {
                     content.style.maxHeight = '0px';
-                    content.style.overflow = 'hidden';
                     content.style.paddingTop = '0';
                     content.style.paddingBottom = '0';
-                    handle.style.transform = '';
                     if (chevron) chevron.className = 'fas fa-chevron-up';
+                    if (label) label.textContent = 'メニューを開く';
                 } else {
-                    content.style.maxHeight = '300px';
-                    content.style.overflow = '';
+                    content.style.maxHeight = '400px';
                     content.style.paddingTop = '';
                     content.style.paddingBottom = '';
-                    handle.style.transform = '';
                     if (chevron) chevron.className = 'fas fa-chevron-down';
+                    if (label) label.textContent = 'メニューを閉じる';
                 }
             });
 
@@ -1605,6 +1605,8 @@
 </body>
 
 </html>
+
+
 
 
 

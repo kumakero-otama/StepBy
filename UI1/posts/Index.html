@@ -300,6 +300,8 @@
             }
         }
     </style>
+
+    <script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </head>
 
 <body>
@@ -390,6 +392,8 @@
     </div>
 
     <script>
+        console.log('[Posts] Script started');
+        window.addEventListener('load', () => { setTimeout(() => { const ls = document.getElementById('loading-state'); if(ls) { ls.classList.add('hidden'); console.log('[Posts] Safety timer hidden spinner'); } }, 12000); });
         const API_BASE = "https://barrierfree-map.loophole.site";
         const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
@@ -583,6 +587,7 @@
         }
 
         async function loadPosts() {
+            console.log('[Posts] loadPosts called');
             if (currentAbortController) currentAbortController.abort();
             currentAbortController = new AbortController();
             const signal = currentAbortController.signal;
@@ -680,10 +685,11 @@
 
         loadPosts();
     </script>
-<script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
+<script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
 
 </html>
+
 
 
 
