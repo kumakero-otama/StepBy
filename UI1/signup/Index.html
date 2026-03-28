@@ -404,8 +404,11 @@
             }
             setStatus('', false);
         }
-        document.getElementById('tab-login').addEventListener('click', () => switchTab('login'));
-        document.getElementById('tab-register').addEventListener('click', () => switchTab('register'));
+        // タブ切り替え（タブ非表示時はスキップ）
+        const loginTabEl = document.getElementById('tab-login');
+        const registerTabEl = document.getElementById('tab-register');
+        if (loginTabEl) loginTabEl.addEventListener('click', () => switchTab('login'));
+        if (registerTabEl) registerTabEl.addEventListener('click', () => switchTab('register'));
 
         // ゲストボタン
         document.getElementById('btn-guest').addEventListener('click', () => {
@@ -430,6 +433,14 @@
             window.location.assign('../map/Index.html');
         } else {
             initGoogleSignIn();
+            // 保険：3秒後にフォールバックボタンを必ず表示
+            setTimeout(() => {
+                const btn = document.getElementById('btn-google-manual');
+                const inner = document.getElementById('google-signin-button');
+                if (btn && (!inner || !inner.querySelector('iframe'))) {
+                    btn.style.display = 'flex';
+                }
+            }, 3000);
         }
     </script>
 </body>
