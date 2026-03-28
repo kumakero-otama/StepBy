@@ -459,8 +459,9 @@
                 return;
             }
 
-            if (!detail && selectedFiles.length < 1 && checkedTags.length < 1) {
-                alert("タグ、本文、画像のいずれかを入力してください。");
+            // PRO以外はdetailが空でも、タグか写真があれば投稿OK
+            if (selectedFiles.length < 1 && checkedTags.length < 1) {
+                alert('タグまたは画像を選択してください。\n（一言メモはPROアカウントのみ投稿できます）');
                 return;
             }
 
@@ -490,15 +491,28 @@
                 });
 
                 if (res.status === 401 || res.status === 403) {
-                    alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
-                    window.location.assign('../signup/Index.html');
+                    alert('投稿にはログインが必要です。\nGoogleアカウントでログインして再度お試しください。');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 投稿する';
                     return;
                 }
 
                 if (!res.ok) throw new Error(`submit failed: ${res.status}`);
 
-                alert("投稿が完了しました！");
-                window.location.assign("../map/Index.html");
+                // 投稿成功: 専用の完了画面を表示
+                document.querySelector('.scroll-content').innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;padding:32px;">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                            <i class="fas fa-check" style="font-size:36px;color:white;"></i>
+                        </div>
+                        <h2 style="font-size:22px;font-weight:800;color:#1A2B3C;margin-bottom:12px;">投稿が完了しました！</h2>
+                        <p style="font-size:14px;color:#5A6B7E;line-height:1.6;margin-bottom:24px;">情報を共有していただきありがとうございます</p>
+                        <button onclick="window.location.assign('../map/Index.html')" style="padding:14px 32px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);color:white;border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-map"></i> マップに戻る
+                        </button>
+                    </div>`;
+                const sa = document.querySelector('.submit-area');
+                if (sa) sa.style.display = 'none';
             } catch (err) {
                 alert(`投稿に失敗しました: ${err.message}`);
             } finally {
