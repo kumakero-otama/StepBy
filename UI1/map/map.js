@@ -8,6 +8,8 @@ const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessT
     ? window.AuthToken.authFetch(url, opts)
     : fetch(url, opts);
 const leafletMap = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
+window.leafletMap = leafletMap; // Index.htmlからアクセス可能にする
+
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
 const lastUpdatedEl = document.getElementById("last-updated");
@@ -391,6 +393,8 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   if (skipMarker) return;
   if (!marker) { marker = L.marker([snappedLat, snappedLng], { icon: redPinIcon }).addTo(leafletMap); }
   else { marker.setLatLng([snappedLat, snappedLng]); }
+  window.currentMarker = marker; // Index.htmlからアクセス可能にする
+
   if (isCenterCurrentEnabled()) { leafletMap.setView([snappedLat, snappedLng], leafletMap.getZoom(), { animate: true }); }
   const dotColor = recordEnabled ? "#9acd32" : "#111";
   const dot = L.circleMarker([snappedLat, snappedLng], { radius: 3, color: dotColor, fillColor: dotColor, fillOpacity: 0.7, weight: 0 }).addTo(leafletMap);

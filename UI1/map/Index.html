@@ -1420,12 +1420,14 @@
 
                 // 「現在地中央」をONにした瞬間に即センタリング
                 if (checkboxId === 'toggle-center-current' && checkbox.checked) {
-                    if (typeof marker !== 'undefined' && marker) {
-                        map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                    const lmap = window.leafletMap;
+                    const lmarker = window.currentMarker;
+                    if (lmarker && lmap) {
+                        lmap.setView(lmarker.getLatLng(), lmap.getZoom(), { animate: true });
                     } else if ('geolocation' in navigator) {
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
-                                map.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                                if (lmap) lmap.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
                             },
                             (err) => {
                                 if (err.code === 1) alert('位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。');
@@ -1451,6 +1453,8 @@
             async function doSearch() {
                 const q = searchInput.value.trim();
                 if (!q) return;
+                const lmap = window.leafletMap;
+                if (!lmap) return;
                 searchInput.disabled = true;
                 searchInput.placeholder = '検索中...';
                 try {
@@ -1459,7 +1463,7 @@
                     const data = await res.json();
                     if (data && data.length > 0) {
                         const { lat, lon, display_name } = data[0];
-                        map.setView([parseFloat(lat), parseFloat(lon)], 16, { animate: true });
+                        lmap.setView([parseFloat(lat), parseFloat(lon)], 16, { animate: true });
                         searchInput.value = display_name.split(',')[0];
                     } else {
                         alert('場所が見つかりませんでした。別のキーワードで試してください。');
