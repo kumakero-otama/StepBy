@@ -624,8 +624,8 @@
                     }
                 }
 
-                // サーバー側フィルタ: user_idをバックエンドに渡す
-                const params = new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 100 });
+                // サーバー側フィルタ: user_idをバックエンドに渡す + 全国対象（半径1000km）
+                const params = new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 1000 });
                 if (isLoggedIn && myUserId) {
                     params.set('user_id', myUserId);
                 }
