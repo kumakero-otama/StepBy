@@ -638,13 +638,13 @@ function fetchAddress(pointId, lat, lng) {
       const addr = data.address || {};
       const state = addr.prefecture || addr.province || addr.state || addr.county || "";
       const city = addr.city || addr.town || addr.village || addr.municipality || "";
-      const ward = addr.ward || addr.city_district || "";
-      const district = addr.suburb || addr.neighbourhood || addr.quarter || addr.hamlet || "";
+      const ward = addr.suburb || addr.ward || addr.city_district || "";
+      const neighbourhood = addr.neighbourhood || addr.quarter || addr.hamlet || "";
       let area = "";
       if (state) area += state;
       if (city) area += city;
       if (ward && ward !== city) area += ward;
-      if (district && district !== ward && district !== city) area += district;
+      if (neighbourhood && neighbourhood !== ward && neighbourhood !== city) area += neighbourhood;
       const label = area ? `${area}付近` : "この場所付近";
       pointAddressCache.set(pointId, label);
       return label;
@@ -1246,6 +1246,7 @@ if (voiceNavBtn) {
     }
   });
 }
+
 
 
 

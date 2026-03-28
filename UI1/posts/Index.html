@@ -412,17 +412,17 @@
         const getCacheKey = (lat, lng) => `${lat.toFixed(4)},${lng.toFixed(4)}`;
         function getCachedAddress(lat, lng) {
             const key = getCacheKey(lat, lng);
-            const val = localStorage.getItem(`addr_${key}`);
+            const val = localStorage.getItem(`addr_v2_${key}`);
             // Invalidate cache if stored value looks like raw coordinates (failed fetch)
             if (val && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(val.trim())) {
-                localStorage.removeItem(`addr_${key}`);
+                localStorage.removeItem(`addr_v2_${key}`);
                 return null;
             }
             return val;
         }
         function setCachedAddress(lat, lng, addr) {
             const key = getCacheKey(lat, lng);
-            localStorage.setItem(`addr_${key}`, addr);
+            localStorage.setItem(`addr_v2_${key}`, addr);
         }
 
         // --- Reverse Geocoding via Nominatim ---
@@ -442,13 +442,14 @@
                     // Full list of Japanese Nominatim address fields
                     const state = a.prefecture || a.province || a.state || a.county || "";
                     const city = a.city || a.town || a.village || a.municipality || "";
-                    const district = a.city_district || a.suburb || a.ward || a.neighbourhood || a.quarter || a.hamlet || "";
+                    const ward = a.suburb || a.ward || a.city_district || "";
+                    const neighbourhood = a.neighbourhood || a.quarter || a.hamlet || "";
 
-                    let addr = "";
+                    let addr = `";
                     if (state) addr += state;
                     if (city) addr += city;
-                    else if (district) addr += district; // Use district if no city level
-
+                    if (ward && ward !== city) addr += ward;
+                    if (neighbourhood && neighbourhood !== ward && neighbourhood !== city) addr += neighbourhood;
                     const finalAddr = addr.trim() ? `${addr.trim()}付近` : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                     setCachedAddress(lat, lng, finalAddr);
                     return finalAddr;
@@ -683,6 +684,9 @@
 </body>
 
 </html>
+
+
+
 
 
 
