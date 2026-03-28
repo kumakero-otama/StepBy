@@ -1,4 +1,4 @@
-// ===============================================
+﻿// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -661,7 +661,7 @@ function fetchPointDetail(pointId) {
     const val = pointDetailCache.get(pointId);
     return val instanceof Promise ? val : Promise.resolve(val);
   }
-  const promise = fetch(`/api/road-info?pointId=${pointId}&t=${Date.now()}`)
+  const promise = apiFetch(`${API_BASE}/api/road-info?pointId=${pointId}&t=${Date.now()}`)
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(data => {
       if (!data || !data.point) throw new Error("no data");
@@ -1060,7 +1060,7 @@ if (mapSearchInput) {
 }
 
 function searchLocation(query) {
-  const url = `/api/nominatim-search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ja`;
+  const url = `${API_BASE}/api/nominatim-search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ja`;
 
   fetch(url, {
     headers: { "User-Agent": "StepBy-BarrierFreeMap/1.0" }
@@ -1238,4 +1238,5 @@ if (voiceNavBtn) {
     }
   });
 }
+
 

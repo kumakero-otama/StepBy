@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -433,8 +433,16 @@
             const submitBtn = document.getElementById("submit-btn");
 
             const detail = document.getElementById("detail-input").value.trim();
+            const tagValueMap = {
+                "audio_signal_sound": "音が鳴る信号機", "audio_signal_no_sound": "音が鳴らない信号機",
+                "push_button_signal": "押しボタン式信号機", "sensor_signal": "感知式信号機",
+                "timed_signal": "時間式信号機", "crosswalk": "横断歩道",
+                "misplaced_tactile": "配置が不適切な点字ブロック", "degraded_tactile": "劣化した点字ブロック",
+                "blocked_tactile": "物が置かれて通れない点字ブロック", "footbridge_stairs": "歩道橋の階段の出入口",
+                "footbridge_elevator": "歩道橋のエレベーターの出入口", "footbridge_slope": "歩道橋のスロープの出入口", "test": "テスト用"
+            };
             const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
-                .map((cb) => cb.value);
+                .map((cb) => tagValueMap[cb.value] || cb.value);
 
             if (!lat || !lng) {
                 alert("位置情報が取得できていません。\n一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください。");
@@ -493,3 +501,4 @@
 </body>
 
 </html>
+

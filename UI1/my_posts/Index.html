@@ -205,7 +205,7 @@
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 10;
+            z-index: 100;
         }
 
         .like-btn.active {
@@ -371,6 +371,7 @@
             <a href="../post_road/Index.html" class="nav-item"><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item"><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
             <a href="../my_posts/Index.html" class="nav-item active"><i class="fas fa-user"></i><span>自分の投稿</span></a>
+            <a href="../profile/Index.html" class="nav-item"><i class="fas fa-user-circle"></i><span>MY</span></a>
         </nav>
 
     </div>
@@ -458,11 +459,10 @@
             div.className = 'post-item';
             div.dataset.pointId = pt.id;
             div.innerHTML = `
-                <div class="post-item-photo-wrap skeleton">
-                    <div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; z-index: 10;">
-                        <button class="action-btn delete-req-btn" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); color: #e74c3c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer;"><i class="fas fa-trash"></i></button>
-                        <button class="action-btn edit-req-btn" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); color: #2E9E8F; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer;"><i class="fas fa-pen"></i></button>
-                    </div>
+                <div class="post-item-photo-wrap skeleton"></div>
+                <div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; z-index: 100;">
+                    <button class="action-btn delete-req-btn" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); color: #e74c3c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer;"><i class="fas fa-trash"></i></button>
+                    <button class="action-btn edit-req-btn" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); color: #2E9E8F; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer;"><i class="fas fa-pen"></i></button>
                 </div>
                 <div class="post-item-body">
                     <div class="post-item-tags">
@@ -537,7 +537,28 @@
 
                 // Tags Update
                 const tagsNode = el.querySelector('.post-item-tags');
-                tagsNode.innerHTML = (point.tags || []).map(t => `<span class="tag-chip">${t.labelJa || t.label}</span>`).join('');
+                const tagIconMap = {
+                    "音が鳴る信号機": "fa-volume-up", "音響信号機": "fa-volume-up",
+                    "点字ブロック": "fa-braille",
+                    "感知式信号機": "fa-traffic-light",
+                    "スロープ": "fa-wheelchair",
+                    "横断歩道": "fa-road",
+                    "エレベーター": "fa-elevator",
+                    "手すり": "fa-hand-holding-heart",
+                    "注意箇所": "fa-triangle-exclamation",
+                    "テスト用": "fa-flask", "test": "fa-flask"
+                };
+                const tags = point.tags || [];
+                if (tags.length === 0) {
+                    tagsNode.innerHTML = '<span class="tag-chip" style="color:#8A9BB0;background:transparent;font-size:11px">タグなし</span>';
+                } else {
+                    tagsNode.innerHTML = tags.map(t => {
+                        const label = (typeof t === 'string') ? t : (t.labelJa || t.label || '');
+                        if (!label) return '';
+                        const icon = tagIconMap[label] || 'fa-tag';
+                        return `<span class="tag-chip"><i class="fas ${icon}" style="margin-right:4px;font-size:9px"></i>${label}</span>`;
+                    }).join('');
+                }
 
                 // Text Update
                 const textNode = el.querySelector('.post-item-text');
@@ -708,3 +729,4 @@
 </body>
 
 </html>
+
