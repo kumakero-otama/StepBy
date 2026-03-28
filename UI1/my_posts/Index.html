@@ -592,7 +592,7 @@
             let centerLat, centerLng, radiusKm;
 
             if (val === 'all') {
-                centerLat = 35.681; centerLng = 139.767; radiusKm = 25; // Further reduced
+                centerLat = 35.681; centerLng = 139.767; radiusKm = 25;
             } else {
                 const p = val.split(',');
                 centerLat = p[0]; centerLng = p[1]; radiusKm = p[2];
@@ -617,33 +617,35 @@
                             const meData = await meRes.json();
                             const u = meData.user || meData;
                             myUserId = u.userId || u.user_id || u.id || null;
+                            console.log('[MyPosts] /auth/me:', JSON.stringify(u).substring(0, 200));
                         }
-                    } catch {}
+                    } catch (e) {
+                        console.warn('[MyPosts] /auth/me failed:', e.message);
+                    }
                 }
 
-                // 全投稿を取得（認証ヘッダー付き）
+                // サーバー側フィルタ: user_idをバックエンドに渡す
                 const params = new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 100 });
+                if (isLoggedIn && myUserId) {
+                    params.set('user_id', myUserId);
+                }
                 const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
 
-                // 自分の投稿のみフィルタリング
                 let points = data.points || [];
-                console.log('[MyPosts] myUserId:', myUserId, '| total posts:', points.length);
-                if (points.length > 0) console.log('[MyPosts] sample post fields:', Object.keys(points[0]));
-                if (isLoggedIn) {
-                    if (myUserId) {
-                        // userIdが取得できた場合はフィルタリング
-                        points = points.filter(p => {
-                            const pId = p.userId || p.user_id || p.createdBy || p.created_by;
-                            return pId != null && String(pId) === String(myUserId);
-                        });
-                    } else {
-                        // userIdが取得できなかった場合は空表示
-                        points = [];
-                    }
-                } else {
-                    // 未ログインはデモ用5件
+                console.log('[MyPosts] myUserId:', myUserId, '| API returned:', points.length);
+                if (points.length > 0) console.log('[MyPosts] post fields:', Object.keys(points[0]));
+
+                if (isLoggedIn && myUserId) {
+                    // クライアント側でも絞り込み（バックエンドがuser_idを無視した場合の保険）
+                    const filtered = points.filter(p => {
+                        const pId = p.userId || p.user_id || p.createdBy || p.created_by || p.authorId || p.author_id;
+                        return pId != null && String(pId) === String(myUserId);
+                    });
+                    points = filtered;
+                    console.log('[MyPosts] after client filter:', points.length);
+                } else if (!isLoggedIn) {
                     points = (data.points || []).slice(0, 5);
                 }
 
