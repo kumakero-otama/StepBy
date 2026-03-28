@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -282,8 +282,9 @@
                     <span id="pro-badge" style="display:none; margin-left:8px; background:linear-gradient(135deg,#FFB847,#FF8C00); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; letter-spacing:0.5px;">PRO限定</span>
                 </div>
                 <textarea class="detail-input" id="detail-input" placeholder="この場所について一言メモを書いてください..."></textarea>
-                <div id="pro-lock-msg" style="display:none; margin-top:8px; padding:10px 14px; background:#F5F7FA; border-radius:10px; border:1px dashed #ccc; color:#8A9BAC; font-size:13px; text-align:center;">
-                    <i class="fas fa-lock"></i> PROアカウントのみ書き込みできます
+                <div id="pro-lock-msg" style="display:none; margin-top:8px; padding:10px 14px; background:linear-gradient(135deg,#FFF8EC,#FFF3D6); border-radius:12px; border:1px solid #FFD88A; padding:12px 16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:20px;">👑</span><span style="font-size:14px;font-weight:700;color:#B86A00;">PRO会員は一言メモを投稿できます</span></div>
+                    <p style="margin:0;font-size:12px;color:#946200;line-height:1.6;">PROアカウントにアップグレードすると、タグや画像に加えてこの場所についての詳細なコメントを残せるようになります。</p>
                 </div>
             </div>
 
@@ -451,17 +452,26 @@
                 "blocked_tactile": "物が置かれて通れない点字ブロック", "footbridge_stairs": "歩道橋の階段の出入口",
                 "footbridge_elevator": "歩道橋のエレベーターの出入口", "footbridge_slope": "歩道橋のスロープの出入口", "test": "テスト用"
             };
-            const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
-                .map((cb) => tagValueMap[cb.value] || cb.value);
+            const checkedTagIds = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
+                .map((cb) => cb.value); // IDをそのまま送る（APIはtagIds[]を期待）
 
             if (!lat || !lng) {
                 alert("位置情報が取得できていません。\n一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください。");
                 return;
             }
 
-            // PRO以外はdetailが空でも、タグか写真があれば投稿OK
-            if (selectedFiles.length < 1 && checkedTags.length < 1) {
-                alert('タグまたは画像を選択してください。\n（一言メモはPROアカウントのみ投稿できます）');
+            // ログイン必須（API仕様: POST /api/road-info は認証必要）
+            const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
+            if (!token) {
+                const returnUrl = encodeURIComponent(window.location.href);
+                alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
+                window.location.assign(`../signup/Index.html?return=${returnUrl}`);
+                return;
+            }
+
+            // タグか写真が必要
+            if (selectedFiles.length < 1 && checkedTagIds.length < 1) {
+                alert('タグまたは画像を選択してください。');
                 return;
             }
 
@@ -479,14 +489,14 @@
                 const body = {
                     lat: lat ? Number(lat) : null,
                     lng: lng ? Number(lng) : null,
-                    tags: checkedTags,
+                    tagIds: checkedTagIds,   // APIはtagIds[]（ID配列）を期待
                     detail,
                     images,
                 };
 
-                const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
-                console.log('[Post] Token present:', !!token, token ? token.substring(0,20)+'...' : 'none');
-                console.log('[Post] Body:', JSON.stringify({lat: body.lat, lng: body.lng, tags: body.tags, detail: body.detail}));
+                const token2 = window.AuthToken ? window.AuthToken.getAccessToken() : null;
+                console.log('[Post] Token present:', !!token2);
+                console.log('[Post] tagIds:', checkedTagIds);
 
                 const res = await apiFetch(`${API_BASE}/api/road-info`, {
                     method: "POST",
@@ -497,16 +507,9 @@
                 console.log('[Post] Response status:', res.status);
 
                 if (res.status === 401 || res.status === 403) {
-                    let errBody = '';
-                    try { errBody = await res.text(); } catch(e) {}
-                    console.warn('[Post] 401/403 body:', errBody);
-                    if (!token) {
-                        alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
-                    } else {
-                        alert('認証エラーが発生しました。一度ログインし直してください。');
-                    }
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 投稿する';
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    alert('セッションが切れました。再度ログインしてください。');
+                    window.location.assign(`../signup/Index.html?return=${returnUrl}`);
                     return;
                 }
 
@@ -538,6 +541,7 @@
 </body>
 
 </html>
+
 
 
 
