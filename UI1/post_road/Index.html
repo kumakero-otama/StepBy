@@ -345,28 +345,15 @@
             locationCoordsEl.textContent = `中心座標: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
         }
 
-        // --- PRO check: 詳細欄の制御 ---
-        const isPro = localStorage.getItem('UI1_isPro') === 'true';
+        // --- 詳細欄のPRO制限 → 全ユーザー投稿可能に変更 ---
+        // const isPro = localStorage.getItem('UI1_isPro') === 'true';
+        // PRO限定を無効化（詳細欄も投稿ボタンも全員使用可能）
         const detailInput = document.getElementById('detail-input');
         const proBadge = document.getElementById('pro-badge');
         const proLockMsg = document.getElementById('pro-lock-msg');
-        if (!isPro) {
-            // 非PROはテキストエリアを無効化
-            detailInput.disabled = true;
-            detailInput.placeholder = '🔒 PROアカウント限定';
-            detailInput.style.background = '#F5F7FA';
-            detailInput.style.color = '#B0BEC5';
-            detailInput.style.cursor = 'not-allowed';
-            proBadge.style.display = 'inline-block';
-            proLockMsg.style.display = 'block';
-            // 投稿ボタンもグレーアウト
-            const submitBtn = document.getElementById('submit-btn');
-            if (submitBtn) {
-                submitBtn.style.background = '#B0BEC5';
-                submitBtn.style.cursor = 'not-allowed';
-                submitBtn.innerHTML = '<i class="fas fa-lock"></i> PROアカウント限定';
-            }
-        }
+        if (proBadge) proBadge.style.display = 'none';
+        if (proLockMsg) proLockMsg.style.display = 'none';
+
 
         // --- Tag selection ---
         document.querySelectorAll("#tag-grid .tag-chip").forEach((chip) => {
@@ -423,12 +410,6 @@
 
         document.getElementById("submit-btn").addEventListener("click", async () => {
             const submitBtn = document.getElementById("submit-btn");
-
-            // PRO限定チェック
-            if (!isPro) {
-                alert("🔒 道情報の投稿はPROアカウント限定です。\nプロフィール編集ページからPROに切り替えてください。");
-                return;
-            }
 
             const detail = document.getElementById("detail-input").value.trim();
             const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))

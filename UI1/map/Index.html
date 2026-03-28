@@ -1441,6 +1441,44 @@
         });
     </script>
     <script>
+        // ===== 場所検索（Nominatim） =====
+        (function() {
+            const searchInput = document.getElementById('map-search-input');
+            const searchIcon = searchInput ? searchInput.previousElementSibling : null;
+            if (!searchInput) return;
+
+            async function doSearch() {
+                const q = searchInput.value.trim();
+                if (!q) return;
+                searchInput.disabled = true;
+                searchInput.placeholder = '検索中...';
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&accept-language=ja`;
+                    const res = await fetch(url, { headers: { 'User-Agent': 'StepBy/1.0' } });
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        const { lat, lon, display_name } = data[0];
+                        map.setView([parseFloat(lat), parseFloat(lon)], 16, { animate: true });
+                        searchInput.value = display_name.split(',')[0];
+                    } else {
+                        alert('場所が見つかりませんでした。別のキーワードで試してください。');
+                    }
+                } catch (e) {
+                    alert('検索に失敗しました。ネットワークを確認してください。');
+                } finally {
+                    searchInput.disabled = false;
+                    searchInput.placeholder = '場所を検索...';
+                }
+            }
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+            });
+            if (searchIcon) searchIcon.style.cursor = 'pointer';
+            if (searchIcon) searchIcon.addEventListener('click', doSearch);
+        })();
+    </script>
+    <script>
         // ===== Record button (prominent, outside panel) =====
         const btnRecordMain = document.getElementById('btn-record-main');
         const recordIcon = document.getElementById('record-icon');
