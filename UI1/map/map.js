@@ -1,4 +1,4 @@
-﻿// ===============================================
+// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -1068,25 +1068,32 @@ if (mapSearchInput) {
 }
 
 function searchLocation(query) {
-  // Use current map viewport as viewbox to prioritize nearby results (works worldwide)
-  // bounded=0 means: prefer viewbox but fall back to global search if nothing found
+  // ひらがな・カタカナが含まれれば日本語クエリ → 日本に限定
+  const hasHiragana = /[\u3040-\u309F]/.test(query);  // ひらがな
+  const hasKatakana = /[\u30A0-\u30FF]/.test(query);  // カタカナ
+  const isJapaneseQuery = hasHiragana || hasKatakana;
+
+  let countryParam = '';
   let viewboxParam = '';
-  if (typeof leafletMap !== 'undefined' && leafletMap) {
-    try {
-      const bounds = leafletMap.getBounds();
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-      const latPad = Math.abs(ne.lat - sw.lat) * 2;
-      const lngPad = Math.abs(ne.lng - sw.lng) * 2;
-      viewboxParam = '&viewbox=' + (sw.lng - lngPad) + ',' + (sw.lat - latPad) + ',' + (ne.lng + lngPad) + ',' + (ne.lat + latPad) + '&bounded=0';
-    } catch(e) { /* ignore */ }
+
+  if (isJapaneseQuery) {
+    // 日本語クエリ → 日本国内に限定（中国の動物園などを除外）
+    countryParam = '&countrycodes=jp';
+  } else {
+    // 英語など → 現在の地図表示範囲を優先（世界対応）
+    if (typeof leafletMap !== 'undefined' && leafletMap) {
+      try {
+        const bounds = leafletMap.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const latPad = Math.abs(ne.lat - sw.lat) * 1.5;
+        const lngPad = Math.abs(ne.lng - sw.lng) * 1.5;
+        viewboxParam = '&viewbox=' + (sw.lng - lngPad) + ',' + (sw.lat - latPad) + ',' + (ne.lng + lngPad) + ',' + (ne.lat + latPad) + '&bounded=0';
+      } catch(e) { /* ignore */ }
+    }
   }
 
-  // Auto-detect language: use 'ja' if query contains Japanese characters
-  const hasJapanese = /[\u3000-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/.test(query);
-  const lang = hasJapanese ? 'ja' : 'en';
-
-  const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&accept-language=' + lang + viewboxParam;
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&accept-language=ja' + countryParam + viewboxParam;
 
   fetch(url, { headers: { 'User-Agent': 'StepBy-BarrierFreeMap/1.0' } })
     .then(function(res) {
@@ -1095,7 +1102,7 @@ function searchLocation(query) {
     })
     .then(function(results) {
       if (!results || results.length === 0) {
-        alert('\u300c' + query + '\u300d\u306e\u691c\u7d22\u7d50\u679c\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
+        alert('「' + query + '」の検索結果が見つかりませんでした');
         return;
       }
       const place = results[0];
@@ -1113,9 +1120,10 @@ function searchLocation(query) {
     })
     .catch(function(err) {
       console.error('[Search] Error:', err);
-      alert('\u691c\u7d22\u30a8\u30e9\u30fc: ' + err.message);
+      alert('検索エラー: ' + err.message);
     });
 }
+
 
 // ===============================================
 // VOICE NAVIGATION (Web Speech API)

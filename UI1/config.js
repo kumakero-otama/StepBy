@@ -8,8 +8,9 @@
   globalScope.APP_CONFIG = {
     APP_BASE_PATH: typeof current.APP_BASE_PATH === "string" ? current.APP_BASE_PATH : defaults.APP_BASE_PATH,
     API_BASE_URL: typeof current.API_BASE_URL === "string" ? current.API_BASE_URL : defaults.API_BASE_URL,
-    VERSION: '1.0.5'
+    VERSION: '1.0.6'
   };
 })(window);
+
 
 
