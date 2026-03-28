@@ -592,7 +592,7 @@
             let centerLat, centerLng, radiusKm;
 
             if (val === 'all') {
-                centerLat = 35.681; centerLng = 139.767; radiusKm = 25;
+                centerLat = 35.681; centerLng = 139.767; radiusKm = 1000;
             } else {
                 const p = val.split(',');
                 centerLat = p[0]; centerLng = p[1]; radiusKm = p[2];
@@ -624,8 +624,8 @@
                     }
                 }
 
-                // サーバー側フィルタ: user_idをバックエンドに渡す + 全国対象（半径1000km）
-                const params = new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 1000 });
+                // サーバー側フィルタ: 選択した地域の座標をバックエンドに渡す
+                const params = new URLSearchParams({ centerLat: centerLat, centerLng: centerLng, radiusKm: radiusKm });
                 if (isLoggedIn && myUserId) {
                     params.set('user_id', myUserId);
                 }
