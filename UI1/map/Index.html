@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -1494,8 +1494,16 @@
             _postBtn.addEventListener('click', () => {
                 const lmap = window.leafletMap;
                 if (lmap) {
-                    const c = lmap.getCenter();
-                    window.location.assign('../post_road/Index.html?lat=' + c.lat.toFixed(6) + '&lng=' + c.lng.toFixed(6));
+                    // 検索ピンがあればその座標を優先、なければ地図中心
+                    let lat, lng;
+                    if (window._searchPin) {
+                        const ll = window._searchPin.getLatLng();
+                        lat = ll.lat.toFixed(6); lng = ll.lng.toFixed(6);
+                    } else {
+                        const c = lmap.getCenter();
+                        lat = c.lat.toFixed(6); lng = c.lng.toFixed(6);
+                    }
+                    window.location.assign(`../post_road/Index.html?lat=${lat}&lng=${lng}`);
                 } else {
                     window.location.assign('../post_road/Index.html');
                 }
@@ -1508,11 +1516,13 @@
             if (!handle || !content) return;
             let _closed = false;
             handle.style.cursor = 'pointer';
-            handle.addEventListener('click', () => {
+            content.style.maxHeight = '300px';
+            handle.addEventListener('click', (e) => {
+                e.stopPropagation();
                 _closed = !_closed;
                 content.style.transition = 'max-height 0.3s ease, padding 0.3s ease';
                 if (_closed) {
-                    content.style.maxHeight = '4px';
+                    content.style.maxHeight = '0px';
                     content.style.overflow = 'hidden';
                     content.style.paddingTop = '0';
                     content.style.paddingBottom = '0';
@@ -1525,6 +1535,26 @@
                     handle.style.transform = '';
                 }
             });
+
+            // ボトムナビの「投稿」リンクにもピン座標を渡す
+            const _navPostLink = document.querySelector('.bottom-nav a[href*="post_road"]');
+            if (_navPostLink) {
+                _navPostLink.addEventListener('click', (ev) => {
+                    const lmap = window.leafletMap;
+                    if (lmap) {
+                        ev.preventDefault();
+                        let lat, lng;
+                        if (window._searchPin) {
+                            const ll = window._searchPin.getLatLng();
+                            lat = ll.lat.toFixed(6); lng = ll.lng.toFixed(6);
+                        } else {
+                            const c = lmap.getCenter();
+                            lat = c.lat.toFixed(6); lng = c.lng.toFixed(6);
+                        }
+                        window.location.assign('../post_road/Index.html?lat=' + lat + '&lng=' + lng);
+                    }
+                });
+            }
         })();
 
     </script>
@@ -1566,6 +1596,7 @@
 </body>
 
 </html>
+
 
 
 
