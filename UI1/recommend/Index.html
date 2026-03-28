@@ -301,6 +301,8 @@
         }
     </style>
 
+    
+
     <script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </head>
 
@@ -449,7 +451,7 @@
                     const ward = a.suburb || a.ward || a.city_district || "";
                     const neighbourhood = a.neighbourhood || a.quarter || a.hamlet || "";
 
-                    let addr = `";
+                    let addr = "";
                     if (state) addr += state;
                     if (city) addr += city;
                     if (ward && ward !== city) addr += ward;
@@ -651,19 +653,21 @@
                 opt.textContent = `📍 現在地付近 (${latitude.toFixed(3)}, ${longitude.toFixed(3)})`;
                 regionSelect.insertBefore(opt, regionSelect.firstChild);
                 regionSelect.selectedIndex = 0;
-                loadPosts();
+                if (document.readyState === 'complete') { loadPosts(); } else { window.addEventListener('load', loadPosts); }
             }, err => {
                 loadingState.classList.add('hidden');
                 alert('位置情報の取得に失敗しました');
             });
         });
 
-        loadPosts();
+        if (document.readyState === 'complete') { loadPosts(); } else { window.addEventListener('load', loadPosts); }
     </script>
-<script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
+
 </body>
 
 </html>
+
+
 
 
 
