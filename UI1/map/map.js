@@ -636,7 +636,15 @@ function fetchAddress(pointId, lat, lng) {
     .then(r => r.json())
     .then(data => {
       const addr = data.address || {};
-      const area = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || addr.town || addr.city || "";
+      const state = addr.prefecture || addr.province || addr.state || addr.county || "";
+      const city = addr.city || addr.town || addr.village || addr.municipality || "";
+      const ward = addr.ward || addr.city_district || "";
+      const district = addr.suburb || addr.neighbourhood || addr.quarter || addr.hamlet || "";
+      let area = "";
+      if (state) area += state;
+      if (city) area += city;
+      if (ward && ward !== city) area += ward;
+      if (district && district !== ward && district !== city) area += district;
       const label = area ? `${area}付近` : "この場所付近";
       pointAddressCache.set(pointId, label);
       return label;
@@ -1060,7 +1068,7 @@ if (mapSearchInput) {
 }
 
 function searchLocation(query) {
-  const url = `${API_BASE}/api/nominatim-search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ja`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ja`;
 
   fetch(url, {
     headers: { "User-Agent": "StepBy-BarrierFreeMap/1.0" }
@@ -1238,6 +1246,8 @@ if (voiceNavBtn) {
     }
   });
 }
+
+
 
 
 
