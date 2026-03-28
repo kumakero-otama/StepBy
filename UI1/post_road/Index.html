@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -367,24 +367,57 @@
         }
 
 
-        // --- 詳細欄のPRO制限 ---
-        const isPro = localStorage.getItem('UI1_isPro') === 'true';
+
+        // --- 詳細欄のPRO制限 --- APIから実際のPRO状態を取得 ---
         const detailInput = document.getElementById('detail-input');
         const proBadge = document.getElementById('pro-badge');
         const proLockMsg = document.getElementById('pro-lock-msg');
-        if (!isPro) {
-            if (proBadge) proBadge.style.display = 'inline-block';
-            if (proLockMsg) proLockMsg.style.display = 'block';
-            if (detailInput) {
-                detailInput.disabled = true;
-                detailInput.placeholder = 'PROアカウントのみ書き込みできます';
-                detailInput.style.opacity = '0.5';
-                detailInput.style.cursor = 'not-allowed';
+
+        function applyProUi(isProUser) {
+            if (!isProUser) {
+                if (proBadge) proBadge.style.display = 'inline-block';
+                if (proLockMsg) proLockMsg.style.display = 'block';
+                if (detailInput) {
+                    detailInput.disabled = true;
+                    detailInput.value = ''; // 念のため空にする
+                    detailInput.placeholder = 'PROアカウントのみ書き込みできます';
+                    detailInput.style.opacity = '0.5';
+                    detailInput.style.cursor = 'not-allowed';
+                }
+            } else {
+                if (proBadge) proBadge.style.display = 'none';
+                if (proLockMsg) proLockMsg.style.display = 'none';
+                if (detailInput) {
+                    detailInput.disabled = false;
+                    detailInput.style.opacity = '1';
+                    detailInput.style.cursor = '';
+                }
             }
-        } else {
-            if (proBadge) proBadge.style.display = 'none';
-            if (proLockMsg) proLockMsg.style.display = 'none';
         }
+
+        // まずlocalStorageで仮設定（UX改善のため即時適用）
+        let cachedIsPro = localStorage.getItem('UI1_isPro') === 'true';
+        applyProUi(cachedIsPro);
+
+        // APIから正確なPRO状態を取得して上書き
+        (async function checkProStatus() {
+            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+            try {
+                const res = await window.AuthToken.authFetch(`${API_BASE}/api/pro-status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const serverIsPro = data.isPro === true || data.is_pro === true;
+                    // localStorageを同期
+                    localStorage.setItem('UI1_isPro', serverIsPro ? 'true' : 'false');
+                    applyProUi(serverIsPro);
+                    cachedIsPro = serverIsPro;
+                }
+            } catch(e) {
+                console.warn('[PRO check] API failed, using localStorage:', e);
+            }
+        })();
+
+
 
 
         // --- Tag selection ---
@@ -486,13 +519,17 @@
                     images.push({ name: file.name, dataUrl });
                 }
 
+                // 非PROの場合、detailを強制的に空にする（UIバイパス対策）
+                const safeDetail = cachedIsPro ? detail : '';
+
                 const body = {
                     lat: lat ? Number(lat) : null,
                     lng: lng ? Number(lng) : null,
                     tagIds: checkedTagIds,   // APIはtagIds[]（ID配列）を期待
-                    detail,
+                    detail: safeDetail,      // 非PROはdetailを送らない
                     images,
                 };
+
 
                 const token2 = window.AuthToken ? window.AuthToken.getAccessToken() : null;
                 console.log('[Post] Token present:', !!token2);
