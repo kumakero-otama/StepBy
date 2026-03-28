@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -339,12 +339,32 @@
         // --- URL params ---
         const params = new URLSearchParams(window.location.search);
 
-        const lat = params.get("lat");
-        const lng = params.get("lng");
+        let lat = params.get("lat");
+        let lng = params.get("lng");
         const locationCoordsEl = document.getElementById("location-coords");
-        if (lat && lng) {
-            locationCoordsEl.textContent = `中心座標: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
+
+        function updateCoordsDisplay() {
+            if (lat && lng) {
+                locationCoordsEl.textContent = `\u4e2d\u5fc3\u5ea7\u6a19: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
+            }
         }
+        updateCoordsDisplay();
+
+        if (!lat || !lng) {
+            locationCoordsEl.textContent = '\ud83d\udccd \u73fe\u5728\u5730\u3092\u53d6\u5f97\u4e2d...';
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        lat = String(pos.coords.latitude);
+                        lng = String(pos.coords.longitude);
+                        updateCoordsDisplay();
+                    },
+                    () => { locationCoordsEl.textContent = '⚠️ 位置情報を取得できませんでした'; },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
+            }
+        }
+
 
         // --- 詳細欄のPRO制限 → 全ユーザー投稿可能に変更 ---
         // const isPro = localStorage.getItem('UI1_isPro') === 'true';
