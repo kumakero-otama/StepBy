@@ -606,17 +606,46 @@
             statsText.textContent = "取得中...";
 
             try {
-                // ログイン済みなら自分の投稿を取得、未ログインはエリア全体から取得
                 const isLoggedIn = window.AuthToken && window.AuthToken.getAccessToken();
-                const params = isLoggedIn
-                    ? new URLSearchParams({ userId: 'me', centerLat: 35.681, centerLng: 139.767, radiusKm: 100 })
-                    : new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 100 });
+
+                // 自分のuserIdを/auth/meから取得
+                let myUserId = null;
+                if (isLoggedIn) {
+                    try {
+                        const meRes = await window.AuthToken.authFetch('/auth/me');
+                        if (meRes.ok) {
+                            const meData = await meRes.json();
+                            const u = meData.user || meData;
+                            myUserId = u.userId || u.user_id || u.id || null;
+                        }
+                    } catch {}
+                }
+
+                // 全投稿を取得（認証ヘッダー付き）
+                const params = new URLSearchParams({ centerLat: 35.681, centerLng: 139.767, radiusKm: 100 });
                 const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
 
-                // ログイン済みはAPIが自分の投稿を返す、未ログインは最初の5件をデモ
-                const points = isLoggedIn ? (data.points || []) : (data.points || []).slice(0, 5);
+                // 自分の投稿のみフィルタリング
+                let points = data.points || [];
+                console.log('[MyPosts] myUserId:', myUserId, '| total posts:', points.length);
+                if (points.length > 0) console.log('[MyPosts] sample post fields:', Object.keys(points[0]));
+                if (isLoggedIn) {
+                    if (myUserId) {
+                        // userIdが取得できた場合はフィルタリング
+                        points = points.filter(p => {
+                            const pId = p.userId || p.user_id || p.createdBy || p.created_by;
+                            return pId != null && String(pId) === String(myUserId);
+                        });
+                    } else {
+                        // userIdが取得できなかった場合は空表示
+                        points = [];
+                    }
+                } else {
+                    // 未ログインはデモ用5件
+                    points = (data.points || []).slice(0, 5);
+                }
 
                 loadingState.classList.add('hidden');
                 if (points.length === 0) {
