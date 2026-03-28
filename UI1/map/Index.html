@@ -1219,7 +1219,7 @@
                     <i class="fas fa-circle-dot" id="record-icon"></i>
                     <span id="record-label">記録開始</span>
                 </button>
-                <button class="btn-cta-dream" style="flex:1" onclick="window.location.assign('../post_road/Index.html')">
+                <button class="btn-cta-dream" style="flex:1" id="btn-post-road">
                     <i class="fas fa-camera"></i>
                     道の情報を投稿する
                 </button>
@@ -1464,8 +1464,11 @@
                     const data = await res.json();
                     if (data && data.length > 0) {
                         const { lat, lon, display_name } = data[0];
-                        lmap.setView([parseFloat(lat), parseFloat(lon)], 16, { animate: true });
+                                                lmap.setView([parseFloat(lat), parseFloat(lon)], 16, { animate: true });
                         searchInput.value = display_name.split(',')[0];
+                        // 検索ピンを表示
+                        if (window._searchPin) lmap.removeLayer(window._searchPin);
+                        window._searchPin = L.marker([parseFloat(lat), parseFloat(lon)]).addTo(lmap).bindPopup('<strong>' + display_name.split(',')[0] + '</strong>').openPopup();
                     } else {
                         alert('場所が見つかりませんでした。別のキーワードで試してください。');
                     }
@@ -1483,6 +1486,47 @@
             if (searchIcon) searchIcon.style.cursor = 'pointer';
             if (searchIcon) searchIcon.addEventListener('click', doSearch);
         })();
+    </script>
+    <script>
+        // 投稿ボタン: マップ中心座標を渡す
+        const _postBtn = document.getElementById('btn-post-road');
+        if (_postBtn) {
+            _postBtn.addEventListener('click', () => {
+                const lmap = window.leafletMap;
+                if (lmap) {
+                    const c = lmap.getCenter();
+                    window.location.assign('../post_road/Index.html?lat=' + c.lat.toFixed(6) + '&lng=' + c.lng.toFixed(6));
+                } else {
+                    window.location.assign('../post_road/Index.html');
+                }
+            });
+        }
+        // ドロワーハンドル: タップで開閉
+        (function() {
+            const handle = document.querySelector('.drawer-handle');
+            const content = document.querySelector('.drawer-content');
+            if (!handle || !content) return;
+            let _closed = false;
+            handle.style.cursor = 'pointer';
+            handle.addEventListener('click', () => {
+                _closed = !_closed;
+                content.style.transition = 'max-height 0.3s ease, padding 0.3s ease';
+                if (_closed) {
+                    content.style.maxHeight = '4px';
+                    content.style.overflow = 'hidden';
+                    content.style.paddingTop = '0';
+                    content.style.paddingBottom = '0';
+                    handle.style.transform = 'rotate(180deg)';
+                } else {
+                    content.style.maxHeight = '300px';
+                    content.style.overflow = '';
+                    content.style.paddingTop = '';
+                    content.style.paddingBottom = '';
+                    handle.style.transform = '';
+                }
+            });
+        })();
+
     </script>
     <script>
         // ===== Record button (prominent, outside panel) =====
@@ -1522,6 +1566,7 @@
 </body>
 
 </html>
+
 
 
 
