@@ -330,24 +330,6 @@
                         </div>
                     </div>
             </div>
-            <div class="region-bar">
-                <button class="btn-location" id="btn-location" title="現在地を使用">
-                    <i class="fas fa-crosshairs"></i>
-                </button>
-                <select class="region-select" id="region-select">
-                    <option value="all">すべての地域</option>
-                    <option value="35.681,139.767,10">東京</option>
-                    <option value="35.659,139.700,5">渋谷・目黒エリア</option>
-                    <option value="35.669,139.787,5">江東・墨田エリア</option>
-                    <option value="34.686,135.520,10">大阪</option>
-                    <option value="34.693,135.502,5">梅田・中之島エリア</option>
-                    <option value="35.170,136.882,10">名古屋</option>
-                    <option value="34.655,133.920,10">岡山</option>
-                    <option value="33.590,130.402,10">福岡</option>
-                    <option value="43.062,141.354,10">札幌</option>
-                    <option value="38.260,140.882,10">仙台</option>
-                    <option value="35.390,136.722,10">岐阜</option>
-                </select>
             </div>
         </div>
 
@@ -408,7 +390,6 @@
 
         const postsListEl = document.getElementById('posts-list');
         const statsText = document.getElementById('stats-text');
-        const regionSelect = document.getElementById('region-select');
         const loadingState = document.getElementById('loading-state');
         const emptyState = document.getElementById('empty-state');
         const errorState = document.getElementById('error-state');
@@ -593,22 +574,12 @@
             currentAbortController = new AbortController();
             const signal = currentAbortController.signal;
 
-            const val = regionSelect.value;
-            let centerLat, centerLng, radiusKm;
-
-            if (val === 'all') {
-                centerLat = 35.681; centerLng = 139.767; radiusKm = 1000;
-            } else {
-                const p = val.split(',');
-                centerLat = p[0]; centerLng = p[1]; radiusKm = p[2];
-            }
-
             loadingState.classList.remove('hidden');
             emptyState.classList.add('hidden');
             errorState.classList.add('hidden');
             postsListEl.innerHTML = "";
             postsListEl.classList.add('hidden');
-            statsText.textContent = "取得中...";
+            statsText.textContent = "全地域の投稿を取得中...";
 
             try {
                 const isLoggedIn = window.AuthToken && window.AuthToken.getAccessToken();
@@ -629,30 +600,65 @@
                     }
                 }
 
-                // サーバー側フィルタ: 選択した地域の座標をバックエンドに渡す
-                const params = new URLSearchParams({ centerLat: centerLat, centerLng: centerLng, radiusKm: radiusKm });
-                if (isLoggedIn && myUserId) {
+                if (!isLoggedIn || !myUserId) {
+                    loadingState.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    statsText.textContent = "未ログインのため表示できません";
+                    return;
+                }
+
+                // APIの仕様上、全件取得ができないため全国の主要座標を並列検索して合体させる
+                const regionsToSearch = [
+                    { lat: 35.681, lng: 139.767 }, // 東京
+                    { lat: 34.686, lng: 135.520 }, // 大阪
+                    { lat: 35.170, lng: 136.882 }, // 名古屋
+                    { lat: 43.062, lng: 141.354 }, // 札幌
+                    { lat: 33.590, lng: 130.402 }, // 福岡
+                    { lat: 38.260, lng: 140.882 }, // 仙台
+                    { lat: 34.385, lng: 132.455 }  // 広島
+                ];
+
+                const fetchPromises = regionsToSearch.map(async (loc) => {
+                    const params = new URLSearchParams({ centerLat: loc.lat, centerLng: loc.lng, radiusKm: 1500 });
                     params.set('user_id', myUserId);
-                }
-                const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
-                if (!res.ok) throw new Error('API Error');
-                const data = await res.json();
+                    try {
+                        const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
+                        if (res.ok) {
+                            const data = await res.json();
+                            return data.points || [];
+                        }
+                    } catch (err) {
+                        if (err.name !== 'AbortError') console.warn('Fetch error for region', loc, err);
+                    }
+                    return [];
+                });
 
-                let points = data.points || [];
-                console.log('[MyPosts] myUserId:', myUserId, '| API returned:', points.length);
-                if (points.length > 0) console.log('[MyPosts] post fields:', Object.keys(points[0]));
+                const results = await Promise.all(fetchPromises);
+                
+                // 全ての地域の配列を結合
+                let allPoints = results.flat();
 
-                if (isLoggedIn && myUserId) {
-                    // クライアント側でも絞り込み（バックエンドがuser_idを無視した場合の保険）
-                    const filtered = points.filter(p => {
-                        const pId = p.userId || p.user_id || p.createdBy || p.created_by || p.authorId || p.author_id;
-                        return pId != null && String(pId) === String(myUserId);
-                    });
-                    points = filtered;
-                    console.log('[MyPosts] after client filter:', points.length);
-                } else if (!isLoggedIn) {
-                    points = (data.points || []).slice(0, 5);
+                // idで重複排除
+                const uniquePointsMap = new Map();
+                for (const p of allPoints) {
+                    if (p && p.id && !uniquePointsMap.has(p.id)) {
+                        uniquePointsMap.set(p.id, p);
+                    }
                 }
+                allPoints = Array.from(uniquePointsMap.values());
+
+                // クライアント側で確実に自分の投稿だけに絞り込む
+                const filtered = allPoints.filter(p => {
+                    const pId = p.userId || p.user_id || p.createdBy || p.created_by || p.authorId || p.author_id;
+                    return pId != null && String(pId).trim() === String(myUserId).trim();
+                });
+
+                // 新しい順（id降順）でソート
+                filtered.sort((a, b) => Number(b.id) - Number(a.id));
+
+                let points = filtered;
+                console.log('[MyPosts] total unique points after filter:', points.length);
+
 
                 loadingState.classList.add('hidden');
                 if (points.length === 0) {
