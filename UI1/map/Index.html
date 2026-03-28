@@ -1379,12 +1379,12 @@
 
                 if (gpsTracking) {
                     // 現在地がまだ取得されていない場合は明示的に要求
-                    if (typeof marker !== 'undefined' && marker) {
-                        map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                    if (window.currentMarker) {
+                        window.leafletMap.setView(window.currentMarker.getLatLng(), window.leafletMap.getZoom(), { animate: true });
                     } else {
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
-                                map.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                                window.leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
                             },
                             (err) => {
                                 if (err.code === 1) {
@@ -1522,3 +1522,6 @@
 </body>
 
 </html>
+
+
+
