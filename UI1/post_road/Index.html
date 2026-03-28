@@ -378,9 +378,9 @@
 
         // --- Tag selection ---
         document.querySelectorAll("#tag-grid .tag-chip").forEach((chip) => {
-            chip.addEventListener("click", () => {
-                const checkbox = chip.querySelector('input[type="checkbox"]');
-                // The checkbox toggles automatically via label click
+            const checkbox = chip.querySelector('input[type="checkbox"]');
+            if (!checkbox) return;
+            checkbox.addEventListener("change", () => {
                 chip.classList.toggle("selected", checkbox.checked);
             });
         });
@@ -501,4 +501,7 @@
 </body>
 
 </html>
+
+
+
 

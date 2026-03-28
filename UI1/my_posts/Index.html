@@ -438,7 +438,7 @@
                     const ward = a.suburb || a.ward || a.city_district || "";
                     const neighbourhood = a.neighbourhood || a.quarter || a.hamlet || "";
 
-                    let addr = `";
+                    let addr = "";
                     if (state) addr += state;
                     if (city) addr += city;
                     if (ward && ward !== city) addr += ward;
@@ -623,7 +623,7 @@
                 if (!isLoggedIn || !myUserId) {
                     loadingState.classList.add('hidden');
                     emptyState.classList.remove('hidden');
-                    statsText.textContent = "未ログインのため表示できません";
+                    statsText.textContent = "まだ投稿がありません";
                     return;
                 }
 
@@ -723,12 +723,25 @@
             }
         }
 
-        loadPosts();
+                if (document.readyState === 'complete') { loadPosts(); } else { window.addEventListener('load', loadPosts); }
+
+        // Safety timer: hide loading after 12s
+        setTimeout(() => {
+            const ls = document.getElementById('loading-state');
+            const es = document.getElementById('empty-state');
+            if (ls && !ls.classList.contains('hidden')) {
+                ls.classList.add('hidden');
+                if (es) es.classList.remove('hidden');
+                const st = document.getElementById('stats-text');
+                if (st) st.textContent = '投稿がありません';
+            }
+        }, 12000);
     </script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
 </body>
 
 </html>
+
 
 
 
