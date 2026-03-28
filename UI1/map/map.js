@@ -725,7 +725,7 @@ function _runPrewarm() {
 function resolvePhotoUrl(url) {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return window.location.origin + (url.startsWith("/") ? "" : "/") + url;
+  return API_BASE + (url.startsWith("/") ? "" : "/") + url;
 }
 
 function showRoadInfoPointsOnMap(points) {
@@ -867,7 +867,7 @@ function showRoadInfoPointsOnMap(points) {
               if (Array.isArray(post.media) && post.media.length > 0 && post.media[0] && post.media[0].url) {
                 photoUrl = post.media[0].url;
                 if (typeof photoUrl === "string" && !photoUrl.startsWith("http")) {
-                  photoUrl = window.location.origin + (photoUrl.startsWith("/") ? "" : "/") + photoUrl;
+                  photoUrl = API_BASE + (photoUrl.startsWith("/") ? "" : "/") + photoUrl;
                 }
                 break;
               }
@@ -1238,5 +1238,7 @@ if (voiceNavBtn) {
     }
   });
 }
+
+
 
 
