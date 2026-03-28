@@ -484,14 +484,27 @@
                     images,
                 };
 
+                const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
+                console.log('[Post] Token present:', !!token, token ? token.substring(0,20)+'...' : 'none');
+                console.log('[Post] Body:', JSON.stringify({lat: body.lat, lng: body.lng, tags: body.tags, detail: body.detail}));
+
                 const res = await apiFetch(`${API_BASE}/api/road-info`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
                 });
 
+                console.log('[Post] Response status:', res.status);
+
                 if (res.status === 401 || res.status === 403) {
-                    alert('投稿にはログインが必要です。\nGoogleアカウントでログインして再度お試しください。');
+                    let errBody = '';
+                    try { errBody = await res.text(); } catch(e) {}
+                    console.warn('[Post] 401/403 body:', errBody);
+                    if (!token) {
+                        alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
+                    } else {
+                        alert('認証エラーが発生しました。一度ログインし直してください。');
+                    }
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 投稿する';
                     return;
