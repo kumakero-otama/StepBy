@@ -465,7 +465,7 @@
 
         <!-- Submit -->
         <div class="submit-area">
-            <button class="btn-primary" style="flex:1" onclick="location.href='../profile/Index.html'">変更を保存</button>
+        <button class="btn-primary" style="flex:1" id="save-btn" onclick="saveProfile()">変更を保存</button>
         </div>
     </div>
 
@@ -571,11 +571,55 @@
         const isPro = localStorage.getItem('UI1_isPro') === 'true';
         proToggle.checked = isPro;
 
-        proToggle.addEventListener('change', (e) => {
+        proToggle.addEventListener('change', async (e) => {
             localStorage.setItem('UI1_isPro', e.target.checked ? 'true' : 'false');
-            // If we actually hit the API, we'd do it here:
-            // fetch('/api/pro-status', { method: 'PUT', body: JSON.stringify({ isPro: e.target.checked }) });
+            // リアルタイムでAPIにも反映
+            if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                try {
+                    await window.AuthToken.authFetch(
+                        (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + '/api/pro-status',
+                        { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ isPro: e.target.checked }) }
+                    );
+                } catch(err) { console.warn('[PRO toggle] API error:', err); }
+            }
         });
+
+        async function saveProfile() {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = '保存中...';
+
+            const API_BASE = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL
+                ? window.APP_CONFIG.API_BASE_URL
+                : 'https://barrierfree-map.loophole.site';
+
+            // PRO状態をAPIに保存
+            const isProChecked = document.getElementById('pro-account-toggle').checked;
+            localStorage.setItem('UI1_isPro', isProChecked ? 'true' : 'false');
+
+            if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                try {
+                    const proRes = await window.AuthToken.authFetch(
+                        API_BASE + '/api/pro-status',
+                        { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ isPro: isProChecked }) }
+                    );
+                    if (!proRes.ok) console.warn('[Save] PRO status update failed:', proRes.status);
+                } catch(e) { console.warn('[Save] PRO API error:', e); }
+
+                // ユーザー名をAPIに保存
+                const username = document.getElementById('edit-username').value.trim();
+                if (username) {
+                    try {
+                        await window.AuthToken.authFetch(
+                            API_BASE + '/auth/profile',
+                            { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ username }) }
+                        );
+                    } catch(e) { console.warn('[Save] Profile API error:', e); }
+                }
+            }
+
+            window.location.assign('../profile/Index.html');
+        }
 
         // ---- Icon Upload Handling ----
         const fileUpload = document.getElementById('file-upload');
