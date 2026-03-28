@@ -545,7 +545,7 @@
                 dateNode.textContent = post ? formatDate(post.createdAt) : "";
 
             } catch (err) {
-                if (err.name === 'AbortError') return;
+                if (err.name === 'AbortError') { loadingState.classList.add('hidden'); return; }
                 console.error('Failed to load detail for', pt.id, err);
             }
         }
@@ -627,7 +627,7 @@
                 })();
 
             } catch (err) {
-                if (err.name === 'AbortError') return;
+                if (err.name === 'AbortError') { loadingState.classList.add('hidden'); return; }
                 loadingState.classList.add('hidden');
                 errorState.classList.remove('hidden');
                 statsText.textContent = "エラーが発生しました";
@@ -659,6 +659,7 @@
 </body>
 
 </html>
+
 
 
 

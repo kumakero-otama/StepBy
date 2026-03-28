@@ -565,7 +565,7 @@
                 dateNode.textContent = post ? formatDate(post.createdAt) : "";
 
             } catch (err) {
-                if (err.name === 'AbortError') return;
+                if (err.name === 'AbortError') { loadingState.classList.add('hidden'); return; }
                 console.error('Failed to load detail for', pt.id, err);
             }
         }
@@ -607,7 +607,7 @@
             try {
                 const params = new URLSearchParams({ centerLat, centerLng, radiusKm });
                 // 8秒タイムアウトを設定
-                const timeoutId = setTimeout(()=>{if(currentAbortController)currentAbortController.abort();},15000);
+                const timeoutId = setTimeout(()=>{if(currentAbortController)currentAbortController.abort();},10000);
                 const regionCenters=[{lat:"35.681",lng:"139.767"},{lat:"35.18",lng:"136.91"},{lat:"34.686",lng:"135.520"},{lat:"43.062",lng:"141.354"},{lat:"38.260",lng:"140.882"},{lat:"33.590",lng:"130.402"}];
                 const allData=await Promise.all(regionCenters.map(c=>fetch(`${API_BASE}/api/road-info?centerLat=${c.lat}&centerLng=${c.lng}&radiusKm=200`,{signal}).then(r=>r.ok?r.json():{points:[]}).catch(()=>({points:[]}))));
                 clearTimeout(timeoutId);
@@ -651,7 +651,7 @@
                 })();
 
             } catch (err) {
-                if (err.name === 'AbortError') return;
+                if (err.name === 'AbortError') { loadingState.classList.add('hidden'); return; }
                 loadingState.classList.add('hidden');
                 errorState.classList.remove('hidden');
                 const errMsgEl = document.getElementById('error-message'); if (errMsgEl) errMsgEl.textContent = 'サーバーに接続できません。しばらく待って再試行してください。';
@@ -684,6 +684,7 @@
 </body>
 
 </html>
+
 
 
 
