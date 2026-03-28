@@ -436,6 +436,11 @@
             const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
                 .map((cb) => cb.value);
 
+            if (!lat || !lng) {
+                alert("位置情報が取得できていません。\n一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください。");
+                return;
+            }
+
             if (!detail && selectedFiles.length < 1 && checkedTags.length < 1) {
                 alert("タグ、本文、画像のいずれかを入力してください。");
                 return;
