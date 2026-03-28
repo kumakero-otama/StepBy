@@ -77,7 +77,7 @@
 
         /* ---- Region selector ---- */
         .region-bar {
-            display: flex;
+            display: none; /* Hidden per user request */
             align-items: center;
             gap: 8px;
         }
@@ -570,7 +570,7 @@
             let centerLat, centerLng, radiusKm;
 
             if (val === 'all') {
-                centerLat = 35.681; centerLng = 139.767; radiusKm = 25; // Further reduced
+                centerLat = 35.681; centerLng = 139.767; radiusKm = 10000; // Search all of Japan
             } else {
                 const p = val.split(',');
                 centerLat = p[0]; centerLng = p[1]; radiusKm = p[2];
@@ -658,5 +658,6 @@
 </body>
 
 </html>
+
 
 
