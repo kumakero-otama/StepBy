@@ -602,6 +602,7 @@
                 postsListEl.classList.remove('hidden');
 
                 // Render Skeletons in chunks for performance
+                points.sort((a, b) => Number(b.id) - Number(a.id));
                 const listItems = points.slice(0, 30).map(pt => {
                     const skeleton = createPostSkeleton(pt);
                     postsListEl.appendChild(skeleton);
@@ -659,6 +660,7 @@
 </body>
 
 </html>
+
 
 
 
