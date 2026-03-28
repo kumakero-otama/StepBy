@@ -890,7 +890,7 @@ function showRoadInfoPointsOnMap(points) {
                 html += `<div style="font-size:10px;color:#2E9E8F;text-align:right">他 ${posts.length - 1} 件</div>`;
               }
             } else if (!photoUrl) {
-              html = `<div style="color:#aaa;font-size:11px;text-align:center;padding:4px 0">投稿がまだありません</div>`;
+              html = `<div style="color:#aaa;font-size:11px;text-align:center;padding:4px 0">写真はありません</div>`;
             }
 
             currentMedia = html;
@@ -1238,6 +1238,7 @@ if (voiceNavBtn) {
     }
   });
 }
+
 
 
 
