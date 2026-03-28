@@ -1068,50 +1068,52 @@ if (mapSearchInput) {
 }
 
 function searchLocation(query) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=ja&countrycodes=jp`;
+  // Use current map viewport as viewbox to prioritize nearby results (works worldwide)
+  // bounded=0 means: prefer viewbox but fall back to global search if nothing found
+  let viewboxParam = '';
+  if (typeof leafletMap !== 'undefined' && leafletMap) {
+    try {
+      const bounds = leafletMap.getBounds();
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+      const latPad = Math.abs(ne.lat - sw.lat) * 2;
+      const lngPad = Math.abs(ne.lng - sw.lng) * 2;
+      viewboxParam = '&viewbox=' + (sw.lng - lngPad) + ',' + (sw.lat - latPad) + ',' + (ne.lng + lngPad) + ',' + (ne.lat + latPad) + '&bounded=0';
+    } catch(e) { /* ignore */ }
+  }
 
-  fetch(url, {
-    headers: { "User-Agent": "StepBy-BarrierFreeMap/1.0" }
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Search failed: " + res.status);
+  // Auto-detect language: use 'ja' if query contains Japanese characters
+  const hasJapanese = /[\u3000-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/.test(query);
+  const lang = hasJapanese ? 'ja' : 'en';
+
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&accept-language=' + lang + viewboxParam;
+
+  fetch(url, { headers: { 'User-Agent': 'StepBy-BarrierFreeMap/1.0' } })
+    .then(function(res) {
+      if (!res.ok) throw new Error('Search failed: ' + res.status);
       return res.json();
     })
-    .then((results) => {
+    .then(function(results) {
       if (!results || results.length === 0) {
-        alert("「" + query + "」の検索結果が見つかりませんでした");
+        alert('\u300c' + query + '\u300d\u306e\u691c\u7d22\u7d50\u679c\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
         return;
       }
-
       const place = results[0];
       const lat = parseFloat(place.lat);
       const lon = parseFloat(place.lon);
-
-      // Disable GPS generic snapping to allow viewing the searched place
       disableGpsSnapping();
-
-      // Remove old search marker
-      if (searchMarker) {
-        leafletMap.removeLayer(searchMarker);
-      }
-
-      // Fly to location
+      if (searchMarker) leafletMap.removeLayer(searchMarker);
       leafletMap.flyTo([lat, lon], 15, { duration: 1.5 });
-
-      // Add marker
       searchMarker = L.marker([lat, lon])
         .addTo(leafletMap)
-        .bindPopup(`<strong>${place.display_name.split(",")[0]}</strong><br><small>${place.display_name}</small>`)
+        .bindPopup('<strong>' + place.display_name.split(',')[0] + '</strong><br><small>' + place.display_name + '</small>')
         .openPopup();
-
-      // Blur the input
-      mapSearchInput.blur();
-
-      console.log("[Search] Found:", place.display_name, lat, lon);
+      if (mapSearchInput) mapSearchInput.blur();
+      console.log('[Search] Found:', place.display_name, lat, lon);
     })
-    .catch((err) => {
-      console.error("[Search] Error:", err);
-      alert("検索エラー: " + err.message);
+    .catch(function(err) {
+      console.error('[Search] Error:', err);
+      alert('\u691c\u7d22\u30a8\u30e9\u30fc: ' + err.message);
     });
 }
 
@@ -1246,6 +1248,7 @@ if (voiceNavBtn) {
     }
   });
 }
+
 
 
 

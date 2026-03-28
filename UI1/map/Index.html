@@ -1521,7 +1521,14 @@
                 searchInput.disabled = true;
                 searchInput.placeholder = '検索中...';
                 try {
-                    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=ja&countrycodes=jp`;
+                    const hasJP = /[\u3000-\u9FFF]/.test(q);
+const lang = hasJP ? 'ja' : 'en';
+let vbox = '';
+if (window.leafletMap) {
+    try { const b = window.leafletMap.getBounds(); const sw = b.getSouthWest(); const ne = b.getNorthEast();
+    vbox = '&viewbox=' + (sw.lng-1) + ',' + (sw.lat-1) + ',' + (ne.lng+1) + ',' + (ne.lat+1) + '&bounded=0'; } catch(e) {}
+}
+const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=${lang}${vbox}`;
                     const res = await fetch(url, { headers: { 'User-Agent': 'StepBy/1.0' } });
                     const data = await res.json();
                     if (data && data.length > 0) {
@@ -1676,6 +1683,7 @@
 </body>
 
 </html>
+
 
 
 
