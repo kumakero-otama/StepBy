@@ -328,10 +328,15 @@
 
                 if (!res.ok) {
                     const err = payload.error || 'auth_failed';
+                    if (err === 'account_not_found' || err === 'user_not_found') {
+                        // IDトークンを保存して新規登録ページへ
+                        sessionStorage.setItem('stepby_pending_id_token', idToken);
+                        setStatus('未登録のアカウントです。登録画面へ移動します...', false);
+                        setTimeout(() => window.location.assign('../signup_profile/Index.html'), 800);
+                        return;
+                    }
                     const messages = {
-                        'account_not_found': 'このGoogleアカウントはまだ登録されていません。おたまちゃんにアカウントの登録を依頼してください。',
-                        'user_not_found':    'このGoogleアカウントはまだ登録されていません。おたまちゃんにアカウントの登録を依頼してください。',
-                        'already_exists':    'このGoogleアカウントはすでに登録済みです。「ログイン」タブからログインしてください。',
+                        'already_exists':    'このGoogleアカウントはすでに登録済みです。',
                         'invalid_token':     'Googleトークンが無効です。もう一度お試しください。',
                         'auth_failed':       'ログインに失敗しました。しばらく待ってお試しください。',
                     };
