@@ -1416,6 +1416,23 @@
                 checkbox.checked = !checkbox.checked;
                 card.classList.toggle('active', checkbox.checked);
                 checkbox.dispatchEvent(new Event('change'));
+
+                // 「現在地中央」をONにした瞬間に即センタリング
+                if (checkboxId === 'toggle-center-current' && checkbox.checked) {
+                    if (typeof marker !== 'undefined' && marker) {
+                        map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                    } else if ('geolocation' in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                map.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                            },
+                            (err) => {
+                                if (err.code === 1) alert('位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。');
+                            },
+                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        );
+                    }
+                }
             });
 
             checkbox.addEventListener('change', () => {
