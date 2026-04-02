@@ -217,6 +217,62 @@ body {
   margin-top: 12px;
 }
 
+.tactile-session-card-memo {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #d7e6e2;
+  border-radius: 10px;
+  background: #f7fbfa;
+}
+
+.tactile-session-card-memo-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tactile-session-card-memo-label {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #5a6b7c;
+}
+
+.tactile-session-card-memo-edit {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tactile-session-card-memo-edit img {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.tactile-session-card-memo-edit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tactile-session-card-memo-body {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1a2b3c;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .tactile-session-card-delete {
   min-width: 84px;
   min-height: 32px;
@@ -703,6 +759,42 @@ body {
 
 .trace-tag-error.hidden {
   display: none;
+}
+
+.trace-memo-panel {
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.trace-memo-panel.hidden {
+  display: none;
+}
+
+.trace-memo-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+}
+
+.trace-memo-input {
+  width: 100%;
+  min-height: 84px;
+  border: 1px solid #b6b6b6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.trace-memo-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #666;
 }
 
 .trace-confirm-actions {

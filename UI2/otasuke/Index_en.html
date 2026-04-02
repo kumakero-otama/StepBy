@@ -11,6 +11,15 @@
       body {
         margin: 0;
         background: #f7f7f7;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
       }
 
       .settings-wrap {
@@ -64,10 +73,12 @@
       }
 
       .record-toggle {
-        display: inline-flex;
+        display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
         margin-top: 12px;
+        width: 100%;
       }
 
       .record-title {
@@ -132,7 +143,7 @@
       .language-options {
         display: grid;
         gap: 10px;
-        padding-top: 12px;
+        padding-top: 0;
       }
 
       .language-option {
@@ -162,6 +173,18 @@
         text-align: center;
         text-decoration: none;
         padding: 14px 16px;
+      }
+
+      .version-footer {
+        margin-top: 20px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.82rem;
+        font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      }
+
+      #app-version {
+        font-family: "Courier New", monospace;
       }
 
     </style>
@@ -252,9 +275,46 @@
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-theme">
-            Dark / Light
+            Light / Dark
           </button>
-          <div id="panel-theme" class="accordion-panel placeholder-panel" hidden></div>
+          <div id="panel-theme" class="accordion-panel placeholder-panel" hidden>
+            <div class="language-options">
+              <label class="language-option" for="theme-light">
+                <input id="theme-light" type="radio" name="theme-mode" value="light" checked />
+                <span>Light</span>
+              </label>
+              <label class="language-option" for="theme-dark">
+                <input id="theme-dark" type="radio" name="theme-mode" value="dark" />
+                <span>Dark</span>
+              </label>
+              <label class="language-option" for="theme-system">
+                <input id="theme-system" type="radio" name="theme-mode" value="system" />
+                <span>Follow device setting</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-text-size">
+            Text size
+          </button>
+          <div id="panel-text-size" class="accordion-panel placeholder-panel" hidden>
+            <div class="language-options">
+              <label class="language-option" for="text-size-small">
+                <input id="text-size-small" type="radio" name="text-size" value="small" checked />
+                <span>Small</span>
+              </label>
+              <label class="language-option" for="text-size-medium">
+                <input id="text-size-medium" type="radio" name="text-size" value="medium" />
+                <span>Medium</span>
+              </label>
+              <label class="language-option" for="text-size-large">
+                <input id="text-size-large" type="radio" name="text-size" value="large" />
+                <span>Large</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="accordion-item">
@@ -262,8 +322,7 @@
             Language
           </button>
           <div id="panel-language" class="accordion-panel placeholder-panel" hidden>
-            <fieldset class="language-options">
-              <legend class="record-title">Language</legend>
+            <div class="language-options">
               <label class="language-option" for="language-ja">
                 <input id="language-ja" type="radio" name="display-language" value="ja" />
                 <span>日本語</span>
@@ -276,7 +335,7 @@
                 <input id="language-hi" type="radio" name="display-language" value="hi" />
                 <span>हिंदी</span>
               </label>
-            </fieldset>
+            </div>
           </div>
         </div>
       </section>

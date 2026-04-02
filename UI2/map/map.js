@@ -27,6 +27,8 @@ const traceTagSearchEl = document.getElementById("trace-tag-search");
 const traceTagSelectedEl = document.getElementById("trace-tag-selected");
 const traceTagListEl = document.getElementById("trace-tag-list");
 const traceTagErrorEl = document.getElementById("trace-tag-error");
+const traceMemoPanelEl = document.getElementById("trace-memo-panel");
+const traceMemoInputEl = document.getElementById("trace-memo-input");
 const authTokenApi = window.AuthToken || null;
 
 function authFetch(input, init) {
@@ -77,9 +79,26 @@ const TRACE_TAG_TEXT = {
   },
 };
 
+const TRACE_CONFIRM_TEXT = {
+  ja: {
+    memoSaveFailed: "メモの保存に失敗しました。メモなしで記録は保存されています。",
+  },
+  en: {
+    memoSaveFailed: "Failed to save the memo. The record was saved without the memo.",
+  },
+  hi: {
+    memoSaveFailed: "मेमो सहेजने में विफल रहा। रिकॉर्ड मेमो के बिना सहेजा गया है।",
+  },
+};
+
 function getTraceTagText() {
   const language = getCurrentLanguage();
   return TRACE_TAG_TEXT[language] || TRACE_TAG_TEXT.ja;
+}
+
+function getTraceConfirmText() {
+  const language = getCurrentLanguage();
+  return TRACE_CONFIRM_TEXT[language] || TRACE_CONFIRM_TEXT.ja;
 }
 
 function escapeHtml(value) {
@@ -97,6 +116,10 @@ const TACTILE_SESSION_TEXT = {
     loading: "読み込み中...",
     sessionId: "session_id",
     tags: "タグ",
+    memo: "ひとことメモ",
+    memoEdit: "メモ編集",
+    memoPrompt: "ひとことメモを入力してください",
+    memoSaveFailed: "ひとことメモの保存に失敗しました。",
     selfLabel: "あなた",
     delete: "削除",
     deleteConfirm: "本当にこの点字ブロックを削除してよろしいですか？",
@@ -112,6 +135,10 @@ const TACTILE_SESSION_TEXT = {
     loading: "Loading...",
     sessionId: "session_id",
     tags: "Tags",
+    memo: "Short memo",
+    memoEdit: "Edit memo",
+    memoPrompt: "Enter a short memo",
+    memoSaveFailed: "Failed to save the short memo.",
     selfLabel: "You",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this tactile block?",
@@ -127,6 +154,10 @@ const TACTILE_SESSION_TEXT = {
     loading: "लोड हो रहा है...",
     sessionId: "session_id",
     tags: "टैग",
+    memo: "छोटा मेमो",
+    memoEdit: "मेमो संपादित करें",
+    memoPrompt: "छोटा मेमो दर्ज करें",
+    memoSaveFailed: "छोटा मेमो सहेजने में विफल रहा।",
     selfLabel: "आप",
     delete: "हटाएं",
     deleteConfirm: "क्या आप वाकई इस टैक्टाइल ब्लॉक को हटाना चाहते हैं?",
@@ -283,6 +314,20 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const fallbackIconUrl = escapeHtml(AppPath.toApp("/assets/account_default.png"));
   const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
   const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
+  const memoEditIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/memo_edit.png"));
+  const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
+  const memoHtml = isOwnTactileSession(ownerUserId) && memoValue
+    ? `
+    <div class="tactile-session-card-memo">
+      <div class="tactile-session-card-memo-head">
+        <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
+        <button class="tactile-session-card-memo-edit" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}" aria-label="${escapeHtml(text.memoEdit)}">
+          <img src="${memoEditIconUrl}" alt="">
+        </button>
+      </div>
+      <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
+    </div>`
+    : "";
   const deleteButtonHtml = isOwnTactileSession(ownerUserId)
     ? `
     <div class="tactile-session-card-actions">
@@ -302,6 +347,7 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
       </button>
     </div>
     <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
+    ${memoHtml}
     ${deleteButtonHtml}`;
 }
 
@@ -428,7 +474,72 @@ function renderTactileSessionCard(contentHtml, latlng) {
       void deactivateTactileSession(targetSessionId, target);
     });
   }
+  const memoEditBtn = card.querySelector("[data-edit-tactile-memo]");
+  if (memoEditBtn) {
+    memoEditBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.currentTarget;
+      const targetSessionId = target instanceof HTMLElement
+        ? String(target.getAttribute("data-edit-tactile-memo") || "").trim()
+        : "";
+      if (!targetSessionId) {
+        return;
+      }
+      void editTactileSessionMemo(targetSessionId, target);
+    });
+  }
   positionTactileSessionCard(tactileSessionCardLatLng);
+}
+
+async function editTactileSessionMemo(sessionId, buttonEl) {
+  if (!sessionId) {
+    return;
+  }
+  const text = getTactileSessionText();
+  const cached = tactileSessionInfoCache.get(sessionId);
+  const sessionInfo = cached && !(cached instanceof Promise) ? cached : null;
+  const currentMemo = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo) : "";
+  const nextMemo = window.prompt(text.memoPrompt, currentMemo);
+  if (nextMemo == null || nextMemo === currentMemo) {
+    return;
+  }
+
+  if (buttonEl instanceof HTMLButtonElement) {
+    buttonEl.disabled = true;
+  }
+
+  try {
+    const res = await authFetch("/api/session/memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        memo: nextMemo,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`session memo failed: ${res.status}`);
+    }
+    if (sessionInfo) {
+      const updatedSessionInfo = { ...sessionInfo, memo: nextMemo };
+      tactileSessionInfoCache.set(sessionId, updatedSessionInfo);
+      renderTactileSessionCard(
+        buildTactileSessionCardHtml(sessionId, updatedSessionInfo, {
+          ownerUserId: currentUserId,
+        }),
+        tactileSessionCardLatLng
+      );
+      return;
+    }
+    tactileSessionInfoCache.delete(sessionId);
+  } catch (err) {
+    console.error("[editTactileSessionMemo] Error:", err);
+    if (buttonEl instanceof HTMLButtonElement) {
+      buttonEl.disabled = false;
+    }
+    window.alert(text.memoSaveFailed);
+  }
 }
 
 async function deactivateTactileSession(sessionId, buttonEl) {
@@ -612,6 +723,9 @@ function decodePolyline(str, precision) {
 let allRecordsMarkers = [];
 let osmTactileMarkers = [];
 let roadInfoMarkers = [];
+let cachedVisibleSessionPaths = [];
+let cachedOsmFeatures = [];
+let cachedVisibleRoadInfoPoints = [];
 const tactileSessionInfoCache = new Map();
 let tactileSessionCardEl = null;
 let tactileSessionCardLatLng = null;
@@ -624,7 +738,11 @@ let roadInfoLoadRequestSeq = 0;
 const MAP_TAP_SUPPRESS_AFTER_ZOOM_MS = 400;
 const MAP_DISPLAY_SETTINGS_KEY = "mapDisplaySettings.v1";
 const MAP_CONTROLS_COLLAPSED_KEY = "mapControlsCollapsed.v1";
+const MAP_INFO_VISIBILITY_KEY = "mapInfoVisibility.v1";
+const CENTER_CURRENT_KEY = "centerCurrentEnabled.v1";
 const LAST_LOCATION_CACHE_KEY = "lastKnownLocation.v1";
+const MAP_RETURN_CACHE_KEY = "mapReturnCache.v1";
+const MAP_RETURN_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const DEFAULT_MAP_DISPLAY_SETTINGS = {
   showAppTactile: true,
   showOsmTactile: true,
@@ -678,6 +796,183 @@ function saveMapControlsCollapsed(collapsed) {
   } catch {
     // ignore storage failure
   }
+}
+
+function loadMapInfoVisibility() {
+  try {
+    const raw = localStorage.getItem(MAP_INFO_VISIBILITY_KEY);
+    if (raw === "1") {
+      return true;
+    }
+    if (raw === "0") {
+      return false;
+    }
+  } catch {
+    // ignore storage failure
+  }
+  return false;
+}
+
+function saveMapInfoVisibility(visible) {
+  try {
+    localStorage.setItem(MAP_INFO_VISIBILITY_KEY, visible ? "1" : "0");
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function loadCenterCurrentEnabled() {
+  try {
+    const raw = localStorage.getItem(CENTER_CURRENT_KEY);
+    if (raw === "1") {
+      return true;
+    }
+    if (raw === "0") {
+      return false;
+    }
+  } catch {
+    // ignore storage failure
+  }
+  return true;
+}
+
+function saveCenterCurrentEnabled(enabled) {
+  try {
+    localStorage.setItem(CENTER_CURRENT_KEY, enabled ? "1" : "0");
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function cloneSerializable(value) {
+  if (value == null) {
+    return value;
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return null;
+  }
+}
+
+function getVisibleTactilePaths(paths) {
+  if (!Array.isArray(paths)) {
+    return [];
+  }
+  return paths.filter((path) => {
+    if (!isNonProVisibleTactileSession(path)) {
+      return false;
+    }
+    if (!shouldShowOnlyMyTactile()) {
+      return true;
+    }
+    const ownerUserId = Number(path && path.user_id);
+    return Number.isFinite(ownerUserId) && Number.isFinite(currentUserId) && ownerUserId === currentUserId;
+  });
+}
+
+function getVisibleRoadInfoPoints(points) {
+  if (!Array.isArray(points)) {
+    return [];
+  }
+  return points.filter((point) => {
+    if (String(point && point.status || "").toLowerCase() === "inactive") {
+      return false;
+    }
+    if (!shouldShowOnlyMyRoadInfo()) {
+      return true;
+    }
+    const createdBy = Number(point && point.createdBy);
+    return Number.isFinite(createdBy) && Number.isFinite(currentUserId) && createdBy === currentUserId;
+  });
+}
+
+function buildMapReturnCachePayload() {
+  const center = typeof map?.getCenter === "function" ? map.getCenter() : null;
+  const zoom = typeof map?.getZoom === "function" ? map.getZoom() : NaN;
+  const payload = {
+    savedAt: Date.now(),
+    mapInfoEnabled: isMapInfoEnabled(),
+    centerCurrentEnabled: isCenterCurrentEnabled(),
+    mapDisplaySettings: { ...mapDisplaySettings },
+    center: center && Number.isFinite(center.lat) && Number.isFinite(center.lng)
+      ? { lat: center.lat, lng: center.lng }
+      : null,
+    zoom: Number.isFinite(zoom) ? zoom : null,
+    visibleSessionPaths: cloneSerializable(cachedVisibleSessionPaths) || [],
+    osmFeatures: cloneSerializable(cachedOsmFeatures) || [],
+    visibleRoadInfoPoints: cloneSerializable(cachedVisibleRoadInfoPoints) || [],
+  };
+  return payload;
+}
+
+function saveMapReturnCache() {
+  try {
+    sessionStorage.setItem(MAP_RETURN_CACHE_KEY, JSON.stringify(buildMapReturnCachePayload()));
+  } catch {
+    // ignore storage failure
+  }
+}
+
+function loadMapReturnCache() {
+  try {
+    const raw = sessionStorage.getItem(MAP_RETURN_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const savedAt = Number(parsed && parsed.savedAt);
+    if (!Number.isFinite(savedAt) || (Date.now() - savedAt) > MAP_RETURN_CACHE_MAX_AGE_MS) {
+      sessionStorage.removeItem(MAP_RETURN_CACHE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function applyPersistedHomeToggleState() {
+  if (toggleShowMapInfoBtn) {
+    toggleShowMapInfoBtn.checked = loadMapInfoVisibility();
+  }
+  if (toggleCenterCurrentBtn) {
+    toggleCenterCurrentBtn.checked = loadCenterCurrentEnabled();
+  }
+}
+
+function restoreMapReturnCache() {
+  const cached = loadMapReturnCache();
+  if (!cached || !cached.mapInfoEnabled) {
+    return false;
+  }
+
+  if (cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
+    const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
+    map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
+  }
+
+  cachedVisibleSessionPaths = Array.isArray(cached.visibleSessionPaths)
+    ? cloneSerializable(cached.visibleSessionPaths) || []
+    : [];
+  cachedOsmFeatures = Array.isArray(cached.osmFeatures)
+    ? cloneSerializable(cached.osmFeatures) || []
+    : [];
+  cachedVisibleRoadInfoPoints = Array.isArray(cached.visibleRoadInfoPoints)
+    ? cloneSerializable(cached.visibleRoadInfoPoints) || []
+    : [];
+
+  if (shouldShowAppTactile() && cachedVisibleSessionPaths.length > 0) {
+    showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
+  }
+  if (shouldShowOsmTactile() && cachedOsmFeatures.length > 0) {
+    showOsmTactileWaysOnMap(cachedOsmFeatures);
+  }
+  if (shouldShowRoadInfo() && cachedVisibleRoadInfoPoints.length > 0) {
+    showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
+  }
+
+  return true;
 }
 
 function saveLastKnownLocation(lat, lng) {
@@ -746,7 +1041,6 @@ function setMapControlsCollapsed(collapsed) {
   mapLayoutEl.classList.toggle("panel-collapsed", collapsed);
   mapControlsHandleEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
   saveMapControlsCollapsed(collapsed);
-  // 1) 即時反映 2) アニメーション終了後反映 の2段でズレを防ぐ。
   requestAnimationFrame(() => {
     map.invalidateSize();
     recenterToLatestLocation();
@@ -898,6 +1192,10 @@ map.on("move", () => {
   }
 });
 
+window.addEventListener("pagehide", () => {
+  saveMapReturnCache();
+});
+
 map.on("click", (event) => {
   if (shouldIgnoreMapTap(event)) {
     return;
@@ -910,9 +1208,11 @@ map.on("click", (event) => {
       lat: lat.toString(),
       lng: lng.toString(),
     });
+    saveMapReturnCache();
     window.location.assign(AppPath.toApp(`/post_road/Index.html?${params.toString()}`));
     return;
   }
+  saveMapReturnCache();
   window.location.assign(AppPath.toApp("/post_road/Index.html"));
 });
 
@@ -1432,9 +1732,21 @@ async function prepareTraceTagModal() {
   }
   if (!isCurrentUserPro) {
     traceTagPanelEl.classList.add("hidden");
+    if (traceMemoPanelEl) {
+      traceMemoPanelEl.classList.add("hidden");
+    }
+    if (traceMemoInputEl) {
+      traceMemoInputEl.value = "";
+    }
     return;
   }
   traceTagPanelEl.classList.remove("hidden");
+  if (traceMemoPanelEl) {
+    traceMemoPanelEl.classList.remove("hidden");
+  }
+  if (traceMemoInputEl) {
+    traceMemoInputEl.value = "";
+  }
   try {
     await fetchTactileTags();
     renderTraceTagUi();
@@ -1458,6 +1770,23 @@ async function saveSessionTags(sessionIds) {
       if (!res.ok) {
         throw new Error(`session_tag_save_failed:${res.status}`);
       }
+    }
+  }
+}
+
+async function saveSessionMemo(sessionIds, memo) {
+  const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
+  for (const sessionId of uniqueSessionIds) {
+    const res = await authFetch("/api/session/memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        memo,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`session_memo_save_failed:${res.status}`);
     }
   }
 }
@@ -1597,10 +1926,19 @@ async function handleRecordStopWithConfirmation() {
 
   const decision = await openTraceConfirmModal(previewCoords);
   if (decision === "ok") {
+    const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
     const persistResult = await persistCurrentSessionWithoutConfirmation();
     if (!persistResult.success) {
       await cancelRecordingSessions(allSessionIds);
       return;
+    }
+    if (isCurrentUserPro) {
+      try {
+        await saveSessionMemo(allSessionIds, memo);
+      } catch (err) {
+        console.error("[Record] save session memo error:", err);
+        alert(getTraceConfirmText().memoSaveFailed);
+      }
     }
     if (isCurrentUserPro) {
       try {
@@ -1842,7 +2180,10 @@ function loadAndShowAllRecords() {
       }
       console.log(`[loadAndShowAllRecords] Loaded ${data.count} paths`);
       if (data.success && Array.isArray(data.paths)) {
-        showAllSessionPathsOnMap(data.paths);
+        const visiblePaths = getVisibleTactilePaths(data.paths);
+        cachedVisibleSessionPaths = cloneSerializable(visiblePaths) || [];
+        saveMapReturnCache();
+        showAllSessionPathsOnMap(visiblePaths, { preFiltered: true });
       }
     })
     .catch((err) => {
@@ -1860,19 +2201,10 @@ function loadAndShowAllRecords() {
 }
 
 // session_pathsの全軌跡を地図上に表示
-function showAllSessionPathsOnMap(paths) {
+function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
   clearAllRecordsFromMap();
   hideTactileSessionCard();
-  const visiblePaths = paths.filter((path) => {
-    if (!isNonProVisibleTactileSession(path)) {
-      return false;
-    }
-    if (!shouldShowOnlyMyTactile()) {
-      return true;
-    }
-    const ownerUserId = Number(path && path.user_id);
-    return Number.isFinite(ownerUserId) && Number.isFinite(currentUserId) && ownerUserId === currentUserId;
-  });
+  const visiblePaths = preFiltered ? paths : getVisibleTactilePaths(paths);
 
   console.log(`[showAllSessionPathsOnMap] Showing ${visiblePaths.length}/${paths.length} paths`);
 
@@ -1994,6 +2326,8 @@ function loadAndShowOsmTactileWays() {
         throw new Error("invalid osm tactile payload");
       }
       console.log(`[loadAndShowOsmTactileWays] Loaded ${data.features.length} ways`);
+      cachedOsmFeatures = cloneSerializable(data.features) || [];
+      saveMapReturnCache();
       showOsmTactileWaysOnMap(data.features);
     })
     .catch((err) => {
@@ -2109,7 +2443,10 @@ function loadAndShowRoadInfoPoints() {
       if (!data || !Array.isArray(data.points)) {
         throw new Error("invalid road-info payload");
       }
-      showRoadInfoPointsOnMap(data.points);
+      const visiblePoints = getVisibleRoadInfoPoints(data.points);
+      cachedVisibleRoadInfoPoints = cloneSerializable(visiblePoints) || [];
+      saveMapReturnCache();
+      showRoadInfoPointsOnMap(visiblePoints, { preFiltered: true });
     })
     .catch((err) => {
       if (requestSeq !== roadInfoLoadRequestSeq) {
@@ -2121,19 +2458,10 @@ function loadAndShowRoadInfoPoints() {
     });
 }
 
-function showRoadInfoPointsOnMap(points) {
+function showRoadInfoPointsOnMap(points, { preFiltered = false } = {}) {
   // 既存ピンを消してから最新結果だけを表示する。
   clearRoadInfoPointsFromMap();
-  const visiblePoints = points.filter((point) => {
-    if (String(point && point.status || "").toLowerCase() === "inactive") {
-      return false;
-    }
-    if (!shouldShowOnlyMyRoadInfo()) {
-      return true;
-    }
-    const createdBy = Number(point && point.createdBy);
-    return Number.isFinite(createdBy) && Number.isFinite(currentUserId) && createdBy === currentUserId;
-  });
+  const visiblePoints = preFiltered ? points : getVisibleRoadInfoPoints(points);
 
   visiblePoints.forEach((point) => {
     const lat = Number(point && point.lat);
@@ -2150,6 +2478,7 @@ function showRoadInfoPointsOnMap(points) {
       if (!Number.isInteger(pointId) || pointId <= 0) {
         return;
       }
+      saveMapReturnCache();
       window.location.assign(AppPath.toApp(`/road_info_detail/Index.html?pointId=${pointId}`));
     });
     roadInfoMarkers.push(pin);
@@ -2290,9 +2619,8 @@ if ("geolocation" in navigator) {
     setInterval(pollAndSendLocation, 2000);
 
     updateRecordButton();
-    if (toggleShowMapInfoBtn) {
-      toggleShowMapInfoBtn.checked = false;
-    }
+    applyPersistedHomeToggleState();
+    restoreMapReturnCache();
     
     // レコードボタンのイベントハンドラー
     if (recordActionBtn) {
@@ -2392,7 +2720,9 @@ if ("geolocation" in navigator) {
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {
         console.log(`[toggleShowMapInfo] showMapInfo=${toggleShowMapInfoBtn.checked}`);
+        saveMapInfoVisibility(toggleShowMapInfoBtn.checked);
         applyMapInfoVisibility();
+        saveMapReturnCache();
       });
     }
     // 初期化中にユーザーが先にトグルを変更した場合でも表示状態を同期する。
@@ -2402,7 +2732,9 @@ if ("geolocation" in navigator) {
     if (toggleCenterCurrentBtn) {
       toggleCenterCurrentBtn.addEventListener("change", () => {
         console.log(`[toggleCenterCurrent] centerCurrentLocation=${toggleCenterCurrentBtn.checked}`);
+        saveCenterCurrentEnabled(toggleCenterCurrentBtn.checked);
         recenterToLatestLocation();
+        saveMapReturnCache();
       });
     }
     

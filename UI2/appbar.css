@@ -6,12 +6,14 @@
   right: 0;
   width: 100%;
   box-sizing: border-box;
+  height: calc(56px + env(safe-area-inset-top));
   background: #348f82;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+  padding: env(safe-area-inset-top) 14px 0;
   z-index: 2600;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
 }
 
 .app-bar .app-bar-title {
@@ -24,6 +26,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  font-family: inherit;
 }
 
 .pro-badge {
@@ -40,6 +43,7 @@
   color: #7a2d00;
   background: #ffd56a;
   border: 1px solid rgba(122, 45, 0, 0.35);
+  font-family: inherit;
 }
 
 .app-bar-actions {

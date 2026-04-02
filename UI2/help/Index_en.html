@@ -12,6 +12,15 @@
         margin: 0;
         background: #f7f7f7;
         overflow-x: hidden;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
       }
 
       .help-wrap {
@@ -98,6 +107,7 @@
         word-break: break-word;
         vertical-align: top;
       }
+
     </style>
   </head>
   <body>
@@ -167,9 +177,6 @@
           </ul>
         </section>
       </section>
-      <footer class="version-footer">
-        <span id="app-version">v1.18.0</span>
-      </footer>
     </main>
 
     <script>
@@ -186,7 +193,6 @@
         });
       });
     </script>
-    <script src="../version.js"></script>
     <script src="../config.js"></script>
     <script src="../pwa.js"></script>
   </body>
