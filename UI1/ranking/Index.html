@@ -138,7 +138,7 @@
             gap: 10px;
             padding: 14px 16px 0;
             position: relative;
-            z-index: 10;
+            z-index: 100;
         }
 
         .stat-card {
@@ -650,7 +650,7 @@
                 <div class="rank-my-position" id="my-rank-distance">
                     <div class="rank-my-num">12<small>位</small></div>
                     <div class="rank-my-info">
-                        <div class="rank-my-name">otama（あなた）</div>
+                        <div class="rank-my-name" id="rank-my-name-distance">ゲスト（あなた）</div>
                         <div class="rank-my-val">6.27 km</div>
                     </div>
                 </div>
@@ -658,7 +658,7 @@
                 <div class="rank-my-position hidden" id="my-rank-posts">
                     <div class="rank-my-num">8<small>位</small></div>
                     <div class="rank-my-info">
-                        <div class="rank-my-name">otama（あなた）</div>
+                        <div class="rank-my-name" id="rank-my-name-posts">ゲスト（あなた）</div>
                         <div class="rank-my-val">21 件</div>
                     </div>
                 </div>
@@ -767,6 +767,7 @@
             <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
             <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
+            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
 
         </nav>
@@ -826,7 +827,26 @@
             document.getElementById('my-rank-posts').classList.toggle('hidden', type !== 'posts');
         }
     </script>
+<script src="../config.js"></script><script src="../token_client.js"></script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
+<script>
+    // ログイン済みなら名前を更新
+    (async function() {
+        if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+        try {
+            const res = await window.AuthToken.authFetch('/auth/me', { cache: 'no-store' });
+            if (!res.ok) return;
+            const payload = await res.json();
+            const name = payload && payload.user && payload.user.username;
+            if (!name) return;
+            const d = document.getElementById('rank-my-name-distance');
+            const p = document.getElementById('rank-my-name-posts');
+            if (d) d.textContent = `${name}（あなた）`;
+            if (p) p.textContent = `${name}（あなた）`;
+        } catch {}
+    })();
+</script>
 </body>
 
 </html>
+

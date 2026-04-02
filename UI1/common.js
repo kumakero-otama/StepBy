@@ -211,10 +211,13 @@
     const script = document.createElement('script');
     script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
 
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(hiddenDiv);
         document.body.appendChild(script);
-        createLangPicker();
+        // 言語ボタンは各ページで個別に呼び出す（common.jsでは注入しない）
+        if (typeof window._stepByShowLangBtn !== 'undefined' && window._stepByShowLangBtn) {
+            createLangPicker();
+        }
     });
 })();
 

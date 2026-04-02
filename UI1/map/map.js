@@ -1,4 +1,4 @@
-﻿// ===============================================
+// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -8,6 +8,8 @@ const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessT
     ? window.AuthToken.authFetch(url, opts)
     : fetch(url, opts);
 const leafletMap = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
+window.leafletMap = leafletMap; // Index.htmlからアクセス可能にする
+
 const coordsEl = document.getElementById("coords");
 const rawCoordsEl = document.getElementById("raw-coords");
 const lastUpdatedEl = document.getElementById("last-updated");
@@ -391,6 +393,8 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   if (skipMarker) return;
   if (!marker) { marker = L.marker([snappedLat, snappedLng], { icon: redPinIcon }).addTo(leafletMap); }
   else { marker.setLatLng([snappedLat, snappedLng]); }
+  window.currentMarker = marker; // Index.htmlからアクセス可能にする
+
   if (isCenterCurrentEnabled()) { leafletMap.setView([snappedLat, snappedLng], leafletMap.getZoom(), { animate: true }); }
   const dotColor = recordEnabled ? "#9acd32" : "#111";
   const dot = L.circleMarker([snappedLat, snappedLng], { radius: 3, color: dotColor, fillColor: dotColor, fillOpacity: 0.7, weight: 0 }).addTo(leafletMap);
@@ -565,7 +569,7 @@ function loadAndShowOsmTactileWays() {
 
       // Removed blocking alert to avoid white screen lockup
       const errMsg = document.createElement("div");
-      errMsg.textContent = "混雑のため点字ブロックデータを取得できませんでした (429 Error)";
+      errMsg.textContent = "⚠️ 点字ブロックデータの取得に失敗しました。しばらく待ってから再試行してください。";
       errMsg.style.cssText = "position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#e74c3c;color:#fff;padding:10px 20px;border-radius:20px;z-index:9999;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s;text-align:center;width:max-content;max-width:90%;";
       document.body.appendChild(errMsg);
       setTimeout(() => {
@@ -632,7 +636,15 @@ function fetchAddress(pointId, lat, lng) {
     .then(r => r.json())
     .then(data => {
       const addr = data.address || {};
-      const area = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || addr.town || addr.city || "";
+      const state = addr.prefecture || addr.province || addr.state || addr.county || "";
+      const city = addr.city || addr.town || addr.village || addr.municipality || "";
+      const ward = addr.suburb || addr.ward || addr.city_district || "";
+      const neighbourhood = addr.neighbourhood || addr.quarter || addr.hamlet || "";
+      let area = "";
+      if (state) area += state;
+      if (city) area += city;
+      if (ward && ward !== city) area += ward;
+      if (neighbourhood && neighbourhood !== ward && neighbourhood !== city) area += neighbourhood;
       const label = area ? `${area}付近` : "この場所付近";
       pointAddressCache.set(pointId, label);
       return label;
@@ -657,7 +669,7 @@ function fetchPointDetail(pointId) {
     const val = pointDetailCache.get(pointId);
     return val instanceof Promise ? val : Promise.resolve(val);
   }
-  const promise = fetch(`/api/road-info?pointId=${pointId}&t=${Date.now()}`)
+  const promise = apiFetch(`${API_BASE}/api/road-info?pointId=${pointId}&t=${Date.now()}`)
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(data => {
       if (!data || !data.point) throw new Error("no data");
@@ -721,7 +733,7 @@ function _runPrewarm() {
 function resolvePhotoUrl(url) {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return window.location.origin + (url.startsWith("/") ? "" : "/") + url;
+  return API_BASE + (url.startsWith("/") ? "" : "/") + url;
 }
 
 function showRoadInfoPointsOnMap(points) {
@@ -863,7 +875,7 @@ function showRoadInfoPointsOnMap(points) {
               if (Array.isArray(post.media) && post.media.length > 0 && post.media[0] && post.media[0].url) {
                 photoUrl = post.media[0].url;
                 if (typeof photoUrl === "string" && !photoUrl.startsWith("http")) {
-                  photoUrl = window.location.origin + (photoUrl.startsWith("/") ? "" : "/") + photoUrl;
+                  photoUrl = API_BASE + (photoUrl.startsWith("/") ? "" : "/") + photoUrl;
                 }
                 break;
               }
@@ -886,7 +898,7 @@ function showRoadInfoPointsOnMap(points) {
                 html += `<div style="font-size:10px;color:#2E9E8F;text-align:right">他 ${posts.length - 1} 件</div>`;
               }
             } else if (!photoUrl) {
-              html = `<div style="color:#aaa;font-size:11px;text-align:center;padding:4px 0">投稿がまだありません</div>`;
+              html = `<div style="color:#aaa;font-size:11px;text-align:center;padding:4px 0">写真はありません</div>`;
             }
 
             currentMedia = html;
@@ -1056,52 +1068,62 @@ if (mapSearchInput) {
 }
 
 function searchLocation(query) {
-  const url = `/api/nominatim-search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ja`;
+  // ひらがな・カタカナが含まれれば日本語クエリ → 日本に限定
+  const hasHiragana = /[\u3040-\u309F]/.test(query);  // ひらがな
+  const hasKatakana = /[\u30A0-\u30FF]/.test(query);  // カタカナ
+  const isJapaneseQuery = hasHiragana || hasKatakana;
 
-  fetch(url, {
-    headers: { "User-Agent": "StepBy-BarrierFreeMap/1.0" }
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Search failed: " + res.status);
+  let countryParam = '';
+  let viewboxParam = '';
+
+  if (isJapaneseQuery) {
+    // 日本語クエリ → 日本国内に限定（中国の動物園などを除外）
+    countryParam = '&countrycodes=jp';
+  } else {
+    // 英語など → 現在の地図表示範囲を優先（世界対応）
+    if (typeof leafletMap !== 'undefined' && leafletMap) {
+      try {
+        const bounds = leafletMap.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const latPad = Math.abs(ne.lat - sw.lat) * 1.5;
+        const lngPad = Math.abs(ne.lng - sw.lng) * 1.5;
+        viewboxParam = '&viewbox=' + (sw.lng - lngPad) + ',' + (sw.lat - latPad) + ',' + (ne.lng + lngPad) + ',' + (ne.lat + latPad) + '&bounded=0';
+      } catch(e) { /* ignore */ }
+    }
+  }
+
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&accept-language=ja' + countryParam + viewboxParam;
+
+  fetch(url, { headers: { 'User-Agent': 'StepBy-BarrierFreeMap/1.0' } })
+    .then(function(res) {
+      if (!res.ok) throw new Error('Search failed: ' + res.status);
       return res.json();
     })
-    .then((results) => {
+    .then(function(results) {
       if (!results || results.length === 0) {
-        alert("「" + query + "」の検索結果が見つかりませんでした");
+        alert('「' + query + '」の検索結果が見つかりませんでした');
         return;
       }
-
       const place = results[0];
       const lat = parseFloat(place.lat);
       const lon = parseFloat(place.lon);
-
-      // Disable GPS generic snapping to allow viewing the searched place
       disableGpsSnapping();
-
-      // Remove old search marker
-      if (searchMarker) {
-        leafletMap.removeLayer(searchMarker);
-      }
-
-      // Fly to location
+      if (searchMarker) leafletMap.removeLayer(searchMarker);
       leafletMap.flyTo([lat, lon], 15, { duration: 1.5 });
-
-      // Add marker
       searchMarker = L.marker([lat, lon])
         .addTo(leafletMap)
-        .bindPopup(`<strong>${place.display_name.split(",")[0]}</strong><br><small>${place.display_name}</small>`)
+        .bindPopup('<strong>' + place.display_name.split(',')[0] + '</strong><br><small>' + place.display_name + '</small>')
         .openPopup();
-
-      // Blur the input
-      mapSearchInput.blur();
-
-      console.log("[Search] Found:", place.display_name, lat, lon);
+      if (mapSearchInput) mapSearchInput.blur();
+      console.log('[Search] Found:', place.display_name, lat, lon);
     })
-    .catch((err) => {
-      console.error("[Search] Error:", err);
-      alert("検索エラー: " + err.message);
+    .catch(function(err) {
+      console.error('[Search] Error:', err);
+      alert('検索エラー: ' + err.message);
     });
 }
+
 
 // ===============================================
 // VOICE NAVIGATION (Web Speech API)
@@ -1234,4 +1256,14 @@ if (voiceNavBtn) {
     }
   });
 }
+
+
+
+
+
+
+
+
+
+
 

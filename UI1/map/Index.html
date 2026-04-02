@@ -520,8 +520,9 @@
             position: absolute;
             top: 12px;
             left: 50px;
-            right: 12px;
-            z-index: 400;
+            right: 60px;
+            z-index: 2000;
+            pointer-events: auto;
         }
 
         .search-float .search-bar {
@@ -713,7 +714,7 @@
         }
 
         /* Drawer white card panel */
-        .drawer-content {
+        .drawer-content { overflow: hidden;
             background: var(--bg-white);
             border-radius: 24px 24px 0 0;
             padding: 8px 12px 6px;
@@ -721,9 +722,15 @@
         }
 
         .drawer-handle {
-            width: 36px;
-            height: 4px;
-            background: #D0D5DD;
+            width: 100%;
+            height: 32px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            border: none;
             border-radius: 2px;
             margin: 0 auto 6px;
         }
@@ -1099,7 +1106,52 @@
             overflow: hidden;
             position: relative;
         }
+        /* Version Notice Banner */
+        #version-notice-banner {
+            display: none;
+            background: linear-gradient(90deg, #2E9E8F, #3BB49F);
+            color: white;
+            padding: 10px 16px;
+            font-size: 13px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #version-notice-banner .banner-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        #version-notice-banner .close-banner {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .version-label {
+            display: block;
+            padding: 8px 16px;
+            font-size: 11px;
+            color: var(--text-light);
+            text-align: right;
+            border-top: 1px solid var(--border);
+            margin-top: 4px;
+        }
+
     </style>
+
+    <script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </head>
 
 <body>
@@ -1129,6 +1181,17 @@
 
     <!-- ===== APP ===== -->
     <div class="app-shell">
+        <!-- Version Notice Banner -->
+        <div id="version-notice-banner">
+            <div class="banner-content">
+                <i class="fas fa-rocket"></i>
+                <div>
+                    <strong>v1.0.3 アップデート</strong><br>
+                    <span style="font-size: 11px; opacity: 0.9;">引き出しメニューの表示と投稿の読み込みを修正しました</span>
+                </div>
+            </div>
+            <button class="close-banner" id="close-version-banner"><i class="fas fa-times"></i></button>
+        </div>
 
         <!-- Header -->
         <div class="top-bar">
@@ -1149,6 +1212,7 @@
                         <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
                         <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
                         <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
+                        <div class="version-label">StepBy UI1 v1.0.3</div>
                     </div>
                 </div>
             </div>
@@ -1218,7 +1282,7 @@
                     <i class="fas fa-circle-dot" id="record-icon"></i>
                     <span id="record-label">記録開始</span>
                 </button>
-                <button class="btn-cta-dream" style="flex:1" onclick="window.location.assign('../post_road/Index.html')">
+                <button class="btn-cta-dream" style="flex:1" id="btn-post-road">
                     <i class="fas fa-camera"></i>
                     道の情報を投稿する
                 </button>
@@ -1230,8 +1294,7 @@
             <input type="checkbox" id="toggle-show-road-info" style="display:none">
             <input type="checkbox" id="toggle-center-current" style="display:none" checked>
 
-            <div class="drawer-content" style="position: relative;">
-                <div class="drawer-handle"></div>
+            <div class="drawer-handle" id="drawer-handle-btn"><i class="fas fa-chevron-down" id="drawer-chevron" style="font-size:12px; color:#8A9BB0;"></i><span id="drawer-handle-label" style="font-size:11px; color:#8A9BB0; font-weight:600;">メニューを閉じる</span></div><div class="drawer-content" style="position: relative;">
                 <div class="feature-scroll">
                     <div class="feature-card theme-green" data-toggle="toggle-show-osm">
                         <div class="feature-card-line"></div>
@@ -1267,6 +1330,7 @@
             <a href="../map/Index.html" class="nav-item active"><i class="fas fa-map"></i><span>マップ</span></a>
             <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
+            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
 
         </nav>
@@ -1375,9 +1439,31 @@
                 }
                 gpsBtn.classList.toggle('tracking', gpsTracking);
 
-                // If turning on, pan to current position immediately
-                if (gpsTracking && typeof marker !== 'undefined' && marker) {
-                    map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                if (gpsTracking) {
+                    // 現在地がまだ取得されていない場合は明示的に要求
+                    if (window.currentMarker) {
+                        window.leafletMap.setView(window.currentMarker.getLatLng(), window.leafletMap.getZoom(), { animate: true });
+                    } else {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                window.leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                            },
+                            (err) => {
+                                if (err.code === 1) {
+                                    alert('位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。');
+                                } else {
+                                    alert('現在地の取得に失敗しました。しばらく待ってやり直してください。');
+                                }
+                                gpsTracking = false;
+                                gpsBtn.classList.remove('tracking');
+                                if (centerCheckbox) {
+                                    centerCheckbox.checked = false;
+                                    centerCheckbox.dispatchEvent(new Event('change'));
+                                }
+                            },
+                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        );
+                    }
                 }
             });
         }
@@ -1394,12 +1480,154 @@
                 checkbox.checked = !checkbox.checked;
                 card.classList.toggle('active', checkbox.checked);
                 checkbox.dispatchEvent(new Event('change'));
+
+                // 「現在地中央」をONにした瞬間に即センタリング
+                if (checkboxId === 'toggle-center-current' && checkbox.checked) {
+                    const lmap = window.leafletMap;
+                    const lmarker = window.currentMarker;
+                    if (lmarker && lmap) {
+                        lmap.setView(lmarker.getLatLng(), lmap.getZoom(), { animate: true });
+                    } else if ('geolocation' in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                if (lmap) lmap.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                            },
+                            (err) => {
+                                if (err.code === 1) alert('位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。');
+                            },
+                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        );
+                    }
+                }
             });
 
             checkbox.addEventListener('change', () => {
                 card.classList.toggle('active', checkbox.checked);
             });
         });
+    </script>
+    <script>
+        // ===== 場所検索（Nominatim） =====
+        (function() {
+            const searchInput = document.getElementById('map-search-input');
+            const searchIcon = searchInput ? searchInput.previousElementSibling : null;
+            if (!searchInput) return;
+
+            async function doSearch() {
+                const q = searchInput.value.trim();
+                if (!q) return;
+                const lmap = window.leafletMap;
+                if (!lmap) return;
+                searchInput.disabled = true;
+                searchInput.placeholder = '検索中...';
+                try {
+                    const hasJP = /[\u3000-\u9FFF]/.test(q);
+const lang = hasJP ? 'ja' : 'en';
+let vbox = '';
+if (window.leafletMap) {
+    try { const b = window.leafletMap.getBounds(); const sw = b.getSouthWest(); const ne = b.getNorthEast();
+    vbox = '&viewbox=' + (sw.lng-1) + ',' + (sw.lat-1) + ',' + (ne.lng+1) + ',' + (ne.lat+1) + '&bounded=0'; } catch(e) {}
+}
+const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=${lang}${vbox}`;
+                    const res = await fetch(url, { headers: { 'User-Agent': 'StepBy/1.0' } });
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        const { lat, lon, display_name } = data[0];
+                                                lmap.setView([parseFloat(lat), parseFloat(lon)], 16, { animate: true });
+                        searchInput.value = display_name.split(',')[0];
+                        // 検索ピンを表示
+                        if (window._searchPin) lmap.removeLayer(window._searchPin);
+                        window._searchPin = L.marker([parseFloat(lat), parseFloat(lon)]).addTo(lmap).bindPopup('<strong>' + display_name.split(',')[0] + '</strong>').openPopup();
+                    } else {
+                        alert('場所が見つかりませんでした。別のキーワードで試してください。');
+                    }
+                } catch (e) {
+                    alert('検索に失敗しました。ネットワークを確認してください。');
+                } finally {
+                    searchInput.disabled = false;
+                    searchInput.placeholder = '場所を検索...';
+                }
+            }
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+            });
+            if (searchIcon) searchIcon.style.cursor = 'pointer';
+            if (searchIcon) searchIcon.addEventListener('click', doSearch);
+        })();
+    </script>
+    <script>
+        // 投稿ボタン: マップ中心座標を渡す
+        const _postBtn = document.getElementById('btn-post-road');
+        if (_postBtn) {
+            _postBtn.addEventListener('click', () => {
+                const lmap = window.leafletMap;
+                if (lmap) {
+                    // 検索ピンがあればその座標を優先、なければ地図中心
+                    let lat, lng;
+                    if (window._searchPin) {
+                        const ll = window._searchPin.getLatLng();
+                        lat = ll.lat.toFixed(6); lng = ll.lng.toFixed(6);
+                    } else {
+                        const c = lmap.getCenter();
+                        lat = c.lat.toFixed(6); lng = c.lng.toFixed(6);
+                    }
+                    window.location.assign(`../post_road/Index.html?lat=${lat}&lng=${lng}`);
+                } else {
+                    window.location.assign('../post_road/Index.html');
+                }
+            });
+        }
+        // ドロワーハンドル: タップで開閉
+        (function() {
+            const handle = document.querySelector('.drawer-handle');
+            const content = document.querySelector('.drawer-content');
+            if (!handle || !content) return;
+            let _closed = false;
+            handle.style.cursor = 'pointer';
+            content.style.maxHeight = '300px';
+            handle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                _closed = !_closed;
+                const chevron = document.getElementById('drawer-chevron');
+                const label = handle.querySelector('span');
+                content.style.transition = 'max-height 0.35s ease, padding 0.35s ease';
+                if (_closed) {
+                    content.style.maxHeight = '0px';
+                    content.style.paddingTop = '0';
+                    content.style.paddingBottom = '0';
+                    if (chevron) chevron.className = 'fas fa-chevron-up';
+                    if (label) label.textContent = 'メニューを開く';
+                } else {
+                    content.style.maxHeight = '400px';
+                    content.style.paddingTop = '';
+                    content.style.paddingBottom = '';
+                    if (chevron) chevron.className = 'fas fa-chevron-down';
+                    if (label) label.textContent = 'メニューを閉じる';
+                }
+            });
+
+            // ボトムナビの「投稿」リンクにもピン座標を渡す
+            const _navPostLink = document.querySelector('.bottom-nav a[href*="post_road"]');
+            if (_navPostLink) {
+                _navPostLink.addEventListener('click', (ev) => {
+                    const lmap = window.leafletMap;
+                    if (lmap) {
+                        ev.preventDefault();
+                        let lat, lng;
+                        if (window._searchPin) {
+                            const ll = window._searchPin.getLatLng();
+                            lat = ll.lat.toFixed(6); lng = ll.lng.toFixed(6);
+                        } else {
+                            const c = lmap.getCenter();
+                            lat = c.lat.toFixed(6); lng = c.lng.toFixed(6);
+                        }
+                        window.location.assign('../post_road/Index.html?lat=' + lat + '&lng=' + lng);
+                    }
+                });
+            }
+        })();
+
     </script>
     <script>
         // ===== Record button (prominent, outside panel) =====
@@ -1436,6 +1664,33 @@
     </script>
     <script src="../i18n.js"></script><script src="../common.js"></script>
     <script src="../map/map.js?v=29"></script>
+    <script>
+        (function() {
+            const banner = document.getElementById('version-notice-banner');
+            const closeBtn = document.getElementById('close-version-banner');
+            const VERSION_KEY = 'stepby_v103_seen';
+            if (banner && closeBtn) {
+                if (!localStorage.getItem(VERSION_KEY)) {
+                    banner.style.display = 'flex';
+                }
+                closeBtn.addEventListener('click', () => {
+                    banner.style.display = 'none';
+                    localStorage.setItem(VERSION_KEY, 'true');
+                });
+            }
+        })();
+    </script>
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+

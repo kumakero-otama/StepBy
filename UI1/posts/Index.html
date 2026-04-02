@@ -43,8 +43,7 @@
         .app-shell {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            /* Fixed height for scrolling */
+            height: 100dvh; /* iOS safe height */
             max-width: 480px;
             margin: 0 auto;
             background: var(--bg-page);
@@ -77,7 +76,7 @@
 
         /* ---- Region selector ---- */
         .region-bar {
-            display: flex;
+            display: none; /* Hidden per user request */
             align-items: center;
             gap: 8px;
         }
@@ -132,7 +131,7 @@
             overflow-y: scroll;
             /* Force scrollbar visibility */
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 100px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
         }
 
         /* Prominent Scrollbar */
@@ -200,7 +199,7 @@
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 10;
+            z-index: 100;
         }
 
         .like-btn.active {
@@ -301,6 +300,10 @@
             }
         }
     </style>
+
+    
+
+    <script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
 </head>
 
 <body>
@@ -383,6 +386,7 @@
             <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
             <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item active"><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
+            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
 
         </nav>
@@ -390,6 +394,8 @@
     </div>
 
     <script>
+        console.log('[Posts] Script started');
+        window.addEventListener('load', () => { setTimeout(() => { const ls = document.getElementById('loading-state'); if(ls) { ls.classList.add('hidden'); console.log('[Posts] Safety timer hidden spinner'); } }, 12000); });
         const API_BASE = "https://barrierfree-map.loophole.site";
         const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
@@ -412,17 +418,17 @@
         const getCacheKey = (lat, lng) => `${lat.toFixed(4)},${lng.toFixed(4)}`;
         function getCachedAddress(lat, lng) {
             const key = getCacheKey(lat, lng);
-            const val = localStorage.getItem(`addr_${key}`);
+            const val = localStorage.getItem(`addr_v2_${key}`);
             // Invalidate cache if stored value looks like raw coordinates (failed fetch)
             if (val && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(val.trim())) {
-                localStorage.removeItem(`addr_${key}`);
+                localStorage.removeItem(`addr_v2_${key}`);
                 return null;
             }
             return val;
         }
         function setCachedAddress(lat, lng, addr) {
             const key = getCacheKey(lat, lng);
-            localStorage.setItem(`addr_${key}`, addr);
+            localStorage.setItem(`addr_v2_${key}`, addr);
         }
 
         // --- Reverse Geocoding via Nominatim ---
@@ -442,13 +448,14 @@
                     // Full list of Japanese Nominatim address fields
                     const state = a.prefecture || a.province || a.state || a.county || "";
                     const city = a.city || a.town || a.village || a.municipality || "";
-                    const district = a.city_district || a.suburb || a.ward || a.neighbourhood || a.quarter || a.hamlet || "";
+                    const ward = a.suburb || a.ward || a.city_district || "";
+                    const neighbourhood = a.neighbourhood || a.quarter || a.hamlet || "";
 
                     let addr = "";
                     if (state) addr += state;
                     if (city) addr += city;
-                    else if (district) addr += district; // Use district if no city level
-
+                    if (ward && ward !== city) addr += ward;
+                    if (neighbourhood && neighbourhood !== ward && neighbourhood !== city) addr += neighbourhood;
                     const finalAddr = addr.trim() ? `${addr.trim()}付近` : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                     setCachedAddress(lat, lng, finalAddr);
                     return finalAddr;
@@ -511,7 +518,7 @@
         // --- Dynamic Content Update (photo/tags/text only, no address) ---
         async function fetchPostDetail(pt, el, signal) {
             try {
-                const res = await apiFetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, { signal });
+                const res = await fetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, { signal });
                 const data = await res.json();
                 const point = data.point;
                 const post = (point.posts && point.posts.length > 0) ? point.posts[point.posts.length - 1] : null;
@@ -564,7 +571,7 @@
                 dateNode.textContent = post ? formatDate(post.createdAt) : "";
 
             } catch (err) {
-                if (err.name === 'AbortError') return;
+                if (err.name === 'AbortError') { loadingState.classList.add('hidden'); return; }
                 console.error('Failed to load detail for', pt.id, err);
             }
         }
@@ -582,6 +589,7 @@
         }
 
         async function loadPosts() {
+            console.log('[Posts] loadPosts called');
             if (currentAbortController) currentAbortController.abort();
             currentAbortController = new AbortController();
             const signal = currentAbortController.signal;
@@ -590,7 +598,7 @@
             let centerLat, centerLng, radiusKm;
 
             if (val === 'all') {
-                centerLat = 35.681; centerLng = 139.767; radiusKm = 25; // Further reduced
+                centerLat = 35.681; centerLng = 139.767; radiusKm = 10000; // Search all of Japan
             } else {
                 const p = val.split(',');
                 centerLat = p[0]; centerLng = p[1]; radiusKm = p[2];
@@ -605,10 +613,13 @@
 
             try {
                 const params = new URLSearchParams({ centerLat, centerLng, radiusKm });
-                const res = await apiFetch(`${API_BASE}/api/road-info?${params.toString()}`, { signal });
-                if (!res.ok) throw new Error('API Error');
-                const data = await res.json();
-                const points = data.points || [];
+                // 8秒タイムアウトを設定
+                const timeoutId = setTimeout(()=>{if(currentAbortController)currentAbortController.abort();},10000);
+                const regionCenters=[{lat:"35.681",lng:"139.767"},{lat:"35.18",lng:"136.91"},{lat:"34.686",lng:"135.520"},{lat:"43.062",lng:"141.354"},{lat:"38.260",lng:"140.882"},{lat:"33.590",lng:"130.402"}];
+                const allData=await Promise.all(regionCenters.map(c=>fetch(`${API_BASE}/api/road-info?centerLat=${c.lat}&centerLng=${c.lng}&radiusKm=200`,{signal}).then(r=>r.ok?r.json():{points:[]}).catch(()=>({points:[]}))));
+                clearTimeout(timeoutId);
+                const seenIds=new Set(); const points=[];
+                for(const d of allData){for(const pt2 of (d.points||[])){if(!seenIds.has(pt2.id)){seenIds.add(pt2.id);points.push(pt2);}}}
 
                 loadingState.classList.add('hidden');
                 if (points.length === 0) {
@@ -621,6 +632,7 @@
                 postsListEl.classList.remove('hidden');
 
                 // Render Skeletons in chunks for performance
+                points.sort((a, b) => Number(b.id) - Number(a.id));
                 const listItems = points.slice(0, 30).map(pt => {
                     const skeleton = createPostSkeleton(pt);
                     postsListEl.appendChild(skeleton);
@@ -646,9 +658,10 @@
                 })();
 
             } catch (err) {
-                if (err.name === 'AbortError') return;
+                if (err.name === 'AbortError') { loadingState.classList.add('hidden'); return; }
                 loadingState.classList.add('hidden');
                 errorState.classList.remove('hidden');
+                const errMsgEl = document.getElementById('error-message'); if (errMsgEl) errMsgEl.textContent = 'サーバーに接続できません。しばらく待って再試行してください。';
                 statsText.textContent = "エラーが発生しました";
             }
         }
@@ -665,16 +678,29 @@
                 opt.textContent = `📍 現在地付近 (${latitude.toFixed(3)}, ${longitude.toFixed(3)})`;
                 regionSelect.insertBefore(opt, regionSelect.firstChild);
                 regionSelect.selectedIndex = 0;
-                loadPosts();
+                if (document.readyState === 'complete') { loadPosts(); } else { window.addEventListener('load', loadPosts); }
             }, err => {
                 loadingState.classList.add('hidden');
                 alert('位置情報の取得に失敗しました');
             });
         });
 
-        loadPosts();
+        if (document.readyState === 'complete') { loadPosts(); } else { window.addEventListener('load', loadPosts); }
     </script>
-<script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
+
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

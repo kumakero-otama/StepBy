@@ -440,7 +440,15 @@
 
         submitBtn.addEventListener("click", async () => {
             const detail = detailInput.value.trim();
-            const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked')).map((cb) => cb.value);
+            const tagValueMap = {
+                "audio_signal_sound": "音が鳴る信号機", "audio_signal_no_sound": "音が鳴らない信号機",
+                "push_button_signal": "押しボタン式信号機", "sensor_signal": "感知式信号機",
+                "timed_signal": "時間式信号機", "crosswalk": "横断歩道",
+                "misplaced_tactile": "配置が不適切な点字ブロック", "degraded_tactile": "劣化した点字ブロック",
+                "blocked_tactile": "物が置かれて通れない点字ブロック", "footbridge_stairs": "歩道橋の階段の出入口",
+                "footbridge_elevator": "歩道橋のエレベーターの出入口", "footbridge_slope": "歩道橋のスロープの出入口", "test": "テスト用"
+            };
+            const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked')).map((cb) => tagValueMap[cb.value] || cb.value);
 
             // We count existing images that weren't deleted + newly selected files
             const existingImagesCount = Array.from(photoPreviewEl.querySelectorAll('img[data-existing-url]')).length;
@@ -494,3 +502,4 @@
 </body>
 
 </html>
+

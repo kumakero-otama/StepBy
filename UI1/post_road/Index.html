@@ -282,8 +282,9 @@
                     <span id="pro-badge" style="display:none; margin-left:8px; background:linear-gradient(135deg,#FFB847,#FF8C00); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; letter-spacing:0.5px;">PRO限定</span>
                 </div>
                 <textarea class="detail-input" id="detail-input" placeholder="この場所について一言メモを書いてください..."></textarea>
-                <div id="pro-lock-msg" style="display:none; margin-top:8px; padding:10px 14px; background:#F5F7FA; border-radius:10px; border:1px dashed #ccc; color:#8A9BAC; font-size:13px; text-align:center;">
-                    <i class="fas fa-lock"></i> PROアカウントのみ書き込みできます
+                <div id="pro-lock-msg" style="display:none; margin-top:8px; padding:10px 14px; background:linear-gradient(135deg,#FFF8EC,#FFF3D6); border-radius:12px; border:1px solid #FFD88A; padding:12px 16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:20px;">👑</span><span style="font-size:14px;font-weight:700;color:#B86A00;">PRO会員は一言メモを投稿できます</span></div>
+                    <p style="margin:0;font-size:12px;color:#946200;line-height:1.6;">ログインすれば誰でもタグ・写真で投稿できます。<br>さらに<strong>PROアカウント</strong>では、この場所について一言コメントも残せます。</p>
                 </div>
             </div>
 
@@ -318,6 +319,7 @@
             <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
             <a href="../post_road/Index.html" class="nav-item active"><i class="fas fa-plus-circle"></i><span>投稿</span></a>
             <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
+            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
             <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
 
         </nav>
@@ -338,41 +340,91 @@
         // --- URL params ---
         const params = new URLSearchParams(window.location.search);
 
-        const lat = params.get("lat");
-        const lng = params.get("lng");
+        let lat = params.get("lat");
+        let lng = params.get("lng");
         const locationCoordsEl = document.getElementById("location-coords");
-        if (lat && lng) {
-            locationCoordsEl.textContent = `中心座標: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
-        }
 
-        // --- PRO check: 詳細欄の制御 ---
-        const isPro = localStorage.getItem('UI1_isPro') === 'true';
-        const detailInput = document.getElementById('detail-input');
-        const proBadge = document.getElementById('pro-badge');
-        const proLockMsg = document.getElementById('pro-lock-msg');
-        if (!isPro) {
-            // 非PROはテキストエリアを無効化
-            detailInput.disabled = true;
-            detailInput.placeholder = '🔒 PROアカウント限定';
-            detailInput.style.background = '#F5F7FA';
-            detailInput.style.color = '#B0BEC5';
-            detailInput.style.cursor = 'not-allowed';
-            proBadge.style.display = 'inline-block';
-            proLockMsg.style.display = 'block';
-            // 投稿ボタンもグレーアウト
-            const submitBtn = document.getElementById('submit-btn');
-            if (submitBtn) {
-                submitBtn.style.background = '#B0BEC5';
-                submitBtn.style.cursor = 'not-allowed';
-                submitBtn.innerHTML = '<i class="fas fa-lock"></i> PROアカウント限定';
+        function updateCoordsDisplay() {
+            if (lat && lng) {
+                locationCoordsEl.textContent = `\u4e2d\u5fc3\u5ea7\u6a19: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
+            }
+        }
+        updateCoordsDisplay();
+
+        if (!lat || !lng) {
+            locationCoordsEl.textContent = '\ud83d\udccd \u73fe\u5728\u5730\u3092\u53d6\u5f97\u4e2d...';
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        lat = String(pos.coords.latitude);
+                        lng = String(pos.coords.longitude);
+                        updateCoordsDisplay();
+                    },
+                    () => { locationCoordsEl.textContent = '⚠️ 位置情報を取得できませんでした'; },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
             }
         }
 
+
+
+        // --- 詳細欄のPRO制限 --- APIから実際のPRO状態を取得 ---
+        const detailInput = document.getElementById('detail-input');
+        const proBadge = document.getElementById('pro-badge');
+        const proLockMsg = document.getElementById('pro-lock-msg');
+
+        function applyProUi(isProUser) {
+            if (!isProUser) {
+                if (proBadge) proBadge.style.display = 'inline-block';
+                if (proLockMsg) proLockMsg.style.display = 'block';
+                if (detailInput) {
+                    detailInput.disabled = true;
+                    detailInput.value = ''; // 念のため空にする
+                    detailInput.placeholder = 'PROアカウントのみ書き込みできます';
+                    detailInput.style.opacity = '0.5';
+                    detailInput.style.cursor = 'not-allowed';
+                }
+            } else {
+                if (proBadge) proBadge.style.display = 'none';
+                if (proLockMsg) proLockMsg.style.display = 'none';
+                if (detailInput) {
+                    detailInput.disabled = false;
+                    detailInput.style.opacity = '1';
+                    detailInput.style.cursor = '';
+                }
+            }
+        }
+
+        // まずlocalStorageで仮設定（UX改善のため即時適用）
+        let cachedIsPro = localStorage.getItem('UI1_isPro') === 'true';
+        applyProUi(cachedIsPro);
+
+        // APIから正確なPRO状態を取得して上書き
+        (async function checkProStatus() {
+            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+            try {
+                const res = await window.AuthToken.authFetch(`${API_BASE}/api/pro-status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const serverIsPro = data.isPro === true || data.is_pro === true;
+                    // localStorageを同期
+                    localStorage.setItem('UI1_isPro', serverIsPro ? 'true' : 'false');
+                    applyProUi(serverIsPro);
+                    cachedIsPro = serverIsPro;
+                }
+            } catch(e) {
+                console.warn('[PRO check] API failed, using localStorage:', e);
+            }
+        })();
+
+
+
+
         // --- Tag selection ---
         document.querySelectorAll("#tag-grid .tag-chip").forEach((chip) => {
-            chip.addEventListener("click", () => {
-                const checkbox = chip.querySelector('input[type="checkbox"]');
-                // The checkbox toggles automatically via label click
+            const checkbox = chip.querySelector('input[type="checkbox"]');
+            if (!checkbox) return;
+            checkbox.addEventListener("change", () => {
                 chip.classList.toggle("selected", checkbox.checked);
             });
         });
@@ -424,18 +476,35 @@
         document.getElementById("submit-btn").addEventListener("click", async () => {
             const submitBtn = document.getElementById("submit-btn");
 
-            // PRO限定チェック
-            if (!isPro) {
-                alert("🔒 道情報の投稿はPROアカウント限定です。\nプロフィール編集ページからPROに切り替えてください。");
+            const detail = document.getElementById("detail-input").value.trim();
+            const tagValueMap = {
+                "audio_signal_sound": "音が鳴る信号機", "audio_signal_no_sound": "音が鳴らない信号機",
+                "push_button_signal": "押しボタン式信号機", "sensor_signal": "感知式信号機",
+                "timed_signal": "時間式信号機", "crosswalk": "横断歩道",
+                "misplaced_tactile": "配置が不適切な点字ブロック", "degraded_tactile": "劣化した点字ブロック",
+                "blocked_tactile": "物が置かれて通れない点字ブロック", "footbridge_stairs": "歩道橋の階段の出入口",
+                "footbridge_elevator": "歩道橋のエレベーターの出入口", "footbridge_slope": "歩道橋のスロープの出入口", "test": "テスト用"
+            };
+            const checkedTagIds = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
+                .map((cb) => cb.value); // IDをそのまま送る（APIはtagIds[]を期待）
+
+            if (!lat || !lng) {
+                alert("位置情報が取得できていません。\n一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください。");
                 return;
             }
 
-            const detail = document.getElementById("detail-input").value.trim();
-            const checkedTags = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
-                .map((cb) => cb.value);
+            // ログイン必須（API仕様: POST /api/road-info は認証必要）
+            const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
+            if (!token) {
+                const returnUrl = encodeURIComponent(window.location.href);
+                alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
+                window.location.assign(`../signup/Index.html?return=${returnUrl}`);
+                return;
+            }
 
-            if (!detail && selectedFiles.length < 1 && checkedTags.length < 1) {
-                alert("タグ、本文、画像のいずれかを入力してください。");
+            // タグか写真が必要
+            if (selectedFiles.length < 1 && checkedTagIds.length < 1) {
+                alert('タグまたは画像を選択してください。');
                 return;
             }
 
@@ -450,13 +519,21 @@
                     images.push({ name: file.name, dataUrl });
                 }
 
+                // 非PROの場合、detailを強制的に空にする（UIバイパス対策）
+                const safeDetail = cachedIsPro ? detail : '';
+
                 const body = {
                     lat: lat ? Number(lat) : null,
                     lng: lng ? Number(lng) : null,
-                    tags: checkedTags,
-                    detail,
+                    tagIds: checkedTagIds,   // APIはtagIds[]（ID配列）を期待
+                    detail: safeDetail,      // 非PROはdetailを送らない
                     images,
                 };
+
+
+                const token2 = window.AuthToken ? window.AuthToken.getAccessToken() : null;
+                console.log('[Post] Token present:', !!token2);
+                console.log('[Post] tagIds:', checkedTagIds);
 
                 const res = await apiFetch(`${API_BASE}/api/road-info`, {
                     method: "POST",
@@ -464,16 +541,31 @@
                     body: JSON.stringify(body),
                 });
 
+                console.log('[Post] Response status:', res.status);
+
                 if (res.status === 401 || res.status === 403) {
-                    alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
-                    window.location.assign('../signup/Index.html');
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    alert('セッションが切れました。再度ログインしてください。');
+                    window.location.assign(`../signup/Index.html?return=${returnUrl}`);
                     return;
                 }
 
                 if (!res.ok) throw new Error(`submit failed: ${res.status}`);
 
-                alert("投稿が完了しました！");
-                window.location.assign("../map/Index.html");
+                // 投稿成功: 専用の完了画面を表示
+                document.querySelector('.scroll-content').innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;padding:32px;">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                            <i class="fas fa-check" style="font-size:36px;color:white;"></i>
+                        </div>
+                        <h2 style="font-size:22px;font-weight:800;color:#1A2B3C;margin-bottom:12px;">投稿が完了しました！</h2>
+                        <p style="font-size:14px;color:#5A6B7E;line-height:1.6;margin-bottom:24px;">情報を共有していただきありがとうございます</p>
+                        <button onclick="window.location.assign('../map/Index.html')" style="padding:14px 32px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);color:white;border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-map"></i> マップに戻る
+                        </button>
+                    </div>`;
+                const sa = document.querySelector('.submit-area');
+                if (sa) sa.style.display = 'none';
             } catch (err) {
                 alert(`投稿に失敗しました: ${err.message}`);
             } finally {
@@ -486,3 +578,9 @@
 </body>
 
 </html>
+
+
+
+
+
+
