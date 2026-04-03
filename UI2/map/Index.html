@@ -36,8 +36,16 @@
         <div class="splash-dot"></div>
       </div>
     </div>
-    <header class="app-bar">
-      <h1 class="app-bar-title">HOME</h1>
+    <header class="app-bar map-app-bar">
+      <div class="map-app-bar-brand">
+        <a class="map-app-bar-logo" href="../map/Index.html" aria-label="ホーム">
+          <img src="../assets/StepBy_icon_192.png" alt="" />
+        </a>
+        <div class="map-app-bar-copy">
+          <div class="map-app-bar-name">StepBy</div>
+          <div class="map-app-bar-tagline">barrier-free map</div>
+        </div>
+      </div>
       <div class="app-bar-actions" aria-label="アプリメニュー">
         <a class="app-bar-icon-link" href="../map/Index.html" aria-label="ホーム">
           <img src="../assets/buttons/home.png" alt="" />
@@ -50,7 +58,12 @@
         </a>
       </div>
     </header>
-    <div class="app-bar-spacer" aria-hidden="true"></div>
+    <div class="app-bar-spacer map-app-bar-spacer" aria-hidden="true"></div>
+    <div class="map-app-bar-wave" aria-hidden="true">
+      <svg viewBox="0 0 500 18" preserveAspectRatio="none">
+        <path d="M0,0 C150,18 350,0 500,12 L500,18 L0,18 Z" fill="#f5f7fa"></path>
+      </svg>
+    </div>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
     <script>
