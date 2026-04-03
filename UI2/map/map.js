@@ -137,7 +137,7 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "タグ",
     memo: "ひとことメモ",
-    memoEdit: "メモ編集",
+    memoEdit: "メモを編集",
     memoPrompt: "ひとことメモを入力してください",
     memoSaveFailed: "ひとことメモの保存に失敗しました。",
     selfLabel: "あなた",
@@ -335,23 +335,33 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
   const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
   const memoEditIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/memo_edit.png"));
+  const deleteIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/delete.png"));
   const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
-  const memoHtml = isOwnTactileSession(ownerUserId) && memoValue
+  const canEditOwnSession = isOwnTactileSession(ownerUserId);
+  const memoHtml = memoValue
     ? `
     <div class="tactile-session-card-memo">
       <div class="tactile-session-card-memo-head">
         <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
+        ${canEditOwnSession ? `
         <button class="tactile-session-card-memo-edit" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}" aria-label="${escapeHtml(text.memoEdit)}">
           <img src="${memoEditIconUrl}" alt="">
-        </button>
+        </button>` : ""}
       </div>
       <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
     </div>`
     : "";
-  const deleteButtonHtml = isOwnTactileSession(ownerUserId)
+  const actionButtons = canEditOwnSession
     ? `
     <div class="tactile-session-card-actions">
-      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">${escapeHtml(text.delete)}</button>
+      <button class="tactile-session-card-edit-action" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}">
+        <img src="${memoEditIconUrl}" alt="">
+        <span>${escapeHtml(text.memoEdit)}</span>
+      </button>
+      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">
+        <img src="${deleteIconUrl}" alt="">
+        <span>${escapeHtml(text.delete)}</span>
+      </button>
     </div>`
     : "";
 
@@ -359,8 +369,8 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
     <div class="tactile-session-card-header">
       <img class="tactile-session-card-avatar" src="${iconSrc}" alt="${username}" onerror="this.onerror=null;this.src='${fallbackIconUrl}'">
       <div class="tactile-session-card-meta">
-        <span class="tactile-session-card-time">${createdAt}</span>
         <span class="tactile-session-card-username">${username}</span>
+        <span class="tactile-session-card-time">${createdAt}</span>
       </div>
       <button class="tactile-session-card-close" type="button" data-close-tactile-session-card aria-label="close">
         <img src="${closeIconUrl}" alt="">
@@ -368,11 +378,25 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
     </div>
     <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
     ${memoHtml}
-    ${deleteButtonHtml}`;
+    ${actionButtons}`;
 }
 
 function ensureTactileSessionCard() {
-  if (tactileSessionCardEl || !mapRowEl) {
+  if (!mapRowEl) {
+    return tactileSessionCardEl;
+  }
+  if (!tactileSessionBackdropEl) {
+    tactileSessionBackdropEl = document.createElement("div");
+    tactileSessionBackdropEl.className = "tactile-session-backdrop hidden";
+    tactileSessionBackdropEl.addEventListener("click", () => {
+      hideTactileSessionCard();
+    });
+    tactileSessionBackdropEl.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+    mapRowEl.appendChild(tactileSessionBackdropEl);
+  }
+  if (tactileSessionCardEl) {
     return tactileSessionCardEl;
   }
   tactileSessionCardEl = document.createElement("section");
@@ -398,6 +422,9 @@ function hideTactileSessionCard() {
     });
   }
   activeTactileSessionPolyline = null;
+  if (tactileSessionBackdropEl) {
+    tactileSessionBackdropEl.classList.add("hidden");
+  }
   if (!tactileSessionCardEl) {
     return;
   }
@@ -434,30 +461,16 @@ function setActiveTactileSessionPolyline(polyline) {
 }
 
 function positionTactileSessionCard(latlng) {
-  if (!tactileSessionCardEl || tactileSessionCardEl.classList.contains("hidden") || !latlng || !mapRowEl) {
+  if (!tactileSessionCardEl || tactileSessionCardEl.classList.contains("hidden") || !mapRowEl) {
     return;
   }
-  const point = map.latLngToContainerPoint(latlng);
-  const cardRect = tactileSessionCardEl.getBoundingClientRect();
   const rowRect = mapRowEl.getBoundingClientRect();
-  const gap = 12;
-  const cardWidth = cardRect.width || Math.min(280, Math.max(220, rowRect.width - 24));
-  const cardHeight = cardRect.height || 120;
-  let left = point.x + gap;
-  let top = point.y - cardHeight - gap;
-
-  if (left + cardWidth > rowRect.width - 8) {
-    left = point.x - cardWidth - gap;
-  }
-  if (left < 8) {
-    left = Math.max(8, Math.min(point.x + gap, rowRect.width - cardWidth - 8));
-  }
-  if (top < 8) {
-    top = point.y + gap;
-  }
-  if (top + cardHeight > rowRect.height - 8) {
-    top = Math.max(8, rowRect.height - cardHeight - 8);
-  }
+  const cardRect = tactileSessionCardEl.getBoundingClientRect();
+  const horizontalInset = 22;
+  const bottomInset = 20;
+  const cardWidth = Math.min(cardRect.width || rowRect.width - horizontalInset * 2, rowRect.width - horizontalInset * 2);
+  const left = Math.max(horizontalInset, (rowRect.width - cardWidth) / 2);
+  const top = Math.max(12, rowRect.height - (cardRect.height || 0) - bottomInset);
 
   tactileSessionCardEl.style.left = `${Math.round(left)}px`;
   tactileSessionCardEl.style.top = `${Math.round(top)}px`;
@@ -470,6 +483,9 @@ function renderTactileSessionCard(contentHtml, latlng) {
   }
   tactileSessionCardLatLng = latlng || null;
   card.innerHTML = contentHtml;
+  if (tactileSessionBackdropEl) {
+    tactileSessionBackdropEl.classList.remove("hidden");
+  }
   card.classList.remove("hidden");
   const closeBtn = card.querySelector("[data-close-tactile-session-card]");
   if (closeBtn) {
@@ -747,6 +763,7 @@ let cachedVisibleSessionPaths = [];
 let cachedOsmFeatures = [];
 let cachedVisibleRoadInfoPoints = [];
 const tactileSessionInfoCache = new Map();
+let tactileSessionBackdropEl = null;
 let tactileSessionCardEl = null;
 let tactileSessionCardLatLng = null;
 let activeTactileSessionPolyline = null;
