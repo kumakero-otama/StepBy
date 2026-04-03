@@ -129,26 +129,30 @@ body {
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 24%),
     linear-gradient(160deg, #0d3535 0%, #1a5c5c 30%, #2e9e8f 66%, #4bdbb4 100%);
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
 .login-shell {
-  min-height: 100vh;
+  height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
+  padding: 0 0 18px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   overflow: hidden;
   position: relative;
 }
 
 .login-hero {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 56px 28px 28px;
+  padding: 40px 28px 20px;
   position: relative;
   overflow: hidden;
 }
@@ -270,22 +274,11 @@ body {
 
 .login-card {
   background: rgba(255, 255, 255, 0.96);
-  border-radius: 28px 28px 0 0;
-  box-shadow: 0 -12px 38px rgba(0, 0, 0, 0.12);
-  padding: 30px 24px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 24px;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.12);
+  padding: 24px 24px calc(22px + env(safe-area-inset-bottom));
+  margin: 0 16px;
   position: relative;
-}
-
-.login-card::before {
-  content: "";
-  width: 52px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(46, 158, 143, 0.22);
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .login-card-hint {
@@ -327,8 +320,7 @@ body {
 
 @media (max-width: 420px) {
   .login-hero {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding: 32px 20px 18px;
   }
 
   .login-features {
