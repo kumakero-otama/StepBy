@@ -473,8 +473,8 @@ body {
 .map-row {
   flex: 1 1 auto;
   min-height: 0;
-  width: 100%;
-  margin: 0;
+  width: calc(100% + 24px);
+  margin: 0 -12px;
   position: relative;
 }
 
@@ -591,11 +591,34 @@ body {
 #map {
   width: 100%;
   height: 100%;
-  border: 2px solid #222;
+  border: none;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
   transition: height 0.25s ease;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.leaflet-control-zoom a {
+  border: none !important;
+  border-radius: 10px !important;
+  width: 42px !important;
+  height: 42px !important;
+  line-height: 42px !important;
+}
+
+.leaflet-control-zoom a:first-child {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
 }
 
 .tactile-session-card {
@@ -1175,6 +1198,11 @@ body {
 @media (max-width: 720px) {
   .map-layout {
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom) + var(--system-ui-bottom));
+  }
+
+  .map-row {
+    width: calc(100% + 16px);
+    margin: 0 -8px;
   }
 
   .record-title {
