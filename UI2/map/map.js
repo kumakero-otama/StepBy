@@ -29,6 +29,7 @@ const traceTagListEl = document.getElementById("trace-tag-list");
 const traceTagErrorEl = document.getElementById("trace-tag-error");
 const traceMemoPanelEl = document.getElementById("trace-memo-panel");
 const traceMemoInputEl = document.getElementById("trace-memo-input");
+const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 
 function authFetch(input, init) {
@@ -42,6 +43,24 @@ function clearAccessToken() {
   if (authTokenApi && typeof authTokenApi.clearAccessToken === "function") {
     authTokenApi.clearAccessToken();
   }
+}
+
+function bindToggleCards() {
+  recordToggleCardEls.forEach((cardEl) => {
+    const inputEl = cardEl.querySelector(".record-toggle-input");
+    if (!inputEl) {
+      return;
+    }
+
+    cardEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      inputEl.checked = !inputEl.checked;
+      inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
 }
 
 function getCurrentLanguage() {
@@ -2717,6 +2736,8 @@ if ("geolocation" in navigator) {
       });
     }
     
+    bindToggleCards();
+
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {
         console.log(`[toggleShowMapInfo] showMapInfo=${toggleShowMapInfoBtn.checked}`);
