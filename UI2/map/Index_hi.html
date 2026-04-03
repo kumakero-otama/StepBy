@@ -236,6 +236,25 @@
           return;
         }
 
+        const SPLASH_SESSION_KEY = "ui2_home_splash_seen_v1";
+        let hasSeenSplash = false;
+        try {
+          hasSeenSplash = window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "1";
+        } catch {
+          hasSeenSplash = false;
+        }
+
+        if (hasSeenSplash) {
+          splash.remove();
+          return;
+        }
+
+        try {
+          window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+        } catch {
+          // ignore storage errors and keep the current display behavior
+        }
+
         for (let i = 0; i < 20; i += 1) {
           const particle = document.createElement("div");
           particle.className = "particle";
