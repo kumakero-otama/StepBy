@@ -15,6 +15,27 @@
     <link rel="stylesheet" href="map.css" />
   </head>
   <body>
+
+    <div class="splash" id="splash" aria-hidden="true">
+      <div class="splash-particles" id="splash-particles"></div>
+      <div class="splash-logo-wrap">
+        <div class="splash-logo-ring">
+          <div class="splash-logo-inner">
+            <img src="../assets/StepBy_icon_192.png" alt="" />
+          </div>
+        </div>
+      </div>
+      <div class="splash-title">StepBy</div>
+      <div class="splash-subtitle">BARRIER-FREE MAP</div>
+      <div class="splash-tagline">
+        Your <em>step</em> becomes<br>someone else's <em>path</em>.
+      </div>
+      <div class="splash-dots" aria-hidden="true">
+        <div class="splash-dot"></div>
+        <div class="splash-dot"></div>
+        <div class="splash-dot"></div>
+      </div>
+    </div>
     <header class="app-bar">
       <h1 class="app-bar-title">HOME</h1>
       <div class="app-bar-actions" aria-label="App menu">
@@ -184,6 +205,39 @@
         </div>
       </div>
     </div>
+
+    <script>
+      (() => {
+        const splash = document.getElementById("splash");
+        const particlesContainer = document.getElementById("splash-particles");
+        if (!splash || !particlesContainer) {
+          return;
+        }
+
+        for (let i = 0; i < 20; i += 1) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.animationDuration = `${4 + Math.random() * 6}s`;
+          particle.style.animationDelay = `${Math.random() * 5}s`;
+          const size = 3 + Math.random() * 6;
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+          particlesContainer.appendChild(particle);
+        }
+
+        const dismissSplash = () => {
+          if (splash.classList.contains("fade-out")) {
+            return;
+          }
+          splash.classList.add("fade-out");
+          window.setTimeout(() => splash.remove(), 800);
+        };
+
+        window.setTimeout(dismissSplash, 3500);
+        splash.addEventListener("click", dismissSplash);
+      })();
+    </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="map.js"></script>
     <script src="../pwa.js"></script>
