@@ -46,19 +46,6 @@
         pointer-events: none;
       }
 
-      .app-bar::after {
-        content: "";
-        position: absolute;
-        left: -10%;
-        right: -10%;
-        bottom: -14px;
-        height: 30px;
-        background: radial-gradient(circle at 18px -2px, rgba(255, 255, 255, 0.22) 0 7px, transparent 8px) repeat-x;
-        background-size: 38px 20px;
-        opacity: 0.45;
-        pointer-events: none;
-      }
-
       .app-bar .app-bar-title {
         position: relative;
         z-index: 1;
@@ -303,46 +290,161 @@
       }
 
       /* 画像プレビューとアップロード操作 */
-      .upload-row {
-        display: grid;
-        grid-template-columns: 1fr 160px;
-        gap: 12px;
+      .photo-upload-area {
+        border: 2px dashed #d7e3e1;
+        border-radius: 16px;
+        padding: 28px 18px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.12s ease;
+        background: linear-gradient(180deg, #fafdfc, #f3f8f7);
+        position: relative;
+        overflow: hidden;
       }
 
-      .preview {
-        border: 1px dashed var(--line);
-        border-radius: 12px;
-        min-height: 180px;
-        background: #fafafa;
-        padding: 10px;
+      .photo-upload-area::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(46, 158, 143, 0.05), rgba(240, 204, 101, 0.04));
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
       }
 
-      .preview-empty {
-        min-height: 158px;
+      .photo-upload-area:active,
+      .photo-upload-area.is-pressed {
+        border-color: #2e9e8f;
+        background: #ebf7f4;
+        transform: scale(0.99);
+      }
+
+      .photo-upload-area:active::before,
+      .photo-upload-area.is-pressed::before {
+        opacity: 1;
+      }
+
+      .photo-upload-icon {
+        width: 58px;
+        height: 58px;
+        margin: 0 auto 10px;
+        border-radius: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
+        background: linear-gradient(135deg, rgba(46, 158, 143, 0.18), rgba(240, 204, 101, 0.18));
+        color: #53a89a;
+        font-size: 1.9rem;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+      }
+
+      .photo-upload-copy {
+        position: relative;
+        z-index: 1;
+      }
+
+      .photo-upload-copy p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #4f6360;
+        font-weight: 700;
+      }
+
+      .photo-upload-copy small {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: #83928f;
+      }
+
+      .photo-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .photo-btn {
+        flex: 1;
+        min-height: 46px;
+        padding: 10px 12px;
+        border: 1.5px solid #d7e3e1;
+        border-radius: 12px;
+        background: #fff;
+        font-size: 0.87rem;
+        font-family: inherit;
+        color: #5a6b6c;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.06s ease;
+      }
+
+      .photo-btn:active,
+      .photo-btn.is-pressed {
+        border-color: #2e9e8f;
+        background: #f3fbf9;
+        transform: translateY(1px);
+      }
+
+      .photo-btn-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(46, 158, 143, 0.12);
+        color: #2e9e8f;
+        font-size: 0.85rem;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .photo-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        min-height: 0;
+      }
+
+      .preview-empty {
+        width: 100%;
+        border: 1px dashed #d7e3e1;
+        border-radius: 14px;
+        background: #f8fbfa;
+        padding: 18px 14px;
+        text-align: center;
         color: var(--muted);
+        font-size: 0.9rem;
       }
 
       .preview-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: 10px;
+        width: 100%;
       }
 
       .preview-card {
         position: relative;
-        border: 1px solid var(--line);
-        border-radius: 10px;
+        width: 88px;
+        height: 88px;
+        border-radius: 12px;
         overflow: hidden;
         background: #fff;
-        min-height: 100px;
+        border: 1px solid #dde6e4;
+        box-shadow: 0 4px 12px rgba(17, 17, 17, 0.06);
+        flex: 0 0 auto;
       }
 
-      .preview img {
+      .preview-card img {
         width: 100%;
-        height: 100px;
+        height: 100%;
         object-fit: cover;
         display: block;
       }
@@ -351,20 +453,19 @@
         position: absolute;
         top: 6px;
         right: 6px;
-        border: 1px solid #666;
+        width: 24px;
+        height: 24px;
+        border: none;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.92);
-        color: #111;
-        font-size: 0.8rem;
-        padding: 4px 8px;
+        background: rgba(20, 26, 28, 0.78);
+        color: #fff;
+        font-size: 0.82rem;
         line-height: 1;
+        padding: 0;
         cursor: pointer;
-      }
-
-      .upload-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .version-footer {
@@ -485,8 +586,8 @@
       }
 
       @media (max-width: 640px) {
-        .upload-row {
-          grid-template-columns: 1fr;
+        .photo-buttons {
+          flex-direction: column;
         }
       }
     </style>
@@ -537,15 +638,19 @@
       <textarea class="detail-input" placeholder="Enter text here..."></textarea>
 
       <h2>Upload Image</h2>
-      <div class="upload-row">
-        <div id="image-preview" class="preview">
-          <div class="preview-empty">Selected images are shown here</div>
+      <div id="photo-upload-area" class="photo-upload-area" role="button" tabindex="0" aria-label="Select images">
+        <div class="photo-upload-icon" aria-hidden="true">+</div>
+        <div class="photo-upload-copy">
+          <p>Tap to select photos</p>
+          <small>JPG, PNG (up to 2MB)</small>
         </div>
-        <div class="upload-buttons">
-          <button id="photo-library-button" type="button">Photo Library</button>
-          <button id="camera-capture-button" type="button">Take Photo</button>
-          <!-- 共通バージョン表示 -->
-        </div>
+      </div>
+      <div class="photo-buttons">
+        <button id="photo-library-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true">L</span><span>Library</span></button>
+        <button id="camera-capture-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true">C</span><span>Camera</span></button>
+      </div>
+      <div id="image-preview" class="photo-preview">
+        <div class="preview-empty">Selected images are shown here</div>
       </div>
       <input id="photo-library-input" class="file-input-hidden" type="file" accept="image/*" multiple />
       <input id="camera-capture-input" class="file-input-hidden" type="file" accept="image/*" capture="environment" />
@@ -581,6 +686,7 @@
       const tagSelectedEl = document.getElementById("tag-selected");
       const tagListEl = document.getElementById("tag-list");
       const backButton = document.getElementById("back-button");
+      const photoUploadArea = document.getElementById("photo-upload-area");
       const photoLibraryButton = document.getElementById("photo-library-button");
       const photoLibraryInput = document.getElementById("photo-library-input");
       const cameraCaptureButton = document.getElementById("camera-capture-button");
@@ -938,13 +1044,30 @@
         }
       }
 
+      if (photoUploadArea && photoLibraryInput) {
+        enablePressFeedback(photoUploadArea);
+        const openLibraryFromArea = () => {
+          openInputPicker(photoLibraryInput, "Photo Library");
+        };
+        photoUploadArea.addEventListener("click", openLibraryFromArea);
+        photoUploadArea.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") {
+            return;
+          }
+          event.preventDefault();
+          openLibraryFromArea();
+        });
+      }
+
       if (photoLibraryButton && photoLibraryInput) {
+        enablePressFeedback(photoLibraryButton);
         photoLibraryButton.addEventListener("click", () => {
           openInputPicker(photoLibraryInput, "Photo Library");
         });
       }
 
       if (cameraCaptureButton && cameraCaptureInput) {
+        enablePressFeedback(cameraCaptureButton);
         cameraCaptureButton.addEventListener("click", async () => {
           const granted = await requestCameraPermission();
           if (!granted) {
@@ -1092,7 +1215,7 @@
             const safeId = escapeHtml(item.id);
             const safeSrc = escapeHtml(item.url);
             const safeAlt = escapeHtml(item.name || "Selected image");
-            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" data-remove-image-id="${safeId}">Delete</button></div>`;
+            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" aria-label="Remove image" data-remove-image-id="${safeId}">×</button></div>`;
           })
           .join("")}</div>`;
       }
