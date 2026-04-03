@@ -866,7 +866,7 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
-  padding: 0 2px 4px 8px;
+  padding: 0 0 4px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1029,9 +1029,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 12px 12px;
+  padding: 8px 12px 12px;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(46, 158, 143, 0.08), rgba(46, 158, 143, 0.18));
   border: 1px solid rgba(46, 158, 143, 0.16);
