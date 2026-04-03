@@ -28,27 +28,44 @@
     <!-- 道情報詳細（タグ・投稿・画像）の表示画面 -->
     <main class="detail-wrap">
       <div class="detail-main">
-        <p id="detail-error" class="detail-error hidden"></p>
-        <section id="detail-content" class="hidden">
-          <div class="tags-block">
-            <h2 class="section-label">タグ</h2>
-            <ul id="tags-list" class="tags-list"></ul>
+        <section class="detail-hero" aria-label="道情報詳細ヘッダー">
+          <button id="back-btn" class="detail-back-btn" type="button" aria-label="戻る">←</button>
+          <div class="detail-hero-copy">
+            <p class="detail-kicker">ROAD INFO</p>
+            <h2 class="detail-hero-title">道情報の詳細</h2>
+            <p class="detail-hero-description">タグと投稿内容を、見やすいカード形式で確認できます。</p>
           </div>
-
-          <div class="posts-head">
-            <h2 class="section-label">投稿 <span id="post-count" class="post-count">(全0件)</span></h2>
-          </div>
-
-          <div id="posts-list" class="posts-list"></div>
         </section>
-        <section id="detail-loading">読み込み中...</section>
+
+        <p id="detail-error" class="detail-error hidden"></p>
+        <section id="detail-content" class="detail-content hidden">
+          <div class="detail-section tags-block">
+            <div class="section-heading">
+              <p class="section-kicker">Tags</p>
+              <h2 class="section-label">タグ</h2>
+            </div>
+            <div class="section-card">
+              <ul id="tags-list" class="tags-list"></ul>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="posts-head">
+              <div class="section-heading">
+                <p class="section-kicker">Posts</p>
+                <h2 class="section-label">投稿 <span id="post-count" class="post-count">(全0件)</span></h2>
+              </div>
+            </div>
+            <div id="posts-list" class="posts-list"></div>
+          </div>
+        </section>
+        <section id="detail-loading" class="detail-loading-card">読み込み中...</section>
       </div>
 
       <!-- 画面下部の固定操作ボタン -->
       <div class="bottom-actions">
         <button id="post-self-btn" class="btn btn-primary" type="button">自分もここに投稿する</button>
         <button id="delete-point-btn" class="btn btn-danger hidden" type="button">この道情報を削除する</button>
-        <button id="back-btn" class="btn" type="button">戻る</button>
       </div>
       <!-- 共通バージョン表示 -->
     </main>
