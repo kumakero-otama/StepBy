@@ -1,7 +1,7 @@
 (() => {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const PROFILE_CACHE_KEY = "cached_profile_user.v1";
-  const DEFAULT_APP_BASE_PATH = "/StepBy/UI0";
+  const DEFAULT_APP_BASE_PATH = "/StepBy/UI2";
   const DEFAULT_API_BASE_URL = "https://barrierfree-map.loophole.site";
 
   function normalizeBasePath(value) {
