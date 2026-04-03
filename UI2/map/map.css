@@ -1022,22 +1022,44 @@ body {
 }
 
 .gps-indicator {
-  width: 88px;
-  min-width: 88px;
+  width: 112px;
+  min-width: 112px;
   min-height: 104px;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 12px 10px 12px;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(46, 158, 143, 0.08), rgba(46, 158, 143, 0.18));
   border: 1px solid rgba(46, 158, 143, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
+.gps-indicator-title {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #24313c;
+  text-align: center;
+}
+
+.gps-indicator-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(46, 158, 143, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
 .gps-indicator img {
   display: block;
-  width: 46px;
-  height: 46px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   opacity: 1;
   transition: opacity 0.08s linear;
