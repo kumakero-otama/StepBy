@@ -125,6 +125,225 @@ body {
   color: #0a5f8f;
 }
 
+.login-page {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 24%),
+    linear-gradient(160deg, #0d3535 0%, #1a5c5c 30%, #2e9e8f 66%, #4bdbb4 100%);
+  min-height: 100vh;
+}
+
+.login-shell {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.login-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 28px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-hero::before,
+.login-hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.login-hero::before {
+  top: -56px;
+  right: -44px;
+  width: 196px;
+  height: 196px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, transparent 72%);
+}
+
+.login-hero::after {
+  left: -28px;
+  bottom: 34px;
+  width: 154px;
+  height: 154px;
+  background: radial-gradient(circle, rgba(255, 202, 108, 0.15) 0%, transparent 72%);
+}
+
+.login-logo {
+  width: 90px;
+  height: 90px;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.26);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(12px);
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+}
+
+.login-title {
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 1;
+}
+
+.login-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.84);
+  text-align: center;
+  line-height: 1.7;
+  font-size: 0.92rem;
+  position: relative;
+  z-index: 1;
+}
+
+.login-features {
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 78px;
+}
+
+.login-feature-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.login-feature-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  fill: currentColor;
+}
+
+.login-feature-label {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 38px rgba(0, 0, 0, 0.12);
+  padding: 30px 24px calc(24px + env(safe-area-inset-bottom));
+  position: relative;
+}
+
+.login-card::before {
+  content: "";
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(46, 158, 143, 0.22);
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.login-card-hint {
+  margin: 0 0 18px;
+  text-align: center;
+  color: #5a6b7c;
+  font-size: 0.86rem;
+}
+
+.login-google-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.login-page .google-signin-button > div,
+.login-page .google-signin-button iframe {
+  max-width: 100%;
+}
+
+.login-note {
+  margin: 14px 0 0;
+  color: #8a9bac;
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.login-note a {
+  color: #2e9e8f;
+  text-decoration: none;
+}
+
+.login-status {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 420px) {
+  .login-hero {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .login-features {
+    gap: 12px;
+  }
+
+  .login-feature {
+    min-width: 70px;
+  }
+
+  .login-title {
+    font-size: 1.8rem;
+  }
+}
+
 .signup-icon-preview {
   display: block;
   margin-top: 10px;
