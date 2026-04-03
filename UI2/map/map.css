@@ -516,19 +516,19 @@ body {
 
 .record-main-btn {
   flex: 2 1 0;
-  background: linear-gradient(135deg, #2e9e8f, #3bb49f);
-  box-shadow: 0 4px 12px rgba(46, 158, 143, 0.35);
+  background: linear-gradient(135deg, #27b3a7 0%, #3db9a7 55%, #62c39e 100%);
+  box-shadow: 0 6px 18px rgba(46, 158, 143, 0.34);
 }
 
 .pause-btn {
   flex: 1 1 0;
-  background: linear-gradient(135deg, #ffb847, #f5a623);
-  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.28);
+  background: linear-gradient(135deg, #ffd36a 0%, #f6be53 52%, #eca23a 100%);
+  box-shadow: 0 6px 16px rgba(245, 166, 35, 0.24);
 }
 
 .record-main-btn.is-recording {
-  background: linear-gradient(135deg, #ff6b6b, #e74c3c);
-  box-shadow: 0 4px 16px rgba(231, 76, 60, 0.4);
+  background: linear-gradient(135deg, #ff7f73 0%, #f05d55 52%, #df4941 100%);
+  box-shadow: 0 6px 18px rgba(231, 76, 60, 0.32);
 }
 
 .record-action-btn:disabled {
@@ -855,13 +855,16 @@ body {
 }
 
 .meta-controls {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
 }
 
 .meta-toggles {
   display: flex;
   gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   padding: 0 2px 4px 8px;
   scroll-snap-type: x mandatory;
