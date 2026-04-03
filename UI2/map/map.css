@@ -481,16 +481,19 @@ body {
 .record-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
+  padding: 8px 6px 8px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.08);
 }
 
 .record-action-btn {
-  height: 46px;
-  border: 2px solid #222;
-  border-radius: 999px;
-  background: #fff;
-  color: #111;
+  min-height: 52px;
+  border: none;
+  border-radius: 20px;
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -499,29 +502,40 @@ body {
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  letter-spacing: 0.2px;
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
+    transform 0.18s ease,
+    box-shadow 0.2s ease,
+    background 0.25s ease,
     opacity 0.2s ease;
+}
+
+.record-action-btn:active {
+  transform: scale(0.97);
 }
 
 .record-main-btn {
   flex: 2 1 0;
+  background: linear-gradient(135deg, #2e9e8f, #3bb49f);
+  box-shadow: 0 4px 12px rgba(46, 158, 143, 0.35);
 }
 
 .pause-btn {
   flex: 1 1 0;
+  background: linear-gradient(135deg, #ffb847, #f5a623);
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.28);
 }
 
 .record-main-btn.is-recording {
-  background: #ffd8d8;
+  background: linear-gradient(135deg, #ff6b6b, #e74c3c);
+  box-shadow: 0 4px 16px rgba(231, 76, 60, 0.4);
 }
 
 .record-action-btn:disabled {
   cursor: not-allowed;
-  background: #ececec;
-  border-color: #9a9a9a;
-  color: #7a7a7a;
+  background: linear-gradient(135deg, #d8dee4, #c9d1d8);
+  color: #6f7a85;
+  box-shadow: none;
   opacity: 1;
 }
 
@@ -771,15 +785,11 @@ body {
 
 /* 下部のスワイプ式コントロールパネル */
 .map-controls-panel {
-  --map-controls-handle-height: 28px;
+  --map-controls-handle-height: 32px;
   flex: 0 0 auto;
   flex-shrink: 0;
   width: 100%;
   margin: 0;
-  margin-bottom: 0;
-  border: 2px solid #222;
-  border-radius: 12px;
-  overflow: hidden;
   background: #fff;
   display: grid;
   grid-template-rows: var(--map-controls-handle-height) minmax(0, 1fr);
@@ -787,6 +797,9 @@ body {
   transition: grid-template-rows 0.25s ease;
   position: relative;
   z-index: 1400;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .map-controls-handle {
@@ -795,7 +808,7 @@ body {
   min-height: var(--map-controls-handle-height);
   padding: 0 10px;
   border: 0;
-  background: #ececec;
+  background: transparent;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -804,20 +817,21 @@ body {
 
 .map-controls-handle-bar {
   display: block;
-  width: 120px;
+  width: 118px;
   height: 6px;
   border-radius: 999px;
-  border: 1px solid #989898;
-  background: #d8d8d8;
+  background: linear-gradient(180deg, #dfe7ed, #c7d2dc);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
 }
 
 .map-controls-content {
   overflow: hidden;
   min-height: 0;
-  padding: 12px;
+  padding: 4px 12px 10px;
   transition:
     padding 0.25s ease,
     opacity 0.2s ease;
+  background: #fff;
 }
 
 .map-controls-panel.collapsed .map-controls-content {
@@ -831,50 +845,107 @@ body {
   grid-template-rows: var(--map-controls-handle-height) 0fr;
 }
 
-/* トグルと補助情報の縦並び */
 .meta {
   display: grid;
   gap: 10px;
 }
 
 .meta-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
   gap: 12px;
 }
 
 .meta-toggles {
-  display: grid;
-  gap: 10px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-/* ON/OFFトグル共通スタイル */
-.record-toggle {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
   gap: 8px;
+  overflow-x: auto;
+  padding: 0 2px 4px 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.record-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #222;
+.meta-toggles::-webkit-scrollbar {
+  display: none;
+}
+
+.record-toggle {
+  position: relative;
+  flex: 0 0 auto;
+  width: 148px;
+  min-height: 92px;
+  padding: 12px 10px 10px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 8px 6px;
+  scroll-snap-align: start;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.record-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(46, 158, 143, 0.08), rgba(46, 158, 143, 0.02));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.record-toggle:has(input:checked)::before {
+  opacity: 1;
+}
+
+.record-toggle::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  transition: all 0.2s ease;
+}
+
+.record-toggle:has(input:checked)::after {
+  background: #2e9e8f;
+  box-shadow: 0 0 8px rgba(46, 158, 143, 0.45);
+}
+
+.record-title,
+.record-label,
+.switch {
+  position: relative;
+  z-index: 1;
 }
 
 .record-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #222;
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #24313c;
+}
+
+.record-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a8a97;
 }
 
 .switch {
   position: relative;
   display: inline-block;
-  width: 46px;
-  height: 24px;
+  width: 48px;
+  height: 26px;
 }
 
 .switch input {
@@ -887,10 +958,11 @@ body {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: #ddd;
-  border: 1px solid #222;
+  background-color: #d6dce2;
   transition: 0.2s ease;
   border-radius: 999px;
+  border: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .slider::before {
@@ -898,15 +970,16 @@ body {
   content: "";
   height: 18px;
   width: 18px;
-  left: 2px;
-  top: 2px;
-  background-color: #222;
+  left: 4px;
+  top: 4px;
+  background-color: #fff;
   transition: 0.2s ease;
   border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .switch input:checked + .slider {
-  background-color: #b9f5c5;
+  background: linear-gradient(135deg, #2e9e8f, #61c8b8);
 }
 
 .switch input:checked + .slider::before {
@@ -914,17 +987,22 @@ body {
 }
 
 .gps-indicator {
-  width: 54px;
-  min-width: 54px;
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(46, 158, 143, 0.08), rgba(46, 158, 143, 0.18));
+  border: 1px solid rgba(46, 158, 143, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .gps-indicator img {
   display: block;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
   opacity: 1;
   transition: opacity 0.08s linear;
