@@ -785,7 +785,7 @@ body {
 
 /* 下部のスワイプ式コントロールパネル */
 .map-controls-panel {
-  --map-controls-handle-height: 32px;
+  --map-controls-handle-height: 34px;
   flex: 0 0 auto;
   flex-shrink: 0;
   width: 100%;
@@ -806,7 +806,7 @@ body {
   width: 100%;
   height: var(--map-controls-handle-height);
   min-height: var(--map-controls-handle-height);
-  padding: 0 10px;
+  padding: 0 10px 4px;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -815,13 +815,17 @@ body {
   z-index: 1;
 }
 
-.map-controls-handle-bar {
-  display: block;
-  width: 118px;
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #dfe7ed, #c7d2dc);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
+.map-controls-handle-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  color: #8a9bb0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
 
 .map-controls-content {
@@ -872,7 +876,7 @@ body {
 .record-toggle {
   position: relative;
   flex: 0 0 auto;
-  width: 148px;
+  width: 128px;
   min-height: 104px;
   padding: 12px 10px 12px;
   border-radius: 16px;
@@ -1015,9 +1019,9 @@ body {
 }
 
 .gps-indicator {
-  width: 100%;
-  min-width: 0;
-  min-height: 58px;
+  width: 88px;
+  min-width: 88px;
+  min-height: 104px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
