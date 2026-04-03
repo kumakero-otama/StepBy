@@ -399,28 +399,25 @@
         justify-content: center;
         background: rgba(46, 158, 143, 0.12);
         color: #2e9e8f;
-        font-size: 0.85rem;
-        font-weight: 800;
         flex-shrink: 0;
       }
 
+      .photo-btn-icon svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+
       .photo-preview {
-        display: flex;
+        display: none;
         flex-wrap: wrap;
         gap: 10px;
         margin-top: 10px;
         min-height: 0;
       }
 
-      .preview-empty {
-        width: 100%;
-        border: 1px dashed #d7e3e1;
-        border-radius: 14px;
-        background: #f8fbfa;
-        padding: 18px 14px;
-        text-align: center;
-        color: var(--muted);
-        font-size: 0.9rem;
+      .photo-preview.has-images {
+        display: flex;
       }
 
       .preview-list {
@@ -585,11 +582,6 @@
         to { transform: rotate(360deg); }
       }
 
-      @media (max-width: 640px) {
-        .photo-buttons {
-          flex-direction: column;
-        }
-      }
     </style>
   </head>
   <body>
@@ -646,12 +638,11 @@
         </div>
       </div>
       <div class="photo-buttons">
-        <button id="photo-library-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true">L</span><span>लाइब्रेरी</span></button>
-        <button id="camera-capture-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true">C</span><span>कैमरा</span></button>
+        <button id="photo-library-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4.5 7.5h3l1.3-2h6.4l1.3 2h3A1.5 1.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5V9a1.5 1.5 0 0 1 1.5-1.5Zm7 2.5a4 4 0 1 0 0 8a4 4 0 0 0 0-8Zm0 1.8a2.2 2.2 0 1 1 0 4.4a2.2 2.2 0 0 1 0-4.4Z" fill="currentColor"/></svg></span><span>लाइब्रेरी</span></button>
+        <button id="camera-capture-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9.8 5.5 8.7 7H6.2A2.2 2.2 0 0 0 4 9.2v8.6A2.2 2.2 0 0 0 6.2 20h11.6A2.2 2.2 0 0 0 20 17.8V9.2A2.2 2.2 0 0 0 17.8 7h-2.5l-1.1-1.5H9.8Zm2.2 3a4.5 4.5 0 1 1 0 9a4.5 4.5 0 0 1 0-9Zm0 1.8a2.7 2.7 0 1 0 0 5.4a2.7 2.7 0 0 0 0-5.4Z" fill="currentColor"/></svg></span><span>कैमरा</span></button>
       </div>
       <div id="image-preview" class="photo-preview">
-        <div class="preview-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
-      </div>
+              </div>
       <input id="photo-library-input" class="file-input-hidden" type="file" accept="image/*" multiple />
       <input id="camera-capture-input" class="file-input-hidden" type="file" accept="image/*" capture="environment" />
 
@@ -1206,10 +1197,12 @@
         }
 
         if (selectedImages.length === 0) {
-          imagePreview.innerHTML = '<div class="preview-empty">चयनित छवियां यहां दिखाई जाएंगी</div>';
+          imagePreview.classList.remove("has-images");
+          imagePreview.innerHTML = "";
           return;
         }
 
+        imagePreview.classList.add("has-images");
         imagePreview.innerHTML = `<div class="preview-list">${selectedImages
           .map((item) => {
             const safeId = escapeHtml(item.id);
