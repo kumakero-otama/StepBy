@@ -1,20 +1,20 @@
 {
   "name": "StepBy",
   "short_name": "StepBy",
-  "start_url": "/StepBy/UI0/map/Index.html",
-  "scope": "/StepBy/UI0/",
+  "start_url": "/StepBy/UI2/map/Index.html",
+  "scope": "/StepBy/UI2/",
   "display": "standalone",
   "background_color": "#f7f5f0",
   "theme_color": "#222222",
   "icons": [
     {
-      "src": "/StepBy/UI0/assets/StepBy_icon_192.png",
+      "src": "/StepBy/UI2/assets/StepBy_icon_192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/StepBy/UI0/assets/StepBy_icon_512.png",
+      "src": "/StepBy/UI2/assets/StepBy_icon_512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
