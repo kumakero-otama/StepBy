@@ -68,15 +68,16 @@
       }
 
       .settings-card {
+        display: grid;
+        gap: 14px;
+      }
+
+      .accordion-item {
         border: 1px solid #e4e8ed;
         border-radius: 22px;
         background: #fff;
         overflow: hidden;
         box-shadow: 0 10px 28px rgba(31, 51, 68, 0.08);
-      }
-
-      .accordion-item + .accordion-item {
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
       }
 
       .accordion-trigger {
@@ -93,6 +94,20 @@
         align-items: center;
         justify-content: space-between;
         transition: background 0.15s ease;
+      }
+
+      .accordion-trigger-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .accordion-trigger-icon {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        flex-shrink: 0;
       }
 
       .accordion-trigger:active {
@@ -119,24 +134,36 @@
         display: none;
       }
 
+      .setting-group {
+        overflow: hidden;
+        border: 1px solid #e4e8ed;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      }
+
       .record-toggle {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        margin-top: 12px;
         width: 100%;
-        padding: 14px 14px;
-        border: 1px solid #e4e8ed;
-        border-radius: 16px;
+        padding: 16px 14px;
+        border: 0;
         background: #fff;
-        box-shadow: 0 4px 14px rgba(31, 51, 68, 0.05);
+        box-shadow: none;
+        box-sizing: border-box;
+      }
+
+      .record-toggle + .record-toggle {
+        border-top: 1px solid #edf1f4;
       }
 
       .record-title {
         font-size: 14px;
         font-weight: 600;
         color: #1f2d3a;
+        flex: 1 1 auto;
       }
 
       .record-label {
@@ -194,8 +221,11 @@
 
       .language-options {
         display: grid;
-        gap: 10px;
         padding-top: 0;
+        overflow: hidden;
+        border: 1px solid #e4e8ed;
+        border-radius: 18px;
+        background: #fff;
       }
 
       .language-option {
@@ -204,11 +234,14 @@
         gap: 10px;
         font-size: 14px;
         color: #1f2d3a;
-        border: 1px solid #e4e8ed;
-        border-radius: 16px;
+        border: 0;
         background: #fff;
-        padding: 14px 14px;
-        box-shadow: 0 4px 14px rgba(31, 51, 68, 0.05);
+        padding: 16px 14px;
+        box-shadow: none;
+      }
+
+      .language-option + .language-option {
+        border-top: 1px solid #edf1f4;
       }
 
       .language-option input[type="radio"] {
@@ -311,72 +344,80 @@
       <section class="settings-card" aria-label="सेटिंग्स सूची">
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-map-display">
-            मानचित्र प्रदर्शन
+            <span class="accordion-trigger-label">
+              <img class="accordion-trigger-icon" src="../assets/displays/map_green.png" alt="" aria-hidden="true" />
+              <span>मानचित्र प्रदर्शन</span>
+            </span>
           </button>
           <div id="panel-map-display" class="accordion-panel" hidden>
-            <div class="record-toggle" role="group" aria-label="मेरे स्पर्श मार्ग toggle">
-              <span class="record-title">मेरे स्पर्श मार्ग</span>
-              <span class="record-label">बंद</span>
-              <label class="switch">
-                <input
-                  id="setting-show-only-my-tactile"
-                  type="checkbox"
-                  aria-label="मेरे स्पर्श मार्ग"
-                />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">चालू</span>
-            </div>
-            <div class="record-toggle" role="group" aria-label="App tactile blocks toggle">
-              <span class="record-title">ऐप से पोस्ट किए गए स्पर्श मार्ग</span>
-              <span class="record-label">बंद</span>
-              <label class="switch">
-                <input id="setting-show-app-tactile" type="checkbox" aria-label="ऐप से पोस्ट किए गए स्पर्श मार्ग" />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">चालू</span>
-            </div>
-            <div class="record-toggle" role="group" aria-label="OSM tactile blocks toggle">
-              <span class="record-title">OSM से स्पर्श मार्ग</span>
-              <span class="record-label">बंद</span>
-              <label class="switch">
-                <input id="setting-show-osm-tactile" type="checkbox" aria-label="OSM से स्पर्श मार्ग" />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">चालू</span>
-            </div>
-            <div class="record-toggle" role="group" aria-label="मेरी सड़क जानकारी toggle">
-              <span class="record-title">मेरी सड़क जानकारी</span>
-              <span class="record-label">बंद</span>
-              <label class="switch">
-                <input
-                  id="setting-show-only-my-road-info"
-                  type="checkbox"
-                  aria-label="मेरी सड़क जानकारी"
-                />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">चालू</span>
-            </div>
-            <div class="record-toggle" role="group" aria-label="सभी सड़क जानकारी toggle">
-              <span class="record-title">सभी सड़क जानकारी</span>
-              <span class="record-label">बंद</span>
-              <label class="switch">
-                <input
-                  id="setting-show-all-road-info"
-                  type="checkbox"
-                  aria-label="सभी सड़क जानकारी"
-                />
-                <span class="slider"></span>
-              </label>
-              <span class="record-label">चालू</span>
+            <div class="setting-group">
+              <div class="record-toggle" role="group" aria-label="मेरे स्पर्श मार्ग toggle">
+                <span class="record-title">मेरे स्पर्श मार्ग</span>
+                <span class="record-label">बंद</span>
+                <label class="switch">
+                  <input
+                    id="setting-show-only-my-tactile"
+                    type="checkbox"
+                    aria-label="मेरे स्पर्श मार्ग"
+                  />
+                  <span class="slider"></span>
+                </label>
+                <span class="record-label">चालू</span>
+              </div>
+              <div class="record-toggle" role="group" aria-label="App tactile blocks toggle">
+                <span class="record-title">ऐप से पोस्ट किए गए स्पर्श मार्ग</span>
+                <span class="record-label">बंद</span>
+                <label class="switch">
+                  <input id="setting-show-app-tactile" type="checkbox" aria-label="ऐप से पोस्ट किए गए स्पर्श मार्ग" />
+                  <span class="slider"></span>
+                </label>
+                <span class="record-label">चालू</span>
+              </div>
+              <div class="record-toggle" role="group" aria-label="OSM tactile blocks toggle">
+                <span class="record-title">OSM से स्पर्श मार्ग</span>
+                <span class="record-label">बंद</span>
+                <label class="switch">
+                  <input id="setting-show-osm-tactile" type="checkbox" aria-label="OSM से स्पर्श मार्ग" />
+                  <span class="slider"></span>
+                </label>
+                <span class="record-label">चालू</span>
+              </div>
+              <div class="record-toggle" role="group" aria-label="मेरी सड़क जानकारी toggle">
+                <span class="record-title">मेरी सड़क जानकारी</span>
+                <span class="record-label">बंद</span>
+                <label class="switch">
+                  <input
+                    id="setting-show-only-my-road-info"
+                    type="checkbox"
+                    aria-label="मेरी सड़क जानकारी"
+                  />
+                  <span class="slider"></span>
+                </label>
+                <span class="record-label">चालू</span>
+              </div>
+              <div class="record-toggle" role="group" aria-label="सभी सड़क जानकारी toggle">
+                <span class="record-title">सभी सड़क जानकारी</span>
+                <span class="record-label">बंद</span>
+                <label class="switch">
+                  <input
+                    id="setting-show-all-road-info"
+                    type="checkbox"
+                    aria-label="सभी सड़क जानकारी"
+                  />
+                  <span class="slider"></span>
+                </label>
+                <span class="record-label">चालू</span>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-theme">
-            लाइट / डार्क
+            <span class="accordion-trigger-label">
+              <img class="accordion-trigger-icon" src="../assets/displays/contrast_green.png" alt="" aria-hidden="true" />
+              <span>लाइट / डार्क</span>
+            </span>
           </button>
           <div id="panel-theme" class="accordion-panel placeholder-panel" hidden>
             <div class="language-options">
@@ -398,7 +439,10 @@
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-text-size">
-            टेक्स्ट आकार
+            <span class="accordion-trigger-label">
+              <img class="accordion-trigger-icon" src="../assets/displays/textsize_green.png" alt="" aria-hidden="true" />
+              <span>टेक्स्ट आकार</span>
+            </span>
           </button>
           <div id="panel-text-size" class="accordion-panel placeholder-panel" hidden>
             <div class="language-options">
@@ -420,7 +464,10 @@
 
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-language">
-            Language
+            <span class="accordion-trigger-label">
+              <img class="accordion-trigger-icon" src="../assets/displays/translate_green.png" alt="" aria-hidden="true" />
+              <span>Language</span>
+            </span>
           </button>
           <div id="panel-language" class="accordion-panel placeholder-panel" hidden>
             <div class="language-options">
