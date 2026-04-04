@@ -38,6 +38,20 @@
             <label class="form-label" for="profile-username-input">उपयोगकर्ता नाम</label>
             <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
           </div>
+          <div class="pro-setting-row" role="group" aria-label="PRO खाता स्विच">
+            <div class="pro-setting-copy">
+              <p class="form-label pro-toggle-label">PRO खाता</p>
+              <p class="form-hint">विशेष सुविधाओं के लिए खाता सेटिंग सक्षम करें</p>
+            </div>
+            <div class="pro-toggle-row">
+              <span class="toggle-label">बंद</span>
+              <label class="switch">
+                <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO खाता" />
+                <span class="slider"></span>
+              </label>
+              <span class="toggle-label">चालू</span>
+            </div>
+          </div>
         </div>
 
         <div class="form-card">
@@ -58,27 +72,6 @@
             </div>
           </div>
         </div>
-
-        <div class="form-card">
-          <div class="form-card-title">
-            <span class="form-card-icon form-card-icon-pro" aria-hidden="true">P</span>
-            <span>खाता सेटिंग</span>
-          </div>
-          <div class="pro-setting-row" role="group" aria-label="PRO खाता स्विच">
-            <div class="pro-setting-copy">
-              <p class="form-label pro-toggle-label">PRO खाता</p>
-              <p class="form-hint">विशेष सुविधाओं के लिए खाता सेटिंग सक्षम करें</p>
-            </div>
-            <div class="pro-toggle-row">
-              <span class="toggle-label">बंद</span>
-              <label class="switch">
-                <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO खाता" />
-                <span class="slider"></span>
-              </label>
-              <span class="toggle-label">चालू</span>
-            </div>
-          </div>
-        </div>
       </section>
     </main>
 
@@ -86,7 +79,6 @@
     <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />
 
     <footer class="edit-footer">
-      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">वापस</button>
       <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">बदलाव सहेजें</button>
     </footer>
     <div id="profile-save-toast" class="save-toast" role="status" aria-live="polite">
