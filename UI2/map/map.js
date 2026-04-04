@@ -9,6 +9,7 @@ const gpsIndicatorEl = document.getElementById("gps-indicator");
 const mapControlsPanelEl = document.getElementById("map-controls-panel");
 const mapControlsHandleEl = document.getElementById("map-controls-handle");
 const mapControlsHandleLabelEl = document.getElementById("map-controls-handle-label");
+const mapControlsHandleIconEl = document.getElementById("map-controls-handle-icon");
 const recordActionBtn = document.getElementById("record-action-btn");
 const recordActionIconEl = document.getElementById("record-action-icon");
 const recordActionTextEl = document.getElementById("record-action-text");
@@ -1077,14 +1078,19 @@ function setMapControlsCollapsed(collapsed) {
   mapControlsPanelEl.classList.toggle("collapsed", collapsed);
   mapLayoutEl.classList.toggle("panel-collapsed", collapsed);
   mapControlsHandleEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  if (mapControlsHandleIconEl) {
+    mapControlsHandleIconEl.src = collapsed
+      ? "../assets/displays/up_66gray.png"
+      : "../assets/displays/down_66gray.png";
+  }
   if (mapControlsHandleLabelEl) {
     const lang = getCurrentLanguage();
     if (lang === "en") {
-      mapControlsHandleLabelEl.textContent = collapsed ? "∧ Open menu" : "∨ Close menu";
+      mapControlsHandleLabelEl.textContent = collapsed ? "Open menu" : "Close menu";
     } else if (lang === "hi") {
-      mapControlsHandleLabelEl.textContent = collapsed ? "∧ मेनू खोलें" : "∨ मेनू बंद करें";
+      mapControlsHandleLabelEl.textContent = collapsed ? "मेनू खोलें" : "मेनू बंद करें";
     } else {
-      mapControlsHandleLabelEl.textContent = collapsed ? "∧メニューを開く" : "∨メニューを閉じる";
+      mapControlsHandleLabelEl.textContent = collapsed ? "メニューを開く" : "メニューを閉じる";
     }
   }
   saveMapControlsCollapsed(collapsed);

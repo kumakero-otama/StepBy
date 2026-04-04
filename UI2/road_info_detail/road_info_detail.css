@@ -85,20 +85,19 @@ body {
 }
 
 .section-label-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #2e9e8f;
   flex-shrink: 0;
 }
 
-.section-label-icon svg {
-  width: 18px;
-  height: 18px;
+.section-label-icon img {
+  width: 100%;
+  height: 100%;
   display: block;
-  fill: currentColor;
+  object-fit: contain;
 }
 
 .section-card,
@@ -176,6 +175,7 @@ body {
 }
 
 .bottom-actions .btn {
+  flex: 1 1 0;
   border-radius: 14px;
   font-weight: 700;
   padding: 13px 18px;
@@ -189,7 +189,6 @@ body {
 }
 
 .btn-primary {
-  flex: 1;
   background: linear-gradient(135deg, #1e7a6d 0%, #2e9e8f 100%);
   color: #fff;
   border-color: transparent;
@@ -197,10 +196,18 @@ body {
 }
 
 .btn-danger {
-  min-width: 0;
   background: linear-gradient(135deg, #ff7f7f 0%, #ff5a5a 100%);
   color: #fff;
   border-color: transparent;
+  min-width: 0;
+}
+
+.bottom-action-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 .btn-danger:disabled {
@@ -689,7 +696,7 @@ body {
   }
 
   .btn-danger {
-    flex: 0 0 auto;
+    flex: 1 1 0;
   }
 
   .comment-window-title {
