@@ -71,17 +71,24 @@
     </main>
     <div id="comment-modal" class="comment-modal hidden" role="dialog" aria-modal="true" aria-label="टिप्पणी पोस्ट करें">
       <div class="comment-window">
-        <div class="comment-window-head">
-          <div class="comment-window-title">टिप्पणी पोस्ट करें</div>
-          <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="बंद करें">×</button>
-        </div>
+        <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="बंद करें">×</button>
         <div class="comment-window-body">
+          <div class="comment-window-title">टिप्पणी पोस्ट करें</div>
           <label class="comment-label" for="comment-body-input">विवरण</label>
           <textarea
             id="comment-body-input"
             class="comment-body-input"
             placeholder="टिप्पणी का विवरण यहां लिखें"
           ></textarea>
+
+          <div class="comment-label">छवि अपलोड</div>
+          <div class="comment-upload-buttons">
+            <button id="comment-photo-library-btn" class="btn" type="button">फोटो लाइब्रेरी</button>
+            <button id="comment-camera-btn" class="btn" type="button">फोटो लें</button>
+          </div>
+          <div id="comment-image-preview" class="comment-image-preview">
+            <div class="comment-image-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
+          </div>
 
           <div class="comment-label">टैग जोड़ें (वैकल्पिक)</div>
           <section class="comment-tag-panel" aria-label="टैग चयन">
@@ -107,15 +114,6 @@
             </div>
           </section>
 
-          <div class="comment-label">छवि अपलोड</div>
-          <div class="comment-upload-buttons">
-            <button id="comment-photo-library-btn" class="btn" type="button">फोटो लाइब्रेरी</button>
-            <button id="comment-camera-btn" class="btn" type="button">फोटो लें</button>
-          </div>
-          <div id="comment-image-preview" class="comment-image-preview">
-            <div class="comment-image-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
-          </div>
-
           <input
             id="comment-photo-library-input"
             class="comment-file-input-hidden"
@@ -130,8 +128,6 @@
             accept="image/*"
             capture="environment"
           />
-        </div>
-        <div class="comment-window-foot">
           <button id="comment-submit-btn" class="btn btn-primary" type="button">पोस्ट</button>
         </div>
       </div>

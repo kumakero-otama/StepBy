@@ -71,17 +71,24 @@
     </main>
     <div id="comment-modal" class="comment-modal hidden" role="dialog" aria-modal="true" aria-label="Post comment">
       <div class="comment-window">
-        <div class="comment-window-head">
-          <div class="comment-window-title">Post comment</div>
-          <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="Close">×</button>
-        </div>
+        <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="Close">×</button>
         <div class="comment-window-body">
+          <div class="comment-window-title">Post comment</div>
           <label class="comment-label" for="comment-body-input">Body</label>
           <textarea
             id="comment-body-input"
             class="comment-body-input"
             placeholder="Enter the comment body here"
           ></textarea>
+
+          <div class="comment-label">Upload Image</div>
+          <div class="comment-upload-buttons">
+            <button id="comment-photo-library-btn" class="btn" type="button">Photo Library</button>
+            <button id="comment-camera-btn" class="btn" type="button">Take Photo</button>
+          </div>
+          <div id="comment-image-preview" class="comment-image-preview">
+            <div class="comment-image-empty">Selected images are shown here</div>
+          </div>
 
           <div class="comment-label">Add Tags (optional)</div>
           <section class="comment-tag-panel" aria-label="Tag selection">
@@ -107,15 +114,6 @@
             </div>
           </section>
 
-          <div class="comment-label">Upload Image</div>
-          <div class="comment-upload-buttons">
-            <button id="comment-photo-library-btn" class="btn" type="button">Photo Library</button>
-            <button id="comment-camera-btn" class="btn" type="button">Take Photo</button>
-          </div>
-          <div id="comment-image-preview" class="comment-image-preview">
-            <div class="comment-image-empty">Selected images are shown here</div>
-          </div>
-
           <input
             id="comment-photo-library-input"
             class="comment-file-input-hidden"
@@ -130,8 +128,6 @@
             accept="image/*"
             capture="environment"
           />
-        </div>
-        <div class="comment-window-foot">
           <button id="comment-submit-btn" class="btn btn-primary" type="button">Post</button>
         </div>
       </div>

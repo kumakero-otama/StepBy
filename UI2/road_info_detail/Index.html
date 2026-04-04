@@ -71,17 +71,24 @@
     </main>
     <div id="comment-modal" class="comment-modal hidden" role="dialog" aria-modal="true" aria-label="コメント投稿">
       <div class="comment-window">
-        <div class="comment-window-head">
-          <div class="comment-window-title">コメント投稿</div>
-          <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="閉じる">×</button>
-        </div>
+        <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="閉じる">×</button>
         <div class="comment-window-body">
+          <div class="comment-window-title">コメント投稿</div>
           <label class="comment-label" for="comment-body-input">本文</label>
           <textarea
             id="comment-body-input"
             class="comment-body-input"
             placeholder="ここに本文を入力してください"
           ></textarea>
+
+          <div class="comment-label">画像アップロード</div>
+          <div class="comment-upload-buttons">
+            <button id="comment-photo-library-btn" class="btn" type="button">写真ライブラリ</button>
+            <button id="comment-camera-btn" class="btn" type="button">カメラで撮影</button>
+          </div>
+          <div id="comment-image-preview" class="comment-image-preview">
+            <div class="comment-image-empty">選択された画像がここに表示されます</div>
+          </div>
 
           <div class="comment-label">追加タグ（任意）</div>
           <section class="comment-tag-panel" aria-label="タグ選択">
@@ -107,15 +114,6 @@
             </div>
           </section>
 
-          <div class="comment-label">画像アップロード</div>
-          <div class="comment-upload-buttons">
-            <button id="comment-photo-library-btn" class="btn" type="button">写真ライブラリ</button>
-            <button id="comment-camera-btn" class="btn" type="button">カメラで撮影</button>
-          </div>
-          <div id="comment-image-preview" class="comment-image-preview">
-            <div class="comment-image-empty">選択された画像がここに表示されます</div>
-          </div>
-
           <input
             id="comment-photo-library-input"
             class="comment-file-input-hidden"
@@ -130,8 +128,6 @@
             accept="image/*"
             capture="environment"
           />
-        </div>
-        <div class="comment-window-foot">
           <button id="comment-submit-btn" class="btn btn-primary" type="button">投稿</button>
         </div>
       </div>
