@@ -344,12 +344,13 @@ async function loginAsGuest() {
     const payload = await res.json().catch(() => null);
     if (!res.ok) {
       const errorMessage = payload && payload.error ? payload.error : `status_${res.status}`;
+      const errorDetail = payload && payload.message ? String(payload.message) : "";
       if (res.status === 409 || errorMessage === "already_authenticated") {
         setGoogleStatus(text.guestAlreadyAuthenticated);
         window.location.href = AppPath.toApp("/map/Index.html");
         return true;
       }
-      setGoogleStatus(`${text.guestFailed}: ${errorMessage}`);
+      setGoogleStatus(`${text.guestFailed}: ${errorMessage}${errorDetail ? ` (${errorDetail})` : ""}`);
       return false;
     }
 
