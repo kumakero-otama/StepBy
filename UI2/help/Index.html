@@ -10,7 +10,7 @@
       html,
       body {
         margin: 0;
-        background: #f7f7f7;
+        background: #f5f7fa;
         overflow-x: hidden;
         padding: 0;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
@@ -23,28 +23,126 @@
         font: inherit;
       }
 
+      .app-bar {
+        background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 52%, #3bb49f 100%);
+        box-shadow: 0 10px 28px rgba(30, 122, 109, 0.26);
+        overflow: hidden;
+      }
+
+      .app-bar::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.18), transparent 22%),
+          radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.12), transparent 20%),
+          linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.1) 50%, transparent 78%);
+        pointer-events: none;
+      }
+
+      .app-bar .app-bar-title {
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+      }
+
+      .app-bar-actions {
+        position: relative;
+        z-index: 1;
+      }
+
+      .app-bar-icon-link {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(6px);
+      }
+
+      .app-bar-spacer {
+        background: linear-gradient(180deg, rgba(46, 158, 143, 0.12), rgba(46, 158, 143, 0));
+      }
+
       .help-wrap {
         width: min(860px, calc(100vw - 24px));
         margin: 0 auto;
         padding: 16px 0 28px;
       }
 
+      .help-hero {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 16px;
+        padding: 32px 20px 36px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 60%, #3bb49f 100%);
+        text-align: center;
+        color: #fff;
+        box-shadow: 0 16px 34px rgba(30, 122, 109, 0.2);
+      }
+
+      .help-hero::before {
+        content: "";
+        position: absolute;
+        top: -40px;
+        right: -30px;
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+      }
+
+      .help-hero-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 16px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1.5px solid rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .help-hero-icon img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .help-hero-title {
+        margin: 0 0 6px;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .help-hero-text {
+        margin: 0;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
       .help-card {
-        border: 2px solid #222;
-        border-radius: 14px;
+        border: 1px solid #e4e8ed;
+        border-radius: 22px;
         background: #fff;
-        padding: 16px;
-        color: #111;
+        padding: 18px 16px;
+        color: #1f2d3a;
+        box-shadow: 0 10px 28px rgba(31, 51, 68, 0.08);
       }
 
       .help-section + .help-section {
-        margin-top: 18px;
+        margin-top: 20px;
       }
 
       .section-title {
-        margin: 0 0 10px;
-        font-size: 20px;
+        margin: 0 0 12px;
+        font-size: 14px;
         font-weight: 800;
+        color: #5a6b7c;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
 
       .faq-item + .faq-item {
@@ -53,15 +151,16 @@
 
       .faq-trigger {
         width: 100%;
-        border: 1px solid #222;
-        border-radius: 10px;
+        border: 1px solid #e4e8ed;
+        border-radius: 16px;
         background: #fff;
-        color: #111;
-        font-size: 15px;
+        color: #1f2d3a;
+        font-size: 14px;
         font-weight: 700;
         text-align: left;
-        padding: 12px 14px;
+        padding: 15px 16px;
         cursor: pointer;
+        box-shadow: 0 4px 14px rgba(31, 51, 68, 0.05);
       }
 
       .faq-trigger::after {
@@ -75,11 +174,12 @@
 
       .faq-answer {
         margin: 8px 0 0;
-        padding: 12px 14px;
-        border: 1px solid #d8d8d8;
-        border-radius: 10px;
-        background: #f9f9f9;
-        line-height: 1.6;
+        padding: 14px 16px;
+        border: 1px solid #e4e8ed;
+        border-radius: 16px;
+        background: #f5f7fa;
+        color: #5a6b7c;
+        line-height: 1.7;
       }
 
       .faq-answer[hidden] {
@@ -89,6 +189,8 @@
       .help-list {
         margin: 0;
         padding-left: 20px;
+        color: #5a6b7c;
+        line-height: 1.7;
       }
 
       .help-list li + li {
@@ -106,6 +208,7 @@
         overflow-wrap: anywhere;
         word-break: break-word;
         vertical-align: top;
+        color: #2e9e8f;
       }
 
     </style>
@@ -128,6 +231,14 @@
     <div class="app-bar-spacer" aria-hidden="true"></div>
 
     <main class="help-wrap">
+      <section class="help-hero" aria-label="ヘルプ概要">
+        <div class="help-hero-icon">
+          <img src="../assets/displays/help_white.png" alt="" />
+        </div>
+        <h2 class="help-hero-title">ヘルプセンター</h2>
+        <p class="help-hero-text">StepByの使い方をご案内します</p>
+      </section>
+
       <section class="help-card" aria-label="ヘルプ">
         <section class="help-section" aria-label="FAQ">
           <h2 class="section-title">FAQ</h2>
