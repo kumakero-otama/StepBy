@@ -1509,6 +1509,11 @@ body {
   flex-shrink: 0;
 }
 
+.trace-confirm-ok-btn span {
+  display: block;
+  line-height: 1;
+}
+
 .trace-confirm-cancel-btn {
   color: #4f6274;
   background: #fff;
