@@ -189,7 +189,7 @@ body {
 .stats-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
   margin-top: 16px;
 }
 
@@ -222,25 +222,59 @@ body {
 }
 
 .stat-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
   background: #fff;
   border: 1px solid rgba(223, 230, 236, 0.95);
   border-radius: 22px;
-  padding: 18px 16px;
-  box-shadow: 0 10px 26px rgba(31, 51, 68, 0.08);
+  padding: 14px 14px 12px;
+  box-shadow: 0 12px 28px rgba(31, 51, 68, 0.1);
+  text-align: center;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #2e9e8f;
+}
+
+.stat-card:nth-child(2)::before {
+  background: #f2c230;
 }
 
 .stat-label {
-  font-size: 13px;
+  margin-top: 8px;
+  font-size: 12px;
   font-weight: 700;
-  color: #607283;
+  color: #97a4b2;
   line-height: 1.4;
 }
 
 .stat-value {
-  margin-top: 10px;
-  font-size: 1.8rem;
+  font-size: 2.15rem;
   font-weight: 800;
-  color: #1f2d3a;
+  line-height: 1;
+}
+
+.stat-card:first-child .stat-value {
+  color: #2e9e8f;
+}
+
+.stat-card:nth-child(2) .stat-value {
+  color: #d99800;
+}
+
+.stat-value .unit,
+.stat-value .suffix {
+  font-size: 0.95rem;
+  font-weight: 800;
   line-height: 1.1;
 }
 
@@ -294,6 +328,6 @@ body {
   }
 
   .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.85rem;
   }
 }
