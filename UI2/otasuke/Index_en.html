@@ -201,17 +201,61 @@
       }
 
       .help-link {
-        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 88px;
         margin-top: 14px;
-        border: 2px solid #222;
-        border-radius: 12px;
+        border: 1px solid rgba(223, 230, 236, 0.95);
+        border-radius: 18px;
         background: #fff;
-        color: #111;
-        font-size: 15px;
-        font-weight: 700;
-        text-align: center;
+        box-shadow: 0 10px 26px rgba(31, 51, 68, 0.08);
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 14px;
         text-decoration: none;
+        color: #355066;
+        text-align: left;
         padding: 14px 16px;
+      }
+
+      .help-link-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #4e8de8;
+      }
+
+      .help-link-icon img {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .help-link-body {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .help-link-label {
+        font-size: 15px;
+        font-weight: 800;
+        color: #23384b;
+        line-height: 1.2;
+      }
+
+      .help-link-description {
+        font-size: 12px;
+        font-weight: 700;
+        color: #a0acb8;
+        line-height: 1.35;
       }
 
       .version-footer {
@@ -379,7 +423,13 @@
         </div>
       </section>
       <a class="help-link" href="../help/Index_en.html" aria-label="Go to help page">
-        Go to Help Page
+        <span class="help-link-icon" aria-hidden="true">
+          <img src="../assets/buttons/help_white.png" alt="" />
+        </span>
+        <span class="help-link-body">
+          <span class="help-link-label">Help</span>
+          <span class="help-link-description">How to use and FAQ</span>
+        </span>
       </a>
       <footer class="version-footer">
         <span id="app-version">v1.18.4</span>
