@@ -377,9 +377,9 @@ body {
 }
 
 .map-app-bar-action {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -396,8 +396,8 @@ body {
 }
 
 .map-app-bar-action img {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
 }
 
 .map-app-bar-settings {
@@ -450,14 +450,14 @@ body {
   }
 
   .map-app-bar-action {
-    width: 34px;
-    height: 34px;
-    border-radius: 11px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
   }
 
   .map-app-bar-action img {
-    width: 19px;
-    height: 19px;
+    width: 22px;
+    height: 22px;
   }
 }
 
