@@ -75,10 +75,30 @@ body {
 
 .section-label {
   margin: 4px 0 0;
-  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.25;
   color: #1a2b3c;
+}
+
+.section-label-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2e9e8f;
+  flex-shrink: 0;
+}
+
+.section-label-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: currentColor;
 }
 
 .section-card,
@@ -601,7 +621,7 @@ body {
   }
 
   .section-label {
-    font-size: 20px;
+    font-size: 17px;
   }
 
   .post-count {
