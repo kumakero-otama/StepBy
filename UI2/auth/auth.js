@@ -12,6 +12,7 @@ const AUTH_TEXT = {
     guestSuccess: "ゲストログイン成功。地図画面へ移動します...",
     guestAlreadyAuthenticated: "すでにログイン済みです。地図画面へ移動します...",
     guestFailed: "ゲストログインに失敗しました",
+    guestResponseMissing: "ゲストログインのレスポンスが不正です",
     guestNetworkError: "ネットワークエラーでゲストログインに失敗しました。",
     guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
   },
@@ -20,6 +21,7 @@ const AUTH_TEXT = {
     guestSuccess: "Guest login successful. Redirecting to the map...",
     guestAlreadyAuthenticated: "You are already signed in. Redirecting to the map...",
     guestFailed: "Guest login failed",
+    guestResponseMissing: "The guest login response was invalid",
     guestNetworkError: "Guest login failed due to a network error.",
     guestEditLocked: "Profile editing is not available for guest accounts.",
   },
@@ -28,6 +30,7 @@ const AUTH_TEXT = {
     guestSuccess: "गेस्ट लॉगिन सफल हुआ। मानचित्र स्क्रीन पर जा रहे हैं...",
     guestAlreadyAuthenticated: "आप पहले से लॉग इन हैं। मानचित्र स्क्रीन पर जा रहे हैं...",
     guestFailed: "गेस्ट लॉगिन विफल रहा",
+    guestResponseMissing: "गेस्ट लॉगिन का रिस्पॉन्स अमान्य था",
     guestNetworkError: "नेटवर्क त्रुटि के कारण गेस्ट लॉगिन विफल रहा।",
     guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
   },
@@ -335,16 +338,23 @@ async function loginAsGuest() {
     setGoogleStatus(text.guestChecking);
     const res = await fetch(AppPath.toApi("/auth/guest"), {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
     });
-    const payload = await res.json().catch(() => ({}));
+    const payload = await res.json().catch(() => null);
     if (!res.ok) {
-      const errorMessage = payload.error || "guest_login_failed";
+      const errorMessage = payload && payload.error ? payload.error : `status_${res.status}`;
       if (res.status === 409 || errorMessage === "already_authenticated") {
         setGoogleStatus(text.guestAlreadyAuthenticated);
         window.location.href = AppPath.toApp("/map/Index.html");
         return true;
       }
       setGoogleStatus(`${text.guestFailed}: ${errorMessage}`);
+      return false;
+    }
+
+    if (!payload || !payload.access_token) {
+      setGoogleStatus(`${text.guestResponseMissing}: status_${res.status}`);
       return false;
     }
 
