@@ -187,24 +187,70 @@ body {
 }
 
 .profile-wide-btn {
-  min-height: 56px;
-  padding: 0 18px;
+  min-height: 88px;
+  padding: 14px 16px;
   border-radius: 18px;
   border: 1px solid rgba(223, 230, 236, 0.95);
   background: #fff;
   box-shadow: 0 10px 26px rgba(31, 51, 68, 0.08);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 14px;
   text-decoration: none;
   color: #355066;
-  font-size: 15px;
-  font-weight: 800;
   cursor: pointer;
+  text-align: left;
 }
 
 .profile-wide-btn-danger {
-  color: #b23a3a;
+  color: #2f3f4f;
+}
+
+.profile-wide-btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-wide-btn-icon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+.profile-wide-btn-icon-help {
+  background: #4e8de8;
+}
+
+.profile-wide-btn-icon-logout {
+  background: #f35f5f;
+}
+
+.profile-wide-btn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-wide-btn-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #23384b;
+  line-height: 1.2;
+}
+
+.profile-wide-btn-description {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a0acb8;
+  line-height: 1.35;
 }
 
 .stat-card {
