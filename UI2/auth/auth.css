@@ -126,15 +126,21 @@ body {
 }
 
 .login-page {
+  --login-visible-height: 100dvh;
+  --login-safe-bottom: env(safe-area-inset-bottom);
+}
+
+.login-page {
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 24%),
     linear-gradient(160deg, #0d3535 0%, #1a5c5c 30%, #2e9e8f 66%, #4bdbb4 100%);
-  min-height: 100dvh;
+  min-height: var(--login-visible-height);
   overflow: hidden;
 }
 
 .login-shell {
-  height: 100dvh;
+  height: var(--login-visible-height);
+  min-height: var(--login-visible-height);
   max-width: 480px;
   margin: 0 auto;
   display: flex;
@@ -142,7 +148,7 @@ body {
   justify-content: flex-start;
   overflow: hidden;
   position: relative;
-  background: #fff;
+  background: transparent;
 }
 
 .login-hero {
@@ -155,6 +161,7 @@ body {
   padding: 40px 28px 20px;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(160deg, #0d3535 0%, #1a5c5c 30%, #2e9e8f 66%, #4bdbb4 100%);
 }
 
 .login-hero::before,
@@ -288,11 +295,13 @@ body {
   background: #fff;
   border-radius: 28px 28px 0 0;
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
-  padding: 32px 24px calc(20px + env(safe-area-inset-bottom));
+  padding: 32px 24px calc(20px + var(--login-safe-bottom));
   margin: 0;
   position: relative;
   z-index: 1;
   flex-shrink: 0;
+  max-height: calc(var(--login-visible-height) - 120px);
+  overflow: auto;
 }
 
 .login-card-hint {
@@ -398,6 +407,11 @@ body {
 
   .login-title {
     font-size: 1.8rem;
+  }
+
+  .login-card {
+    padding-right: 20px;
+    padding-left: 20px;
   }
 }
 

@@ -55,6 +55,38 @@ function getAuthText() {
   return AUTH_TEXT[language] || AUTH_TEXT.ja;
 }
 
+function measureVisibleViewportHeight() {
+  if (window.visualViewport && Number.isFinite(window.visualViewport.height) && window.visualViewport.height > 0) {
+    return Number(window.visualViewport.height);
+  }
+  const fallback = Number(window.innerHeight);
+  if (!Number.isFinite(fallback) || fallback <= 0) {
+    return 0;
+  }
+  return fallback;
+}
+
+function applyLoginViewportMetrics() {
+  const viewportHeight = measureVisibleViewportHeight();
+  if (viewportHeight > 0) {
+    document.documentElement.style.setProperty("--login-visible-height", `${Math.round(viewportHeight)}px`);
+  }
+  document.documentElement.style.setProperty("--login-safe-bottom", "env(safe-area-inset-bottom)");
+}
+
+function initLoginViewportMetrics() {
+  if (signupProfilePage) {
+    return;
+  }
+  applyLoginViewportMetrics();
+  window.setTimeout(applyLoginViewportMetrics, 120);
+  window.setTimeout(applyLoginViewportMetrics, 360);
+  window.addEventListener("resize", applyLoginViewportMetrics);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", applyLoginViewportMetrics);
+  }
+}
+
 function setGoogleStatus(message) {
   if (!googleStatusElement) {
     return;
@@ -673,6 +705,7 @@ function initGuestLogin() {
 }
 
 (async () => {
+  initLoginViewportMetrics();
   if (signupProfilePage) {
     initSignupProfilePage();
     return;
