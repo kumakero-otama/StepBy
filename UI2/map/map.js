@@ -196,8 +196,11 @@ function initSafetyConfirmModal() {
   });
 
   safetyConfirmRejectBtn.addEventListener("click", () => {
-    window.alert(getSafetyConfirmText().invalidSelection);
-    showSafetyConfirmModal();
+    const lang = getCurrentLanguage();
+    const targetPath = lang === "en"
+      ? "/map/exit_notice_en.html"
+      : (lang === "hi" ? "/map/exit_notice_hi.html" : "/map/exit_notice.html");
+    window.location.replace(AppPath.toApp(targetPath));
   });
 }
 
