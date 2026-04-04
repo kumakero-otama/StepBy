@@ -248,7 +248,7 @@ body {
 
 .map-app-bar {
   height: calc(72px + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) 14px 8px;
+  padding: env(safe-area-inset-top) 14px 0;
   background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 60%, #3bb49f 100%);
   overflow: visible;
   box-shadow: 0 10px 26px rgba(15, 55, 61, 0.18);
