@@ -7,6 +7,36 @@ const logoutBtnEl = document.getElementById("profile-logout-btn");
 const editBtnEl = document.getElementById("profile-edit-btn");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
+const PROFILE_TEXT = {
+  ja: {
+    guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+  },
+  en: {
+    guestEditLocked: "Profile editing is not available for guest accounts.",
+  },
+  hi: {
+    guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+  },
+};
+
+function getCurrentLanguage() {
+  const lang = String(document.documentElement && document.documentElement.lang || "").trim().toLowerCase();
+  if (!lang) {
+    return "ja";
+  }
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+  if (lang.startsWith("hi")) {
+    return "hi";
+  }
+  return "ja";
+}
+
+function getProfileText() {
+  const language = getCurrentLanguage();
+  return PROFILE_TEXT[language] || PROFILE_TEXT.ja;
+}
 
 function getProfileCacheStorage() {
   try {
@@ -84,6 +114,7 @@ function saveCachedProfileUser(user) {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isGuest: Boolean(user.isGuest || user.is_guest),
     isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : existing && typeof existing.isPro === "boolean" ? existing.isPro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
@@ -177,6 +208,22 @@ function applyProfileUser(user) {
   if (totalRoadPostsEl) {
     totalRoadPostsEl.textContent = `${Number(totalRoadPosts || 0)}件`;
   }
+  applyProfileEditAvailability(Boolean(user.isGuest || user.is_guest));
+}
+
+function applyProfileEditAvailability(isGuest) {
+  if (!editBtnEl) {
+    return;
+  }
+  editBtnEl.disabled = isGuest;
+  editBtnEl.classList.toggle("is-disabled", isGuest);
+  if (isGuest) {
+    editBtnEl.setAttribute("aria-disabled", "true");
+    editBtnEl.title = getProfileText().guestEditLocked;
+  } else {
+    editBtnEl.removeAttribute("aria-disabled");
+    editBtnEl.removeAttribute("title");
+  }
 }
 
 async function loadProfile() {
@@ -236,6 +283,10 @@ if (logoutBtnEl) {
 
 if (editBtnEl) {
   editBtnEl.addEventListener("click", () => {
+    if (editBtnEl.disabled) {
+      window.alert(getProfileText().guestEditLocked);
+      return;
+    }
     window.location.href = AppPath.toApp("/profile/edit.html");
   });
 }

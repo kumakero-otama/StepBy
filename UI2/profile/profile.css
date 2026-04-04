@@ -165,6 +165,20 @@ body {
   backdrop-filter: blur(6px);
 }
 
+.profile-edit-btn:disabled,
+.profile-edit-btn.is-disabled {
+  cursor: default;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0.8;
+}
+
+.profile-edit-btn:disabled img,
+.profile-edit-btn.is-disabled img {
+  opacity: 0.55;
+}
+
 .profile-edit-btn img {
   width: 16px;
   height: 16px;

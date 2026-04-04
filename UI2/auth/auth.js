@@ -1,10 +1,56 @@
 const GOOGLE_CLIENT_ID = "808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com";
 const googleStatusElement = document.getElementById("google-auth-status");
+const guestLoginButton = document.getElementById("guest-login-button");
 const signupPage = window.location.pathname.endsWith("/auth/signup.html");
 const signupProfilePage = window.location.pathname.endsWith("/auth/signup_profile.html");
 const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
+const AUTH_TEXT = {
+  ja: {
+    guestChecking: "ゲストログインを確認中です...",
+    guestSuccess: "ゲストログイン成功。地図画面へ移動します...",
+    guestAlreadyAuthenticated: "すでにログイン済みです。地図画面へ移動します...",
+    guestFailed: "ゲストログインに失敗しました",
+    guestNetworkError: "ネットワークエラーでゲストログインに失敗しました。",
+    guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+  },
+  en: {
+    guestChecking: "Checking guest login...",
+    guestSuccess: "Guest login successful. Redirecting to the map...",
+    guestAlreadyAuthenticated: "You are already signed in. Redirecting to the map...",
+    guestFailed: "Guest login failed",
+    guestNetworkError: "Guest login failed due to a network error.",
+    guestEditLocked: "Profile editing is not available for guest accounts.",
+  },
+  hi: {
+    guestChecking: "गेस्ट लॉगिन की पुष्टि की जा रही है...",
+    guestSuccess: "गेस्ट लॉगिन सफल हुआ। मानचित्र स्क्रीन पर जा रहे हैं...",
+    guestAlreadyAuthenticated: "आप पहले से लॉग इन हैं। मानचित्र स्क्रीन पर जा रहे हैं...",
+    guestFailed: "गेस्ट लॉगिन विफल रहा",
+    guestNetworkError: "नेटवर्क त्रुटि के कारण गेस्ट लॉगिन विफल रहा।",
+    guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+  },
+};
+
+function getCurrentLanguage() {
+  const lang = String(document.documentElement && document.documentElement.lang || "").trim().toLowerCase();
+  if (!lang) {
+    return "ja";
+  }
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+  if (lang.startsWith("hi")) {
+    return "hi";
+  }
+  return "ja";
+}
+
+function getAuthText() {
+  const language = getCurrentLanguage();
+  return AUTH_TEXT[language] || AUTH_TEXT.ja;
+}
 
 function setGoogleStatus(message) {
   if (!googleStatusElement) {
@@ -214,6 +260,7 @@ function cacheProfileUser(user) {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isGuest: Boolean(user.isGuest || user.is_guest),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
@@ -276,6 +323,47 @@ async function loginWithGoogle(idToken) {
     const detail = err && err.message ? String(err.message) : "unknown_error";
     setGoogleStatus(`エラーが出てGoogleログインに失敗しました: ${detail}`);
     return false;
+  }
+}
+
+async function loginAsGuest() {
+  const text = getAuthText();
+  if (guestLoginButton) {
+    guestLoginButton.disabled = true;
+  }
+  try {
+    setGoogleStatus(text.guestChecking);
+    const res = await fetch(AppPath.toApi("/auth/guest"), {
+      method: "POST",
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const errorMessage = payload.error || "guest_login_failed";
+      if (res.status === 409 || errorMessage === "already_authenticated") {
+        setGoogleStatus(text.guestAlreadyAuthenticated);
+        window.location.href = AppPath.toApp("/map/Index.html");
+        return true;
+      }
+      setGoogleStatus(`${text.guestFailed}: ${errorMessage}`);
+      return false;
+    }
+
+    if (payload && payload.access_token) {
+      setAccessToken(payload.access_token);
+    }
+    if (payload && payload.user) {
+      cacheProfileUser(payload.user);
+    }
+    setGoogleStatus(text.guestSuccess);
+    window.location.href = AppPath.toApp("/map/Index.html");
+    return true;
+  } catch {
+    setGoogleStatus(text.guestNetworkError);
+    return false;
+  } finally {
+    if (guestLoginButton) {
+      guestLoginButton.disabled = false;
+    }
   }
 }
 
@@ -564,6 +652,15 @@ function initGoogleSignIn() {
   window.addEventListener("load", initialize, { once: true });
 }
 
+function initGuestLogin() {
+  if (signupPage || signupProfilePage || !guestLoginButton) {
+    return;
+  }
+  guestLoginButton.addEventListener("click", () => {
+    void loginAsGuest();
+  });
+}
+
 (async () => {
   if (signupProfilePage) {
     initSignupProfilePage();
@@ -574,4 +671,5 @@ function initGoogleSignIn() {
     return;
   }
   initGoogleSignIn();
+  initGuestLogin();
 })();

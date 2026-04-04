@@ -8,6 +8,36 @@ const saveBtnEl = document.getElementById("profile-edit-save-btn");
 const saveToastEl = document.getElementById("profile-save-toast");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
+const PROFILE_EDIT_TEXT = {
+  ja: {
+    guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+  },
+  en: {
+    guestEditLocked: "Profile editing is not available for guest accounts.",
+  },
+  hi: {
+    guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+  },
+};
+
+function getCurrentLanguage() {
+  const lang = String(document.documentElement && document.documentElement.lang || "").trim().toLowerCase();
+  if (!lang) {
+    return "ja";
+  }
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+  if (lang.startsWith("hi")) {
+    return "hi";
+  }
+  return "ja";
+}
+
+function getProfileEditText() {
+  const language = getCurrentLanguage();
+  return PROFILE_EDIT_TEXT[language] || PROFILE_EDIT_TEXT.ja;
+}
 
 function getProfileCacheStorage() {
   try {
@@ -52,6 +82,7 @@ function saveCachedProfileUser(user) {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isGuest: Boolean(user.isGuest || user.is_guest),
     isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : existing && typeof existing.isPro === "boolean" ? existing.isPro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
@@ -151,6 +182,11 @@ async function loadCurrentProfile() {
     if (!user) {
       clearAccessToken();
       window.location.replace(AppPath.toApp("/auth/login.html"));
+      return;
+    }
+    if (user.isGuest === true || user.is_guest === true) {
+      window.alert(getProfileEditText().guestEditLocked);
+      window.location.replace(AppPath.toApp("/profile/Index.html"));
       return;
     }
     const username = user.username || "";
