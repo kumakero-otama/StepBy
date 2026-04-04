@@ -20,6 +20,9 @@ const toggleShowMapInfoBtn = document.getElementById("toggle-show-map-info");
 const toggleCenterCurrentBtn = document.getElementById("toggle-center-current");
 const osmLoadingOverlayEl = document.getElementById("osm-loading-overlay");
 const recordsLoadingOverlayEl = document.getElementById("records-loading-overlay");
+const safetyConfirmModalEl = document.getElementById("safety-confirm-modal");
+const safetyConfirmAcceptBtn = document.getElementById("safety-confirm-accept");
+const safetyConfirmRejectBtn = document.getElementById("safety-confirm-reject");
 const traceConfirmModalEl = document.getElementById("trace-confirm-modal");
 const traceConfirmMapEl = document.getElementById("trace-confirm-map");
 const traceConfirmOkBtn = document.getElementById("trace-confirm-ok");
@@ -33,6 +36,19 @@ const traceMemoPanelEl = document.getElementById("trace-memo-panel");
 const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
+const SAFETY_CONFIRM_KEY = "ui2_map_safety_confirmed_v1";
+
+const SAFETY_CONFIRM_TEXT = {
+  ja: {
+    invalidSelection: "この選択は無効です",
+  },
+  en: {
+    invalidSelection: "This choice is invalid.",
+  },
+  hi: {
+    invalidSelection: "यह चयन अमान्य है।",
+  },
+};
 
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
@@ -120,6 +136,69 @@ function getTraceTagText() {
 function getTraceConfirmText() {
   const language = getCurrentLanguage();
   return TRACE_CONFIRM_TEXT[language] || TRACE_CONFIRM_TEXT.ja;
+}
+
+function getSafetyConfirmText() {
+  const language = getCurrentLanguage();
+  return SAFETY_CONFIRM_TEXT[language] || SAFETY_CONFIRM_TEXT.ja;
+}
+
+function hasAcceptedSafetyConfirm() {
+  try {
+    return window.localStorage.getItem(SAFETY_CONFIRM_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistSafetyConfirmAcceptance() {
+  try {
+    window.localStorage.setItem(SAFETY_CONFIRM_KEY, "1");
+  } catch {
+    // Ignore storage errors and continue for the current session.
+  }
+}
+
+function hideSafetyConfirmModal() {
+  if (!safetyConfirmModalEl) {
+    return;
+  }
+  safetyConfirmModalEl.classList.add("hidden");
+  safetyConfirmModalEl.setAttribute("aria-hidden", "true");
+}
+
+function showSafetyConfirmModal() {
+  if (!safetyConfirmModalEl) {
+    return;
+  }
+  safetyConfirmModalEl.classList.remove("hidden");
+  safetyConfirmModalEl.removeAttribute("aria-hidden");
+  if (safetyConfirmAcceptBtn) {
+    window.setTimeout(() => safetyConfirmAcceptBtn.focus(), 0);
+  }
+}
+
+function initSafetyConfirmModal() {
+  if (!safetyConfirmModalEl || !safetyConfirmAcceptBtn || !safetyConfirmRejectBtn) {
+    return;
+  }
+
+  if (hasAcceptedSafetyConfirm()) {
+    hideSafetyConfirmModal();
+    return;
+  }
+
+  showSafetyConfirmModal();
+
+  safetyConfirmAcceptBtn.addEventListener("click", () => {
+    persistSafetyConfirmAcceptance();
+    hideSafetyConfirmModal();
+  });
+
+  safetyConfirmRejectBtn.addEventListener("click", () => {
+    window.alert(getSafetyConfirmText().invalidSelection);
+    showSafetyConfirmModal();
+  });
 }
 
 function escapeHtml(value) {
@@ -2608,6 +2687,7 @@ function loadConfig() {
 }
 
 initTraceTagUiEvents();
+initSafetyConfirmModal();
 
 if ("geolocation" in navigator) {
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
@@ -2794,6 +2874,7 @@ if ("geolocation" in navigator) {
     }
     
   });
+
 } else {
   const cachedLocation = loadLastKnownLocation();
   const hasCachedLocation = applyCachedLocation(cachedLocation);

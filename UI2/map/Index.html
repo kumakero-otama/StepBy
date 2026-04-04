@@ -186,6 +186,26 @@
         </div>
       </section>
     </main>
+    <div
+      id="safety-confirm-modal"
+      class="safety-confirm-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="safety-confirm-title"
+      aria-describedby="safety-confirm-message"
+    >
+      <div class="safety-confirm-panel">
+        <h2 id="safety-confirm-title">安全確認</h2>
+        <p id="safety-confirm-message" class="safety-confirm-message">
+          このアプリを使う際は、必ず周囲の安全を確認してから使ってください。<br />
+          歩きスマホは決してしないでください。
+        </p>
+        <div class="safety-confirm-actions">
+          <button id="safety-confirm-accept" class="safety-confirm-accept-btn" type="button">はい</button>
+          <button id="safety-confirm-reject" class="safety-confirm-reject-btn" type="button">いいえ</button>
+        </div>
+      </div>
+    </div>
     <div id="osm-loading-overlay" class="osm-loading-overlay hidden" aria-live="polite" aria-busy="true">
       <div class="osm-loading-spinner" aria-hidden="true"></div>
       <div class="osm-loading-text">OSMデータ取得中...</div>

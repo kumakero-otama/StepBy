@@ -186,6 +186,26 @@
         </div>
       </section>
     </main>
+    <div
+      id="safety-confirm-modal"
+      class="safety-confirm-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="safety-confirm-title"
+      aria-describedby="safety-confirm-message"
+    >
+      <div class="safety-confirm-panel">
+        <h2 id="safety-confirm-title">Safety Confirmation</h2>
+        <p id="safety-confirm-message" class="safety-confirm-message">
+          Before using this app, always make sure your surroundings are safe.<br />
+          Never use your smartphone while walking.
+        </p>
+        <div class="safety-confirm-actions">
+          <button id="safety-confirm-accept" class="safety-confirm-accept-btn" type="button">Yes</button>
+          <button id="safety-confirm-reject" class="safety-confirm-reject-btn" type="button">No</button>
+        </div>
+      </div>
+    </div>
     <div id="osm-loading-overlay" class="osm-loading-overlay hidden" aria-live="polite" aria-busy="true">
       <div class="osm-loading-spinner" aria-hidden="true"></div>
       <div class="osm-loading-text">Loading OSM data...</div>
