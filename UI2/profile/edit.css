@@ -89,6 +89,13 @@ body {
   font-weight: 800;
 }
 
+.form-card-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
 .form-card-icon-pro {
   background: #fff0d6;
   color: #b56a00;
@@ -153,6 +160,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   flex: 1;
   min-height: 48px;
   padding: 0 16px;
@@ -170,6 +178,14 @@ body {
     transform 0.12s ease;
 }
 
+.choice-btn img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
 .choice-btn:active {
   transform: scale(0.98);
   background: #eef8f6;
@@ -182,6 +198,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin-top: 1em;
 }
 
 .pro-setting-copy {
@@ -361,7 +378,7 @@ body {
   }
 
   .icon-action-col {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .pro-setting-row {
