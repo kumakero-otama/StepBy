@@ -65,15 +65,14 @@
       .help-wrap {
         width: min(860px, calc(100vw - 24px));
         margin: 0 auto;
-        padding: 16px 0 28px;
+        padding: 0 0 28px;
       }
 
       .help-hero {
         position: relative;
         overflow: hidden;
-        margin-bottom: 16px;
+        margin: 0 calc(50% - 50vw) 16px;
         padding: 32px 20px 36px;
-        border-radius: 22px;
         background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 60%, #3bb49f 100%);
         text-align: center;
         color: #fff;
@@ -125,7 +124,7 @@
 
       .help-card {
         border: 1px solid #e4e8ed;
-        border-radius: 22px;
+        border-radius: 0;
         background: #fff;
         padding: 18px 16px;
         color: #1f2d3a;
@@ -211,6 +210,14 @@
         color: #2e9e8f;
       }
 
+      .help-video {
+        width: 100%;
+        display: block;
+        margin-top: 8px;
+        border-radius: 12px;
+        background: #000;
+      }
+
     </style>
   </head>
   <body>
@@ -265,7 +272,9 @@
           <ul class="help-list">
             <li>
               アプリ説明動画:
-              <a href="https://drive.google.com/file/d/1mu7Pg66f_OTjb1eTBp93KYheRiE9v9VQ/view?usp=sharing" target="_blank" rel="noopener noreferrer">https://drive.google.com/file/d/1mu7Pg66f_OTjb1eTBp93KYheRiE9v9VQ/view?usp=sharing</a>
+              <video class="help-video" controls playsinline preload="metadata">
+                <source src="../assets/videos/StepBy_CPJ2026.mp4" type="video/mp4" />
+              </video>
             </li>
             <li>
               アプリの詳しい紹介ページ:
