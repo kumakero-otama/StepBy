@@ -3,7 +3,6 @@ const profileUsernameEl = document.getElementById("profile-username");
 const profileProChipEl = document.getElementById("profile-pro-chip");
 const totalTactileEl = document.getElementById("total-tactile-length");
 const totalRoadPostsEl = document.getElementById("total-road-posts");
-const totalHeartsEl = document.getElementById("total-hearts");
 const logoutBtnEl = document.getElementById("profile-logout-btn");
 const editBtnEl = document.getElementById("profile-edit-btn");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
@@ -46,6 +45,34 @@ function formatMetersFromKm(value) {
     return "0";
   }
   return Math.round(num * 1000).toLocaleString("ja-JP");
+}
+
+function parseIsPro(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  if (typeof payload.isPro === "boolean") {
+    return payload.isPro;
+  }
+  if (typeof payload.is_pro === "boolean") {
+    return payload.is_pro;
+  }
+  if (payload.data && typeof payload.data === "object") {
+    if (typeof payload.data.isPro === "boolean") {
+      return payload.data.isPro;
+    }
+    if (typeof payload.data.is_pro === "boolean") {
+      return payload.data.is_pro;
+    }
+  }
+  return null;
+}
+
+function setProfileProChipVisible(visible) {
+  if (!profileProChipEl) {
+    return;
+  }
+  profileProChipEl.classList.toggle("hidden", !visible);
 }
 
 function saveCachedProfileUser(user) {
@@ -101,6 +128,30 @@ function clearCachedProfileUser() {
   }
 }
 
+async function syncProfileProChip() {
+  const cached = loadCachedProfileUser();
+  if (cached && typeof cached.isPro === "boolean") {
+    setProfileProChipVisible(cached.isPro);
+  }
+  try {
+    const res = await authFetch("/api/pro-status", { cache: "no-store" });
+    if (!res.ok) {
+      setProfileProChipVisible(false);
+      return;
+    }
+    const payload = await res.json().catch(() => null);
+    const isPro = parseIsPro(payload);
+    if (typeof isPro === "boolean") {
+      saveCachedProfileUser({ ...(cached || {}), isPro });
+    }
+    setProfileProChipVisible(isPro === true);
+  } catch {
+    if (!(cached && typeof cached.isPro === "boolean")) {
+      setProfileProChipVisible(false);
+    }
+  }
+}
+
 function applyProfileUser(user) {
   if (!user) {
     return;
@@ -120,17 +171,11 @@ function applyProfileUser(user) {
   if (profileUsernameEl) {
     profileUsernameEl.textContent = username;
   }
-  if (profileProChipEl) {
-    profileProChipEl.classList.toggle("hidden", !user.isPro);
-  }
   if (totalTactileEl) {
     totalTactileEl.textContent = `${formatMetersFromKm(totalTactile)}m`;
   }
   if (totalRoadPostsEl) {
     totalRoadPostsEl.textContent = `${Number(totalRoadPosts || 0)}件`;
-  }
-  if (totalHeartsEl) {
-    totalHeartsEl.textContent = `${Number(totalHearts || 0)}個`;
   }
 }
 
@@ -196,3 +241,4 @@ if (editBtnEl) {
 }
 
 loadProfile();
+void syncProfileProChip();
