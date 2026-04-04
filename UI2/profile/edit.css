@@ -207,6 +207,12 @@ body {
   min-width: 0;
 }
 
+.pro-toggle-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .pro-toggle-row {
   display: inline-flex;
   align-items: center;
@@ -218,11 +224,23 @@ body {
   margin: 0;
 }
 
-.form-hint {
-  margin: 0;
-  color: #74808a;
-  font-size: 0.82rem;
-  line-height: 1.5;
+.pro-help-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.pro-help-btn img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
 }
 
 .toggle-label {
@@ -354,6 +372,52 @@ body {
 
 .save-toast.show {
   opacity: 1;
+}
+
+.pro-help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2900;
+  background: rgba(20, 31, 40, 0.36);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.pro-help-modal.hidden {
+  display: none;
+}
+
+.pro-help-panel {
+  position: relative;
+  width: min(420px, 92vw);
+  background: #fff;
+  border: 1px solid #d9e2e8;
+  border-radius: 20px;
+  padding: 20px 18px 18px;
+  box-shadow: 0 18px 40px rgba(20, 62, 72, 0.18);
+}
+
+.pro-help-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #7c8a95;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pro-help-message {
+  margin: 0;
+  padding-right: 22px;
+  color: #334652;
+  font-size: 0.95rem;
+  line-height: 1.7;
 }
 
 @media (max-width: 720px) {

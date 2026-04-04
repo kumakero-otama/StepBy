@@ -42,8 +42,12 @@
           </div>
           <div class="pro-setting-row" role="group" aria-label="PROアカウント切り替え">
             <div class="pro-setting-copy">
-              <p class="form-label pro-toggle-label">PROアカウント</p>
-              <p class="form-hint">特別な機能が利用できるアカウント設定です</p>
+              <div class="pro-toggle-title-row">
+                <p class="form-label pro-toggle-label">PROアカウント</p>
+                <button id="profile-pro-help-btn" class="pro-help-btn" type="button" aria-label="PROアカウントの説明">
+                  <img src="../assets/buttons/help_66gray.png" alt="" />
+                </button>
+              </div>
             </div>
             <div class="pro-toggle-row">
               <span class="toggle-label">OFF</span>
@@ -77,13 +81,23 @@
               </label>
               <label class="choice-btn" for="profile-icon-upload-input">
                 <img src="../assets/displays/library_green.png" alt="" />
-                <span>画像アップロード</span>
+                <span>写真ライブラリ</span>
               </label>
             </div>
           </div>
         </div>
       </section>
     </main>
+
+    <div id="pro-help-modal" class="pro-help-modal hidden" role="dialog" aria-modal="true" aria-label="PROアカウントの説明">
+      <div class="pro-help-panel">
+        <button id="pro-help-close-btn" class="pro-help-close-btn" type="button" aria-label="閉じる">×</button>
+        <p class="pro-help-message">
+          視覚障害者を支援するプロの仕事をしている方が、点字ブロックの種類など詳細な情報を記録できるモードです。<br />
+          有料プランというわけではありません。
+        </p>
+      </div>
+    </div>
 
     <input id="profile-icon-camera-input" class="hidden-input" type="file" accept="image/*" capture="environment" />
     <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />

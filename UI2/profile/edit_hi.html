@@ -42,8 +42,12 @@
           </div>
           <div class="pro-setting-row" role="group" aria-label="PRO खाता स्विच">
             <div class="pro-setting-copy">
-              <p class="form-label pro-toggle-label">PRO खाता</p>
-              <p class="form-hint">विशेष सुविधाओं के लिए खाता सेटिंग सक्षम करें</p>
+              <div class="pro-toggle-title-row">
+                <p class="form-label pro-toggle-label">PRO खाता</p>
+                <button id="profile-pro-help-btn" class="pro-help-btn" type="button" aria-label="PRO खाते के बारे में">
+                  <img src="../assets/buttons/help_66gray.png" alt="" />
+                </button>
+              </div>
             </div>
             <div class="pro-toggle-row">
               <span class="toggle-label">बंद</span>
@@ -77,13 +81,23 @@
               </label>
               <label class="choice-btn" for="profile-icon-upload-input">
                 <img src="../assets/displays/library_green.png" alt="" />
-                <span>छवि अपलोड करें</span>
+                <span>फोटो लाइब्रेरी</span>
               </label>
             </div>
           </div>
         </div>
       </section>
     </main>
+
+    <div id="pro-help-modal" class="pro-help-modal hidden" role="dialog" aria-modal="true" aria-label="PRO खाते के बारे में">
+      <div class="pro-help-panel">
+        <button id="pro-help-close-btn" class="pro-help-close-btn" type="button" aria-label="बंद करें">×</button>
+        <p class="pro-help-message">
+          यह मोड उन पेशेवर लोगों के लिए है जो दृष्टिबाधित लोगों का सहयोग करते हैं, ताकि वे टैक्टाइल ब्लॉक के प्रकार जैसी विस्तृत जानकारी दर्ज कर सकें।<br />
+          यह कोई सशुल्क योजना नहीं है।
+        </p>
+      </div>
+    </div>
 
     <input id="profile-icon-camera-input" class="hidden-input" type="file" accept="image/*" capture="environment" />
     <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />

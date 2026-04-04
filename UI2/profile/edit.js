@@ -3,6 +3,9 @@ const iconPreviewEl = document.getElementById("profile-icon-preview");
 const cameraInputEl = document.getElementById("profile-icon-camera-input");
 const uploadInputEl = document.getElementById("profile-icon-upload-input");
 const proToggleInputEl = document.getElementById("profile-pro-toggle-input");
+const proHelpBtnEl = document.getElementById("profile-pro-help-btn");
+const proHelpModalEl = document.getElementById("pro-help-modal");
+const proHelpCloseBtnEl = document.getElementById("pro-help-close-btn");
 const backBtnEl = document.getElementById("profile-edit-back-btn");
 const saveBtnEl = document.getElementById("profile-edit-save-btn");
 const saveToastEl = document.getElementById("profile-save-toast");
@@ -72,6 +75,13 @@ function clearAccessToken() {
 
 let selectedIconDataUrl = null;
 let saving = false;
+
+function setProHelpModalOpen(open) {
+  if (!proHelpModalEl) {
+    return;
+  }
+  proHelpModalEl.classList.toggle("hidden", !open);
+}
 
 function saveCachedProfileUser(user) {
   if (!user || typeof user !== "object") {
@@ -359,6 +369,26 @@ if (backBtnEl) {
 
 if (saveBtnEl) {
   saveBtnEl.addEventListener("click", saveProfile);
+}
+
+if (proHelpBtnEl) {
+  proHelpBtnEl.addEventListener("click", () => {
+    setProHelpModalOpen(true);
+  });
+}
+
+if (proHelpCloseBtnEl) {
+  proHelpCloseBtnEl.addEventListener("click", () => {
+    setProHelpModalOpen(false);
+  });
+}
+
+if (proHelpModalEl) {
+  proHelpModalEl.addEventListener("click", (event) => {
+    if (event.target === proHelpModalEl) {
+      setProHelpModalOpen(false);
+    }
+  });
 }
 
 loadCurrentProfile();
