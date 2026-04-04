@@ -29,31 +29,55 @@
 
     <main class="profile-edit-page">
       <section class="profile-edit-card">
-        <label class="form-label" for="profile-username-input">उपयोगकर्ता नाम</label>
-        <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
-
-        <p class="form-label icon-label">प्रोफ़ाइल आइकन</p>
-        <div class="icon-row">
-          <img
-            id="profile-icon-preview"
-            class="icon-preview"
-            src="../assets/account_default.png"
-            alt="वर्तमान आइकन"
-          />
-          <div class="icon-action-col">
-            <label class="choice-btn" for="profile-icon-camera-input">फोटो लें</label>
-            <label class="choice-btn" for="profile-icon-upload-input">छवि अपलोड करें</label>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">A</span>
+            <span>मूल जानकारी</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="profile-username-input">उपयोगकर्ता नाम</label>
+            <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
           </div>
         </div>
 
-        <div class="pro-toggle-row" role="group" aria-label="PRO खाता स्विच">
-          <p class="form-label pro-toggle-label">PRO खाता</p>
-          <span class="toggle-label">बंद</span>
-          <label class="switch">
-            <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO खाता" />
-            <span class="slider"></span>
-          </label>
-          <span class="toggle-label">चालू</span>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">I</span>
+            <span>प्रोफ़ाइल आइकन</span>
+          </div>
+          <div class="icon-upload">
+            <img
+              id="profile-icon-preview"
+              class="icon-preview"
+              src="../assets/account_default.png"
+              alt="वर्तमान आइकन"
+            />
+            <div class="icon-action-col">
+              <label class="choice-btn" for="profile-icon-camera-input">फोटो लें</label>
+              <label class="choice-btn" for="profile-icon-upload-input">छवि अपलोड करें</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon form-card-icon-pro" aria-hidden="true">P</span>
+            <span>खाता सेटिंग</span>
+          </div>
+          <div class="pro-setting-row" role="group" aria-label="PRO खाता स्विच">
+            <div class="pro-setting-copy">
+              <p class="form-label pro-toggle-label">PRO खाता</p>
+              <p class="form-hint">विशेष सुविधाओं के लिए खाता सेटिंग सक्षम करें</p>
+            </div>
+            <div class="pro-toggle-row">
+              <span class="toggle-label">बंद</span>
+              <label class="switch">
+                <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO खाता" />
+                <span class="slider"></span>
+              </label>
+              <span class="toggle-label">चालू</span>
+            </div>
+          </div>
         </div>
       </section>
     </main>

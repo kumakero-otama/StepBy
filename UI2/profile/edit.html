@@ -29,31 +29,55 @@
 
     <main class="profile-edit-page">
       <section class="profile-edit-card">
-        <label class="form-label" for="profile-username-input">ユーザー名</label>
-        <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
-
-        <p class="form-label icon-label">アイコン画像</p>
-        <div class="icon-row">
-          <img
-            id="profile-icon-preview"
-            class="icon-preview"
-            src="../assets/account_default.png"
-            alt="現在のアイコン"
-          />
-          <div class="icon-action-col">
-            <label class="choice-btn" for="profile-icon-camera-input">写真を撮影</label>
-            <label class="choice-btn" for="profile-icon-upload-input">画像アップロード</label>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">A</span>
+            <span>基本情報</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="profile-username-input">ユーザー名</label>
+            <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
           </div>
         </div>
 
-        <div class="pro-toggle-row" role="group" aria-label="PROアカウント切り替え">
-          <p class="form-label pro-toggle-label">PROアカウント</p>
-          <span class="toggle-label">OFF</span>
-          <label class="switch">
-            <input id="profile-pro-toggle-input" type="checkbox" aria-label="PROアカウント" />
-            <span class="slider"></span>
-          </label>
-          <span class="toggle-label">ON</span>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">I</span>
+            <span>アイコン画像</span>
+          </div>
+          <div class="icon-upload">
+            <img
+              id="profile-icon-preview"
+              class="icon-preview"
+              src="../assets/account_default.png"
+              alt="現在のアイコン"
+            />
+            <div class="icon-action-col">
+              <label class="choice-btn" for="profile-icon-camera-input">写真を撮影</label>
+              <label class="choice-btn" for="profile-icon-upload-input">画像アップロード</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon form-card-icon-pro" aria-hidden="true">P</span>
+            <span>アカウント設定</span>
+          </div>
+          <div class="pro-setting-row" role="group" aria-label="PROアカウント切り替え">
+            <div class="pro-setting-copy">
+              <p class="form-label pro-toggle-label">PROアカウント</p>
+              <p class="form-hint">特別な機能が利用できるアカウント設定です</p>
+            </div>
+            <div class="pro-toggle-row">
+              <span class="toggle-label">OFF</span>
+              <label class="switch">
+                <input id="profile-pro-toggle-input" type="checkbox" aria-label="PROアカウント" />
+                <span class="slider"></span>
+              </label>
+              <span class="toggle-label">ON</span>
+            </div>
+          </div>
         </div>
       </section>
     </main>

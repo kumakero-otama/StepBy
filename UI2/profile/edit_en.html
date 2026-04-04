@@ -29,31 +29,55 @@
 
     <main class="profile-edit-page">
       <section class="profile-edit-card">
-        <label class="form-label" for="profile-username-input">Username</label>
-        <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
-
-        <p class="form-label icon-label">Profile Icon</p>
-        <div class="icon-row">
-          <img
-            id="profile-icon-preview"
-            class="icon-preview"
-            src="../assets/account_default.png"
-            alt="Current icon"
-          />
-          <div class="icon-action-col">
-            <label class="choice-btn" for="profile-icon-camera-input">Take Photo</label>
-            <label class="choice-btn" for="profile-icon-upload-input">Upload Image</label>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">A</span>
+            <span>Basic info</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="profile-username-input">Username</label>
+            <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
           </div>
         </div>
 
-        <div class="pro-toggle-row" role="group" aria-label="PRO account switch">
-          <p class="form-label pro-toggle-label">PRO Account</p>
-          <span class="toggle-label">OFF</span>
-          <label class="switch">
-            <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO account" />
-            <span class="slider"></span>
-          </label>
-          <span class="toggle-label">ON</span>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">I</span>
+            <span>Profile icon</span>
+          </div>
+          <div class="icon-upload">
+            <img
+              id="profile-icon-preview"
+              class="icon-preview"
+              src="../assets/account_default.png"
+              alt="Current icon"
+            />
+            <div class="icon-action-col">
+              <label class="choice-btn" for="profile-icon-camera-input">Take Photo</label>
+              <label class="choice-btn" for="profile-icon-upload-input">Upload Image</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon form-card-icon-pro" aria-hidden="true">P</span>
+            <span>Account settings</span>
+          </div>
+          <div class="pro-setting-row" role="group" aria-label="PRO account switch">
+            <div class="pro-setting-copy">
+              <p class="form-label pro-toggle-label">PRO Account</p>
+              <p class="form-hint">Enable the account setting for special features</p>
+            </div>
+            <div class="pro-toggle-row">
+              <span class="toggle-label">OFF</span>
+              <label class="switch">
+                <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO account" />
+                <span class="slider"></span>
+              </label>
+              <span class="toggle-label">ON</span>
+            </div>
+          </div>
         </div>
       </section>
     </main>
