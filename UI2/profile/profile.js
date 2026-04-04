@@ -1,5 +1,6 @@
 const profileAvatarEl = document.getElementById("profile-avatar");
 const profileUsernameEl = document.getElementById("profile-username");
+const profileProChipEl = document.getElementById("profile-pro-chip");
 const totalTactileEl = document.getElementById("total-tactile-length");
 const totalRoadPostsEl = document.getElementById("total-road-posts");
 const totalHeartsEl = document.getElementById("total-hearts");
@@ -118,6 +119,9 @@ function applyProfileUser(user) {
   }
   if (profileUsernameEl) {
     profileUsernameEl.textContent = username;
+  }
+  if (profileProChipEl) {
+    profileProChipEl.classList.toggle("hidden", !user.isPro);
   }
   if (totalTactileEl) {
     totalTactileEl.textContent = `${formatMetersFromKm(totalTactile)}m`;

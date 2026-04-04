@@ -29,31 +29,47 @@
 
     <main class="profile-page">
       <section class="profile-card">
-        <div class="profile-avatar-wrap">
-          <img
-            id="profile-avatar"
-            class="profile-avatar"
-            src="../assets/account_default.png"
-            alt="Profile icon"
-          />
-          <div class="profile-mini-actions" aria-label="Profile actions">
-            <button id="profile-edit-btn" class="profile-mini-btn" type="button" aria-label="Edit profile">
-              <img src="../assets/buttons/profile_edit.png" alt="" />
-            </button>
-            <button id="profile-logout-btn" class="profile-mini-btn" type="button" aria-label="Log out">
-              <img src="../assets/buttons/logout.png" alt="" />
-            </button>
+        <section class="profile-hero" aria-label="Profile overview">
+          <div class="profile-hero-top">
+            <div class="profile-avatar-wrap">
+              <img
+                id="profile-avatar"
+                class="profile-avatar"
+                src="../assets/account_default.png"
+                alt="Profile icon"
+              />
+            </div>
           </div>
+
+          <h2 id="profile-username" class="profile-username">username</h2>
+          <div class="profile-badge-row">
+            <span id="profile-pro-chip" class="profile-badge-pill hidden">PRO Account</span>
+          </div>
+          <button id="profile-edit-btn" class="profile-edit-btn" type="button">
+            <img src="../assets/buttons/profile_edit.png" alt="" />
+            <span>Edit profile</span>
+          </button>
+        </section>
+
+        <section class="stats-row" aria-label="Achievements">
+          <article class="stat-card">
+            <div class="stat-label">Total tactile records</div>
+            <div id="total-tactile-length" class="stat-value">0m</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Total road info posts</div>
+            <div id="total-road-posts" class="stat-value">0</div>
+          </article>
+        </section>
+
+        <div class="profile-wide-actions" aria-label="More actions">
+          <a class="profile-wide-btn" href="../help/Index_en.html">
+            <span>Help</span>
+          </a>
+          <button id="profile-logout-btn" class="profile-wide-btn profile-wide-btn-danger" type="button">
+            <span>Log out</span>
+          </button>
         </div>
-
-        <h2 id="profile-username" class="profile-username">username</h2>
-
-        <h3 class="achievement-title">Achievements</h3>
-        <ul class="achievement-list">
-          <li>Total tactile block distance: <span id="total-tactile-length">0m</span></li>
-          <li>Total road info posts: <span id="total-road-posts">0件</span></li>
-          <li>Total hearts received: <span id="total-hearts">0個</span></li>
-        </ul>
       </section>
     </main>
     <script src="../config.js"></script>
