@@ -66,12 +66,36 @@ function measureVisibleViewportHeight() {
   return fallback;
 }
 
+function isStandaloneDisplayMode() {
+  if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
+    return true;
+  }
+  if (window.navigator && window.navigator.standalone === true) {
+    return true;
+  }
+  return false;
+}
+
+function measureStandaloneBottomInset() {
+  if (!isStandaloneDisplayMode()) {
+    return 0;
+  }
+  const userAgent = String(window.navigator && window.navigator.userAgent || "").toLowerCase();
+  if (userAgent.includes("android")) {
+    return 34;
+  }
+  return 0;
+}
+
 function applyLoginViewportMetrics() {
   const viewportHeight = measureVisibleViewportHeight();
+  const standaloneBottomInset = measureStandaloneBottomInset();
   if (viewportHeight > 0) {
-    document.documentElement.style.setProperty("--login-visible-height", `${Math.round(viewportHeight)}px`);
+    const adjustedHeight = Math.max(320, Math.round(viewportHeight - standaloneBottomInset));
+    document.documentElement.style.setProperty("--login-visible-height", `${adjustedHeight}px`);
   }
   document.documentElement.style.setProperty("--login-safe-bottom", "env(safe-area-inset-bottom)");
+  document.documentElement.style.setProperty("--login-system-ui-bottom", `${standaloneBottomInset}px`);
 }
 
 function initLoginViewportMetrics() {
