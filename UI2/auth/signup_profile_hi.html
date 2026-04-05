@@ -18,6 +18,7 @@
         <form id="signup-profile-form" novalidate>
           <div class="form-row signup-profile-field">
             <label for="signup-profile-username">खाता नाम</label>
+            <p class="signup-profile-note">गोपनीयता की सुरक्षा के लिए, अपना असली नाम कभी दर्ज न करें।</p>
             <input
               id="signup-profile-username"
               name="username"
@@ -26,10 +27,9 @@
               autocomplete="username"
               placeholder=""
             />
-            <p class="signup-profile-note">गोपनीयता की सुरक्षा के लिए, अपना असली नाम कभी दर्ज न करें।</p>
           </div>
           <div class="form-row signup-profile-field">
-            <label for="signup-profile-icon">प्रोफ़ाइल आइकन</label>
+            <label for="signup-profile-icon">प्रोफ़ाइल आइकन (वैकल्पिक)</label>
             <div class="signup-icon-preview-wrap">
               <img
                 id="signup-profile-icon-preview"
@@ -43,9 +43,10 @@
           <div class="agreement-row signup-profile-agreement-row">
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
-              <span>मैं सेवा की शर्तों से सहमत हूं</span>
+              <span>
+                मैं <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">सेवा की शर्तों</button> से सहमत हूं
+              </span>
             </label>
-            <button id="open-user-agreement" type="button" class="agreement-link">सेवा की शर्तें</button>
           </div>
           <div class="actions">
             <button class="btn btn-primary signup-profile-submit" id="signup-profile-submit" type="submit">रजिस्टर करें</button>

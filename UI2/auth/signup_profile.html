@@ -18,6 +18,7 @@
         <form id="signup-profile-form" novalidate>
           <div class="form-row signup-profile-field">
             <label for="signup-profile-username">アカウント名</label>
+            <p class="signup-profile-note">プライバシー保護のため、本名は絶対に入力しないでください</p>
             <input
               id="signup-profile-username"
               name="username"
@@ -26,10 +27,9 @@
               autocomplete="username"
               placeholder=""
             />
-            <p class="signup-profile-note">プライバシー保護のため、本名は絶対に入力しないでください</p>
           </div>
           <div class="form-row signup-profile-field">
-            <label for="signup-profile-icon">アイコン画像</label>
+            <label for="signup-profile-icon">アイコン画像（任意）</label>
             <div class="signup-icon-preview-wrap">
               <img
                 id="signup-profile-icon-preview"
@@ -43,9 +43,10 @@
           <div class="agreement-row signup-profile-agreement-row">
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
-              <span>利用規約に同意します</span>
+              <span>
+                <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">利用規約</button>に同意します
+              </span>
             </label>
-            <button id="open-user-agreement" type="button" class="agreement-link">利用規約</button>
           </div>
           <div class="actions">
             <button class="btn btn-primary signup-profile-submit" id="signup-profile-submit" type="submit">登録する</button>

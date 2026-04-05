@@ -18,6 +18,7 @@
         <form id="signup-profile-form" novalidate>
           <div class="form-row signup-profile-field">
             <label for="signup-profile-username">Account name</label>
+            <p class="signup-profile-note">For privacy protection, never enter your real name.</p>
             <input
               id="signup-profile-username"
               name="username"
@@ -26,10 +27,9 @@
               autocomplete="username"
               placeholder=""
             />
-            <p class="signup-profile-note">For privacy protection, never enter your real name.</p>
           </div>
           <div class="form-row signup-profile-field">
-            <label for="signup-profile-icon">Profile Icon</label>
+            <label for="signup-profile-icon">Profile Icon (Optional)</label>
             <div class="signup-icon-preview-wrap">
               <img
                 id="signup-profile-icon-preview"
@@ -43,9 +43,10 @@
           <div class="agreement-row signup-profile-agreement-row">
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
-              <span>I agree to the Terms of Service</span>
+              <span>
+                I agree to the <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">Terms of Service</button>
+              </span>
             </label>
-            <button id="open-user-agreement" type="button" class="agreement-link">Terms of Service</button>
           </div>
           <div class="actions">
             <button class="btn btn-primary signup-profile-submit" id="signup-profile-submit" type="submit">Register</button>

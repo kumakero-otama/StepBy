@@ -519,14 +519,19 @@ body.login-page {
 
 .signup-profile-card .agreement-label {
   gap: 10px;
-  margin-bottom: 8px;
   font-size: 13px;
   color: #5a6b7e;
+  line-height: 1.6;
 }
 
 .signup-profile-card .agreement-link {
   font-size: 13px;
   color: #2e9e8f;
+}
+
+.agreement-link-inline {
+  display: inline;
+  vertical-align: baseline;
 }
 
 .signup-profile-submit {

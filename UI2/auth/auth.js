@@ -262,6 +262,22 @@ function clearPendingSignupIdToken() {
   }
 }
 
+let defaultProfileIconDataUrlPromise = null;
+
+async function getDefaultProfileIconDataUrl() {
+  if (!defaultProfileIconDataUrlPromise) {
+    defaultProfileIconDataUrlPromise = (async () => {
+      const res = await fetch(AppPath.toApp("/assets/account_default.png"), { cache: "force-cache" });
+      if (!res.ok) {
+        throw new Error("default_icon_load_failed");
+      }
+      const blob = await res.blob();
+      return fileToDataUrl(blob);
+    })();
+  }
+  return defaultProfileIconDataUrlPromise;
+}
+
 function setAccessToken(token) {
   if (authTokenApi && typeof authTokenApi.setAccessToken === "function") {
     authTokenApi.setAccessToken(token);
@@ -534,7 +550,9 @@ async function initSignupProfilePage() {
     submitButton.disabled = !agreementCheckbox.checked;
   };
 
-  openAgreementButton.addEventListener("click", () => {
+  openAgreementButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     openAgreementModal();
   });
   closeAgreementButton.addEventListener("click", closeAgreementModal);
@@ -575,11 +593,7 @@ async function initSignupProfilePage() {
       setGoogleStatus("アカウント名を入力してください。");
       return;
     }
-    if (!iconFile) {
-      setGoogleStatus("アイコン画像を選択してください。");
-      return;
-    }
-    if (!iconFile.type.startsWith("image/")) {
+    if (iconFile && !iconFile.type.startsWith("image/")) {
       setGoogleStatus("画像ファイルを選択してください。");
       return;
     }
@@ -590,7 +604,9 @@ async function initSignupProfilePage() {
 
     try {
       setGoogleStatus("保存中です...");
-      const iconDataUrl = await fileToDataUrl(iconFile);
+      const iconDataUrl = iconFile
+        ? await fileToDataUrl(iconFile)
+        : await getDefaultProfileIconDataUrl();
       let res;
       if (deferredSignupMode) {
         res = await fetch(AppPath.toApi("/auth/google/signup"), {
@@ -624,7 +640,7 @@ async function initSignupProfilePage() {
           return;
         }
         if (errorMessage === "invalid_icon_image") {
-          setGoogleStatus("アイコン画像が不正です。別の画像で再試行してください。");
+          setGoogleStatus("画像の形式が合いませんでした。別の画像で再試行してください。");
           return;
         }
         if (errorMessage === "missing_icon_image") {
