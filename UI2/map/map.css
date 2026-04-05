@@ -353,6 +353,10 @@ body {
   margin-left: 10px;
 }
 
+.map-app-bar-brand {
+  gap: 10px;
+}
+
 .map-app-bar-name {
   color: #fff;
   font-size: 20px;
@@ -408,9 +412,13 @@ body {
 }
 
 .map-gps-indicator {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .map-gps-indicator img {
