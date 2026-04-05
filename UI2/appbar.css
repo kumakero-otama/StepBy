@@ -76,6 +76,11 @@
   opacity: 0.78;
 }
 
+.app-bar-icon-link.is-current {
+  pointer-events: none;
+  cursor: default;
+}
+
 .app-bar-spacer {
   height: calc(56px + env(safe-area-inset-top));
 }
