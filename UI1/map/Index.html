@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -6,6 +6,16 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>StepBy — バリアフリー地図</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -678,6 +688,31 @@
             background: var(--bg-white);
         }
 
+        /* Floating Action Button for Posting Road Info */
+        .fab-post {
+            position: absolute;
+            bottom: 110px;
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2E9E8F, #3BB49F);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 16px rgba(46,158,143,0.4);
+            cursor: pointer;
+            z-index: 400; /* Leaflet UI is around 400 */
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        .fab-post:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 8px rgba(46,158,143,0.3);
+        }
+
         /* Record Button */
         .btn-record {
             flex: 0 0 auto;
@@ -736,15 +771,11 @@
         }
 
         /* Compact feature cards in a scrollable row */
-        .feature-scroll {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            padding-left: 20px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+                                        .feature-scroll {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            padding: 0 8px 20px;
         }
 
         .feature-scroll::-webkit-scrollbar {
@@ -820,11 +851,10 @@
 
 
         .feature-card {
-            flex: 0 0 auto;
-            width: 100px;
+            width: 100%;
             position: relative;
-            border-radius: 14px;
-            padding: 8px 8px 6px;
+            border-radius: 10px;
+            padding: 6px 4px 5px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: 1.5px solid rgba(0, 0, 0, 0.06);
@@ -893,8 +923,8 @@
         }
 
         .feature-card-icon {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -1151,7 +1181,7 @@
 
     </style>
 
-    <script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
+    <script src="../config.js"></script><script src="../token_client.js"></script>
 </head>
 
 <body>
@@ -1186,8 +1216,8 @@
             <div class="banner-content">
                 <i class="fas fa-rocket"></i>
                 <div>
-                    <strong>v1.0.3 アップデート</strong><br>
-                    <span style="font-size: 11px; opacity: 0.9;">引き出しメニューの表示と投稿の読み込みを修正しました</span>
+                    <strong>v1.2.0 アップデート</strong><br>
+                    <span style="font-size: 11px; opacity: 0.9;">PWAアプリ対応・新画面レイアウト・現在地からの投稿機能を追加しました！</span>
                 </div>
             </div>
             <button class="close-banner" id="close-version-banner"><i class="fas fa-times"></i></button>
@@ -1203,31 +1233,25 @@
                 </div>
             </div>
             <div class="header-actions">
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ" style="background:rgba(255,255,255,0.28); border-color:rgba(255,255,255,0.4);">
+                    <i class="fas fa-map"></i>
+                </a>
                 <div class="settings-wrap">
                     <button class="header-action-btn" id="settings-toggle" aria-label="設定">
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settings-dropdown">
                         <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
-                        <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
                         <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
                         <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
-                        <div class="version-label">StepBy UI1 v1.0.3</div>
                     </div>
                 </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
+                    <i class="fas fa-user-circle"></i>
+                </a>
             </div>
         </div>
-        <!-- Quick nav chips -->
-        <div class="top-bar" style="padding:0 14px 10px; z-index: 99;">
-            <div class="header-quicknav">
-                <span class="quicknav-chip" onclick="location.href='../recommend/Index.html'"><i class="fas fa-star"></i>
-                    おすすめ</span>
-                <span class="quicknav-chip" onclick="location.href='../recent/Index.html'"><i
-                        class="fas fa-clock-rotate-left"></i> 最近</span>
-                <span class="quicknav-chip" onclick="location.href='../ranking/Index.html'"><i class="fas fa-trophy"></i>
-                    バッジ</span>
-            </div>
-        </div>
+
         <!-- Wave separator -->
         <div class="header-wave">
             <svg viewBox="0 0 500 14" preserveAspectRatio="none">
@@ -1239,6 +1263,11 @@
         <div class="map-container">
             <div id="map"></div>
 
+            <!-- FAB Post Button -->
+            <a href="../post_road/Index.html" class="fab-post" aria-label="道情報を投稿">
+                <i class="fas fa-pen"></i>
+            </a>
+
             <!-- Coords overlay on map -->
             <div class="coords-strip">
                 <span id="coords">Lat: --, Lng: --</span>
@@ -1246,23 +1275,11 @@
                 <span id="last-updated">Last update: --:--:--</span>
             </div>
 
-            <!-- Search (narrower to leave room for GPS button) -->
-            <div class="search-float">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input id="map-search-input" type="text" placeholder="場所を検索...">
-                </div>
-            </div>
 
 
 
-            <!-- Voice Nav button -->
-            <button class="map-voice-btn" id="voice-nav-btn" title="音声ナビ" aria-label="音声ナビを開始する">
-                <i class="fas fa-volume-xmark"></i>
-            </button>
 
-            <!-- Voice announcement toast -->
-            <div class="voice-toast" id="voice-toast" aria-live="polite"></div>
+
 
 
             <div id="osm-loading-overlay" class="loading-overlay hidden">
@@ -1277,14 +1294,14 @@
 
         <!-- Bottom drawer (outside map-container, in the app-shell flex column) -->
         <div class="bottom-drawer">
-            <div class="drawer-cta">
-                <button class="btn-record" id="btn-record-main" title="点字ブロック記録">
+            <div class="drawer-cta" style="display:flex;gap:10px;">
+                <button class="btn-record" id="btn-record-main" style="flex:1;">
                     <i class="fas fa-circle-dot" id="record-icon"></i>
-                    <span id="record-label">記録開始</span>
+                    <span id="record-label">記録開始/終了</span>
                 </button>
-                <button class="btn-cta-dream" style="flex:1" id="btn-post-road">
-                    <i class="fas fa-camera"></i>
-                    道の情報を投稿する
+                <button class="btn-record" id="btn-record-pause" style="flex:1; background:#fff; color:#2E9E8F; border:1.5px solid #2E9E8F;" disabled>
+                    <i class="fas fa-pause-circle"></i>
+                    <span>一時停止</span>
                 </button>
             </div>
             <!-- Hidden checkboxes: map.js uses getElementById to find these -->
@@ -1294,7 +1311,7 @@
             <input type="checkbox" id="toggle-show-road-info" style="display:none">
             <input type="checkbox" id="toggle-center-current" style="display:none" checked>
 
-            <div class="drawer-handle" id="drawer-handle-btn"><i class="fas fa-chevron-down" id="drawer-chevron" style="font-size:12px; color:#8A9BB0;"></i><span id="drawer-handle-label" style="font-size:11px; color:#8A9BB0; font-weight:600;">メニューを閉じる</span></div><div class="drawer-content" style="position: relative;">
+            <div class="drawer-handle" id="drawer-handle-btn" style="position: relative; z-index: 9999;"><i class="fas fa-chevron-down" id="drawer-chevron" style="font-size:12px; color:#8A9BB0; pointer-events: none;"></i><span id="drawer-handle-label" style="font-size:11px; color:#8A9BB0; font-weight:600; pointer-events: none;">メニューを閉じる</span></div><div class="drawer-content" style="position: relative;">
                 <div class="feature-scroll">
                     <div class="feature-card theme-green" data-toggle="toggle-show-osm">
                         <div class="feature-card-line"></div>
@@ -1325,15 +1342,7 @@
             </div>
         </div>
 
-        <!-- Bottom Nav -->
-        <nav class="bottom-nav">
-            <a href="../map/Index.html" class="nav-item active"><i class="fas fa-map"></i><span>マップ</span></a>
-            <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
-            <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
-            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
-            <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
 
-        </nav>
 
         <!-- Trace confirm modal -->
         <div id="trace-confirm-modal" class="modal-overlay hidden">
@@ -1401,6 +1410,14 @@
     <script>
         // ===== Splash screen =====
         (function () {
+            const splsh = sessionStorage.getItem('stepby_splash_done');
+            if (splsh === 'true') {
+                const s = document.getElementById('splash');
+                if (s) s.remove();
+                return;
+            }
+            sessionStorage.setItem('stepby_splash_done', 'true');
+            
             const splash = document.getElementById('splash');
             const particlesContainer = document.getElementById('splash-particles');
 
@@ -1557,112 +1574,120 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         })();
     </script>
     <script>
-        // 投稿ボタン: マップ中心座標を渡す
-        const _postBtn = document.getElementById('btn-post-road');
-        if (_postBtn) {
-            _postBtn.addEventListener('click', () => {
-                const lmap = window.leafletMap;
-                if (lmap) {
-                    // 検索ピンがあればその座標を優先、なければ地図中心
-                    let lat, lng;
-                    if (window._searchPin) {
-                        const ll = window._searchPin.getLatLng();
-                        lat = ll.lat.toFixed(6); lng = ll.lng.toFixed(6);
-                    } else {
-                        const c = lmap.getCenter();
-                        lat = c.lat.toFixed(6); lng = c.lng.toFixed(6);
-                    }
-                    window.location.assign(`../post_road/Index.html?lat=${lat}&lng=${lng}`);
-                } else {
-                    window.location.assign('../post_road/Index.html');
-                }
-            });
-        }
-        // ドロワーハンドル: タップで開閉
+        // Settings Dropdown Toggle
         (function() {
-            const handle = document.querySelector('.drawer-handle');
+            const settingsToggle = document.getElementById('settings-toggle');
+            const settingsDropdown = document.getElementById('settings-dropdown');
+            if (settingsToggle && settingsDropdown) {
+                settingsToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    settingsDropdown.classList.toggle('open');
+                });
+                document.addEventListener('click', () => {
+                    settingsDropdown.classList.remove('open');
+                });
+                settingsDropdown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
+        })();
+
+        // Drawer toggle
+        (function() {
+            const handle = document.getElementById('drawer-handle-btn');
             const content = document.querySelector('.drawer-content');
             if (!handle || !content) return;
             let _closed = false;
             handle.style.cursor = 'pointer';
-            content.style.maxHeight = '300px';
+            content.style.display = 'block';
+            content.style.maxHeight = '500px';
+            content.style.overflow = 'hidden';
             handle.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 _closed = !_closed;
                 const chevron = document.getElementById('drawer-chevron');
-                const label = handle.querySelector('span');
-                content.style.transition = 'max-height 0.35s ease, padding 0.35s ease';
+                const label = document.getElementById('drawer-handle-label');
+                content.style.transition = 'max-height 0.35s ease, opacity 0.35s ease, padding 0.35s ease';
                 if (_closed) {
                     content.style.maxHeight = '0px';
+                    content.style.opacity = '0';
                     content.style.paddingTop = '0';
                     content.style.paddingBottom = '0';
+                    setTimeout(() => { if (_closed) content.style.display = 'none'; }, 350);
                     if (chevron) chevron.className = 'fas fa-chevron-up';
                     if (label) label.textContent = 'メニューを開く';
                 } else {
-                    content.style.maxHeight = '400px';
+                    content.style.display = 'block';
+                    // force layout calculation
+                    content.offsetHeight;
+                    content.style.maxHeight = '500px';
+                    content.style.opacity = '1';
                     content.style.paddingTop = '';
                     content.style.paddingBottom = '';
                     if (chevron) chevron.className = 'fas fa-chevron-down';
                     if (label) label.textContent = 'メニューを閉じる';
                 }
             });
-
-            // ボトムナビの「投稿」リンクにもピン座標を渡す
-            const _navPostLink = document.querySelector('.bottom-nav a[href*="post_road"]');
-            if (_navPostLink) {
-                _navPostLink.addEventListener('click', (ev) => {
-                    const lmap = window.leafletMap;
-                    if (lmap) {
-                        ev.preventDefault();
-                        let lat, lng;
-                        if (window._searchPin) {
-                            const ll = window._searchPin.getLatLng();
-                            lat = ll.lat.toFixed(6); lng = ll.lng.toFixed(6);
-                        } else {
-                            const c = lmap.getCenter();
-                            lat = c.lat.toFixed(6); lng = c.lng.toFixed(6);
-                        }
-                        window.location.assign('../post_road/Index.html?lat=' + lat + '&lng=' + lng);
-                    }
-                });
-            }
         })();
-
     </script>
     <script>
-        // ===== Record button (prominent, outside panel) =====
+        // ===== Record button =====
         const btnRecordMain = document.getElementById('btn-record-main');
+        const btnRecordPause = document.getElementById('btn-record-pause');
         const recordIcon = document.getElementById('record-icon');
         const recordLabel = document.getElementById('record-label');
         const toggleRecord = document.getElementById('toggle-record');
-        let recordState = 'idle'; // idle → recording → paused
+        let recordState = 'idle';
 
-        if (btnRecordMain) {
+        if (btnRecordMain && btnRecordPause) {
             btnRecordMain.addEventListener('click', () => {
                 if (recordState === 'idle') {
                     recordState = 'recording';
-                    btnRecordMain.classList.add('recording');
-                    btnRecordMain.classList.remove('paused');
+                    btnRecordMain.classList.add('recording', 'active');
+                    btnRecordMain.style.background = '#FF4B4B';
                     recordIcon.className = 'fas fa-stop-circle';
-                    recordLabel.textContent = '記録中';
+                    recordLabel.textContent = '記録終了';
+                    btnRecordPause.disabled = false;
                     if (toggleRecord) { toggleRecord.checked = true; toggleRecord.dispatchEvent(new Event('change')); }
-                } else if (recordState === 'recording') {
-                    recordState = 'paused';
-                    btnRecordMain.classList.remove('recording');
-                    btnRecordMain.classList.add('paused');
-                    recordIcon.className = 'fas fa-pause-circle';
-                    recordLabel.textContent = '一時停止';
                 } else {
                     recordState = 'idle';
-                    btnRecordMain.classList.remove('recording', 'paused');
+                    btnRecordMain.classList.remove('recording', 'active');
+                    btnRecordMain.style.background = '';
+                    btnRecordPause.classList.remove('recording', 'active');
+                    btnRecordPause.style.background = '';
+                    btnRecordPause.style.color = '#2E9E8F';
                     recordIcon.className = 'fas fa-circle-dot';
                     recordLabel.textContent = '記録開始';
+                    btnRecordPause.disabled = true;
+                    btnRecordPause.querySelector('i').className = 'fas fa-pause-circle';
+                    btnRecordPause.querySelector('span').textContent = '一時停止';
                     if (toggleRecord) { toggleRecord.checked = false; toggleRecord.dispatchEvent(new Event('change')); }
+                }
+            });
+
+            btnRecordPause.addEventListener('click', () => {
+                if (recordState === 'recording') {
+                    recordState = 'paused';
+                    btnRecordPause.classList.add('recording', 'active');
+                    btnRecordPause.style.background = '#F5A623';
+                    btnRecordPause.style.color = 'white';
+                    btnRecordPause.querySelector('i').className = 'fas fa-play-circle';
+                    btnRecordPause.querySelector('span').textContent = '再開';
+                    if (toggleRecord) { toggleRecord.checked = false; toggleRecord.dispatchEvent(new Event('change')); }
+                } else if (recordState === 'paused') {
+                    recordState = 'recording';
+                    btnRecordPause.classList.remove('recording', 'active');
+                    btnRecordPause.style.background = '#fff';
+                    btnRecordPause.style.color = '#2E9E8F';
+                    btnRecordPause.querySelector('i').className = 'fas fa-pause-circle';
+                    btnRecordPause.querySelector('span').textContent = '一時停止';
+                    if (toggleRecord) { toggleRecord.checked = true; toggleRecord.dispatchEvent(new Event('change')); }
                 }
             });
         }
     </script>
-    <script src="../i18n.js"></script><script src="../common.js"></script>
+    
     <script src="../map/map.js?v=29"></script>
     <script>
         (function() {

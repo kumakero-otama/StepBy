@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>道情報の投稿 — StepBy</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -15,190 +17,87 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .section+.section {
-            margin-top: 20px;
-        }
+        .section + .section { margin-top: 20px; }
 
         /* Location card */
-        .location-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .location-card { display: flex; align-items: center; gap: 12px; }
         .location-icon {
-            width: 44px;
-            height: 44px;
-            background: var(--primary-bg);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+            width: 44px; height: 44px;
+            background: var(--primary-bg); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
-
-        .location-icon i {
-            color: var(--primary);
-            font-size: 18px;
-        }
-
-        .location-text {
-            flex: 1;
-        }
-
-        .location-text .name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-
-        .location-text .coords {
-            font-size: 11px;
-            color: var(--text-light);
-            margin-top: 2px;
-            font-family: 'Inter', monospace;
-        }
+        .location-icon i { color: var(--primary); font-size: 18px; }
+        .location-text { flex: 1; }
+        .location-text .name { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .location-text .coords { font-size: 11px; color: var(--text-light); margin-top: 2px; font-family: 'Inter', monospace; }
 
         /* Tag grid */
-        .tag-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+        .tag-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        /* Tag input */
+        .tag-add-row {
+            display: flex; gap: 8px; margin-top: 12px; align-items: center;
         }
+        .tag-add-input {
+            flex: 1; padding: 10px 14px;
+            border: 1.5px solid var(--border); border-radius: 22px;
+            font-size: 13px; font-family: inherit; color: var(--text-dark);
+            background: var(--bg-white); outline: none;
+            transition: border-color 0.2s;
+        }
+        .tag-add-input:focus { border-color: var(--primary); }
+        .tag-add-input::placeholder { color: var(--text-light); }
+        .tag-add-btn {
+            padding: 10px 16px; border-radius: 22px;
+            background: var(--primary-bg); border: 1.5px solid var(--primary);
+            color: var(--primary-dark); font-size: 13px; font-weight: 600;
+            font-family: inherit; cursor: pointer; transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tag-add-btn:active { background: var(--primary); color: #fff; }
 
         /* Photo upload */
         .photo-upload-area {
             border: 2px dashed var(--border);
             border-radius: var(--radius-md);
-            padding: 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: var(--bg-gray);
-            position: relative;
-            overflow: hidden;
+            padding: 32px; text-align: center; cursor: pointer;
+            transition: all 0.3s; background: var(--bg-gray);
+            position: relative; overflow: hidden;
         }
+        .photo-upload-area:active { border-color: var(--primary); background: var(--primary-bg); transform: scale(0.98); }
+        .photo-upload-area i { font-size: 30px; color: var(--primary-light); margin-bottom: 8px; display: block; }
+        .photo-upload-area p { font-size: 13px; color: var(--text-mid); font-weight: 500; }
+        .photo-upload-area small { font-size: 11px; color: var(--text-light); }
 
-        .photo-upload-area::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(46, 158, 143, 0.03), rgba(255, 184, 71, 0.03));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .photo-upload-area:active {
-            border-color: var(--primary);
-            background: var(--primary-bg);
-            transform: scale(0.98);
-        }
-
-        .photo-upload-area:active::before {
-            opacity: 1;
-        }
-
-        .photo-upload-area i {
-            font-size: 30px;
-            color: var(--primary-light);
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .photo-upload-area p {
-            font-size: 13px;
-            color: var(--text-mid);
-            font-weight: 500;
-        }
-
-        .photo-upload-area small {
-            font-size: 11px;
-            color: var(--text-light);
-        }
-
-        .photo-preview {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .photo-preview img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-sm);
-        }
+        .photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .photo-preview img { width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 
         /* Detail input */
         .detail-input {
-            width: 100%;
-            min-height: 100px;
-            padding: 14px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-md);
-            font-size: 14px;
-            font-family: inherit;
-            color: var(--text-dark);
-            resize: vertical;
-            outline: none;
+            width: 100%; min-height: 100px; padding: 14px;
+            border: 1.5px solid var(--border); border-radius: var(--radius-md);
+            font-size: 14px; font-family: inherit; color: var(--text-dark);
+            resize: vertical; outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             background: var(--bg-white);
         }
+        .detail-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(46,158,143,0.1); }
+        .detail-input::placeholder { color: var(--text-light); }
 
-        .detail-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(46, 158, 143, 0.1);
-        }
+        .submit-area { padding: 0 16px 16px; flex-shrink: 0; }
 
-        .detail-input::placeholder {
-            color: var(--text-light);
-        }
+        .file-hidden { display: none; }
 
-        .submit-area {
-            padding: 0 16px 16px;
-            flex-shrink: 0;
-        }
-
-        /* hidden file inputs */
-        .file-hidden {
-            display: none;
-        }
-
-        /* Photo buttons */
-        .photo-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
+        .photo-buttons { display: flex; gap: 8px; margin-top: 10px; }
         .photo-btn {
-            flex: 1;
-            padding: 10px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: var(--bg-white);
-            font-size: 13px;
-            font-family: inherit;
-            color: var(--text-mid);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: border-color 0.15s;
+            flex: 1; padding: 10px; border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm); background: var(--bg-white);
+            font-size: 13px; font-family: inherit; color: var(--text-mid);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: border-color 0.15s;
         }
-
-        .photo-btn:active {
-            border-color: var(--primary);
-        }
-
-        .photo-btn i {
-            font-size: 16px;
-            color: var(--primary);
-        }
+        .photo-btn:active { border-color: var(--primary); }
+        .photo-btn i { font-size: 16px; color: var(--primary); }
     </style>
 </head>
 
@@ -209,20 +108,24 @@
         <div class="sub-header">
             <button class="back-btn" id="back-btn"><i class="fas fa-arrow-left"></i></button>
             <h1>道情報の投稿</h1>
-        
-<div class="header-actions">
-                        <div class="settings-wrap">
-                            <button class="header-action-btn" id="settings-toggle" aria-label="設定">
-                                <i class="fas fa-cog"></i>
-                            </button>
-                            <div class="settings-dropdown" id="settings-dropdown">
-                                <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
-                                <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
-                                <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
-                                <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
-                            </div>
-                        </div>
+            <div class="header-actions">
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                    <i class="fas fa-map"></i>
+                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
                     </div>
+                </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </div>
         </div>
 
         <!-- Content -->
@@ -246,46 +149,19 @@
             <div class="section">
                 <div class="section-title"><i class="fas fa-tags"></i> タグ</div>
                 <div class="tag-grid" id="tag-grid">
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="audio_signal_sound"
-                            hidden><i class="fas fa-volume-up"></i> 音が鳴る信号機</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="audio_signal_no_sound"
-                            hidden><i class="fas fa-volume-xmark"></i> 音が鳴らない信号機</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="push_button_signal"
-                            hidden><i class="fas fa-hand-pointer"></i> 押しボタン式信号機</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="sensor_signal" hidden><i
-                            class="fas fa-tower-broadcast"></i> 感知式信号機</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="timed_signal" hidden><i
-                            class="fas fa-clock"></i> 時間式信号機</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="crosswalk" hidden><i
-                            class="fas fa-road"></i> 横断歩道</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="misplaced_tactile"
-                            hidden><i class="fas fa-triangle-exclamation"></i> 配置が不適切な点字ブロック</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="degraded_tactile" hidden><i
-                            class="fas fa-circle-exclamation"></i> 劣化した点字ブロック</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="blocked_tactile" hidden><i
-                            class="fas fa-ban"></i> 物が置かれて通れない点字ブロック</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="footbridge_stairs"
-                            hidden><i class="fas fa-stairs"></i> 歩道橋の階段の出入口</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="footbridge_elevator"
-                            hidden><i class="fas fa-elevator"></i> 歩道橋のエレベーターの出入口</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="footbridge_slope" hidden><i
-                            class="fas fa-wheelchair-move"></i> 歩道橋のスロープの出入口</label>
-                    <label class="tag-chip outline"><input type="checkbox" name="tag" value="test" hidden><i
-                            class="fas fa-flask"></i> テスト用</label>
+                    <!-- Tags loaded here (API or fallback) -->
+                </div>
+                <!-- Free tag input -->
+                <div class="tag-add-row">
+                    <input type="text" class="tag-add-input" id="tag-add-input" placeholder="タグを自由に追加...（例：段差あり）" maxlength="30">
+                    <button class="tag-add-btn" id="tag-add-btn"><i class="fas fa-plus"></i> 追加</button>
                 </div>
             </div>
 
-            <!-- Detail / Comment (PRO限定) -->
+            <!-- 一言メモ (全ユーザー書き込み可) -->
             <div class="section" id="detail-section">
-                <div class="section-title">
-                    <i class="fas fa-comment"></i> 一言メモ
-                    <span id="pro-badge" style="display:none; margin-left:8px; background:linear-gradient(135deg,#FFB847,#FF8C00); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; letter-spacing:0.5px;">PRO限定</span>
-                </div>
+                <div class="section-title"><i class="fas fa-comment"></i> 一言メモ</div>
                 <textarea class="detail-input" id="detail-input" placeholder="この場所について一言メモを書いてください..."></textarea>
-                <div id="pro-lock-msg" style="display:none; margin-top:8px; padding:10px 14px; background:linear-gradient(135deg,#FFF8EC,#FFF3D6); border-radius:12px; border:1px solid #FFD88A; padding:12px 16px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:20px;">👑</span><span style="font-size:14px;font-weight:700;color:#B86A00;">PRO会員は一言メモを投稿できます</span></div>
-                    <p style="margin:0;font-size:12px;color:#946200;line-height:1.6;">ログインすれば誰でもタグ・写真で投稿できます。<br>さらに<strong>PROアカウント</strong>では、この場所について一言コメントも残せます。</p>
-                </div>
             </div>
 
             <!-- Photos -->
@@ -314,119 +190,146 @@
             </button>
         </div>
 
-        <!-- Bottom Nav -->
-        <nav class="bottom-nav">
-            <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
-            <a href="../post_road/Index.html" class="nav-item active"><i class="fas fa-plus-circle"></i><span>投稿</span></a>
-            <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
-            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
-            <a href="../profile/Index.html" class="nav-item "><i class="fas fa-user-circle"></i><span>MY</span></a>
-
-        </nav>
-
     </div>
 
     <script src="../config.js"></script>
     <script src="../token_client.js"></script>
     <script>
         const API_BASE = "https://barrierfree-map.loophole.site";
-        // ログイン済みならauthFetch、未ログインはfetch
         const apiFetch = (url, opts) => {
-            if (window.AuthToken && window.AuthToken.getAccessToken()) {
-                return window.AuthToken.authFetch(url, opts);
-            }
+            if (window.AuthToken && window.AuthToken.getAccessToken()) return window.AuthToken.authFetch(url, opts);
             return fetch(url, opts);
         };
+
         // --- URL params ---
         const params = new URLSearchParams(window.location.search);
-
         let lat = params.get("lat");
         let lng = params.get("lng");
         const locationCoordsEl = document.getElementById("location-coords");
 
         function updateCoordsDisplay() {
             if (lat && lng) {
-                locationCoordsEl.textContent = `\u4e2d\u5fc3\u5ea7\u6a19: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
+                locationCoordsEl.textContent = `中心座標: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
             }
         }
         updateCoordsDisplay();
 
         if (!lat || !lng) {
-            locationCoordsEl.textContent = '\ud83d\udccd \u73fe\u5728\u5730\u3092\u53d6\u5f97\u4e2d...';
+            locationCoordsEl.textContent = '📍 現在地を取得中...';
             if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        lat = String(pos.coords.latitude);
-                        lng = String(pos.coords.longitude);
-                        updateCoordsDisplay();
-                    },
+                    (pos) => { lat = String(pos.coords.latitude); lng = String(pos.coords.longitude); updateCoordsDisplay(); },
                     () => { locationCoordsEl.textContent = '⚠️ 位置情報を取得できませんでした'; },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
                 );
             }
         }
 
+        // --- Default tag list (fallback if no API) ---
+        const DEFAULT_TAGS = [
+            { value: "audio_signal_sound",    icon: "fa-volume-up",           label: "音が鳴る信号機" },
+            { value: "audio_signal_no_sound", icon: "fa-volume-xmark",        label: "音が鳴らない信号機" },
+            { value: "push_button_signal",    icon: "fa-hand-pointer",        label: "押しボタン式信号機" },
+            { value: "sensor_signal",         icon: "fa-tower-broadcast",     label: "感知式信号機" },
+            { value: "timed_signal",          icon: "fa-clock",               label: "時間式信号機" },
+            { value: "crosswalk",             icon: "fa-road",                label: "横断歩道" },
+            { value: "misplaced_tactile",     icon: "fa-triangle-exclamation",label: "配置が不適切な点字ブロック" },
+            { value: "degraded_tactile",      icon: "fa-circle-exclamation",  label: "劣化した点字ブロック" },
+            { value: "blocked_tactile",       icon: "fa-ban",                 label: "物が置かれて通れない点字ブロック" },
+            { value: "footbridge_stairs",     icon: "fa-stairs",              label: "歩道橋の階段の出入口" },
+            { value: "footbridge_elevator",   icon: "fa-elevator",            label: "歩道橋のエレベーターの出入口" },
+            { value: "footbridge_slope",      icon: "fa-wheelchair-move",     label: "歩道橋のスロープの出入口" },
+            { value: "test",                  icon: "fa-flask",               label: "テスト用" },
+        ];
 
+        const tagGrid = document.getElementById("tag-grid");
+        const customTagValues = new Set(); // For custom tags added by user
 
-        // --- 詳細欄のPRO制限 --- APIから実際のPRO状態を取得 ---
-        const detailInput = document.getElementById('detail-input');
-        const proBadge = document.getElementById('pro-badge');
-        const proLockMsg = document.getElementById('pro-lock-msg');
-
-        function applyProUi(isProUser) {
-            if (!isProUser) {
-                if (proBadge) proBadge.style.display = 'inline-block';
-                if (proLockMsg) proLockMsg.style.display = 'block';
-                if (detailInput) {
-                    detailInput.disabled = true;
-                    detailInput.value = ''; // 念のため空にする
-                    detailInput.placeholder = 'PROアカウントのみ書き込みできます';
-                    detailInput.style.opacity = '0.5';
-                    detailInput.style.cursor = 'not-allowed';
-                }
-            } else {
-                if (proBadge) proBadge.style.display = 'none';
-                if (proLockMsg) proLockMsg.style.display = 'none';
-                if (detailInput) {
-                    detailInput.disabled = false;
-                    detailInput.style.opacity = '1';
-                    detailInput.style.cursor = '';
-                }
+        function buildTagChip(value, iconClass, label, isCustom = false) {
+            const tagChip = document.createElement('label');
+            tagChip.className = 'tag-chip outline';
+            tagChip.dataset.value = value;
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.name = 'tag';
+            cb.value = value;
+            cb.hidden = true;
+            cb.addEventListener('change', () => tagChip.classList.toggle('selected', cb.checked));
+            tagChip.appendChild(cb);
+            if (iconClass) {
+                const icon = document.createElement('i');
+                icon.className = `fas ${iconClass}`;
+                tagChip.appendChild(icon);
             }
+            tagChip.appendChild(document.createTextNode(' ' + label));
+            if (isCustom) {
+                const del = document.createElement('span');
+                del.textContent = ' ×';
+                del.style.cssText = 'margin-left:4px;cursor:pointer;font-weight:700;color:#FF6B6B;';
+                del.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    customTagValues.delete(value);
+                    tagChip.remove();
+                });
+                tagChip.appendChild(del);
+            }
+            return tagChip;
         }
 
-        // まずlocalStorageで仮設定（UX改善のため即時適用）
-        let cachedIsPro = localStorage.getItem('UI1_isPro') === 'true';
-        applyProUi(cachedIsPro);
+        function renderDefaultTags(list) {
+            tagGrid.innerHTML = '';
+            list.forEach(t => tagGrid.appendChild(buildTagChip(t.value, t.icon, t.label)));
+        }
 
-        // APIから正確なPRO状態を取得して上書き
-        (async function checkProStatus() {
-            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+        // Try loading tags from API, fallback to defaults
+        (async function loadTags() {
             try {
-                const res = await window.AuthToken.authFetch(`${API_BASE}/api/pro-status`);
+                const res = await fetch(`${API_BASE}/api/tags`, { signal: AbortSignal.timeout(4000) });
                 if (res.ok) {
                     const data = await res.json();
-                    const serverIsPro = data.isPro === true || data.is_pro === true;
-                    // localStorageを同期
-                    localStorage.setItem('UI1_isPro', serverIsPro ? 'true' : 'false');
-                    applyProUi(serverIsPro);
-                    cachedIsPro = serverIsPro;
+                    const fromApi = Array.isArray(data) ? data : (Array.isArray(data.tags) ? data.tags : null);
+                    if (fromApi && fromApi.length > 0) {
+                        tagGrid.innerHTML = '';
+                        fromApi.forEach(t => {
+                            const label = t.labelJa || t.label || t.name || t.value;
+                            const value = t.id || t.value || label;
+                            tagGrid.appendChild(buildTagChip(value, 'fa-tag', label));
+                        });
+                        return;
+                    }
                 }
-            } catch(e) {
-                console.warn('[PRO check] API failed, using localStorage:', e);
-            }
+            } catch {}
+            renderDefaultTags(DEFAULT_TAGS);
         })();
 
+        // Custom tag addition
+        const tagAddInput = document.getElementById('tag-add-input');
+        const tagAddBtn = document.getElementById('tag-add-btn');
 
+        function addCustomTag() {
+            const val = tagAddInput.value.trim();
+            if (!val) return;
+            if (customTagValues.has(val)) { tagAddInput.value = ''; return; }
+            customTagValues.add(val);
+            const chip = buildTagChip('custom_' + val, '', val, true);
+            // Auto-select new custom tag
+            const cb = chip.querySelector('input');
+            cb.checked = true;
+            chip.classList.add('selected');
+            tagGrid.appendChild(chip);
+            tagAddInput.value = '';
+            tagAddInput.focus();
+        }
 
+        tagAddBtn.addEventListener('click', addCustomTag);
+        tagAddInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag(); } });
 
         // --- Tag selection ---
-        document.querySelectorAll("#tag-grid .tag-chip").forEach((chip) => {
-            const checkbox = chip.querySelector('input[type="checkbox"]');
-            if (!checkbox) return;
-            checkbox.addEventListener("change", () => {
-                chip.classList.toggle("selected", checkbox.checked);
-            });
+        tagGrid.addEventListener('click', (e) => {
+            const chip = e.target.closest('.tag-chip');
+            if (!chip) return;
+            const cb = chip.querySelector('input[type="checkbox"]');
+            if (cb) { cb.checked = !cb.checked; chip.classList.toggle('selected', cb.checked); }
         });
 
         // --- Photo handling ---
@@ -445,15 +348,9 @@
             });
         }
 
-        document.getElementById("photo-upload-area").addEventListener("click", () => {
-            photoLibraryInput.click();
-        });
-        document.getElementById("photo-library-btn").addEventListener("click", () => {
-            photoLibraryInput.click();
-        });
-        document.getElementById("photo-camera-btn").addEventListener("click", () => {
-            photoCameraInput.click();
-        });
+        document.getElementById("photo-upload-area").addEventListener("click", () => photoLibraryInput.click());
+        document.getElementById("photo-library-btn").addEventListener("click", () => photoLibraryInput.click());
+        document.getElementById("photo-camera-btn").addEventListener("click", () => photoCameraInput.click());
         photoLibraryInput.addEventListener("change", () => { addFiles(photoLibraryInput.files); photoLibraryInput.value = ""; });
         photoCameraInput.addEventListener("change", () => { addFiles(photoCameraInput.files); photoCameraInput.value = ""; });
 
@@ -475,25 +372,17 @@
 
         document.getElementById("submit-btn").addEventListener("click", async () => {
             const submitBtn = document.getElementById("submit-btn");
-
             const detail = document.getElementById("detail-input").value.trim();
-            const tagValueMap = {
-                "audio_signal_sound": "音が鳴る信号機", "audio_signal_no_sound": "音が鳴らない信号機",
-                "push_button_signal": "押しボタン式信号機", "sensor_signal": "感知式信号機",
-                "timed_signal": "時間式信号機", "crosswalk": "横断歩道",
-                "misplaced_tactile": "配置が不適切な点字ブロック", "degraded_tactile": "劣化した点字ブロック",
-                "blocked_tactile": "物が置かれて通れない点字ブロック", "footbridge_stairs": "歩道橋の階段の出入口",
-                "footbridge_elevator": "歩道橋のエレベーターの出入口", "footbridge_slope": "歩道橋のスロープの出入口", "test": "テスト用"
-            };
+
+            // Collect tags (preset + custom)
             const checkedTagIds = Array.from(document.querySelectorAll('#tag-grid input[type="checkbox"]:checked'))
-                .map((cb) => cb.value); // IDをそのまま送る（APIはtagIds[]を期待）
+                .map((cb) => cb.value);
 
             if (!lat || !lng) {
                 alert("位置情報が取得できていません。\n一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください。");
                 return;
             }
 
-            // ログイン必須（API仕様: POST /api/road-info は認証必要）
             const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
             if (!token) {
                 const returnUrl = encodeURIComponent(window.location.href);
@@ -502,12 +391,10 @@
                 return;
             }
 
-            // タグか写真が必要
-            if (selectedFiles.length < 1 && checkedTagIds.length < 1) {
-                alert('タグまたは画像を選択してください。');
+            if (selectedFiles.length < 1 && checkedTagIds.length < 1 && !detail) {
+                alert('タグ・一言メモ・画像のいずれかを選択・入力してください。');
                 return;
             }
-
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> 投稿中...';
@@ -519,29 +406,19 @@
                     images.push({ name: file.name, dataUrl });
                 }
 
-                // 非PROの場合、detailを強制的に空にする（UIバイパス対策）
-                const safeDetail = cachedIsPro ? detail : '';
-
                 const body = {
                     lat: lat ? Number(lat) : null,
                     lng: lng ? Number(lng) : null,
-                    tagIds: checkedTagIds,   // APIはtagIds[]（ID配列）を期待
-                    detail: safeDetail,      // 非PROはdetailを送らない
+                    tagIds: checkedTagIds,
+                    detail: detail,
                     images,
                 };
-
-
-                const token2 = window.AuthToken ? window.AuthToken.getAccessToken() : null;
-                console.log('[Post] Token present:', !!token2);
-                console.log('[Post] tagIds:', checkedTagIds);
 
                 const res = await apiFetch(`${API_BASE}/api/road-info`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
                 });
-
-                console.log('[Post] Response status:', res.status);
 
                 if (res.status === 401 || res.status === 403) {
                     const returnUrl = encodeURIComponent(window.location.href);
@@ -552,7 +429,6 @@
 
                 if (!res.ok) throw new Error(`submit failed: ${res.status}`);
 
-                // 投稿成功: 専用の完了画面を表示
                 document.querySelector('.scroll-content').innerHTML = `
                     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;padding:32px;">
                         <div style="width:80px;height:80px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
@@ -574,13 +450,8 @@
             }
         });
     </script>
-<script src="../i18n.js"></script><script src="../common.js"></script>
+    <script src="../i18n.js"></script>
+    <script src="../common.js"></script>
 </body>
 
 </html>
-
-
-
-
-
-

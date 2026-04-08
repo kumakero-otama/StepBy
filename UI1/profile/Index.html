@@ -1,10 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>プロフィール — StepBy</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -26,135 +28,93 @@
         .profile-hero::before {
             content: '';
             position: absolute;
-            top: -50px;
-            right: -40px;
-            width: 180px;
-            height: 180px;
+            top: -50px; right: -40px;
+            width: 180px; height: 180px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
             animation: floatOrb 6s ease-in-out infinite;
         }
 
         .profile-hero::after {
             content: '';
             position: absolute;
-            bottom: -30px;
-            left: -30px;
-            width: 140px;
-            height: 140px;
+            bottom: -30px; left: -30px;
+            width: 140px; height: 140px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 184, 71, 0.08) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255,184,71,0.08) 0%, transparent 70%);
             animation: floatOrb 8s ease-in-out infinite reverse;
         }
 
         @keyframes floatOrb {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            50% {
-                transform: translate(10px, -15px) scale(1.1);
-            }
+            0%, 100% { transform: translate(0,0) scale(1); }
+            50%       { transform: translate(10px,-15px) scale(1.1); }
         }
 
         .profile-avatar-wrap {
-            width: 100px;
-            height: 100px;
+            width: 100px; height: 100px;
             border-radius: 50%;
             margin: 0 auto 14px;
             position: relative;
         }
 
         .profile-avatar-wrap img {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid rgba(255, 255, 255, 0.45);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            border: 3px solid rgba(255,255,255,0.45);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
         }
 
         .profile-avatar-placeholder {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.2);
             backdrop-filter: blur(10px);
-            border: 3px solid rgba(255, 255, 255, 0.45);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 42px;
-            color: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            border: 3px solid rgba(255,255,255,0.45);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px; color: rgba(255,255,255,0.9);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
             animation: avatarGlow 3s ease-in-out infinite;
         }
 
         @keyframes avatarGlow {
-
-            0%,
-            100% {
-                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(255, 255, 255, 0.2);
-            }
-
-            50% {
-                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 0 0 8px rgba(255, 255, 255, 0.05);
-            }
+            0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.15), 0 0 0 0 rgba(255,255,255,0.2); }
+            50%       { box-shadow: 0 4px 24px rgba(0,0,0,0.15), 0 0 0 8px rgba(255,255,255,0.05); }
         }
 
         .profile-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 6px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            font-size: 24px; font-weight: 700;
+            color: #fff; margin-bottom: 6px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .profile-badge-row {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 14px;
+            display: flex; gap: 8px;
+            justify-content: center; margin-bottom: 14px;
         }
 
         .profile-badge-pill {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.85);
-            background: rgba(255, 255, 255, 0.12);
-            padding: 4px 12px;
-            border-radius: 20px;
+            font-size: 11px; color: rgba(255,255,255,0.85);
+            background: rgba(255,255,255,0.12);
+            padding: 4px 12px; border-radius: 20px;
             backdrop-filter: blur(4px);
         }
 
         .profile-edit-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 24px;
-            border-radius: 24px;
-            border: 1.5px solid rgba(255, 255, 255, 0.35);
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 24px; border-radius: 24px;
+            border: 1.5px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.15);
+            color: #fff; font-size: 13px; font-weight: 600;
+            font-family: inherit; cursor: pointer;
             backdrop-filter: blur(6px);
-            transition: all 0.2s;
-            text-decoration: none;
+            transition: all 0.2s; text-decoration: none;
         }
 
-        .profile-edit-btn:active {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0.95);
-        }
+        .profile-edit-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
 
         /* ---- Info Sections ---- */
-        .info-section {
-            padding: 20px 16px 0;
-        }
+        .info-section { padding: 20px 16px 0; }
 
         .info-card {
             background: var(--bg-white);
@@ -166,241 +126,130 @@
         }
 
         .info-card-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 14px;
-            padding-bottom: 10px;
+            font-size: 14px; font-weight: 700; color: var(--text-dark);
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 14px; padding-bottom: 10px;
             border-bottom: 1px solid var(--border);
         }
 
         .info-card-title i {
             color: var(--primary);
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--primary-bg);
-            border-radius: 8px;
-            font-size: 13px;
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--primary-bg); border-radius: 8px; font-size: 13px;
         }
 
         .info-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 0;
+            display: flex; align-items: center;
+            justify-content: space-between; padding: 10px 0;
         }
 
-        .info-row+.info-row {
-            border-top: 1px solid rgba(0, 0, 0, 0.04);
-        }
-
-        .info-label {
-            font-size: 13px;
-            color: var(--text-mid);
-            font-weight: 500;
-        }
-
-        .info-value {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
+        .info-row + .info-row { border-top: 1px solid rgba(0,0,0,0.04); }
+        .info-label { font-size: 13px; color: var(--text-mid); font-weight: 500; }
+        .info-value { font-size: 13px; font-weight: 600; color: var(--text-dark); }
 
         /* ---- Stats Row ---- */
         .stats-row {
-            display: flex;
-            gap: 10px;
-            padding: 0 16px;
-            margin-top: 14px;
+            display: flex; gap: 10px;
+            padding: 0 16px; margin-top: 14px;
         }
 
         .stat-card {
-            flex: 1;
-            background: var(--bg-white);
+            flex: 1; background: var(--bg-white);
             border-radius: var(--radius-md);
-            padding: 16px 10px 14px;
-            text-align: center;
+            padding: 16px 10px 14px; text-align: center;
             box-shadow: var(--shadow-md);
             border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
 
         .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
+            content: ''; position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
             border-radius: 3px 3px 0 0;
         }
 
-        .stat-card:nth-child(1)::before {
-            background: linear-gradient(90deg, #2E9E8F, #4DBFB0);
-        }
+        .stat-card:nth-child(1)::before { background: linear-gradient(90deg, #2E9E8F, #4DBFB0); }
+        .stat-card:nth-child(2)::before { background: linear-gradient(90deg, #FFB847, #FFD700); }
+        .stat-card:nth-child(3)::before { background: linear-gradient(90deg, #FF6B6B, #FF8E8E); }
 
-        .stat-card:nth-child(2)::before {
-            background: linear-gradient(90deg, #FFB847, #FFD700);
-        }
-
-        .stat-card:nth-child(3)::before {
-            background: linear-gradient(90deg, #FF6B6B, #FF8E8E);
-        }
-
-        .stat-value {
-            font-size: 22px;
-            font-weight: 700;
-            font-family: 'Inter', monospace;
-            line-height: 1.2;
-        }
-
-        .stat-card:nth-child(1) .stat-value {
-            color: var(--primary);
-        }
-
-        .stat-card:nth-child(2) .stat-value {
-            color: #D4930A;
-        }
-
-        .stat-card:nth-child(3) .stat-value {
-            color: #FF6B6B;
-        }
-
-        .stat-value small {
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .stat-label {
-            font-size: 10px;
-            color: var(--text-light);
-            margin-top: 4px;
-            font-weight: 500;
-        }
+        .stat-value { font-size: 22px; font-weight: 700; font-family: 'Inter', monospace; line-height: 1.2; }
+        .stat-card:nth-child(1) .stat-value { color: var(--primary); }
+        .stat-card:nth-child(2) .stat-value { color: #D4930A; }
+        .stat-card:nth-child(3) .stat-value { color: #FF6B6B; }
+        .stat-value small { font-size: 12px; font-weight: 600; }
+        .stat-label { font-size: 10px; color: var(--text-light); margin-top: 4px; font-weight: 500; }
 
         /* ---- Settings Menu ---- */
-        .settings-menu {
-            padding: 20px 16px;
-        }
+        .settings-menu { padding: 20px 16px; }
 
         .settings-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            background: var(--bg-white);
-            border-radius: var(--radius-md);
-            margin-bottom: 8px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            color: inherit;
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; background: var(--bg-white);
+            border-radius: var(--radius-md); margin-bottom: 8px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.2s;
+            text-decoration: none; color: inherit;
         }
 
-        .settings-item:active {
-            transform: scale(0.98);
-            background: var(--bg-gray);
-        }
+        .settings-item:active { transform: scale(0.98); background: var(--bg-gray); }
 
         .settings-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #fff;
-            flex-shrink: 0;
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: #fff; flex-shrink: 0;
         }
 
-        .settings-icon.teal {
-            background: linear-gradient(135deg, #2E9E8F, #3BB49F);
-        }
+        .settings-icon.teal   { background: linear-gradient(135deg, #2E9E8F, #3BB49F); }
+        .settings-icon.blue   { background: linear-gradient(135deg, #4A90D9, #3B7DDD); }
+        .settings-icon.purple { background: linear-gradient(135deg, #9B59B6, #8E44AD); }
+        .settings-icon.orange { background: linear-gradient(135deg, #FFB847, #F5A623); }
+        .settings-icon.red    { background: linear-gradient(135deg, #FF6B6B, #E74C3C); }
 
-        .settings-icon.blue {
-            background: linear-gradient(135deg, #4A90D9, #3B7DDD);
-        }
-
-        .settings-icon.purple {
-            background: linear-gradient(135deg, #9B59B6, #8E44AD);
-        }
-
-        .settings-icon.orange {
-            background: linear-gradient(135deg, #FFB847, #F5A623);
-        }
-
-        .settings-icon.red {
-            background: linear-gradient(135deg, #FF6B6B, #E74C3C);
-        }
-
-        .settings-text {
-            flex: 1;
-        }
-
-        .settings-text .title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-
-        .settings-text .desc {
-            font-size: 11px;
-            color: var(--text-light);
-            margin-top: 2px;
-        }
-
-        .settings-arrow {
-            color: var(--text-light);
-            font-size: 14px;
-        }
-
-        .pad-bottom {
-            padding-bottom: 16px;
-        }
+        .settings-text { flex: 1; }
+        .settings-text .title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .settings-text .desc  { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+        .settings-arrow { color: var(--text-light); font-size: 14px; }
+        .pad-bottom { padding-bottom: 16px; }
     </style>
 </head>
 
 <body>
     <div class="app-shell">
-        <!-- Header -->
+        <!-- Header (3 buttons: map / settings / profile) -->
         <header class="top-bar">
             <div class="top-bar-title">プロフィール</div>
             <div class="header-actions">
-                    <div class="settings-wrap">
-                        <button class="header-action-btn" id="settings-toggle" aria-label="設定">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <div class="settings-dropdown" id="settings-dropdown">
-                            <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
-                            <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
-                            <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
-                            <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
-                        </div>
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                    <i class="fas fa-map"></i>
+                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
                     </div>
                 </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール" style="background:rgba(255,255,255,0.28); border-color:rgba(255,255,255,0.4);">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </div>
         </header>
 
         <div class="scroll-content">
             <!-- Profile Hero -->
             <div class="profile-hero">
-                <div class="profile-avatar-wrap">
-                    <div class="profile-avatar-placeholder">
+                <div class="profile-avatar-wrap" id="avatar-wrap">
+                    <div class="profile-avatar-placeholder" id="avatar-placeholder">
                         <i class="fas fa-user"></i>
                     </div>
                 </div>
                 <div class="profile-name" id="profile-name">---</div>
                 <div class="profile-badge-row">
-                    <span class="profile-badge-pill" id="pro-badge" style="display:none; background: linear-gradient(135deg, #FFA000, #FFD54F); color: #8A4000;"><i class="fas fa-crown"></i> PRO</span>
+                    <span class="profile-badge-pill" id="pro-badge" style="display:none; background:linear-gradient(135deg,#FFA000,#FFD54F); color:#8A4000;"><i class="fas fa-crown"></i> PRO</span>
                     <span class="profile-badge-pill" id="pill-km" style="display:none;">👟 0.00km</span>
                 </div>
                 <a href="../profile_edit/Index.html" class="profile-edit-btn">
@@ -411,7 +260,7 @@
             <!-- Stats -->
             <div class="stats-row">
                 <div class="stat-card">
-                    <div class="stat-value">0.00<small>km</small></div>
+                    <div class="stat-value" id="stat-km">0.00<small>km</small></div>
                     <div class="stat-label">総点字ブロック記録</div>
                 </div>
                 <div class="stat-card">
@@ -419,12 +268,12 @@
                     <div class="stat-label">総道情報投稿</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">0<small>♥</small></div>
+                    <div class="stat-value" id="stat-hearts">0<small>♥</small></div>
                     <div class="stat-label">送られたハート</div>
                 </div>
             </div>
 
-            <!-- Detail Info -->
+            <!-- Detail Info (username only) -->
             <div class="info-section">
                 <div class="info-card">
                     <div class="info-card-title">
@@ -433,14 +282,6 @@
                     <div class="info-row">
                         <span class="info-label">ユーザー名</span>
                         <span class="info-value" id="profile-username">---</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">生年月日</span>
-                        <span class="info-value" id="profile-birthday">非公開</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">性別</span>
-                        <span class="info-value" id="profile-gender">女性</span>
                     </div>
                 </div>
             </div>
@@ -459,15 +300,13 @@
                     <div class="settings-icon teal"><i class="fas fa-user-pen"></i></div>
                     <div class="settings-text">
                         <div class="title">プロフィール編集</div>
-                        <div class="desc">名前・アイコン・性別の変更</div>
+                        <div class="desc">名前・アイコンの変更</div>
                     </div>
                     <i class="fas fa-chevron-right settings-arrow"></i>
                 </a>
                 <a href="../settings/language.html" class="settings-item">
                     <div class="settings-icon blue"><i class="fas fa-language"></i></div>
-                    <div class="settings-text">
-                        <div class="title">言語設定</div>
-                    </div>
+                    <div class="settings-text"><div class="title">言語設定</div></div>
                     <i class="fas fa-chevron-right settings-arrow"></i>
                 </a>
                 <a href="../settings/display.html" class="settings-item">
@@ -497,28 +336,19 @@
             </div>
             <div class="pad-bottom"></div>
         </div>
-
-        <!-- Bottom Nav -->
-        <nav class="bottom-nav">
-            <a href="../map/Index.html" class="nav-item "><i class="fas fa-map"></i><span>マップ</span></a>
-            <a href="../post_road/Index.html" class="nav-item "><i class="fas fa-plus-circle"></i><span>投稿</span></a>
-            <a href="../posts/Index.html" class="nav-item "><i class="fas fa-map-pin"></i><span>みんなの投稿</span></a>
-            <a href="../my_posts/Index.html" class="nav-item "><i class="fas fa-user"></i><span>自分の投稿</span></a>
-            <a href="../profile/Index.html" class="nav-item active"><i class="fas fa-user-circle"></i><span>MY</span></a>
-
-        </nav>
     </div>
+
     <script src="../config.js"></script>
     <script src="../token_client.js"></script>
     <script>
-        // Check PRO status
+        // PRO badge from cache
         if (localStorage.getItem('UI1_isPro') === 'true') {
             document.getElementById('pro-badge').style.display = 'inline-flex';
         }
 
-        // /auth/me でリアルデータを取得
+        // Load profile from API
         async function loadProfileFromAPI() {
-            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return; // 未ログインはスキップ
+            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
             try {
                 const res = await window.AuthToken.authFetch('/auth/me', { cache: 'no-store' });
                 if (!res.ok) return;
@@ -526,29 +356,47 @@
                 const user = payload && payload.user ? payload.user : null;
                 if (!user) return;
 
-                // ユーザー名
+                // Username
+                const displayName = user.username || user.displayName || 'ユーザー';
                 const nameEl = document.getElementById('profile-name');
                 const userEl = document.getElementById('profile-username');
-                if (nameEl) nameEl.textContent = user.username || 'ユーザー';
-                if (userEl) userEl.textContent = user.username || 'ユーザー';
+                if (nameEl) nameEl.textContent = displayName;
+                if (userEl) userEl.textContent = displayName;
 
-                // PRO バッジ
+                // Avatar image
+                const avatarUrl = user.avatarUrl || user.avatar_url || user.photoURL || null;
+                if (avatarUrl) {
+                    const wrap = document.getElementById('avatar-wrap');
+                    const placeholder = document.getElementById('avatar-placeholder');
+                    const img = document.createElement('img');
+                    img.src = avatarUrl;
+                    img.alt = 'プロフィール画像';
+                    img.onerror = function() { this.style.display = 'none'; if (placeholder) placeholder.style.display = 'flex'; };
+                    if (placeholder) placeholder.style.display = 'none';
+                    wrap.appendChild(img);
+                }
+
+                // PRO badge
                 if (user.isPro || user.is_pro) {
                     const badge = document.getElementById('pro-badge');
                     if (badge) badge.style.display = 'inline-flex';
                     localStorage.setItem('UI1_isPro', 'true');
                 }
 
-                // 統計データ
+                // Stats
                 const km = (user.totalTactileLength || user.total_tactile_length || 0);
                 const posts = (user.totalRoadPosts || user.total_road_posts || 0);
                 const hearts = (user.totalHearts || user.total_hearts || 0);
 
-                // stat カードを更新
-                const statCards = document.querySelectorAll('.stat-value');
-                if (statCards[0]) statCards[0].innerHTML = `${Number(km).toFixed(2)}<small>km</small>`;
-                if (statCards[1]) statCards[1].innerHTML = `<span id="total-posts-count">${posts}</span><small>件</small>`;
-                if (statCards[2]) statCards[2].innerHTML = `${hearts}<small>♥</small>`;
+                const statKm = document.getElementById('stat-km');
+                const statPosts = document.getElementById('total-posts-count');
+                const statHearts = document.getElementById('stat-hearts');
+                if (statKm)     statKm.innerHTML = `${Number(km).toFixed(2)}<small>km</small>`;
+                if (statPosts)  statPosts.textContent = posts;
+                if (statHearts) statHearts.innerHTML = `${hearts}<small>♥</small>`;
+
+                const pillKm = document.getElementById('pill-km');
+                if (pillKm && km > 0) { pillKm.textContent = `👟 ${Number(km).toFixed(2)}km`; pillKm.style.display = 'inline-flex'; }
 
             } catch (e) {
                 console.log('Profile API not available:', e.message);
@@ -557,7 +405,7 @@
 
         loadProfileFromAPI();
 
-        // ログアウト処理
+        // Logout
         document.getElementById('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             if (!confirm('ログアウトしますか？')) return;
@@ -571,8 +419,8 @@
             window.location.assign('../signup/Index.html');
         });
     </script>
-<script src="../i18n.js"></script><script src="../common.js"></script>
+    <script src="../i18n.js"></script>
+    <script src="../common.js"></script>
 </body>
 
 </html>
-

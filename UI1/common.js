@@ -223,6 +223,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     // ===== Settings dropdown (header) =====
+    // Guard against double-registration (e.g. map page loads common.js in head AND body)
+    if (window._stepBySettingsReady) return;
+    window._stepBySettingsReady = true;
+
     const settingsToggle = document.getElementById('settings-toggle');
     const settingsDropdown = document.getElementById('settings-dropdown');
 
@@ -243,3 +247,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ===== PWA Service Worker registration =====
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../sw.js', { scope: '../' })
+            .catch(() => {
+                // Try root scope as fallback (for pages at different depths)
+                navigator.serviceWorker.register('/StepBy/UI1/sw.js', { scope: '/StepBy/UI1/' })
+                    .catch(err => console.warn('[SW] Registration failed:', err));
+            });
+    });
+}

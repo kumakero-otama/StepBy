@@ -161,6 +161,16 @@ body {
   letter-spacing: 0.5px;
 }
 
+.top-bar-title {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+  flex: 1;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
 .top-bar-right {
   display: flex;
   gap: 8px;

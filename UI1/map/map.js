@@ -446,6 +446,22 @@ function openTraceDetailModal(path) {
     const userEl = document.getElementById("trace-detail-user");
     const timeEl = document.getElementById("trace-detail-time");
     if (userEl) userEl.textContent = path.owner_name || "ユーザー";
+    const avatarContainer = document.querySelector('#trace-detail-modal .fa-user').parentElement;
+    if (avatarContainer) {
+        avatarContainer.innerHTML = '';
+        const avatarUrl = path.owner_avatar_url || path.avatarUrl || path.avatar_url || null;
+        if (avatarUrl) {
+            const img = document.createElement('img');
+            img.src = avatarUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.onerror = () => { avatarContainer.innerHTML = '<i class="fas fa-user" style="color:#ccc;"></i>'; };
+            avatarContainer.appendChild(img);
+        } else {
+            avatarContainer.innerHTML = '<i class="fas fa-user" style="color:#ccc;"></i>';
+        }
+    }
     if (timeEl) timeEl.textContent = path.created_at ? new Date(path.created_at).toLocaleString('ja-JP', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : new Date().toLocaleString('ja-JP');
 
     const tagsContainer = document.getElementById("trace-detail-tags");
@@ -1267,3 +1283,18 @@ if (voiceNavBtn) {
 
 
 
+
+
+// Link FAB Post button to map center
+(function() {
+    const fabPost = document.querySelector('.fab-post');
+    function updateFabHref() {
+        if (!fabPost || !map) return;
+        const center = map.getCenter();
+        fabPost.href = '../post_road/Index.html?lat=' + center.lat + '&lng=' + center.lng;
+    }
+    if (typeof map !== 'undefined') {
+        map.on('move', updateFabHref);
+        updateFabHref();
+    }
+})();

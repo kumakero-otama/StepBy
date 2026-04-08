@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>プロフィール編集 — StepBy</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -354,22 +356,27 @@
 
 <body>
     <div class="app-shell">
-        <!-- Header -->
+        <!-- Header (3 buttons: map / settings / profile) -->
         <header class="top-bar">
             <div class="top-bar-title">プロフィール編集</div>
             <div class="header-actions">
-                    <div class="settings-wrap">
-                        <button class="header-action-btn" id="settings-toggle" aria-label="設定">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <div class="settings-dropdown" id="settings-dropdown">
-                            <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
-                            <a href="#"><i class="fas fa-map-marked-alt"></i> 地図の設定</a>
-                            <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
-                            <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
-                        </div>
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                    <i class="fas fa-map"></i>
+                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
                     </div>
                 </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </div>
         </header>
 
         <div class="scroll-content">
@@ -382,34 +389,6 @@
                 <div class="form-group">
                     <label class="form-label">ユーザー名</label>
                     <input type="text" class="form-input" value="" id="edit-username" placeholder="ユーザー名を入力">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">性別 <i class="fas fa-lock lock-icon"></i></label>
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" name="gender" id="g-male" value="male">
-                            <label for="g-male">男性</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" name="gender" id="g-female" value="female" checked>
-                            <label for="g-female">女性</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" name="gender" id="g-other" value="other">
-                            <label for="g-other">回答しない</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">生年月日 <i class="fas fa-lock lock-icon"></i></label>
-                    <div class="date-row">
-                        <select class="date-select" id="birth-year"></select>
-                        <select class="date-select" id="birth-month"></select>
-                        <select class="date-select" id="birth-day"></select>
-                    </div>
-                    <div class="form-hint" id="age-display"></div>
                 </div>
             </div>
 
@@ -470,46 +449,6 @@
     </div>
 
     <script>
-        // Populate date selects
-        const yearSel = document.getElementById('birth-year');
-        const monthSel = document.getElementById('birth-month');
-        const daySel = document.getElementById('birth-day');
-        const now = new Date();
-
-        for (let y = now.getFullYear(); y >= 1920; y--) {
-            const o = document.createElement('option');
-            o.value = y; o.textContent = y + '年';
-            if (y === 2014) o.selected = true;
-            yearSel.appendChild(o);
-        }
-        for (let m = 1; m <= 12; m++) {
-            const o = document.createElement('option');
-            o.value = m; o.textContent = m + '月';
-            if (m === 2) o.selected = true;
-            monthSel.appendChild(o);
-        }
-        for (let d = 1; d <= 31; d++) {
-            const o = document.createElement('option');
-            o.value = d; o.textContent = d + '日';
-            if (d === 28) o.selected = true;
-            daySel.appendChild(o);
-        }
-
-        function calcAge() {
-            const y = parseInt(yearSel.value);
-            const m = parseInt(monthSel.value);
-            const d = parseInt(daySel.value);
-            if (!y || !m || !d) return;
-            const bday = new Date(y, m - 1, d);
-            let age = now.getFullYear() - bday.getFullYear();
-            const mDiff = now.getMonth() - bday.getMonth();
-            if (mDiff < 0 || (mDiff === 0 && now.getDate() < bday.getDate())) age--;
-            document.getElementById('age-display').textContent = `現在の年齢は：${age}歳です`;
-        }
-        yearSel.addEventListener('change', calcAge);
-        monthSel.addEventListener('change', calcAge);
-        daySel.addEventListener('change', calcAge);
-        calcAge();
 
         // ---- Password toggles ----
         function setupPwToggle(toggleId, inputId) {
@@ -656,7 +595,21 @@
                 if (res.ok) {
                     const data = await res.json();
                     const u = data.user || data;
-                    if (usernameInput && u.username) usernameInput.value = u.username;
+                                        if (usernameInput && u.username) usernameInput.value = u.username;
+                    // Add avatar loading
+                    const avatarUrl = u.avatarUrl || u.avatar_url || u.photoURL || null;
+                    if (avatarUrl) {
+                        const iconPreviewImg = document.getElementById('icon-preview-img');
+                        const iconDefaultIcon = document.getElementById('icon-default-icon');
+                        const iconNoImageText = document.getElementById('icon-no-image-text');
+                        if (iconPreviewImg) {
+                            iconPreviewImg.onerror = () => { iconPreviewImg.style.display='none'; if(iconDefaultIcon) iconDefaultIcon.style.display='block'; };
+                            iconPreviewImg.src = avatarUrl;
+                            iconPreviewImg.style.display = 'block';
+                            if(iconDefaultIcon) iconDefaultIcon.style.display = 'none';
+                            if(iconNoImageText) iconNoImageText.style.display = 'none';
+                        }
+                    }
                 }
             } catch {}
         })();

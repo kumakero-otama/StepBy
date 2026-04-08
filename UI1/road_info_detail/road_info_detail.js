@@ -1,4 +1,4 @@
-﻿// ===============================================
+// ===============================================
 // StepBy — road_info_detail.js
 // 既存ロジックを保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -102,9 +102,7 @@ function renderPosts(posts) {
             return `
         <article class="post-card">
           <div class="post-head">
-            <div class="avatar">
-              <img src="/assets/account_default.png" alt="" onerror="this.style.display='none'">
-            </div>
+            <div class="avatar"><i class="fas fa-user" style="font-size:16px;color:#fff;"></i></div>
             <div class="post-meta">
               <span class="date">${escapeHtml(formatDate(post.createdAt))}</span>
             </div>
