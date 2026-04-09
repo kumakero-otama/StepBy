@@ -268,12 +268,8 @@
             btn.innerHTML = '<i class="fas fa-check"></i> Applied!';
             btn.style.background = '#27AE60';
             
-            // Wait slightly so the user sees the visual change, then force a reload. 
-            // We use history.back() but we MUST trigger a reload natively so the cookie takes effect globally.
             setTimeout(() => {
-                // If we just do history.back(), Safari/Chrome might serve the previous page from BFCache (Back-Forward Cache).
-                // It's safer to go back and force reload using replacing the location to map.
-                window.location.replace('../map/Index.html');
+                window.location.href = '../map/Index.html';
             }, 600);
         });
     </script>
