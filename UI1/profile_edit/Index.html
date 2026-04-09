@@ -545,13 +545,23 @@
                     if (!proRes.ok) console.warn('[Save] PRO status update failed:', proRes.status);
                 } catch(e) { console.warn('[Save] PRO API error:', e); }
 
-                // ユーザー名をAPIに保存
+                // ユーザー名とアイコンをAPIに保存
                 const username = document.getElementById('edit-username').value.trim();
-                if (username) {
+                let iconData = null;
+                const iconPreviewImg = document.getElementById('icon-preview-img');
+                if (iconPreviewImg && iconPreviewImg.style.display !== 'none' && iconPreviewImg.src && iconPreviewImg.src.startsWith('data:')) {
+                    iconData = iconPreviewImg.src;
+                }
+
+                const payload = {};
+                if (username) payload.username = username;
+                if (iconData) payload.icon_data_url = iconData;
+
+                if (Object.keys(payload).length > 0) {
                     try {
                         await window.AuthToken.authFetch(
                             API_BASE + '/auth/profile',
-                            { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ username }) }
+                            { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }
                         );
                     } catch(e) { console.warn('[Save] Profile API error:', e); }
                 }
