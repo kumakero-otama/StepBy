@@ -416,28 +416,7 @@
                 </div>
             </div>
 
-            <!-- Account Config -->
-            <div class="form-card">
-                <div class="form-card-title">
-                    <i class="fas fa-crown" style="color:#FFA000; background:rgba(255,160,0,0.1);"></i> アカウント設定
-                </div>
-                <div class="form-group" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0;">
-                    <div>
-                        <label class="form-label" style="margin-bottom:4px;">PROアカウント <span class="tag-chip" style="background:#FFA000; color:white; font-size:10px; padding:2px 6px;">NEW</span></label>
-                        <div class="form-hint" style="margin-top:0;">特別な機能（ひとことメモなど）が解放されます</div>
-                    </div>
-                    <label class="switch-toggle" style="position:relative; display:inline-block; width:50px; height:28px; flex-shrink:0;">
-                        <input type="checkbox" id="pro-account-toggle" style="opacity:0; width:0; height:0;">
-                        <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; transition:.4s; border-radius:34px;"></span>
-                        <style>
-                            .switch-toggle .slider { background-color: #ccc; }
-                            .switch-toggle input:checked + .slider { background-color: #FFA000; }
-                            .switch-toggle .slider:before { position:absolute; content:""; height:20px; width:20px; left:4px; bottom:4px; background-color:white; transition:.4s; border-radius:50%; }
-                            .switch-toggle input:checked + .slider:before { transform: translateX(22px); }
-                        </style>
-                    </label>
-                </div>
-            </div>
+
 
             <div class="pad-bottom"></div>
         </div>
@@ -504,24 +483,7 @@
         }
         confirmPw.addEventListener('input', checkMatch);
 
-        // ---- PRO Toggle State Handling ----
-        const proToggle = document.getElementById('pro-account-toggle');
-        // Load initial state
-        const isPro = localStorage.getItem('UI1_isPro') === 'true';
-        proToggle.checked = isPro;
 
-        proToggle.addEventListener('change', async (e) => {
-            localStorage.setItem('UI1_isPro', e.target.checked ? 'true' : 'false');
-            // リアルタイムでAPIにも反映
-            if (window.AuthToken && window.AuthToken.getAccessToken()) {
-                try {
-                    await window.AuthToken.authFetch(
-                        (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + '/api/pro-status',
-                        { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ isPro: e.target.checked }) }
-                    );
-                } catch(err) { console.warn('[PRO toggle] API error:', err); }
-            }
-        });
 
         async function saveProfile() {
             const saveBtn = document.getElementById('save-btn');
@@ -532,19 +494,7 @@
                 ? window.APP_CONFIG.API_BASE_URL
                 : 'https://barrierfree-map.loophole.site';
 
-            // PRO状態をAPIに保存
-            const isProChecked = document.getElementById('pro-account-toggle').checked;
-            localStorage.setItem('UI1_isPro', isProChecked ? 'true' : 'false');
-
             if (window.AuthToken && window.AuthToken.getAccessToken()) {
-                try {
-                    const proRes = await window.AuthToken.authFetch(
-                        API_BASE + '/api/pro-status',
-                        { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ isPro: isProChecked }) }
-                    );
-                    if (!proRes.ok) console.warn('[Save] PRO status update failed:', proRes.status);
-                } catch(e) { console.warn('[Save] PRO API error:', e); }
-
                 // ユーザー名とアイコンをAPIに保存
                 const username = document.getElementById('edit-username').value.trim();
                 let iconData = null;
@@ -559,11 +509,22 @@
 
                 if (Object.keys(payload).length > 0) {
                     try {
-                        await window.AuthToken.authFetch(
+                        const res = await window.AuthToken.authFetch(
                             API_BASE + '/auth/profile',
                             { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }
                         );
-                    } catch(e) { console.warn('[Save] Profile API error:', e); }
+                        if (!res.ok) {
+                            alert('画像のサイズが大きすぎるか、保存に失敗しました。');
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = '変更を保存';
+                            return;
+                        }
+                    } catch(e) { 
+                        alert('サーバーエラーが発生しました。');
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = '変更を保存';
+                        return;
+                    }
                 }
             }
 
