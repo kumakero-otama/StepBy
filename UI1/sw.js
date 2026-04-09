@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stepby-ui1-v12';
+const CACHE_NAME = 'stepby-ui1-v13';
 const BASE = '/StepBy/UI1';
 const ASSETS = [
     BASE + '/',
@@ -27,7 +27,18 @@ const ASSETS = [
 // Install: pre-cache static assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+        caches.open(CACHE_NAME).then((cache) => {
+            // Bypass HTTP cache explicitly to ensure Android devices get the latest files
+            return Promise.all(
+                ASSETS.map(url => {
+                    return fetch(new Request(url, { cache: 'reload' }))
+                        .then(response => {
+                            if (response.ok) return cache.put(url, response);
+                        })
+                        .catch(err => console.warn('[SW] Cache prefetch failed for:', url, err));
+                })
+            );
+        })
     );
     self.skipWaiting();
 });
