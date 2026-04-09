@@ -362,6 +362,7 @@
 
         // --- Submit ---
         function fileToDataUrl(file) {
+            if (window.resizeImage) return window.resizeImage(file, 800, 0.7);
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);

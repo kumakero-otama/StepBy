@@ -259,3 +259,44 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+
+// ===== Image/Photo Resizer Utility =====
+window.resizeImage = function(file, maxDim = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+            reject(new Error('Invalid file type'));
+            return;
+        }
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                // 縮小処理
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height *= maxDim / width));
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width *= maxDim / height));
+                        height = maxDim;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = () => reject(new Error('Image failed to load'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('File read failed'));
+        reader.readAsDataURL(file);
+    });
+};
