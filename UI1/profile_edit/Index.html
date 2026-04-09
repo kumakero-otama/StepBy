@@ -490,12 +490,7 @@
             saveBtn.disabled = true;
             saveBtn.textContent = '保存中...';
 
-            const API_BASE = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL
-                ? window.APP_CONFIG.API_BASE_URL
-                : 'https://barrierfree-map.loophole.site';
-
             if (window.AuthToken && window.AuthToken.getAccessToken()) {
-                // ユーザー名とアイコンをAPIに保存
                 const username = document.getElementById('edit-username').value.trim();
                 let iconData = null;
                 const iconPreviewImg = document.getElementById('icon-preview-img');
@@ -503,28 +498,33 @@
                     iconData = iconPreviewImg.src;
                 }
 
-                const payload = {};
-                if (username) payload.username = username;
+                if (!username) {
+                    alert('ユーザー名を入力してください。');
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '変更を保存';
+                    return;
+                }
+
+                const payload = { username: username };
                 if (iconData) payload.icon_data_url = iconData;
 
-                if (Object.keys(payload).length > 0) {
-                    try {
-                        const res = await window.AuthToken.authFetch(
-                            API_BASE + '/auth/profile',
-                            { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }
-                        );
-                        if (!res.ok) {
-                            alert('画像のサイズが大きすぎるか、保存に失敗しました。');
-                            saveBtn.disabled = false;
-                            saveBtn.textContent = '変更を保存';
-                            return;
-                        }
-                    } catch(e) { 
-                        alert('サーバーエラーが発生しました。');
+                try {
+                    const res = await window.AuthToken.authFetch(
+                        '/auth/profile',
+                        { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }
+                    );
+                    if (!res.ok) {
+                        alert('画像のサイズが大きすぎるか、保存に失敗しました。');
                         saveBtn.disabled = false;
                         saveBtn.textContent = '変更を保存';
                         return;
                     }
+                } catch(e) { 
+                    console.error('API Error:', e);
+                    alert('サーバーエラーが発生しました: ' + e.message);
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '変更を保存';
+                    return;
                 }
             }
 

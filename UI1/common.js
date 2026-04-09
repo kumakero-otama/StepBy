@@ -185,21 +185,39 @@
         picker.appendChild(btn);
         document.body.appendChild(picker);
 
-        // 保存済み言語をページ読み込み時に適用
+        // 保存済み言語をチェックし、Cookieとズレていれば修正して自動リロードする
         const saved = localStorage.getItem('UI1_language');
+        const match = document.cookie.match(/googtrans=\/ja\/([^;]+)/);
+        const currentCookie = match ? match[1] : 'ja';
+
         if (saved && saved !== 'ja') {
-            // 保存済み言語を適用
-            window.stepByTriggerLang(saved);
+            if (currentCookie !== saved) {
+                const val = `/ja/${saved}`;
+                document.cookie = `googtrans=${val}; path=/`;
+                document.cookie = `googtrans=${val}; path=/; domain=${location.hostname}`;
+                document.cookie = `googtrans=${val}; path=/; domain=.${location.hostname}`;
+                window.location.reload();
+            } else {
+                // Widget fallback if somehow not applied immediately
+                window.stepByTriggerLang(saved);
+            }
         } else {
-            // 日本語モード：Google翻訳が自動翻訳するのを防ぐ
-            const resetToJapanese = () => {
-                const combo = document.querySelector('.goog-te-combo');
-                if (combo && combo.value !== '' && combo.value !== 'ja') {
-                    combo.value = '';
-                    combo.dispatchEvent(new Event('change'));
-                }
-            };
-            [800, 1500, 2500].forEach(t => setTimeout(resetToJapanese, t));
+            if (currentCookie !== 'ja' && currentCookie !== '') {
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + location.hostname;
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.' + location.hostname;
+                window.location.reload();
+            } else {
+                // 日本語モード：Google翻訳が自動翻訳するのを防ぐ
+                const resetToJapanese = () => {
+                    const combo = document.querySelector('.goog-te-combo');
+                    if (combo && combo.value !== '' && combo.value !== 'ja') {
+                        combo.value = '';
+                        combo.dispatchEvent(new Event('change'));
+                    }
+                };
+                [800, 1500, 2500].forEach(t => setTimeout(resetToJapanese, t));
+            }
         }
     }
 

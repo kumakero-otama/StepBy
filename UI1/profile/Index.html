@@ -350,7 +350,7 @@
         async function loadProfileFromAPI() {
             if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
             try {
-                const res = await window.AuthToken.authFetch('/auth/me', { cache: 'no-store' });
+                const res = await window.AuthToken.authFetch('/auth/me?_t=' + new Date().getTime(), { cache: 'no-store' });
                 if (!res.ok) return;
                 const payload = await res.json();
                 const user = payload && payload.user ? payload.user : null;

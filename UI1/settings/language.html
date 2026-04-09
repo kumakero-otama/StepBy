@@ -251,15 +251,30 @@
 
             if (lang === 'ja') {
                 localStorage.removeItem('UI1_language');
+                // Remove Google Translate cookie forcefully across subdomains and paths
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + location.hostname;
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.' + location.hostname;
             } else {
                 localStorage.setItem('UI1_language', lang);
+                // Set Google Translate cookie forcefully
+                const val = `/ja/${lang}`;
+                document.cookie = `googtrans=${val}; path=/`;
+                document.cookie = `googtrans=${val}; path=/; domain=${location.hostname}`;
+                document.cookie = `googtrans=${val}; path=/; domain=.${location.hostname}`;
             }
 
             const btn = document.querySelector('.btn-primary');
             btn.innerHTML = '<i class="fas fa-check"></i> Applied!';
             btn.style.background = '#27AE60';
-            // 戻ったページでcommon.jsが自動で翻訳を適用する
-            setTimeout(() => history.back(), 800);
+            
+            // Wait slightly so the user sees the visual change, then force a reload. 
+            // We use history.back() but we MUST trigger a reload natively so the cookie takes effect globally.
+            setTimeout(() => {
+                // If we just do history.back(), Safari/Chrome might serve the previous page from BFCache (Back-Forward Cache).
+                // It's safer to go back and force reload using replacing the location to map.
+                window.location.replace('../map/Index.html');
+            }, 600);
         });
     </script>
 </body>
