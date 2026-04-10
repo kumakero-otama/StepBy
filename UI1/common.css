@@ -990,3 +990,57 @@ body {
     color: var(--primary);
     font-size: 14px;
 }
+
+/* Settings dropdown using native <details> (no JS needed) */
+details.settings-wrap {
+    position: relative;
+    z-index: 9999;
+    list-style: none;
+}
+details.settings-wrap summary {
+    list-style: none;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+}
+details.settings-wrap summary::-webkit-details-marker {
+    display: none;
+}
+details.settings-wrap .settings-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+    min-width: 180px;
+    padding: 8px 0;
+    z-index: 9999;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+details.settings-wrap .settings-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    text-decoration: none;
+    border-top: 1px solid #f0f0f0;
+}
+details.settings-wrap .settings-dropdown a:first-child {
+    border-top: none;
+}
+details.settings-wrap .settings-dropdown a:active,
+details.settings-wrap .settings-dropdown a:hover {
+    background: #f5f5f5;
+}
+details.settings-wrap .settings-dropdown a i {
+    width: 20px;
+    text-align: center;
+    color: var(--primary);
+    font-size: 14px;
+}
