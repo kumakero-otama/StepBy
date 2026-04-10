@@ -540,24 +540,27 @@
 
         function handleImageSelection(event) {
             const file = event.target.files[0];
-            if (file) {
-                if (window.resizeImage) {
-                    window.resizeImage(file, 800, 0.7).then(dataUrl => {
-                        iconPreviewImg.src = dataUrl;
-                        iconPreviewImg.style.display = 'block';
-                        iconDefaultIcon.style.display = 'none';
-                        if (iconNoImageText) iconNoImageText.style.display = 'none';
-                    }).catch(e => console.error('Image resize failed:', e));
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        iconPreviewImg.src = e.target.result;
-                        iconPreviewImg.style.display = 'block';
-                        iconDefaultIcon.style.display = 'none';
-                        if (iconNoImageText) iconNoImageText.style.display = 'none';
-                    };
-                    reader.readAsDataURL(file);
-                }
+            if (!file) return;
+            
+            // Immediately hide default icons to acknowledge selection
+            if (iconDefaultIcon) iconDefaultIcon.style.display = 'none';
+            if (iconNoImageText) iconNoImageText.style.display = 'none';
+            
+            const renderImage = (dataUrl) => {
+                iconPreviewImg.src = dataUrl;
+                iconPreviewImg.style.display = 'block';
+                iconPreviewImg.style.zIndex = '10'; // Ensure it stays on top
+            };
+
+            if (window.resizeImage) {
+                window.resizeImage(file, 800, 0.7)
+                    .then(renderImage)
+                    .catch(e => {
+                        console.error('Image resize failed, using direct URL:', e);
+                        renderImage(URL.createObjectURL(file));
+                    });
+            } else {
+                renderImage(URL.createObjectURL(file));
             }
         }
         

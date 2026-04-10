@@ -167,9 +167,16 @@
         // アイコンプレビュー
         iconInput.addEventListener('change', () => {
             const file = iconInput.files && iconInput.files[0];
-            if (file && file.type.startsWith('image/')) {
+            if (!file) return;
+            
+            const cameraIcon = document.getElementById('icon-camera');
+            if (cameraIcon) cameraIcon.style.display = 'none';
+            
+            // Fallback for non-image objects like HEIC that might get converted
+            if (file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|gif|heic)$/i)) {
                 iconPreview.src = URL.createObjectURL(file);
                 iconPreview.style.display = 'block';
+                iconPreview.style.zIndex = '10';
             }
         });
 
