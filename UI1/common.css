@@ -69,10 +69,10 @@ html[data-theme="dark"] body {
 
 html, body {
   width: 100%;
-  height: 100vh; /* fallback */
-  height: var(--app-height, 100vh);
+  height: 100dvh;
   overflow: hidden;
-  position: relative;
+  position: fixed;
+  inset: 0;
   font-family: 'Noto Sans JP', 'Inter', -apple-system, sans-serif;
   color: var(--text-dark);
   background: var(--bg-gray);
@@ -86,8 +86,7 @@ html, body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh; /* fallback */
-  height: var(--app-height, 100vh);
+  height: 100%;
   max-width: 480px;
   margin: 0 auto;
   background: var(--bg-white);
