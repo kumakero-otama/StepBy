@@ -1606,6 +1606,25 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         })();
     </script>
     <script>
+        // ===== SETTINGS TOGGLE - inline in map page =====
+        (function() {
+            var toggle = document.getElementById('settings-toggle');
+            var dropdown = document.getElementById('settings-dropdown');
+            if (!toggle || !dropdown) return;
+
+            toggle.onclick = function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('open');
+            };
+
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target) && !toggle.contains(e.target)) {
+                    dropdown.classList.remove('open');
+                }
+            });
+        })();
+    </script>
+    <script>
         // ===== Record button =====
         const btnRecordMain = document.getElementById('btn-record-main');
         const btnRecordPause = document.getElementById('btn-record-pause');

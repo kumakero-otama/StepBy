@@ -240,32 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 // ===== Settings dropdown (header) =====
-// NOTE: Run immediately (not DOMContentLoaded) because common.js loads at end of body
-(function initSettingsDropdown() {
-    const settingsToggle = document.getElementById('settings-toggle');
-    const settingsDropdown = document.getElementById('settings-dropdown');
-
-    if (!settingsToggle || !settingsDropdown) return;
-
-    function toggleDropdown(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const isOpen = settingsDropdown.classList.contains('open');
-        settingsDropdown.classList.toggle('open', !isOpen);
-    }
-
-    settingsToggle.addEventListener('click', toggleDropdown);
-    settingsToggle.addEventListener('touchend', toggleDropdown);
-
-    // Close when clicking/touching outside
-    function closeDropdown(e) {
-        if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
-            settingsDropdown.classList.remove('open');
-        }
-    }
-    document.addEventListener('click', closeDropdown);
-    document.addEventListener('touchend', closeDropdown);
-})();
+// NOTE: Handled inline in each page's HTML for reliable mobile behavior
 
 // ===== PWA Service Worker registration =====
 if ('serviceWorker' in navigator) {
