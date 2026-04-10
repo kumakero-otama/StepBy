@@ -70,7 +70,6 @@ html[data-theme="dark"] body {
 html,
 body {
   height: 100%;
-  min-height: -webkit-fill-available;
   font-family: 'Noto Sans JP', 'Inter', -apple-system, sans-serif;
   color: var(--text-dark);
   background: var(--bg-gray);
