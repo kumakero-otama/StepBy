@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="../assets/icon-192.png">
-    <link rel="stylesheet" href="../common.css?v=1775819995873">
+    <link rel="stylesheet" href="../common.css?v=1775822055712">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -484,8 +484,6 @@
             flex: 1;
             position: relative;
             z-index: 1;
-            overflow: hidden;
-            min-height: 0;
         }
 
         #map {
@@ -675,10 +673,10 @@
         /* =============================================
        BOTTOM DRAWER — COMPACT DREAM CARDS
        ============================================= */
-        .bottom-drawer { flex-shrink: 0; z-index: 100; position: relative; background: var(--bg-white); width: 100%; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); }
-        
-        .map-container {
-            padding-bottom: 60px !important; /* Prevent map controls from hiding behind drawer */
+        .bottom-drawer {
+            flex-shrink: 0;
+            z-index: 100;
+            position: relative;
         }
 
         /* CTA Button */
@@ -692,7 +690,6 @@
 
         /* Floating Action Button for Posting Road Info */
         .fab-post {
-            bottom: 80px !important; /* Moved up for fixed drawer */
             position: absolute;
             bottom: 110px;
             right: 16px;
@@ -1189,16 +1186,7 @@
 
     </style>
 
-    <script src="../config.js?v=1775819995873"></script><script src="../token_client.js"></script>
-
-    <script>
-        // JS workaround for Android Chrome viewport height issues
-        function setAppHeight() {
-            document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-        }
-        window.addEventListener('resize', setAppHeight);
-        setAppHeight();
-    </script>
+    <script src="../config.js?v=1775822055712"></script><script src="../token_client.js"></script>
 </head>
 
 <body>
@@ -1695,8 +1683,8 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         }
     </script>
     
-    <script src="../map/map.js?v=1775819995873"></script>
-    <script src="../common.js?v=1775819995873"></script>
+    <script src="../map/map.js?v=1775822055712"></script>
+    <script src="../common.js?v=1775822055712"></script>
     <script>
         (function() {
             const banner = document.getElementById('version-notice-banner');
