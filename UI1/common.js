@@ -241,26 +241,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     // ===== Settings dropdown (header) =====
-    // Guard against double-registration (e.g. map page loads common.js in head AND body)
-    if (window._stepBySettingsReady) return;
-    window._stepBySettingsReady = true;
-
     const settingsToggle = document.getElementById('settings-toggle');
     const settingsDropdown = document.getElementById('settings-dropdown');
 
     if (settingsToggle && settingsDropdown) {
-        settingsToggle.addEventListener('click', (e) => {
+        // Use both click AND touchend for reliable mobile behavior
+        function toggleDropdown(e) {
+            e.preventDefault();
             e.stopPropagation();
-            settingsDropdown.classList.toggle('open');
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        if (!settingsDropdown || !settingsToggle) return;
-        if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
-            settingsDropdown.classList.remove('open');
+            const isOpen = settingsDropdown.classList.contains('open');
+            settingsDropdown.classList.toggle('open', !isOpen);
         }
-    });
+
+        settingsToggle.addEventListener('click', toggleDropdown);
+        settingsToggle.addEventListener('touchend', toggleDropdown);
+
+        // Close when clicking/touching outside
+        function closeDropdown(e) {
+            if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
+                settingsDropdown.classList.remove('open');
+            }
+        }
+
+        document.addEventListener('click', closeDropdown);
+        document.addEventListener('touchend', closeDropdown);
+    }
 });
 
 // ===== PWA Service Worker registration =====
