@@ -490,7 +490,6 @@
             saveBtn.disabled = true;
             saveBtn.textContent = '保存中...';
 
-            // Save to localStorage immediately (works offline too)
             const username = document.getElementById('edit-username').value.trim();
             const iconPreviewImg = document.getElementById('icon-preview-img');
             let iconData = null;
@@ -505,25 +504,12 @@
                 return;
             }
 
-            // Always save to localStorage as fallback/cache
+            // Always save locally first (works even without server)
             localStorage.setItem('UI1_username', username);
             if (iconData) localStorage.setItem('UI1_avatar', iconData);
 
+            // Try to save to server if authenticated
             if (window.AuthToken && window.AuthToken.getAccessToken()) {
-                const username = document.getElementById('edit-username').value.trim();
-                let iconData = null;
-                const iconPreviewImg = document.getElementById('icon-preview-img');
-                if (iconPreviewImg && iconPreviewImg.style.display !== 'none' && iconPreviewImg.src && iconPreviewImg.src.startsWith('data:')) {
-                    iconData = iconPreviewImg.src;
-                }
-
-                if (!username) {
-                    alert('ユーザー名を入力してください。');
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = '変更を保存';
-                    return;
-                }
-
                 const payload = { username: username };
                 if (iconData) payload.icon_data_url = iconData;
 
@@ -533,21 +519,18 @@
                         { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }
                     );
                     if (!res.ok) {
-                        alert('画像のサイズが大きすぎるか、保存に失敗しました。');
-                        saveBtn.disabled = false;
-                        saveBtn.textContent = '変更を保存';
-                        return;
+                        console.warn('Server save failed, local save succeeded');
                     }
-                } catch(e) { 
-                    console.error('API Error:', e);
-                    alert('サーバーエラーが発生しました: ' + e.message);
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = '変更を保存';
-                    return;
+                } catch (e) {
+                    console.warn('Server unreachable, local save succeeded:', e.message);
                 }
             }
 
-            window.location.assign('../profile/Index.html');
+            saveBtn.textContent = '✓ 保存しました';
+            saveBtn.style.background = 'var(--primary)';
+            setTimeout(() => {
+                window.location.assign('../profile/Index.html');
+            }, 800);
         }
 
         // ---- Icon Upload Handling ----
