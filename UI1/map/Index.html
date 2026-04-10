@@ -1576,11 +1576,11 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
                     e.stopPropagation();
                     settingsDropdown.classList.toggle('open');
                 });
-                document.addEventListener('click', () => {
-                    settingsDropdown.classList.remove('open');
-                });
-                settingsDropdown.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                document.addEventListener('click', (e) => {
+                    // Only close if clicking outside the dropdown, allows links inside to work natively
+                    if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
+                        settingsDropdown.classList.remove('open');
+                    }
                 });
             }
         })();
