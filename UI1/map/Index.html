@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="../assets/icon-192.png">
-    <link rel="stylesheet" href="../common.css?v=32">
+    <link rel="stylesheet" href="../common.css?v=1775819675528">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -676,9 +676,19 @@
        BOTTOM DRAWER — COMPACT DREAM CARDS
        ============================================= */
         .bottom-drawer {
-            flex-shrink: 0;
-            z-index: 100;
-            position: relative;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-width: 480px !important;
+            margin: 0 auto !important;
+            z-index: 2000 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); /* slight shadow to separate from map */
+        }
+        
+        .map-container {
+            padding-bottom: 60px !important; /* Prevent map controls from hiding behind drawer */
         }
 
         /* CTA Button */
@@ -692,6 +702,7 @@
 
         /* Floating Action Button for Posting Road Info */
         .fab-post {
+            bottom: 80px !important; /* Moved up for fixed drawer */
             position: absolute;
             bottom: 110px;
             right: 16px;
@@ -1188,7 +1199,7 @@
 
     </style>
 
-    <script src="../config.js?v=31"></script><script src="../token_client.js"></script>
+    <script src="../config.js?v=1775819675528"></script><script src="../token_client.js"></script>
 
     <script>
         // JS workaround for Android Chrome viewport height issues
@@ -1326,7 +1337,7 @@
                     <span>一時停止</span>
                 </button>
             </div>
-            <!-- Hidden checkboxes: map.js?v=31"checkbox" id="toggle-record" style="display:none">
+            <!-- Hidden checkboxes: map.js?v=1775819675528"checkbox" id="toggle-record" style="display:none">
             <input type="checkbox" id="toggle-show-all" style="display:none">
             <input type="checkbox" id="toggle-show-osm" style="display:none">
             <input type="checkbox" id="toggle-show-road-info" style="display:none">
@@ -1692,8 +1703,8 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         }
     </script>
     
-    <script src="../map/map.js?v=31"></script>
-    <script src="../common.js?v=31"></script>
+    <script src="../map/map.js?v=1775819675528"></script>
+    <script src="../common.js?v=1775819675528"></script>
     <script>
         (function() {
             const banner = document.getElementById('version-notice-banner');
