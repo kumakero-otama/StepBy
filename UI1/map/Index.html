@@ -675,17 +675,7 @@
         /* =============================================
        BOTTOM DRAWER — COMPACT DREAM CARDS
        ============================================= */
-        .bottom-drawer {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            max-width: 480px !important;
-            margin: 0 auto !important;
-            z-index: 2000 !important;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); /* slight shadow to separate from map */
-        }
+        .bottom-drawer { flex-shrink: 0; z-index: 100; position: relative; }
         
         .map-container {
             padding-bottom: 60px !important; /* Prevent map controls from hiding behind drawer */
