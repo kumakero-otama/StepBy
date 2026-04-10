@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -1266,13 +1266,10 @@
 
         <!-- Map -->
         <div class="map-container">
-            <div id="map"></div>
+            <div id="map"></div><div id="center-pin-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -100%); z-index:400; pointer-events:none; flex-direction:column; align-items:center;"><div style="background:#DE3B40; color:#fff; font-size:12px; font-weight:700; padding:4px 12px; border-radius:12px; margin-bottom:4px; box-shadow:0 2px 8px rgba(0,0,0,0.2);">マップを動かして指定</div><i class="fas fa-map-marker-alt" style="font-size:48px; color:#DE3B40; filter:drop-shadow(0px 4px 4px rgba(0,0,0,0.3));"></i></div>
 
             <!-- FAB Post Button -->
-            <a href="../post_road/Index.html" class="fab-post" aria-label="道情報を投稿">
-                <i class="fas fa-map-marker-alt"></i>
-                <span style="font-family: 'Noto Sans JP', sans-serif;">この場所を投稿</span>
-            </a>
+            <button class="fab-post" id="fab-post-btn" aria-label="道情報を投稿"><i class="fas fa-map-marker-alt"></i><span style="font-family: 'Noto Sans JP', sans-serif;" id="fab-post-text">この場所を投稿</span></button>
 
             <!-- Coords overlay on map -->
             <div class="coords-strip">
@@ -1714,6 +1711,9 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
 </body>
 
 </html>
+
+
+
 
 
 

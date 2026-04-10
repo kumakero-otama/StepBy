@@ -1,4 +1,4 @@
-// ===============================================
+﻿// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -1285,16 +1285,30 @@ if (voiceNavBtn) {
 
 
 
-// Link FAB Post button to map center
+
+// FAB Post Button: Pin Drop Mode Logic
 (function() {
-    const fabPost = document.querySelector('.fab-post');
-    function updateFabHref() {
-        if (!fabPost || !map) return;
-        const center = map.getCenter();
-        fabPost.href = '../post_road/Index.html?lat=' + center.lat + '&lng=' + center.lng;
-    }
-    if (typeof map !== 'undefined') {
-        map.on('move', updateFabHref);
-        updateFabHref();
+    let pinDropMode = false;
+    const fabPost = document.getElementById("fab-post-btn");
+    const fabText = document.getElementById("fab-post-text");
+    const centerPinOverlay = document.getElementById("center-pin-overlay");
+    
+    if (fabPost && centerPinOverlay && leafletMap) {
+        fabPost.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (!pinDropMode) {
+                // Enter Pin Drop Mode
+                pinDropMode = true;
+                centerPinOverlay.style.display = "flex";
+                fabText.textContent = "ここで決定";
+                fabPost.style.background = "linear-gradient(135deg, #DE3B40, #FF5252)";
+                fabPost.innerHTML = `<i class="fas fa-check"></i><span style="font-family: 'Noto Sans JP', sans-serif;">ここで決定</span>`;
+            } else {
+                // Confirm Location & Redirect
+                const center = leafletMap.getCenter();
+                window.location.assign(`../post_road/Index.html?lat=${center.lat}&lng=${center.lng}`);
+            }
+        });
     }
 })();
+
