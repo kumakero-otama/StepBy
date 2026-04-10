@@ -255,15 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.addEventListener('click', () => {
-        if (settingsDropdown) settingsDropdown.classList.remove('open');
+    document.addEventListener('click', (e) => {
+        if (!settingsDropdown || !settingsToggle) return;
+        if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
+            settingsDropdown.classList.remove('open');
+        }
     });
-
-    if (settingsDropdown) {
-        settingsDropdown.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    }
 });
 
 // ===== PWA Service Worker registration =====

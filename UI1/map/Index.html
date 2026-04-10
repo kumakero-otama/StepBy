@@ -1565,24 +1565,6 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
             if (searchIcon) searchIcon.addEventListener('click', doSearch);
         })();
     </script>
-    <script>
-        // Settings Dropdown Toggle
-        (function() {
-            const settingsToggle = document.getElementById('settings-toggle');
-            const settingsDropdown = document.getElementById('settings-dropdown');
-            if (settingsToggle && settingsDropdown) {
-                settingsToggle.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    settingsDropdown.classList.toggle('open');
-                });
-                document.addEventListener('click', (e) => {
-                    // Only close if clicking outside the dropdown, allows links inside to work natively
-                    if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
-                        settingsDropdown.classList.remove('open');
-                    }
-                });
-            }
-        })();
 
         // Drawer toggle
         (function() {
