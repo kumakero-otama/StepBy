@@ -398,18 +398,18 @@
                     <i class="fas fa-camera"></i> アイコン画像
                 </div>
                 <div class="icon-upload">
-                    <div class="icon-preview" style="overflow: hidden;">
-                        <img id="icon-preview-img" style="display:none; width:100%; height:100%; object-fit:cover;">
+                    <div class="icon-preview" style="overflow: hidden; position: relative;">
+                        <img id="icon-preview-img" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:50%;">
                         <i class="fas fa-user" id="icon-default-icon"></i>
                         <span class="icon-no-image" id="icon-no-image-text">NO IMAGE</span>
                     </div>
                     <div class="icon-buttons">
                         <label class="icon-btn" for="file-camera" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
-                            <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                            <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
                             <i class="fas fa-camera"></i> 写真を撮影
                         </label>
                         <label class="icon-btn" for="file-upload" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
-                            <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                            <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
                             <i class="fas fa-image"></i> 画像アップロード
                         </label>
                     </div>
@@ -541,28 +541,47 @@
         const iconNoImageText = document.getElementById('icon-no-image-text');
 
         function handleImageSelection(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // Immediately hide default icons to acknowledge selection
-            if (iconDefaultIcon) iconDefaultIcon.style.display = 'none';
-            if (iconNoImageText) iconNoImageText.style.display = 'none';
-            
+            const file = (event.target || event).files ? (event.target || event).files[0] : event;
+            if (!file) { console.warn('No file selected'); return; }
+            console.log('Image selected:', file.name, file.size, file.type);
+
+            // Re-fetch elements each time to avoid stale references
+            const _iconPreviewImg = document.getElementById('icon-preview-img');
+            const _iconDefaultIcon = document.getElementById('icon-default-icon');
+            const _iconNoImageText = document.getElementById('icon-no-image-text');
+
+            if (!_iconPreviewImg) { console.error('icon-preview-img not found!'); return; }
+
+            // Immediately hide default icons
+            if (_iconDefaultIcon) _iconDefaultIcon.style.display = 'none';
+            if (_iconNoImageText) _iconNoImageText.style.display = 'none';
+
             const renderImage = (dataUrl) => {
-                iconPreviewImg.src = dataUrl;
-                iconPreviewImg.style.display = 'block';
-                iconPreviewImg.style.zIndex = '10'; // Ensure it stays on top
+                _iconPreviewImg.src = dataUrl;
+                _iconPreviewImg.style.display = 'block';
+                _iconPreviewImg.style.position = 'absolute';
+                _iconPreviewImg.style.top = '0';
+                _iconPreviewImg.style.left = '0';
+                _iconPreviewImg.style.width = '100%';
+                _iconPreviewImg.style.height = '100%';
+                _iconPreviewImg.style.objectFit = 'cover';
+                _iconPreviewImg.style.borderRadius = '50%';
+                console.log('Image rendered to preview');
             };
 
             if (window.resizeImage) {
                 window.resizeImage(file, 800, 0.7)
                     .then(renderImage)
                     .catch(e => {
-                        console.error('Image resize failed, using direct URL:', e);
-                        renderImage(URL.createObjectURL(file));
+                        console.error('Image resize failed, using FileReader:', e);
+                        const reader = new FileReader();
+                        reader.onload = (ev) => renderImage(ev.target.result);
+                        reader.readAsDataURL(file);
                     });
             } else {
-                renderImage(URL.createObjectURL(file));
+                const reader = new FileReader();
+                reader.onload = (ev) => renderImage(ev.target.result);
+                reader.readAsDataURL(file);
             }
         }
         
