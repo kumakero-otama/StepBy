@@ -1,4 +1,4 @@
-﻿// ===============================================
+// ===============================================
 // StepBy — map.js
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
@@ -1285,15 +1285,14 @@ if (voiceNavBtn) {
 
 
 
-
 // FAB Post Button: Pin Drop Mode Logic
 (function() {
     let pinDropMode = false;
     const fabPost = document.getElementById("fab-post-btn");
     const fabText = document.getElementById("fab-post-text");
     const centerPinOverlay = document.getElementById("center-pin-overlay");
-    
-    if (fabPost && centerPinOverlay && leafletMap) {
+
+    if (fabPost && centerPinOverlay && typeof leafletMap !== 'undefined') {
         fabPost.addEventListener("click", (e) => {
             e.preventDefault();
             if (!pinDropMode) {
@@ -1311,4 +1310,3 @@ if (voiceNavBtn) {
         });
     }
 })();
-
