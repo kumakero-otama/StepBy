@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="../assets/icon-192.png">
-    <link rel="stylesheet" href="../common.css?v=1775819675528">
+    <link rel="stylesheet" href="../common.css?v=1775819995873">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -1199,7 +1199,7 @@
 
     </style>
 
-    <script src="../config.js?v=1775819675528"></script><script src="../token_client.js"></script>
+    <script src="../config.js?v=1775819995873"></script><script src="../token_client.js"></script>
 
     <script>
         // JS workaround for Android Chrome viewport height issues
@@ -1337,7 +1337,8 @@
                     <span>一時停止</span>
                 </button>
             </div>
-            <!-- Hidden checkboxes: map.js?v=1775819675528"checkbox" id="toggle-record" style="display:none">
+            <!-- Hidden checkboxes -->
+            <input type="checkbox" id="toggle-record" style="display:none">
             <input type="checkbox" id="toggle-show-all" style="display:none">
             <input type="checkbox" id="toggle-show-osm" style="display:none">
             <input type="checkbox" id="toggle-show-road-info" style="display:none">
@@ -1588,6 +1589,7 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         })();
     </script>
 
+        <script>
         // Drawer toggle
         (function() {
             const handle = document.getElementById('drawer-handle-btn');
@@ -1703,8 +1705,8 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         }
     </script>
     
-    <script src="../map/map.js?v=1775819675528"></script>
-    <script src="../common.js?v=1775819675528"></script>
+    <script src="../map/map.js?v=1775819995873"></script>
+    <script src="../common.js?v=1775819995873"></script>
     <script>
         (function() {
             const banner = document.getElementById('version-notice-banner');
