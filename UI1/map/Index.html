@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="../assets/icon-192.png">
-    <link rel="stylesheet" href="../common.css?v=31">
+    <link rel="stylesheet" href="../common.css?v=32">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -1189,6 +1189,15 @@
     </style>
 
     <script src="../config.js?v=31"></script><script src="../token_client.js"></script>
+
+    <script>
+        // JS workaround for Android Chrome viewport height issues
+        function setAppHeight() {
+            document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+        }
+        window.addEventListener('resize', setAppHeight);
+        setAppHeight();
+    </script>
 </head>
 
 <body>
