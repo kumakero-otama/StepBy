@@ -404,11 +404,11 @@
                         <span class="icon-no-image" id="icon-no-image-text">NO IMAGE</span>
                     </div>
                     <div class="icon-buttons">
-                        <label class="icon-btn" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
+                        <label class="icon-btn" for="file-camera" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
                             <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0;">
                             <i class="fas fa-camera"></i> 写真を撮影
                         </label>
-                        <label class="icon-btn" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
+                        <label class="icon-btn" for="file-upload" style="cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
                             <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 0; height: 0;">
                             <i class="fas fa-image"></i> 画像アップロード
                         </label>
@@ -489,6 +489,25 @@
             const saveBtn = document.getElementById('save-btn');
             saveBtn.disabled = true;
             saveBtn.textContent = '保存中...';
+
+            // Save to localStorage immediately (works offline too)
+            const username = document.getElementById('edit-username').value.trim();
+            const iconPreviewImg = document.getElementById('icon-preview-img');
+            let iconData = null;
+            if (iconPreviewImg && iconPreviewImg.style.display !== 'none' && iconPreviewImg.src && iconPreviewImg.src.startsWith('data:')) {
+                iconData = iconPreviewImg.src;
+            }
+
+            if (!username) {
+                alert('ユーザー名を入力してください。');
+                saveBtn.disabled = false;
+                saveBtn.textContent = '変更を保存';
+                return;
+            }
+
+            // Always save to localStorage as fallback/cache
+            localStorage.setItem('UI1_username', username);
+            if (iconData) localStorage.setItem('UI1_avatar', iconData);
 
             if (window.AuthToken && window.AuthToken.getAccessToken()) {
                 const username = document.getElementById('edit-username').value.trim();
