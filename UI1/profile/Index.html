@@ -374,10 +374,7 @@
                 }
 
                 || user.is_pro) {
-                    const badge = document.getElementById('pro-badge');
-                    if (badge) badge.style.display = 'inline-flex';
-                    localStorage.setItem('UI1_isPro', 'true');
-                }
+                    }
 
                 // Stats
                 const km = (user.totalTactileLength || user.total_tactile_length || 0);
@@ -411,7 +408,7 @@
                 }
             } catch {}
             if (window.AuthToken) window.AuthToken.clearAccessToken();
-            localStorage.removeItem('UI1_isPro');
+            
             window.location.assign('../signup/Index.html');
         });
     </script>
