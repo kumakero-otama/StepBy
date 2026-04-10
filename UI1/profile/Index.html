@@ -345,15 +345,47 @@
 
         // Load profile from API
         async function loadProfileFromAPI() {
+            // Function to apply local cache safely
+            const applyLocalCache = () => {
+                const savedName = localStorage.getItem('UI1_username');
+                const savedAvatar = localStorage.getItem('UI1_avatar');
+                if (savedName) {
+                    const nameEl = document.getElementById('profile-name');
+                    const userEl = document.getElementById('profile-username');
+                    if (nameEl && nameEl.textContent === '---') nameEl.textContent = savedName;
+                    if (userEl && userEl.textContent === '---') userEl.textContent = savedName;
+                }
+                if (savedAvatar) {
+                    const wrap = document.getElementById('avatar-wrap');
+                    const placeholder = document.getElementById('avatar-placeholder');
+                    if (wrap && !wrap.querySelector('img')) {
+                        const img = document.createElement('img');
+                        img.src = savedAvatar;
+                        img.alt = 'プロフィール画像';
+                        img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
+                        if (placeholder) placeholder.style.display = 'none';
+                        wrap.appendChild(img);
+                    }
+                }
+            };
+
+            // Before anything, try applying cache immediately
+            applyLocalCache();
+
             if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
             try {
                 const res = await window.AuthToken.authFetch('/auth/me?_t=' + new Date().getTime(), { cache: 'no-store' });
-                if (!res.ok) return;
+                if (!res.ok) {
+                    // API returned 502 or 401 etc. Fallback to cache since we can't load new profile
+                    console.warn('API returned !ok status:', res.status);
+                    applyLocalCache();
+                    return;
+                }
                 const payload = await res.json();
                 const user = payload && payload.user ? payload.user : null;
-                if (!user) return;
+                if (!user) { applyLocalCache(); return; }
 
-                // Username
+                // Username (Overwrite cache securely)
                 const displayName = user.username || user.displayName || 'ユーザー';
                 const nameEl = document.getElementById('profile-name');
                 const userEl = document.getElementById('profile-username');
@@ -365,62 +397,24 @@
                 if (avatarUrl) {
                     const wrap = document.getElementById('avatar-wrap');
                     const placeholder = document.getElementById('avatar-placeholder');
-                    const img = document.createElement('img');
+                    const img = wrap.querySelector('img') || document.createElement('img');
                     img.src = avatarUrl;
                     img.alt = 'プロフィール画像';
+                    img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
                     img.onerror = function() { this.style.display = 'none'; if (placeholder) placeholder.style.display = 'flex'; };
                     if (placeholder) placeholder.style.display = 'none';
-                    wrap.appendChild(img);
+                    if (!wrap.querySelector('img')) wrap.appendChild(img);
                 }
-
-                || user.is_pro) {
-                    }
-
-                // Stats
-                const km = (user.totalTactileLength || user.total_tactile_length || 0);
-                const posts = (user.totalRoadPosts || user.total_road_posts || 0);
-                const hearts = (user.totalHearts || user.total_hearts || 0);
-
-                const statKm = document.getElementById('stat-km');
-                const statPosts = document.getElementById('total-posts-count');
-                const statHearts = document.getElementById('stat-hearts');
-                if (statKm)     statKm.innerHTML = `${Number(km).toFixed(2)}<small>km</small>`;
-                if (statPosts)  statPosts.textContent = posts;
-                if (statHearts) statHearts.innerHTML = `${hearts}<small>♥</small>`;
-
-                const pillKm = document.getElementById('pill-km');
-                if (pillKm && km > 0) { pillKm.textContent = `👟 ${Number(km).toFixed(2)}km`; pillKm.style.display = 'inline-flex'; }
-
             } catch (e) {
-                console.log('Profile API not available:', e.message);
+                console.log('Profile API not available (Network / CORS):', e.message);
+                applyLocalCache();
             }
         }
 
-        // Preload from localStorage (instant display while API loads)
-        (function() {
-            const savedName = localStorage.getItem('UI1_username');
-            const savedAvatar = localStorage.getItem('UI1_avatar');
-            if (savedName) {
-                const nameEl = document.getElementById('profile-name');
-                const userEl = document.getElementById('profile-username');
-                if (nameEl) nameEl.textContent = savedName;
-                if (userEl) userEl.textContent = savedName;
-            }
-            if (savedAvatar) {
-                const wrap = document.getElementById('avatar-wrap');
-                const placeholder = document.getElementById('avatar-placeholder');
-                const img = document.createElement('img');
-                img.src = savedAvatar;
-                img.alt = 'プロフィール画像';
-                img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
-                if (placeholder) placeholder.style.display = 'none';
-                if (wrap) wrap.appendChild(img);
-            }
-        })();
         loadProfileFromAPI();
 
         // Logout
-        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+        Id('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             if (!confirm('ログアウトしますか？')) return;
             try {

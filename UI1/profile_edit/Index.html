@@ -397,24 +397,28 @@
                 <div class="form-card-title">
                     <i class="fas fa-camera"></i> アイコン画像
                 </div>
-                <div class="icon-upload">
-                    <!-- Preview circle with click-to-upload support -->
-                    <div class="icon-preview" id="icon-preview-wrap" style="overflow: hidden; position: relative; cursor: pointer;" onclick="document.getElementById('file-upload').click()">
-                        <img id="icon-preview-img" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:50%;" alt="プロフィール画像">
-                        <i class="fas fa-user" id="icon-default-icon"></i>
-                        <span class="icon-no-image" id="icon-no-image-text">タップして選択</span>
-                    </div>
-                    <!-- Hidden inputs -->
-                    <input type="file" id="file-upload" accept="image/*" style="display:none;" onchange="handleImageSelection(event)">
-                    <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelection(event)">
-                    <!-- Visible buttons trigger hidden inputs -->
-                    <div class="icon-buttons">
-                        <button type="button" class="icon-btn" onclick="document.getElementById('file-camera').click()">
-                            <i class="fas fa-camera"></i> 写真を撮影
-                        </button>
-                        <button type="button" class="icon-btn" onclick="document.getElementById('file-upload').click()">
-                            <i class="fas fa-image"></i> 画像アップロード
-                        </button>
+                <div class="icon-upload" style="display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%;">
+                    
+                    <!-- Circular Preview Area -->
+                    <label for="file-upload" class="icon-preview" id="icon-preview-wrap" style="overflow: hidden; position: relative; cursor: pointer; width: 100px; height: 100px; border-radius: 50%; background: var(--bg-gray); border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <img id="icon-preview-img" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index: 2;" alt="プロフィール画像">
+                        <i class="fas fa-user" id="icon-default-icon" style="font-size: 32px; color: var(--text-light); z-index: 1;"></i>
+                        <span class="icon-no-image" id="icon-no-image-text" style="font-size: 11px; margin-top: 4px; color: var(--text-light); z-index: 1;">タップで変更</span>
+                    </label>
+
+                    <!-- Buttons Area -->
+                    <div class="icon-buttons" style="display: flex; gap: 12px; width: 100%;">
+                        <!-- Camera Button -->
+                        <label class="icon-btn" style="flex: 1; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-white); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-dark); box-shadow: var(--shadow-sm); overflow: hidden;">
+                            <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 10;" onchange="handleImageSelection(event)">
+                            <i class="fas fa-camera" style="margin-right: 6px; color: var(--primary);"></i> 写真を撮影
+                        </label>
+                        
+                        <!-- Upload Button -->
+                        <label class="icon-btn" style="flex: 1; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-white); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-dark); box-shadow: var(--shadow-sm); overflow: hidden;">
+                            <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 10;" onchange="handleImageSelection(event)">
+                            <i class="fas fa-image" style="margin-right: 6px; color: var(--primary);"></i> 画像フォルダ
+                        </label>
                     </div>
                 </div>
             </div>
