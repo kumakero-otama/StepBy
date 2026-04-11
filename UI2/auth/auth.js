@@ -1,6 +1,10 @@
 const GOOGLE_CLIENT_ID = "808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com";
 const googleStatusElement = document.getElementById("google-auth-status");
 const guestLoginButton = document.getElementById("guest-login-button");
+const loginProcessingPanel = document.getElementById("login-processing-panel");
+const loginProcessingTitle = document.getElementById("login-processing-title");
+const loginProcessingMessage = document.getElementById("login-processing-message");
+const loginCardElement = document.querySelector(".login-card");
 const signupPage = window.location.pathname.endsWith("/auth/signup.html");
 const signupProfilePage = window.location.pathname.endsWith("/auth/signup_profile.html");
 const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
@@ -21,6 +25,8 @@ const AUTH_TEXT = {
     googleNetworkError: "ネットワークエラーでGoogleログインに失敗しました。",
     signupSessionError: "認証状態の確認に失敗しました。通信状態を確認して再読み込みしてください。",
     signupSaveNetworkError: "ネットワークエラーで保存に失敗しました。",
+    processingTitle: "ログイン中です…",
+    processingMessage: "Google認証の完了を確認しています。このままお待ちください。",
   },
   en: {
     guestChecking: "Checking guest login...",
@@ -35,6 +41,8 @@ const AUTH_TEXT = {
     googleNetworkError: "Google sign-in failed due to a network error.",
     signupSessionError: "Failed to verify your session. Check your connection and reload the page.",
     signupSaveNetworkError: "Saving failed due to a network error.",
+    processingTitle: "Signing you in...",
+    processingMessage: "We are confirming your Google sign-in. Please wait on this screen.",
   },
   hi: {
     guestChecking: "गेस्ट लॉगिन की पुष्टि की जा रही है...",
@@ -49,6 +57,8 @@ const AUTH_TEXT = {
     googleNetworkError: "नेटवर्क त्रुटि के कारण Google लॉगिन विफल हुआ।",
     signupSessionError: "सत्र की पुष्टि नहीं हो सकी। कनेक्शन जांचें और पेज फिर से लोड करें।",
     signupSaveNetworkError: "नेटवर्क त्रुटि के कारण सहेजना विफल हुआ।",
+    processingTitle: "लॉग इन किया जा रहा है...",
+    processingMessage: "Google साइन-इन की पुष्टि की जा रही है। कृपया इसी स्क्रीन पर प्रतीक्षा करें।",
   },
 };
 
@@ -132,6 +142,29 @@ function setGoogleStatus(message) {
     return;
   }
   googleStatusElement.textContent = message;
+}
+
+function setLoginProcessingState(active, options) {
+  if (signupPage || signupProfilePage || !loginCardElement) {
+    return;
+  }
+  const text = getAuthText();
+  const title = options && options.title ? options.title : text.processingTitle;
+  const message = options && options.message ? options.message : text.processingMessage;
+  loginCardElement.classList.toggle("is-processing", Boolean(active));
+  if (loginProcessingPanel) {
+    loginProcessingPanel.classList.toggle("hidden", !active);
+    loginProcessingPanel.setAttribute("aria-hidden", active ? "false" : "true");
+  }
+  if (loginProcessingTitle) {
+    loginProcessingTitle.textContent = title;
+  }
+  if (loginProcessingMessage) {
+    loginProcessingMessage.textContent = message;
+  }
+  if (guestLoginButton) {
+    guestLoginButton.disabled = Boolean(active);
+  }
 }
 
 function logAuthEvent(event, extra) {
@@ -474,15 +507,18 @@ async function loginWithGoogle(idToken) {
         return false;
       }
       if (errorMessage === "invalid_token") {
+        setLoginProcessingState(false);
         setGoogleStatus(
           "Googleトークン検証に失敗しました。Google CloudのClient IDとAuthorized JavaScript originsを確認してください。"
         );
         return false;
       }
       if (errorMessage === "login_failed") {
+        setLoginProcessingState(false);
         setGoogleStatus("ログイン処理に失敗しました。サーバーログを確認してください。");
         return false;
       }
+      setLoginProcessingState(false);
       setGoogleStatus(`Googleログインに失敗しました: ${errorMessage}`);
       return false;
     }
@@ -524,13 +560,16 @@ async function loginWithGoogle(idToken) {
       message: err && err.message ? String(err.message) : "google_login_failed",
     });
     if (isTimeoutError(err)) {
+      setLoginProcessingState(false);
       setGoogleStatus(text.googleTimeout);
       return false;
     }
     if (isTemporaryAuthError(err)) {
+      setLoginProcessingState(false);
       setGoogleStatus(text.googleNetworkError);
       return false;
     }
+    setLoginProcessingState(false);
     const detail = err && err.message ? String(err.message) : "unknown_error";
     setGoogleStatus(`エラーが出てGoogleログインに失敗しました: ${detail}`);
     return false;
@@ -549,6 +588,10 @@ async function loginAsGuest() {
     if (requestId && clientLogApi && typeof clientLogApi.setCurrentRequestId === "function") {
       clientLogApi.setCurrentRequestId(requestId);
     }
+    setLoginProcessingState(true, {
+      title: text.guestChecking,
+      message: text.guestChecking,
+    });
     setGoogleStatus(text.guestChecking);
     logAuthEvent("auth_guest_post_start", {
       path: "/auth/guest",
@@ -571,6 +614,7 @@ async function loginAsGuest() {
         window.location.href = AppPath.toApp("/map/Index.html");
         return true;
       }
+      setLoginProcessingState(false);
       logAuthEvent("auth_guest_post_failed", {
         level: "warn",
         path: "/auth/guest",
@@ -584,6 +628,7 @@ async function loginAsGuest() {
     }
 
     if (!payload || !payload.access_token) {
+      setLoginProcessingState(false);
       setGoogleStatus(`${text.guestResponseMissing}: status_${res.status}`);
       return false;
     }
@@ -606,6 +651,7 @@ async function loginAsGuest() {
     window.location.href = AppPath.toApp("/map/Index.html");
     return true;
   } catch (error) {
+    setLoginProcessingState(false);
     logAuthEvent("auth_guest_post_failed", {
       level: "error",
       path: "/auth/guest",
@@ -899,6 +945,7 @@ async function handleGoogleCredential(response) {
     message: "Google credential callback started",
   });
 
+  setLoginProcessingState(true);
   setGoogleStatus(signupPage ? "Googleサインアップを確認中です..." : "Googleログインを確認中です...");
   if (signupPage) {
     setPendingSignupIdToken(idToken);

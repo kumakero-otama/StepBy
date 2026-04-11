@@ -268,7 +268,11 @@
       (() => {
         const splash = document.getElementById("splash");
         const particlesContainer = document.getElementById("splash-particles");
+        const notifySplashFinished = () => {
+          window.dispatchEvent(new CustomEvent("ui2:splash-finished"));
+        };
         if (!splash || !particlesContainer) {
+          notifySplashFinished();
           return;
         }
 
@@ -282,6 +286,7 @@
 
         if (hasSeenSplash) {
           splash.remove();
+          notifySplashFinished();
           return;
         }
 
@@ -308,7 +313,10 @@
             return;
           }
           splash.classList.add("fade-out");
-          window.setTimeout(() => splash.remove(), 800);
+          window.setTimeout(() => {
+            splash.remove();
+            notifySplashFinished();
+          }, 800);
         };
 
         window.setTimeout(dismissSplash, 3500);

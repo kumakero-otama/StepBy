@@ -33,6 +33,11 @@
       </section>
       <section class="login-card" aria-labelledby="login-title-panel">
         <p id="login-title-panel" class="login-card-hint">Sign in with your account</p>
+        <div id="login-processing-panel" class="login-processing-panel hidden" aria-live="polite" aria-hidden="true">
+          <div class="login-processing-spinner" aria-hidden="true"></div>
+          <p id="login-processing-title" class="login-processing-title">Signing you in...</p>
+          <p id="login-processing-message" class="login-processing-message">We are confirming your Google sign-in. Please wait on this screen.</p>
+        </div>
         <div class="login-google-wrap">
           <div id="google-signin-button" class="google-signin-button"></div>
         </div>

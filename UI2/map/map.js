@@ -37,7 +37,6 @@ const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
-const SAFETY_CONFIRM_KEY = "ui2_map_safety_confirmed_v1";
 
 const SAFETY_CONFIRM_TEXT = {
   ja: {
@@ -160,22 +159,6 @@ function getSafetyConfirmText() {
   return SAFETY_CONFIRM_TEXT[language] || SAFETY_CONFIRM_TEXT.ja;
 }
 
-function hasAcceptedSafetyConfirm() {
-  try {
-    return window.localStorage.getItem(SAFETY_CONFIRM_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function persistSafetyConfirmAcceptance() {
-  try {
-    window.localStorage.setItem(SAFETY_CONFIRM_KEY, "1");
-  } catch {
-    // Ignore storage errors and continue for the current session.
-  }
-}
-
 function hideSafetyConfirmModal() {
   if (!safetyConfirmModalEl) {
     return;
@@ -200,15 +183,7 @@ function initSafetyConfirmModal() {
     return;
   }
 
-  if (hasAcceptedSafetyConfirm()) {
-    hideSafetyConfirmModal();
-    return;
-  }
-
-  showSafetyConfirmModal();
-
   safetyConfirmAcceptBtn.addEventListener("click", () => {
-    persistSafetyConfirmAcceptance();
     hideSafetyConfirmModal();
   });
 
@@ -219,6 +194,16 @@ function initSafetyConfirmModal() {
       : (lang === "hi" ? "/map/exit_notice_hi.html" : "/map/exit_notice.html");
     window.location.replace(AppPath.toApp(targetPath));
   });
+
+  hideSafetyConfirmModal();
+
+  window.addEventListener("ui2:splash-finished", () => {
+    showSafetyConfirmModal();
+  }, { once: true });
+
+  if (!document.getElementById("splash")) {
+    showSafetyConfirmModal();
+  }
 }
 
 function escapeHtml(value) {
