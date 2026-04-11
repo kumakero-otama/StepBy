@@ -6,6 +6,7 @@ const signupProfilePage = window.location.pathname.endsWith("/auth/signup_profil
 const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
+const clientLogApi = window.ClientLogs || null;
 const AUTH_TEXT = {
   ja: {
     guestChecking: "ゲストログインを確認中です...",
@@ -131,6 +132,30 @@ function setGoogleStatus(message) {
     return;
   }
   googleStatusElement.textContent = message;
+}
+
+function logAuthEvent(event, extra) {
+  if (!clientLogApi || typeof clientLogApi.logEvent !== "function") {
+    return;
+  }
+  void clientLogApi.logEvent({
+    category: "auth",
+    event,
+    level: (extra && extra.level) || "info",
+    path: extra && extra.path ? extra.path : "",
+    method: extra && extra.method ? extra.method : "",
+    status: extra && Number.isFinite(extra.status) ? extra.status : null,
+    message: extra && extra.message ? extra.message : "",
+    requestId: extra && extra.requestId ? extra.requestId : "",
+    meta: extra && extra.meta ? extra.meta : null,
+  });
+}
+
+function markNavigation(reason, targetPath) {
+  if (!clientLogApi || typeof clientLogApi.markNavigation !== "function") {
+    return;
+  }
+  clientLogApi.markNavigation(reason, targetPath);
 }
 
 function escapeHtml(value) {
@@ -366,6 +391,13 @@ async function redirectIfAlreadyAuthenticated() {
     }
     const payload = await res.json();
     if (payload && payload.authenticated) {
+      logAuthEvent("auth_session_redirect_map", {
+        path: "/auth/me",
+        method: "GET",
+        status: 200,
+        message: "Authenticated session found on login page",
+      });
+      markNavigation("authenticated_session_redirect", AppPath.toApp("/map/Index.html"));
       window.location.replace(AppPath.toApp("/map/Index.html"));
       return true;
     }
@@ -403,9 +435,22 @@ function cacheProfileUser(user) {
 
 async function loginWithGoogle(idToken) {
   const text = getAuthText();
+  const requestId = clientLogApi && typeof clientLogApi.getCurrentRequestId === "function"
+    ? (clientLogApi.getCurrentRequestId() || clientLogApi.createRequestId("req"))
+    : "";
+  if (requestId && clientLogApi && typeof clientLogApi.setCurrentRequestId === "function") {
+    clientLogApi.setCurrentRequestId(requestId);
+  }
+  logAuthEvent("auth_google_post_start", {
+    path: "/auth/google",
+    method: "POST",
+    requestId,
+    message: "Sending Google login request",
+  });
   try {
     const res = await authFetch("/auth/google", {
       method: "POST",
+      requestId,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_token: idToken }),
     });
@@ -413,9 +458,18 @@ async function loginWithGoogle(idToken) {
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) {
       const errorMessage = payload.error || "google_auth_failed";
+      logAuthEvent("auth_google_post_failed", {
+        level: "warn",
+        path: "/auth/google",
+        method: "POST",
+        status: res.status,
+        requestId,
+        message: errorMessage,
+      });
       if (errorMessage === "account_not_found") {
         setPendingSignupIdToken(idToken);
         setGoogleStatus("未登録のGoogleアカウントです。サインアップ画面へ移動します...");
+        markNavigation("google_account_not_found", AppPath.toApp("/auth/signup_profile.html"));
         window.location.href = AppPath.toApp("/auth/signup_profile.html");
         return false;
       }
@@ -436,20 +490,39 @@ async function loginWithGoogle(idToken) {
     if (payload && payload.access_token) {
       setAccessToken(payload.access_token);
     }
+    logAuthEvent("auth_google_post_success", {
+      path: "/auth/google",
+      method: "POST",
+      status: res.status,
+      requestId,
+      message: "Google login request succeeded",
+      meta: {
+        hasAccessToken: Boolean(payload && payload.access_token),
+      },
+    });
     const username = payload && payload.user ? payload.user.username : null;
     if (payload && payload.user) {
       cacheProfileUser(payload.user);
     }
     if (!username || !String(username).trim()) {
       setGoogleStatus("ログイン成功。サインアップ画面へ移動します...");
+      markNavigation("google_login_signup_redirect", AppPath.toApp("/auth/signup_profile.html"));
       window.location.href = AppPath.toApp("/auth/signup_profile.html");
       return true;
     }
 
     setGoogleStatus("ログイン成功。地図画面へ移動します...");
+    markNavigation("google_login_success", AppPath.toApp("/map/Index.html"));
     window.location.href = AppPath.toApp("/map/Index.html");
     return true;
   } catch (err) {
+    logAuthEvent("auth_google_post_failed", {
+      level: "error",
+      path: "/auth/google",
+      method: "POST",
+      requestId,
+      message: err && err.message ? String(err.message) : "google_login_failed",
+    });
     if (isTimeoutError(err)) {
       setGoogleStatus(text.googleTimeout);
       return false;
@@ -466,11 +539,23 @@ async function loginWithGoogle(idToken) {
 
 async function loginAsGuest() {
   const text = getAuthText();
+  const requestId = clientLogApi && typeof clientLogApi.createRequestId === "function"
+    ? clientLogApi.createRequestId("req")
+    : "";
   if (guestLoginButton) {
     guestLoginButton.disabled = true;
   }
   try {
+    if (requestId && clientLogApi && typeof clientLogApi.setCurrentRequestId === "function") {
+      clientLogApi.setCurrentRequestId(requestId);
+    }
     setGoogleStatus(text.guestChecking);
+    logAuthEvent("auth_guest_post_start", {
+      path: "/auth/guest",
+      method: "POST",
+      requestId,
+      message: "Sending guest login request",
+    });
     const res = await fetch(AppPath.toApi("/auth/guest"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -482,9 +567,18 @@ async function loginAsGuest() {
       const errorDetail = payload && payload.message ? String(payload.message) : "";
       if (res.status === 409 || errorMessage === "already_authenticated") {
         setGoogleStatus(text.guestAlreadyAuthenticated);
+        markNavigation("guest_already_authenticated", AppPath.toApp("/map/Index.html"));
         window.location.href = AppPath.toApp("/map/Index.html");
         return true;
       }
+      logAuthEvent("auth_guest_post_failed", {
+        level: "warn",
+        path: "/auth/guest",
+        method: "POST",
+        status: res.status,
+        requestId,
+        message: errorMessage,
+      });
       setGoogleStatus(`${text.guestFailed}: ${errorMessage}${errorDetail ? ` (${errorDetail})` : ""}`);
       return false;
     }
@@ -500,10 +594,24 @@ async function loginAsGuest() {
     if (payload && payload.user) {
       cacheProfileUser(payload.user);
     }
+    logAuthEvent("auth_guest_post_success", {
+      path: "/auth/guest",
+      method: "POST",
+      status: res.status,
+      requestId,
+      message: "Guest login request succeeded",
+    });
     setGoogleStatus(text.guestSuccess);
+    markNavigation("guest_login_success", AppPath.toApp("/map/Index.html"));
     window.location.href = AppPath.toApp("/map/Index.html");
     return true;
-  } catch {
+  } catch (error) {
+    logAuthEvent("auth_guest_post_failed", {
+      level: "error",
+      path: "/auth/guest",
+      method: "POST",
+      message: error && error.message ? String(error.message) : "guest_login_failed",
+    });
     setGoogleStatus(text.guestNetworkError);
     return false;
   } finally {
@@ -526,25 +634,35 @@ async function ensureSignupProfileSession() {
   try {
     const res = await authFetch("/auth/me");
     if (!res.ok) {
+      markNavigation("signup_session_missing", AppPath.toApp("/auth/login.html"));
       window.location.replace(AppPath.toApp("/auth/login.html"));
       return null;
     }
     const payload = await res.json();
     const user = payload && payload.user ? payload.user : null;
     if (!user) {
+      markNavigation("signup_session_no_user", AppPath.toApp("/auth/login.html"));
       window.location.replace(AppPath.toApp("/auth/login.html"));
       return null;
     }
     if (user.username && String(user.username).trim()) {
+      markNavigation("signup_profile_already_completed", AppPath.toApp("/map/Index.html"));
       window.location.replace(AppPath.toApp("/map/Index.html"));
       return null;
     }
     return user;
   } catch (error) {
     if (isTemporaryAuthError(error)) {
+      logAuthEvent("auth_signup_session_deferred", {
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        message: error && error.message ? String(error.message) : "signup_session_deferred",
+      });
       setGoogleStatus(getAuthText().signupSessionError);
       return null;
     }
+    markNavigation("signup_session_error", AppPath.toApp("/auth/login.html"));
     window.location.replace(AppPath.toApp("/auth/login.html"));
     return null;
   }
@@ -717,6 +835,7 @@ async function initSignupProfilePage() {
         if (errorMessage === "account_not_found") {
           clearPendingSignupIdToken();
           setGoogleStatus("登録状態の確認に失敗しました。ログイン画面からやり直してください。");
+          markNavigation("signup_account_not_found", AppPath.toApp("/auth/login.html"));
           window.location.replace(AppPath.toApp("/auth/login.html"));
           return;
         }
@@ -724,6 +843,7 @@ async function initSignupProfilePage() {
           clearPendingSignupIdToken();
           clearAccessToken();
           setGoogleStatus("Google認証の有効期限が切れました。ログイン画面から再度お試しください。");
+          markNavigation("signup_invalid_token", AppPath.toApp("/auth/login.html"));
           window.location.replace(AppPath.toApp("/auth/login.html"));
           return;
         }
@@ -744,8 +864,15 @@ async function initSignupProfilePage() {
       }
       clearPendingSignupIdToken();
       setGoogleStatus("保存しました。地図画面へ移動します...");
+      markNavigation("signup_profile_saved", AppPath.toApp("/map/Index.html"));
       window.location.href = AppPath.toApp("/map/Index.html");
-    } catch {
+    } catch (error) {
+      logAuthEvent("auth_signup_save_failed", {
+        level: "error",
+        path: deferredSignupMode ? "/auth/google/signup" : "/auth/profile",
+        method: "POST",
+        message: error && error.message ? String(error.message) : "signup_save_failed",
+      });
       setGoogleStatus(getAuthText().signupSaveNetworkError);
     }
   });
@@ -754,14 +881,29 @@ async function initSignupProfilePage() {
 async function handleGoogleCredential(response) {
   const idToken = response && response.credential;
   if (!idToken) {
+    logAuthEvent("auth_google_callback_failed", {
+      level: "error",
+      message: "Missing Google credential",
+    });
     setGoogleStatus("Google認証トークンの取得に失敗しました。");
     return;
   }
+
+  if (clientLogApi && typeof clientLogApi.createRequestId === "function" && typeof clientLogApi.setCurrentRequestId === "function") {
+    clientLogApi.setCurrentRequestId(clientLogApi.createRequestId("req"));
+  }
+  logAuthEvent("auth_google_callback_start", {
+    path: "/auth/google",
+    method: "POST",
+    requestId: clientLogApi && typeof clientLogApi.getCurrentRequestId === "function" ? clientLogApi.getCurrentRequestId() : "",
+    message: "Google credential callback started",
+  });
 
   setGoogleStatus(signupPage ? "Googleサインアップを確認中です..." : "Googleログインを確認中です...");
   if (signupPage) {
     setPendingSignupIdToken(idToken);
     setGoogleStatus("サインアップ画面へ移動します...");
+    markNavigation("signup_google_callback", AppPath.toApp("/auth/signup_profile.html"));
     window.location.href = AppPath.toApp("/auth/signup_profile.html");
     return;
   }
@@ -812,6 +954,11 @@ function initGuestLogin() {
 }
 
 (async () => {
+  logAuthEvent("auth_page_init", {
+    path: window.location.pathname,
+    method: "LOAD",
+    message: "Auth page initialized",
+  });
   initLoginViewportMetrics();
   if (signupProfilePage) {
     initSignupProfilePage();
