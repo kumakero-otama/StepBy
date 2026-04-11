@@ -1369,20 +1369,34 @@ function generateUUID() {
 }
 
 async function loadCurrentUserId() {
-  const res = await authFetch("/auth/me");
-  if (!res.ok) {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
-    throw new Error("unauthorized");
+  try {
+    const res = await authFetch("/auth/me", { cache: "no-store" });
+    if (res.status === 401 || res.status === 403) {
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      throw new Error("unauthorized");
+    }
+    if (!res.ok) {
+      throw new Error(`auth_me_failed:${res.status}`);
+    }
+    const payload = await res.json();
+    const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
+    if (!Number.isFinite(userId) || userId <= 0) {
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      throw new Error("invalid_user");
+    }
+    currentUserId = userId;
+  } catch (error) {
+    const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
+      ? window.AuthToken.isTemporaryError(error)
+      : false;
+    if (isTemporaryError) {
+      currentUserId = null;
+      return;
+    }
+    throw error;
   }
-  const payload = await res.json();
-  const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
-  if (!Number.isFinite(userId) || userId <= 0) {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
-    throw new Error("invalid_user");
-  }
-  currentUserId = userId;
 }
 
 function updateRecordButton() {

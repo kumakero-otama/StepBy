@@ -15,6 +15,11 @@ const AUTH_TEXT = {
     guestResponseMissing: "ゲストログインのレスポンスが不正です",
     guestNetworkError: "ネットワークエラーでゲストログインに失敗しました。",
     guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+    sessionCheckDeferred: "認証状態の確認がタイムアウトしました。必要なら再度ログインしてください。",
+    googleTimeout: "Googleログインの確認がタイムアウトしました。通信状態を確認して再度お試しください。",
+    googleNetworkError: "ネットワークエラーでGoogleログインに失敗しました。",
+    signupSessionError: "認証状態の確認に失敗しました。通信状態を確認して再読み込みしてください。",
+    signupSaveNetworkError: "ネットワークエラーで保存に失敗しました。",
   },
   en: {
     guestChecking: "Checking guest login...",
@@ -24,6 +29,11 @@ const AUTH_TEXT = {
     guestResponseMissing: "The guest login response was invalid",
     guestNetworkError: "Guest login failed due to a network error.",
     guestEditLocked: "Profile editing is not available for guest accounts.",
+    sessionCheckDeferred: "Session verification timed out. Please try logging in again if needed.",
+    googleTimeout: "Google sign-in verification timed out. Check your connection and try again.",
+    googleNetworkError: "Google sign-in failed due to a network error.",
+    signupSessionError: "Failed to verify your session. Check your connection and reload the page.",
+    signupSaveNetworkError: "Saving failed due to a network error.",
   },
   hi: {
     guestChecking: "गेस्ट लॉगिन की पुष्टि की जा रही है...",
@@ -33,6 +43,11 @@ const AUTH_TEXT = {
     guestResponseMissing: "गेस्ट लॉगिन का रिस्पॉन्स अमान्य था",
     guestNetworkError: "नेटवर्क त्रुटि के कारण गेस्ट लॉगिन विफल रहा।",
     guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+    sessionCheckDeferred: "सत्र की पुष्टि का समय समाप्त हो गया। आवश्यकता हो तो दोबारा लॉग इन करें।",
+    googleTimeout: "Google लॉगिन की पुष्टि का समय समाप्त हो गया। कनेक्शन जांचें और फिर प्रयास करें।",
+    googleNetworkError: "नेटवर्क त्रुटि के कारण Google लॉगिन विफल हुआ।",
+    signupSessionError: "सत्र की पुष्टि नहीं हो सकी। कनेक्शन जांचें और पेज फिर से लोड करें।",
+    signupSaveNetworkError: "नेटवर्क त्रुटि के कारण सहेजना विफल हुआ।",
   },
 };
 
@@ -297,6 +312,39 @@ function authFetch(input, init) {
   return fetch(input, init);
 }
 
+function isTimeoutError(error) {
+  if (authTokenApi && typeof authTokenApi.isTimeoutError === "function") {
+    return authTokenApi.isTimeoutError(error);
+  }
+  return Boolean(error && (error.code === "auth_timeout" || error.name === "AuthTimeoutError"));
+}
+
+function isTemporaryAuthError(error) {
+  if (authTokenApi && typeof authTokenApi.isTemporaryError === "function") {
+    return authTokenApi.isTemporaryError(error);
+  }
+  return isTimeoutError(error) || Boolean(error && error.name === "TypeError");
+}
+
+function getProfileCacheStorages() {
+  const storages = [];
+  try {
+    if (window.localStorage) {
+      storages.push(window.localStorage);
+    }
+  } catch {
+    // Ignore storage errors.
+  }
+  try {
+    if (window.sessionStorage && !storages.includes(window.sessionStorage)) {
+      storages.push(window.sessionStorage);
+    }
+  } catch {
+    // Ignore storage errors.
+  }
+  return storages;
+}
+
 async function redirectIfAlreadyAuthenticated() {
   if (signupPage || signupProfilePage) {
     return false;
@@ -322,7 +370,10 @@ async function redirectIfAlreadyAuthenticated() {
       return true;
     }
     return false;
-  } catch {
+  } catch (error) {
+    if (isTemporaryAuthError(error)) {
+      setGoogleStatus(getAuthText().sessionCheckDeferred);
+    }
     return false;
   }
 }
@@ -341,15 +392,19 @@ function cacheProfileUser(user) {
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
   };
   try {
-    window.sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
+    const serialized = JSON.stringify(normalized);
+    getProfileCacheStorages().forEach((storage) => {
+      storage.setItem(PROFILE_CACHE_KEY, serialized);
+    });
   } catch {
     // Ignore storage errors.
   }
 }
 
 async function loginWithGoogle(idToken) {
+  const text = getAuthText();
   try {
-    const res = await fetch(AppPath.toApi("/auth/google"), {
+    const res = await authFetch("/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_token: idToken }),
@@ -395,6 +450,14 @@ async function loginWithGoogle(idToken) {
     window.location.href = AppPath.toApp("/map/Index.html");
     return true;
   } catch (err) {
+    if (isTimeoutError(err)) {
+      setGoogleStatus(text.googleTimeout);
+      return false;
+    }
+    if (isTemporaryAuthError(err)) {
+      setGoogleStatus(text.googleNetworkError);
+      return false;
+    }
     const detail = err && err.message ? String(err.message) : "unknown_error";
     setGoogleStatus(`エラーが出てGoogleログインに失敗しました: ${detail}`);
     return false;
@@ -477,7 +540,11 @@ async function ensureSignupProfileSession() {
       return null;
     }
     return user;
-  } catch {
+  } catch (error) {
+    if (isTemporaryAuthError(error)) {
+      setGoogleStatus(getAuthText().signupSessionError);
+      return null;
+    }
     window.location.replace(AppPath.toApp("/auth/login.html"));
     return null;
   }
@@ -609,7 +676,7 @@ async function initSignupProfilePage() {
         : await getDefaultProfileIconDataUrl();
       let res;
       if (deferredSignupMode) {
-        res = await fetch(AppPath.toApi("/auth/google/signup"), {
+        res = await authFetch("/auth/google/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -679,7 +746,7 @@ async function initSignupProfilePage() {
       setGoogleStatus("保存しました。地図画面へ移動します...");
       window.location.href = AppPath.toApp("/map/Index.html");
     } catch {
-      setGoogleStatus("ネットワークエラーで保存に失敗しました。");
+      setGoogleStatus(getAuthText().signupSaveNetworkError);
     }
   });
 }

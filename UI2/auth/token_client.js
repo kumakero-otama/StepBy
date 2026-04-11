@@ -2,6 +2,7 @@
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const DEFAULT_APP_BASE_PATH = "/StepBy/UI2";
   const DEFAULT_API_BASE_URL = "https://barrierfree-map.loophole.site";
+  const DEFAULT_AUTH_TIMEOUT_MS = 12000;
 
   function getConfig() {
     const config = globalScope.APP_CONFIG || {};
@@ -110,14 +111,76 @@
     return headers;
   }
 
+  function createAuthTimeoutError() {
+    const error = new Error("auth_request_timeout");
+    error.name = "AuthTimeoutError";
+    error.code = "auth_timeout";
+    return error;
+  }
+
+  function isTimeoutError(error) {
+    return Boolean(
+      error
+      && (error.code === "auth_timeout" || error.name === "AuthTimeoutError")
+    );
+  }
+
+  function isTemporaryError(error) {
+    return isTimeoutError(error) || (error instanceof TypeError) || (error && error.name === "TypeError");
+  }
+
   function authFetch(input, init) {
     let target = input;
     if (typeof input === "string") {
       target = toApi(input);
     }
     const options = { ...(init || {}) };
+    const timeoutMs = Number(options.timeoutMs);
+    delete options.timeoutMs;
     options.headers = buildAuthHeaders(options.headers);
-    return fetch(target, options);
+    if (options.credentials == null) {
+      options.credentials = "include";
+    }
+
+    if (typeof AbortController !== "function") {
+      return fetch(target, options);
+    }
+
+    const controller = new AbortController();
+    const signal = options.signal;
+    let timedOut = false;
+    let timeoutId = null;
+
+    if (signal) {
+      if (signal.aborted) {
+        controller.abort();
+      } else {
+        signal.addEventListener("abort", () => controller.abort(), { once: true });
+      }
+    }
+
+    const effectiveTimeoutMs = Number.isFinite(timeoutMs) && timeoutMs > 0
+      ? timeoutMs
+      : DEFAULT_AUTH_TIMEOUT_MS;
+    timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, effectiveTimeoutMs);
+
+    options.signal = controller.signal;
+
+    return fetch(target, options)
+      .catch((error) => {
+        if (timedOut) {
+          throw createAuthTimeoutError();
+        }
+        throw error;
+      })
+      .finally(() => {
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId);
+        }
+      });
   }
 
   globalScope.AppPath = {
@@ -132,5 +195,7 @@
     clearAccessToken,
     buildAuthHeaders,
     authFetch,
+    isTimeoutError,
+    isTemporaryError,
   };
 })(window);
