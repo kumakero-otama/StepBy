@@ -36,7 +36,7 @@ const traceMemoPanelEl = document.getElementById("trace-memo-panel");
 const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
-const SAFETY_CONFIRM_KEY = "ui2_map_safety_confirmed_v1";
+const clientLogApi = window.ClientLogs || null;
 
 const SAFETY_CONFIRM_TEXT = {
   ja: {
@@ -61,6 +61,22 @@ function clearAccessToken() {
   if (authTokenApi && typeof authTokenApi.clearAccessToken === "function") {
     authTokenApi.clearAccessToken();
   }
+}
+
+function logMapEvent(event, extra) {
+  if (!clientLogApi || typeof clientLogApi.logEvent !== "function") {
+    return;
+  }
+  void clientLogApi.logEvent({
+    category: (extra && extra.category) || "api",
+    event,
+    level: (extra && extra.level) || "info",
+    path: extra && extra.path ? extra.path : "",
+    method: extra && extra.method ? extra.method : "",
+    status: extra && Number.isFinite(extra.status) ? extra.status : null,
+    message: extra && extra.message ? extra.message : "",
+    meta: extra && extra.meta ? extra.meta : null,
+  });
 }
 
 function bindToggleCards() {
@@ -143,22 +159,6 @@ function getSafetyConfirmText() {
   return SAFETY_CONFIRM_TEXT[language] || SAFETY_CONFIRM_TEXT.ja;
 }
 
-function hasAcceptedSafetyConfirm() {
-  try {
-    return window.localStorage.getItem(SAFETY_CONFIRM_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function persistSafetyConfirmAcceptance() {
-  try {
-    window.localStorage.setItem(SAFETY_CONFIRM_KEY, "1");
-  } catch {
-    // Ignore storage errors and continue for the current session.
-  }
-}
-
 function hideSafetyConfirmModal() {
   if (!safetyConfirmModalEl) {
     return;
@@ -183,15 +183,7 @@ function initSafetyConfirmModal() {
     return;
   }
 
-  if (hasAcceptedSafetyConfirm()) {
-    hideSafetyConfirmModal();
-    return;
-  }
-
-  showSafetyConfirmModal();
-
   safetyConfirmAcceptBtn.addEventListener("click", () => {
-    persistSafetyConfirmAcceptance();
     hideSafetyConfirmModal();
   });
 
@@ -202,6 +194,16 @@ function initSafetyConfirmModal() {
       : (lang === "hi" ? "/map/exit_notice_hi.html" : "/map/exit_notice.html");
     window.location.replace(AppPath.toApp(targetPath));
   });
+
+  hideSafetyConfirmModal();
+
+  window.addEventListener("ui2:splash-finished", () => {
+    showSafetyConfirmModal();
+  }, { once: true });
+
+  if (!document.getElementById("splash")) {
+    showSafetyConfirmModal();
+  }
 }
 
 function escapeHtml(value) {
@@ -1369,20 +1371,58 @@ function generateUUID() {
 }
 
 async function loadCurrentUserId() {
-  const res = await authFetch("/auth/me");
-  if (!res.ok) {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
-    throw new Error("unauthorized");
+  try {
+    const res = await authFetch("/auth/me", { cache: "no-store" });
+    if (res.status === 401 || res.status === 403) {
+      logMapEvent("map_auth_required", {
+        category: "auth",
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        status: res.status,
+        message: "Map bootstrap detected unauthorized session",
+      });
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      throw new Error("unauthorized");
+    }
+    if (!res.ok) {
+      logMapEvent("map_user_id_load_deferred", {
+        category: "auth",
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        status: res.status,
+        message: "Map bootstrap could not confirm user id, continuing without it",
+      });
+      currentUserId = null;
+      return;
+    }
+    const payload = await res.json();
+    const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
+    if (!Number.isFinite(userId) || userId <= 0) {
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      throw new Error("invalid_user");
+    }
+    currentUserId = userId;
+  } catch (error) {
+    const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
+      ? window.AuthToken.isTemporaryError(error)
+      : false;
+    if (isTemporaryError) {
+      logMapEvent("map_user_id_load_deferred", {
+        category: "auth",
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        message: error && error.message ? String(error.message) : "temporary auth error",
+      });
+      currentUserId = null;
+      return;
+    }
+    throw error;
   }
-  const payload = await res.json();
-  const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
-  if (!Number.isFinite(userId) || userId <= 0) {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
-    throw new Error("invalid_user");
-  }
-  currentUserId = userId;
 }
 
 function updateRecordButton() {
@@ -2746,10 +2786,33 @@ if ("geolocation" in navigator) {
 
   // 設定を読み込んでから位置情報取得を開始
   loadConfig().then(async () => {
-    await loadCurrentUserId();
-    await loadCurrentUserProStatus();
+    logMapEvent("map_gps_bootstrap_start", {
+      category: "navigation",
+      path: window.location.pathname,
+      method: "LOAD",
+      message: "Starting GPS bootstrap after config load",
+    });
+    try {
+      await loadCurrentUserId();
+      await loadCurrentUserProStatus();
+    } catch (error) {
+      logMapEvent("map_gps_bootstrap_partial", {
+        category: "auth",
+        level: "warn",
+        message: error && error.message ? String(error.message) : "map bootstrap failed before gps start",
+      });
+      if (error && (error.message === "unauthorized" || error.message === "invalid_user")) {
+        return;
+      }
+    }
     // 監視を開始
     startWatching();
+    logMapEvent("gps_watch_start", {
+      category: "navigation",
+      path: window.location.pathname,
+      method: "WATCH",
+      message: "Geolocation watch started",
+    });
     
     // 2秒おきに最新の位置情報を読み取って送信する（ポーリング）
     setInterval(pollAndSendLocation, 2000);

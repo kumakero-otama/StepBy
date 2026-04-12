@@ -319,6 +319,57 @@ body.login-page {
   font-size: 13px;
 }
 
+.login-card.is-processing .login-google-wrap,
+.login-card.is-processing .login-divider,
+.login-card.is-processing .login-guest-wrap {
+  display: none;
+}
+
+.login-card.is-processing .login-status {
+  margin-top: 4px;
+}
+
+.login-processing-panel {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 6px 8px 12px;
+  text-align: center;
+}
+
+.login-processing-spinner {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 4px solid rgba(15, 118, 110, 0.18);
+  border-top-color: #0f766e;
+  animation: login-processing-spin 0.9s linear infinite;
+}
+
+.login-processing-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #15444a;
+}
+
+.login-processing-message {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #5a6574;
+}
+
+@keyframes login-processing-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .login-google-wrap {
   display: flex;
   justify-content: center;

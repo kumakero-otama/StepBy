@@ -39,21 +39,26 @@ function getProfileText() {
 }
 
 function getProfileCacheStorage() {
+  return getProfileCacheStorages()[0] || null;
+}
+
+function getProfileCacheStorages() {
+  const storages = [];
   try {
     if (window.localStorage) {
-      return window.localStorage;
+      storages.push(window.localStorage);
     }
   } catch {
     // ignore storage access errors
   }
   try {
-    if (window.sessionStorage) {
-      return window.sessionStorage;
+    if (window.sessionStorage && !storages.includes(window.sessionStorage)) {
+      storages.push(window.sessionStorage);
     }
   } catch {
     // ignore storage access errors
   }
-  return null;
+  return storages;
 }
 
 function authFetch(input, init) {
@@ -67,6 +72,26 @@ function clearAccessToken() {
   if (authTokenApi && typeof authTokenApi.clearAccessToken === "function") {
     authTokenApi.clearAccessToken();
   }
+}
+
+function getAccessToken() {
+  if (authTokenApi && typeof authTokenApi.getAccessToken === "function") {
+    return authTokenApi.getAccessToken();
+  }
+  return "";
+}
+
+function isTemporaryAuthError(error) {
+  if (authTokenApi && typeof authTokenApi.isTemporaryError === "function") {
+    return authTokenApi.isTemporaryError(error);
+  }
+  return Boolean(
+    error && (
+      error.code === "auth_timeout"
+      || error.name === "AuthTimeoutError"
+      || error.name === "TypeError"
+    )
+  );
 }
 
 function formatMetersFromKm(value) {
@@ -121,11 +146,14 @@ function saveCachedProfileUser(user) {
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
   };
   try {
-    const storage = getProfileCacheStorage();
-    if (!storage) {
+    const storages = getProfileCacheStorages();
+    if (!storages.length) {
       return;
     }
-    storage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
+    const serialized = JSON.stringify(normalized);
+    storages.forEach((storage) => {
+      storage.setItem(PROFILE_CACHE_KEY, serialized);
+    });
   } catch {
     // ignore storage errors
   }
@@ -133,15 +161,14 @@ function saveCachedProfileUser(user) {
 
 function loadCachedProfileUser() {
   try {
-    const storage = getProfileCacheStorage();
-    if (!storage) {
-      return null;
+    for (const storage of getProfileCacheStorages()) {
+      const raw = storage.getItem(PROFILE_CACHE_KEY);
+      if (!raw) {
+        continue;
+      }
+      return JSON.parse(raw);
     }
-    const raw = storage.getItem(PROFILE_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw);
+    return null;
   } catch {
     return null;
   }
@@ -149,14 +176,18 @@ function loadCachedProfileUser() {
 
 function clearCachedProfileUser() {
   try {
-    const storage = getProfileCacheStorage();
-    if (!storage) {
-      return;
-    }
-    storage.removeItem(PROFILE_CACHE_KEY);
+    getProfileCacheStorages().forEach((storage) => {
+      storage.removeItem(PROFILE_CACHE_KEY);
+    });
   } catch {
     // ignore storage errors
   }
+}
+
+function redirectToLogin() {
+  clearAccessToken();
+  clearCachedProfileUser();
+  window.location.replace(AppPath.toApp("/auth/login.html"));
 }
 
 async function syncProfileProChip() {
@@ -235,23 +266,27 @@ async function loadProfile() {
     const res = await authFetch("/auth/me", {
       cache: "no-store",
     });
+    if (res.status === 401 || res.status === 403) {
+      redirectToLogin();
+      return;
+    }
     if (!res.ok) {
-      clearAccessToken();
-      window.location.replace(AppPath.toApp("/auth/login.html"));
       return;
     }
     const payload = await res.json();
     const user = payload && payload.user ? payload.user : null;
     if (!user) {
-      clearAccessToken();
-      window.location.replace(AppPath.toApp("/auth/login.html"));
+      redirectToLogin();
       return;
     }
     applyProfileUser(user);
     saveCachedProfileUser(user);
-  } catch {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
+  } catch (error) {
+    if (isTemporaryAuthError(error) && (cached || getAccessToken())) {
+      console.warn("[profile] auth check temporarily failed", error);
+      return;
+    }
+    redirectToLogin();
   }
 }
 
