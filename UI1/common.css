@@ -84,7 +84,7 @@ H0%; height: 100dvh;
   top: 0;
   left: 0;
   right: 0;
-  height: 100%; height: 100dvh; padding-bottom: env(safe-area-inset-bottom);
+  bottom: 0;
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
