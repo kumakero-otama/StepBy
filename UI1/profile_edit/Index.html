@@ -614,7 +614,7 @@
                         const iconNoImageText = document.getElementById('icon-no-image-text');
                         if (iconPreviewImg) {
                             iconPreviewImg.onerror = () => { iconPreviewImg.style.display='none'; if(iconDefaultIcon) iconDefaultIcon.style.display='block'; };
-                            let _url = avatarUrl; iconPreviewImg.src = ((_url.startsWith('http') || _url.startsWith('data:')) ? _url : ((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + _url));
+                            let _url = avatarUrl; iconPreviewImg.src = ((_url.startsWith('http') || _url.startsWith('data:')) ? _url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + _url));
                             iconPreviewImg.style.display = 'block';
                             if(iconDefaultIcon) iconDefaultIcon.style.display = 'none';
                             if(iconNoImageText) iconNoImageText.style.display = 'none';
