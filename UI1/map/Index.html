@@ -677,6 +677,7 @@
             flex-shrink: 0;
             z-index: 100;
             position: relative;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         /* CTA Button */
@@ -778,9 +779,11 @@
         /* Compact feature cards in a scrollable row */
                                         .feature-scroll {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            padding: 0 8px 20px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 2px;
+            padding: 0 4px 20px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .feature-scroll::-webkit-scrollbar {
@@ -949,6 +952,8 @@
         .feature-card-title {
             font-size: 10px;
             font-weight: 700;
+            word-break: break-all;
+            overflow-wrap: anywhere;
             color: var(--text-dark);
             line-height: 1.2;
             position: relative;

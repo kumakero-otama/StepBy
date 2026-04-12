@@ -67,9 +67,7 @@ html[data-theme="dark"] body {
   box-sizing: border-box;
 }
 
-html,
-body {
-  height: 100%;
+H0%; height: 100dvh;
   font-family: 'Noto Sans JP', 'Inter', -apple-system, sans-serif;
   color: var(--text-dark);
   background: var(--bg-gray);
@@ -86,7 +84,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 100%; height: 100dvh; padding-bottom: env(safe-area-inset-bottom);
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
