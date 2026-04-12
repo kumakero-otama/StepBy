@@ -104,6 +104,7 @@ function renderPosts(posts) {
           <div class="post-head">
             <div class="avatar"><i class="fas fa-user" style="font-size:16px;color:#fff;"></i></div>
             <div class="post-meta">
+              <span class="user-name" style="font-weight:600;font-size:13px;display:block;">${escapeHtml(post.authorUsername || (post.author && post.author.name) || "不明なユーザー")}</span>
               <span class="date">${escapeHtml(formatDate(post.createdAt))}</span>
             </div>
           </div>
@@ -270,7 +271,7 @@ function initActions() {
             if (!window.confirm("本当にこの道情報を削除してよろしいですか？")) return;
             try {
                 deletePointBtn.disabled = true;
-                await fetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
+                await apiFetch(`${API_BASE}/api/road-info?pointId=${currentPointId}`, { method: "DELETE" });
                 alert("道情報を削除しました。");
                 window.location.replace("../map/Index.html");
             } catch (err) {
@@ -303,6 +304,69 @@ function showDemoContent(pointId) {
     showContent();
 }
 
+async function verifyAndShowDeleteBtn(pointData) {
+    const deleteBtn = document.getElementById("delete-point-btn");
+    if (!deleteBtn) return;
+    
+    // Original author is the one who created the point originally. 
+    // Since posts are sorted newest-first, we need the oldest post (the one that created the point).
+    let originalAuthorId = null;
+    if (pointData.posts && pointData.posts.length > 0) {
+        // Find the oldest post (the original post)
+        const oldestPost = pointData.posts.reduce((oldest, current) => {
+            return new Date(current.createdAt) < new Date(oldest.createdAt) ? current : oldest;
+        }, pointData.posts[0]);
+        
+        if (oldestPost && oldestPost.createdBy) {
+            originalAuthorId = String(oldestPost.createdBy);
+        }
+    }
+    
+    if (!originalAuthorId) return;
+
+    try {
+        let myId = null;
+        const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
+        
+        // Try decoding JWT first
+        if (token) {
+            try {
+                const base64Url = token.split('.')[1];
+                if (base64Url) {
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    const payload = JSON.parse(jsonPayload);
+                    if (payload.id || payload.userId || payload.sub) {
+                        myId = String(payload.id || payload.userId || payload.sub);
+                    }
+                }
+            } catch(e) {}
+        }
+        
+        // Fallback to auth/me api request if needed
+        if (!myId && token) {
+            const meRes = await apiFetch(`${API_BASE}/auth/me`);
+            if (meRes.ok) {
+                const d = await meRes.json();
+                if (d.user && (d.user.id || d.user.userId)) {
+                    myId = String(d.user.id || d.user.userId);
+                }
+            }
+        }
+        
+        // Use exact match, ensuring both are valid non-empty strings and not "undefined"
+        if (myId && myId !== "undefined" && originalAuthorId !== "undefined" && myId === originalAuthorId) {
+            deleteBtn.style.display = "flex";
+        } else {
+            deleteBtn.style.display = "none";
+        }
+    } catch (err) {
+        console.error("Failed to check delete permission", err);
+    }
+}
+
 function loadRoadInfoDetail() {
     const params = new URLSearchParams(window.location.search);
     const pointId = Number(params.get("pointId"));
@@ -320,6 +384,7 @@ function loadRoadInfoDetail() {
             renderTags(data.point.tags);
             renderPosts(data.point.posts);
             showContent();
+            verifyAndShowDeleteBtn(data.point);
         })
         .catch((err) => {
             if (err.message === "not_found") { setError("対象の道情報が見つかりませんでした。"); return; }
