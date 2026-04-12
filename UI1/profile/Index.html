@@ -352,7 +352,7 @@
                     const placeholder = document.getElementById('avatar-placeholder');
                     if (wrap && !wrap.querySelector('img')) {
                         const img = document.createElement('img');
-                        img.src = savedAvatar.startsWith('http') ? savedAvatar : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + savedAvatar);
+                        img.src = savedAvatar.startsWith('http') || savedAvatar.startsWith('data:') ? savedAvatar : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + savedAvatar);
                         img.alt = 'プロフィール画像';
                         img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
                         if (placeholder) placeholder.style.display = 'none';
@@ -402,7 +402,7 @@
                     const wrap = document.getElementById('avatar-wrap');
                     const placeholder = document.getElementById('avatar-placeholder');
                     const img = wrap.querySelector('img') || document.createElement('img');
-                    img.src = avatarUrl.startsWith('http') ? avatarUrl : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + avatarUrl);
+                    img.src = avatarUrl.startsWith('http') || avatarUrl.startsWith('data:') ? avatarUrl : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + avatarUrl);
                     img.alt = 'プロフィール画像';
                     img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
                     img.onerror = function() { this.style.display = 'none'; if (placeholder) placeholder.style.display = 'flex'; };
