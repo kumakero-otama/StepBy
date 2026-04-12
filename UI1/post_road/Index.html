@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#2E9E8F">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <style>
         .scroll-content {
             flex: 1;
@@ -19,6 +21,23 @@
 
         .section + .section { margin-top: 20px; }
 
+
+        /* Location map overlay */
+        .location-map-wrap {
+            position: relative; border: 1.5px solid var(--border);
+            border-radius: var(--radius-md); overflow: hidden; margin-top: 10px;
+        }
+        #post-map { width: 100%; height: 240px; }
+        .map-center-mark {
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -100%); width: 36px; height: 36px;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 384 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23FF4B4B' d='M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 128a64 64 0 1 1 0 128 64 64 0 1 1 0-128z'/%3E%3C/svg%3E") no-repeat center center;
+            background-size: contain; pointer-events: none; z-index: 10;
+        }
+        .map-center-coords {
+            font-size: 11px; color: var(--text-light); margin-top: 6px; text-align: center; font-family: 'Inter', monospace;
+        }
+        /* End location map */
         /* Location card */
         .location-card { display: flex; align-items: center; gap: 12px; }
         .location-icon {
@@ -134,15 +153,12 @@
             <!-- Location -->
             <div class="section">
                 <div class="section-title"><i class="fas fa-map-marker-alt"></i> 場所</div>
-                <div class="card">
-                    <div class="location-card">
-                        <div class="location-icon"><i class="fas fa-location-dot"></i></div>
-                        <div class="location-text">
-                            <div class="name" id="location-name">地図上の位置</div>
-                            <div class="coords" id="location-coords">中心座標: Lat --, Lng --</div>
-                        </div>
-                    </div>
+                <div class="location-map-wrap">
+                    <div id="post-map"></div>
+                    <div class="map-center-mark" aria-hidden="true"></div>
                 </div>
+                <div class="map-center-coords" id="location-coords">中心座標: Lat --, Lng --</div>
+
             </div>
 
             <!-- Tags -->
@@ -214,11 +230,40 @@
         }
         updateCoordsDisplay();
 
-        if (!lat || !lng) {
+        // Initialize Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1Ijoid' + 'GcyMDI2IiwiYSI6ImNtNzUxbmsxNDA1dzkya3BybjBycnhnemsifQ.T-jR_0r0nQ3P26JjK82fvw';
+        const startLng = lng ? Number(lng) : 139.767;
+        const startLat = lat ? Number(lat) : 35.681;
+        
+        const map = new mapboxgl.Map({
+            container: 'post-map',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: [startLng, startLat],
+            zoom: 16
+        });
+
+        // Add map navigation control
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // Update exact coords when map moves
+        map.on('move', () => {
+            const center = map.getCenter();
+            lat = String(center.lat);
+            lng = String(center.lng);
+            updateCoordsDisplay();
+        });
+
+        // If no coords passed from URL, fetch location
+        if (!params.get('lat') || !params.get('lng')) {
             locationCoordsEl.textContent = '📍 現在地を取得中...';
             if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition(
-                    (pos) => { lat = String(pos.coords.latitude); lng = String(pos.coords.longitude); updateCoordsDisplay(); },
+                    (pos) => { 
+                        lat = String(pos.coords.latitude); 
+                        lng = String(pos.coords.longitude); 
+                        updateCoordsDisplay(); 
+                        map.flyTo({ center: [Number(lng), Number(lat)], zoom: 17 });
+                    },
                     () => { locationCoordsEl.textContent = '⚠️ 位置情報を取得できませんでした'; },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
                 );
@@ -284,7 +329,7 @@
         // Try loading tags from API, fallback to defaults
         (async function loadTags() {
             try {
-                const res = await fetch(`${API_BASE}/api/tags`, { signal: AbortSignal.timeout(4000) });
+                const res = await fetch(`${API_BASE}/api/post-tags`, { signal: AbortSignal.timeout(4000) });
                 if (res.ok) {
                     const data = await res.json();
                     const fromApi = Array.isArray(data) ? data : (Array.isArray(data.tags) ? data.tags : null);
@@ -311,7 +356,7 @@
             if (!val) return;
             if (customTagValues.has(val)) { tagAddInput.value = ''; return; }
             customTagValues.add(val);
-            const chip = buildTagChip('custom_' + val, '', val, true);
+            const chip = buildTagChip(val, '', val, true);
             // Auto-select new custom tag
             const cb = chip.querySelector('input');
             cb.checked = true;
