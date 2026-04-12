@@ -267,10 +267,6 @@
                     <div class="stat-value"><span id="total-posts-count">0</span><small>件</small></div>
                     <div class="stat-label">総道情報投稿</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-hearts">0<small>♥</small></div>
-                    <div class="stat-label">送られたハート</div>
-                </div>
             </div>
 
             <!-- Detail Info (username only) -->
@@ -288,14 +284,6 @@
 
             <!-- Settings Menu -->
             <div class="settings-menu">
-                <a href="../my_posts/Index.html" class="settings-item">
-                    <div class="settings-icon orange"><i class="fas fa-list-ul"></i></div>
-                    <div class="settings-text">
-                        <div class="title">自分の投稿履歴</div>
-                        <div class="desc">過去の投稿の確認・編集・削除</div>
-                    </div>
-                    <i class="fas fa-chevron-right settings-arrow"></i>
-                </a>
                 <a href="../profile_edit/Index.html" class="settings-item">
                     <div class="settings-icon teal"><i class="fas fa-user-pen"></i></div>
                     <div class="settings-text">
@@ -364,7 +352,7 @@
                     const placeholder = document.getElementById('avatar-placeholder');
                     if (wrap && !wrap.querySelector('img')) {
                         const img = document.createElement('img');
-                        img.src = savedAvatar;
+                        img.src = savedAvatar.startsWith('http') ? savedAvatar : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + savedAvatar);
                         img.alt = 'プロフィール画像';
                         img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
                         if (placeholder) placeholder.style.display = 'none';
@@ -409,12 +397,12 @@
                 if (userEl) userEl.textContent = displayName;
 
                 // Avatar image
-                const avatarUrl = user.avatarUrl || user.avatar_url || user.photoURL || null;
+                const avatarUrl = user.avatarUrl || user.avatar_url || user.photoURL || user.iconUrl || user.icon_url  || null;
                 if (avatarUrl) {
                     const wrap = document.getElementById('avatar-wrap');
                     const placeholder = document.getElementById('avatar-placeholder');
                     const img = wrap.querySelector('img') || document.createElement('img');
-                    img.src = avatarUrl;
+                    img.src = avatarUrl.startsWith('http') ? avatarUrl : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + avatarUrl);
                     img.alt = 'プロフィール画像';
                     img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
                     img.onerror = function() { this.style.display = 'none'; if (placeholder) placeholder.style.display = 'flex'; };

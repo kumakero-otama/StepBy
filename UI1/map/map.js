@@ -452,7 +452,8 @@ function openTraceDetailModal(path) {
         const avatarUrl = path.owner_avatar_url || path.avatarUrl || path.avatar_url || null;
         if (avatarUrl) {
             const img = document.createElement('img');
-            img.src = avatarUrl;
+            let _url = avatarUrl;
+            img.src = ((_url.startsWith('http') || _url.startsWith('data:')) ? _url : (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site' + _url));
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'cover';
