@@ -1044,3 +1044,7 @@ details.settings-wrap .settings-dropdown a i {
     color: var(--primary);
     font-size: 14px;
 }
+
+/* ==== Font Size Options ==== */
+html[data-font-size="small"] .scroll-content, html[data-font-size="small"] .bottom-nav { zoom: 0.85; }
+html[data-font-size="large"] .scroll-content, html[data-font-size="large"] .bottom-nav { zoom: 1.15; }
