@@ -9,8 +9,8 @@
     <meta name="theme-color" content="#2E9E8F">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         .scroll-content {
             flex: 1;
@@ -231,19 +231,15 @@
         updateCoordsDisplay();
 
         // Initialize Mapbox
-        mapboxgl.accessToken = 'pk.eyJ1Ijoid' + 'GcyMDI2IiwiYSI6ImNtNzUxbmsxNDA1dzkya3BybjBycnhnemsifQ.T-jR_0r0nQ3P26JjK82fvw';
+        // Initialize Leaflet Map
         const startLng = lng ? Number(lng) : 139.767;
         const startLat = lat ? Number(lat) : 35.681;
         
-        const map = new mapboxgl.Map({
-            container: 'post-map',
-            style: 'mapbox://styles/mapbox/light-v11',
-            center: [startLng, startLat],
-            zoom: 16
-        });
-
-        // Add map navigation control
-        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        const map = L.map('post-map', { zoomControl: false }).setView([startLat, startLng], 16);
+        L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+            attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>地理院タイル</a>",
+            maxZoom: 18
+        }).addTo(map);
 
         // Update exact coords when map moves
         map.on('move', () => {
@@ -262,7 +258,7 @@
                         lat = String(pos.coords.latitude); 
                         lng = String(pos.coords.longitude); 
                         updateCoordsDisplay(); 
-                        map.flyTo({ center: [Number(lng), Number(lat)], zoom: 17 });
+                        map.setView([Number(lat), Number(lng)], 17);
                     },
                     () => { locationCoordsEl.textContent = '⚠️ 位置情報を取得できませんでした'; },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
