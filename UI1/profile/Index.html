@@ -439,7 +439,7 @@
         loadProfileFromAPI();
 
         // Logout
-        Id('logout-btn').addEventListener('click', async (e) => {
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             if (!confirm('ログアウトしますか？')) return;
             try {
