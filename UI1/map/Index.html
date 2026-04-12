@@ -1126,26 +1126,9 @@
         }
 
         /* =============================================
-           APP SHELL — flex layout so map fills screen
+           APP SHELL
+           (Inherits safe position:fixed layout from common.css)
            ============================================= */
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .app-shell {
-            display: flex;
-            flex-direction: column;
-            height: 100dvh;
-            max-width: 480px;
-            margin: 0 auto;
-            background: #F5F7FA;
-            overflow: hidden;
-            position: relative;
-        }
         /* Version Notice Banner */
         #version-notice-banner {
             display: none;
