@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>プロフィール — StepBy</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
+    <link rel="stylesheet" href="../common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ---- Profile Header ---- */
+        .profile-hero {
+            background: linear-gradient(135deg, #0d3535 0%, #1a5c5c 25%, #2E9E8F 55%, #3BB49F 80%, #4BDBB4 100%);
+            padding: 36px 20px 44px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-hero::before {
+            content: '';
+            position: absolute;
+            top: -50px; right: -40px;
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: floatOrb 6s ease-in-out infinite;
+        }
+
+        .profile-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30px; left: -30px;
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,184,71,0.08) 0%, transparent 70%);
+            animation: floatOrb 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatOrb {
+            0%, 100% { transform: translate(0,0) scale(1); }
+            50%       { transform: translate(10px,-15px) scale(1.1); }
+        }
+
+        .profile-avatar-wrap {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 14px;
+            position: relative;
+        }
+
+        .profile-avatar-wrap img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.45);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+        }
+
+        .profile-avatar-placeholder {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255,255,255,0.45);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px; color: rgba(255,255,255,0.9);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+            animation: avatarGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes avatarGlow {
+            0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.15), 0 0 0 0 rgba(255,255,255,0.2); }
+            50%       { box-shadow: 0 4px 24px rgba(0,0,0,0.15), 0 0 0 8px rgba(255,255,255,0.05); }
+        }
+
+        .profile-name {
+            font-size: 24px; font-weight: 700;
+            color: #fff; margin-bottom: 6px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .profile-badge-row {
+            display: flex; gap: 8px;
+            justify-content: center; margin-bottom: 14px;
+        }
+
+        .profile-badge-pill {
+            font-size: 11px; color: rgba(255,255,255,0.85);
+            background: rgba(255,255,255,0.12);
+            padding: 4px 12px; border-radius: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .profile-edit-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 24px; border-radius: 24px;
+            border: 1.5px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.15);
+            color: #fff; font-size: 13px; font-weight: 600;
+            font-family: inherit; cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: all 0.2s; text-decoration: none;
+        }
+
+        .profile-edit-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
+
+        /* ---- Info Sections ---- */
+        .info-section { padding: 20px 16px 0; }
+
+        .info-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            padding: 18px 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+
+        .info-card-title {
+            font-size: 14px; font-weight: 700; color: var(--text-dark);
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 14px; padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-card-title i {
+            color: var(--primary);
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--primary-bg); border-radius: 8px; font-size: 13px;
+        }
+
+        .info-row {
+            display: flex; align-items: center;
+            justify-content: space-between; padding: 10px 0;
+        }
+
+        .info-row + .info-row { border-top: 1px solid rgba(0,0,0,0.04); }
+        .info-label { font-size: 13px; color: var(--text-mid); font-weight: 500; }
+        .info-value { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+
+        /* ---- Stats Row ---- */
+        .stats-row {
+            display: flex; gap: 10px;
+            padding: 0 16px; margin-top: 14px;
+        }
+
+        .stat-card {
+            flex: 1; background: var(--bg-white);
+            border-radius: var(--radius-md);
+            padding: 16px 10px 14px; text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            position: relative; overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: ''; position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .stat-card:nth-child(1)::before { background: linear-gradient(90deg, #2E9E8F, #4DBFB0); }
+        .stat-card:nth-child(2)::before { background: linear-gradient(90deg, #FFB847, #FFD700); }
+        .stat-card:nth-child(3)::before { background: linear-gradient(90deg, #FF6B6B, #FF8E8E); }
+
+        .stat-value { font-size: 22px; font-weight: 700; font-family: 'Inter', monospace; line-height: 1.2; }
+        .stat-card:nth-child(1) .stat-value { color: var(--primary); }
+        .stat-card:nth-child(2) .stat-value { color: #D4930A; }
+        .stat-card:nth-child(3) .stat-value { color: #FF6B6B; }
+        .stat-value small { font-size: 12px; font-weight: 600; }
+        .stat-label { font-size: 10px; color: var(--text-light); margin-top: 4px; font-weight: 500; }
+
+        /* ---- Settings Menu ---- */
+        .settings-menu { padding: 20px 16px; }
+
+        .settings-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; background: var(--bg-white);
+            border-radius: var(--radius-md); margin-bottom: 8px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.2s;
+            text-decoration: none; color: inherit;
+        }
+
+        .settings-item:active { transform: scale(0.98); background: var(--bg-gray); }
+
+        .settings-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: #fff; flex-shrink: 0;
+        }
+
+        .settings-icon.teal   { background: linear-gradient(135deg, #2E9E8F, #3BB49F); }
+        .settings-icon.blue   { background: linear-gradient(135deg, #4A90D9, #3B7DDD); }
+        .settings-icon.purple { background: linear-gradient(135deg, #9B59B6, #8E44AD); }
+        .settings-icon.orange { background: linear-gradient(135deg, #FFB847, #F5A623); }
+        .settings-icon.red    { background: linear-gradient(135deg, #FF6B6B, #E74C3C); }
+
+        .settings-text { flex: 1; }
+        .settings-text .title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .settings-text .desc  { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+        .settings-arrow { color: var(--text-light); font-size: 14px; }
+        .pad-bottom { padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px); }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <!-- Header (3 buttons: map / settings / profile) -->
+        <header class="top-bar">
+            <div class="top-bar-title">プロフィール</div>
+            <div class="header-actions">
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                    <i class="fas fa-map"></i>
+                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
+                    </div>
+                </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="scroll-content">
+            <!-- Profile Hero -->
+            <div class="profile-hero">
+                <div class="profile-avatar-wrap" id="avatar-wrap">
+                    <div class="profile-avatar-placeholder" id="avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <div class="profile-name" id="profile-name">---</div>
+                <div class="profile-badge-row">
+                    
+                    <span class="profile-badge-pill" id="pill-km" style="display:none;">👟 0.00km</span>
+                </div>
+                <a href="../profile_edit/Index.html" class="profile-edit-btn">
+                    <i class="fas fa-pen"></i> プロフィール編集
+                </a>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-km">0.00<small>km</small></div>
+                    <div class="stat-label">総点字ブロック記録</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><span id="total-posts-count">0</span><small>件</small></div>
+                    <div class="stat-label">総道情報投稿</div>
+                </div>
+            </div>
+
+            <!-- Detail Info (username only) -->
+            <div class="info-section">
+                <div class="info-card">
+                    <div class="info-card-title">
+                        <i class="fas fa-id-card"></i> 詳細
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">ユーザー名</span>
+                        <span class="info-value" id="profile-username">---</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Menu -->
+            <div class="settings-menu">
+                <a href="../profile_edit/Index.html" class="settings-item">
+                    <div class="settings-icon teal"><i class="fas fa-user-pen"></i></div>
+                    <div class="settings-text">
+                        <div class="title">プロフィール編集</div>
+                        <div class="desc">名前・アイコンの変更</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="../settings/language.html" class="settings-item">
+                    <div class="settings-icon blue"><i class="fas fa-language"></i></div>
+                    <div class="settings-text"><div class="title">言語設定</div></div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="../settings/display.html" class="settings-item">
+                    <div class="settings-icon purple"><i class="fas fa-palette"></i></div>
+                    <div class="settings-text">
+                        <div class="title">表示設定</div>
+                        <div class="desc">テーマ・文字サイズ</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="../help/Index.html" class="settings-item">
+                    <div class="settings-icon blue"><i class="fas fa-circle-question"></i></div>
+                    <div class="settings-text">
+                        <div class="title">ヘルプ</div>
+                        <div class="desc">使い方・よくある質問</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+                <a href="#" class="settings-item" id="logout-btn">
+                    <div class="settings-icon red"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="settings-text">
+                        <div class="title">ログアウト</div>
+                        <div class="desc">アカウントからサインアウト</div>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </a>
+            </div>
+            <div class="pad-bottom"></div>
+        </div>
+    </div>
+
+    <script src="../config.js"></script>
+    <script src="../token_client.js"></script>
+    <script>
+        
+
+        // Load profile from API
+        async function loadProfileFromAPI() {
+            // Function to apply local cache safely
+            const applyLocalCache = () => {
+                const savedName = localStorage.getItem('UI1_username');
+                const savedAvatar = localStorage.getItem('UI1_avatar');
+                const savedTactile = localStorage.getItem('UI1_totalTactile');
+                const savedRoadPosts = localStorage.getItem('UI1_totalRoadPosts');
+                const savedHearts = localStorage.getItem('UI1_totalHearts');
+
+                if (savedName) {
+                    const nameEl = document.getElementById('profile-name');
+                    const userEl = document.getElementById('profile-username');
+                    if (nameEl && nameEl.textContent === '---') nameEl.textContent = savedName;
+                    if (userEl && userEl.textContent === '---') userEl.textContent = savedName;
+                }
+                if (savedAvatar) {
+                    const wrap = document.getElementById('avatar-wrap');
+                    const placeholder = document.getElementById('avatar-placeholder');
+                    if (wrap && !wrap.querySelector('img')) {
+                        const img = document.createElement('img');
+                        img.src = savedAvatar.startsWith('http') ? savedAvatar : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + savedAvatar);
+                        img.alt = 'プロフィール画像';
+                        img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
+                        if (placeholder) placeholder.style.display = 'none';
+                        wrap.appendChild(img);
+                    }
+                }
+                if (savedTactile != null) {
+                    const el = document.getElementById('stat-km');
+                    if (el) el.innerHTML = Number(savedTactile).toFixed(2) + '<small>km</small>';
+                }
+                if (savedRoadPosts != null) {
+                    const el = document.getElementById('total-posts-count');
+                    if (el) el.textContent = savedRoadPosts;
+                }
+                if (savedHearts != null) {
+                    const el = document.getElementById('stat-hearts');
+                    if (el) el.innerHTML = savedHearts + '<small>♥</small>';
+                }
+            };
+
+            // Before anything, try applying cache immediately
+            applyLocalCache();
+
+            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+            try {
+                const res = await window.AuthToken.authFetch('/auth/me?_t=' + new Date().getTime(), { cache: 'no-store' });
+                if (!res.ok) {
+                    // API returned 502 or 401 etc. Fallback to cache since we can't load new profile
+                    console.warn('API returned !ok status:', res.status);
+                    applyLocalCache();
+                    return;
+                }
+                const payload = await res.json();
+                const user = payload && payload.user ? payload.user : null;
+                if (!user) { applyLocalCache(); return; }
+
+                // Username (Overwrite cache securely)
+                const displayName = user.username || user.displayName || 'ユーザー';
+                const nameEl = document.getElementById('profile-name');
+                const userEl = document.getElementById('profile-username');
+                if (nameEl) nameEl.textContent = displayName;
+                if (userEl) userEl.textContent = displayName;
+
+                // Avatar image
+                const avatarUrl = user.avatarUrl || user.avatar_url || user.photoURL || user.iconUrl || user.icon_url  || null;
+                if (avatarUrl) {
+                    const wrap = document.getElementById('avatar-wrap');
+                    const placeholder = document.getElementById('avatar-placeholder');
+                    const img = wrap.querySelector('img') || document.createElement('img');
+                    img.src = avatarUrl.startsWith('http') ? avatarUrl : ((window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + avatarUrl);
+                    img.alt = 'プロフィール画像';
+                    img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
+                    img.onerror = function() { this.style.display = 'none'; if (placeholder) placeholder.style.display = 'flex'; };
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (!wrap.querySelector('img')) wrap.appendChild(img);
+                }
+
+                // Stats
+                const totalTactile = user.totalTactileLength || user.total_tactile_length || 0;
+                const statKmEl = document.getElementById('stat-km');
+                if (statKmEl) statKmEl.innerHTML = Number(totalTactile).toFixed(2) + '<small>km</small>';
+
+                const totalRoadPosts = user.totalRoadPosts || user.total_road_posts || 0;
+                const totalPostsEl = document.getElementById('total-posts-count');
+                if (totalPostsEl) totalPostsEl.textContent = Number(totalRoadPosts).toString();
+
+                const totalHearts = user.totalHearts || user.total_hearts || 0;
+                const statHeartsEl = document.getElementById('stat-hearts');
+                if (statHeartsEl) statHeartsEl.innerHTML = Number(totalHearts).toString() + '<small>♥</small>';
+
+                // CACHE SAVING
+                localStorage.setItem('UI1_username', displayName);
+                if (avatarUrl) localStorage.setItem('UI1_avatar', avatarUrl);
+                localStorage.setItem('UI1_totalTactile', totalTactile);
+                localStorage.setItem('UI1_totalRoadPosts', totalRoadPosts);
+                localStorage.setItem('UI1_totalHearts', totalHearts);
+
+            } catch (e) {
+                console.log('Profile API not available (Network / CORS):', e.message);
+                applyLocalCache();
+            }
+        }
+
+        loadProfileFromAPI();
+
+        // Logout
+        Id('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!confirm('ログアウトしますか？')) return;
+            try {
+                if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                    await window.AuthToken.authFetch('/auth/logout', { method: 'POST' });
+                }
+            } catch {}
+            if (window.AuthToken) window.AuthToken.clearAccessToken();
+            
+            window.location.assign('../signup/Index.html');
+        });
+    </script>
+    <script src="../i18n.js"></script>
+    <script src="../common.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,400 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>表示設定 — StepBy</title>
+    <link rel="stylesheet" href="../common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .settings-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .settings-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dark);
+            padding: 16px 16px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-card-title i {
+            color: var(--primary);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-bg);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        /* ---- Option items ---- */
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            position: relative;
+        }
+
+        .option-item:last-child {
+            border-bottom: none;
+        }
+
+        .option-item:active {
+            background: var(--bg-gray);
+        }
+
+        .option-item.selected {
+            background: var(--primary-bg);
+        }
+
+        .option-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .option-icon.light {
+            background: #FFF8E7;
+            color: #F5A623;
+        }
+
+        .option-icon.dark {
+            background: #2C3E50;
+            color: #ECF0F1;
+        }
+
+        .option-icon.auto {
+            background: linear-gradient(135deg, #FFF8E7 50%, #2C3E50 50%);
+            color: transparent;
+            position: relative;
+        }
+
+        .option-icon.auto::after {
+            content: '⚙️';
+            position: absolute;
+            font-size: 14px;
+        }
+
+        .option-icon.small {
+            background: var(--bg-gray);
+            color: var(--text-mid);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .option-icon.medium {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .option-icon.large {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .option-info {
+            flex: 1;
+        }
+
+        .option-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .option-desc {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .option-check {
+            color: var(--primary);
+            font-size: 18px;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .option-item.selected .option-check {
+            opacity: 1;
+            transform: scale(1);
+            animation: checkPop 0.3s ease-out;
+        }
+
+        @keyframes checkPop {
+            0% {
+                transform: scale(0.5);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* ---- Preview ---- */
+        .preview-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .preview-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preview-text {
+            font-size: 14px;
+            color: var(--text-dark);
+            line-height: 1.8;
+            transition: font-size 0.3s;
+        }
+
+        .preview-text.size-small {
+            font-size: 12px;
+        }
+
+        .preview-text.size-medium {
+            font-size: 14px;
+        }
+
+        .preview-text.size-large {
+            font-size: 17px;
+        }
+
+        /* ---- Submit Area ---- */
+        .submit-area {
+            padding: 0 16px 16px;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn-back {
+            flex: 0 0 auto;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--border);
+            background: var(--bg-white);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-back:active {
+            background: var(--bg-gray);
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <!-- Header -->
+        <header class="top-bar">
+            <div class="top-bar-title">表示設定</div>
+            <div class="header-actions">
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                    <i class="fas fa-map"></i>
+                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
+                    </div>
+                </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="scroll-content">
+            <!-- Theme -->
+            <div class="settings-card">
+                <div class="settings-card-title">
+                    <i class="fas fa-adjust"></i> ダーク/ライト
+                </div>
+                <div class="option-item selected" data-group="theme" data-value="light">
+                    <div class="option-icon light"><i class="fas fa-sun"></i></div>
+                    <div class="option-info">
+                        <div class="option-name">ライト</div>
+                        <div class="option-desc">明るいテーマ</div>
+                    </div>
+                    <i class="fas fa-check-circle option-check"></i>
+                </div>
+                <div class="option-item" data-group="theme" data-value="dark">
+                    <div class="option-icon dark"><i class="fas fa-moon"></i></div>
+                    <div class="option-info">
+                        <div class="option-name">ダーク</div>
+                        <div class="option-desc">暗いテーマ</div>
+                    </div>
+                    <i class="fas fa-check-circle option-check"></i>
+                </div>
+                <div class="option-item" data-group="theme" data-value="auto">
+                    <div class="option-icon auto"></div>
+                    <div class="option-info">
+                        <div class="option-name">端末設定に従う</div>
+                        <div class="option-desc">OSの設定を使用</div>
+                    </div>
+                    <i class="fas fa-check-circle option-check"></i>
+                </div>
+            </div>
+
+            <!-- Font Size -->
+            <div class="settings-card">
+                <div class="settings-card-title">
+                    <i class="fas fa-text-height"></i> 文字サイズ
+                </div>
+                <div class="option-item" data-group="size" data-value="small">
+                    <div class="option-icon small">A</div>
+                    <div class="option-info">
+                        <div class="option-name">小</div>
+                        <div class="option-desc">コンパクト表示</div>
+                    </div>
+                    <i class="fas fa-check-circle option-check"></i>
+                </div>
+                <div class="option-item selected" data-group="size" data-value="medium">
+                    <div class="option-icon medium">A</div>
+                    <div class="option-info">
+                        <div class="option-name">中</div>
+                        <div class="option-desc">標準サイズ（推奨）</div>
+                    </div>
+                    <i class="fas fa-check-circle option-check"></i>
+                </div>
+                <div class="option-item" data-group="size" data-value="large">
+                    <div class="option-icon large">A</div>
+                    <div class="option-info">
+                        <div class="option-name">大</div>
+                        <div class="option-desc">見やすい大きな文字</div>
+                    </div>
+                    <i class="fas fa-check-circle option-check"></i>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="preview-card">
+                <div class="preview-title">📖 プレビュー</div>
+                <div class="preview-text size-medium" id="preview-text">
+                    StepByは、みんなで作るバリアフリー地図アプリです。歩いた道を記録して、点字ブロックの情報を共有しよう！
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-area">
+            <button class="btn-back" onclick="history.back()">戻る</button>
+            <button class="btn-primary" style="flex:1">変更を保存</button>
+        </div>
+
+        <!-- Bottom Nav -->
+        
+    </div>
+
+    <script>
+        // 保存済み設定を読み込み
+        const savedTheme = localStorage.getItem('UI1_theme') || 'light';
+        const savedSize = localStorage.getItem('UI1_fontSize') || 'medium';
+
+        document.querySelectorAll('.option-item[data-group="theme"]').forEach(o => {
+            o.classList.toggle('selected', o.dataset.value === savedTheme);
+        });
+        document.querySelectorAll('.option-item[data-group="size"]').forEach(o => {
+            o.classList.toggle('selected', o.dataset.value === savedSize);
+        });
+
+        // プレビューテキスト初期化
+        const previewEl = document.getElementById('preview-text');
+        if (previewEl) previewEl.className = 'preview-text size-' + savedSize;
+
+        // オプション選択
+        document.querySelectorAll('.option-item').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const group = opt.dataset.group;
+                document.querySelectorAll(`.option-item[data-group="${group}"]`).forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                if (group === 'size' && previewEl) {
+                    previewEl.className = 'preview-text size-' + opt.dataset.value;
+                }
+                if (group === 'theme') {
+                    // リアルタイムプレビュー
+                    const v = opt.dataset.value;
+                    if (v === 'dark') {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                    }
+                }
+            });
+        });
+
+        // 変更を保存ボタン
+        document.querySelector('.btn-primary').addEventListener('click', () => {
+            const theme = document.querySelector('.option-item[data-group="theme"].selected')?.dataset.value || 'light';
+            const size = document.querySelector('.option-item[data-group="size"].selected')?.dataset.value || 'medium';
+            localStorage.setItem('UI1_theme', theme);
+            localStorage.setItem('UI1_fontSize', size);
+
+            const btn = document.querySelector('.btn-primary');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> 保存しました！';
+            btn.style.background = '#27AE60';
+            setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1500);
+        });
+    </script>
+<script src="../i18n.js"></script><script src="../common.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StepBy</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="StepBy">
+    <link rel="apple-touch-icon" href="./assets/icon-192.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            font-family: 'Noto Sans JP', -apple-system, sans-serif;
+            background: #0d3535;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== Safety Overlay ===== */
+        .safety-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(160deg, #1a3a4a 0%, #2E9E8F 40%, #4DBFB0 70%, #A8E6CF 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 9999;
+        }
+
+        .safety-box {
+            background: #fff;
+            border-radius: 24px;
+            padding: 32px 24px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            text-align: center;
+            animation: safetyIn 0.45s cubic-bezier(0.34,1.56,0.64,1);
+        }
+
+        @keyframes safetyIn {
+            from { transform: scale(0.85) translateY(20px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .safety-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFE082, #FFB847);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 34px;
+            box-shadow: 0 8px 24px rgba(255,184,71,0.35);
+            animation: warningPulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { box-shadow: 0 8px 24px rgba(255,184,71,0.35); }
+            50%       { box-shadow: 0 8px 36px rgba(255,184,71,0.6); }
+        }
+
+        .safety-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1A2B3C;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .safety-msg {
+            font-size: 14px;
+            color: #5A6B7C;
+            line-height: 1.8;
+            margin-bottom: 28px;
+        }
+
+        .safety-msg strong {
+            color: #E74C3C;
+            font-weight: 700;
+        }
+
+        .safety-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-safety-yes {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #2E9E8F, #1E7A6D);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(46,158,143,0.35);
+            transition: transform 0.15s;
+        }
+
+        .btn-safety-yes:active { transform: scale(0.96); }
+
+        .btn-safety-no {
+            flex: 1;
+            padding: 14px;
+            background: #fff;
+            color: #E74C3C;
+            border: 2px solid #FFCDD2;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-safety-no:active {
+            background: #FFF0F0;
+            transform: scale(0.96);
+        }
+
+        /* ===== Danger Screen ===== */
+        .danger-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .danger-screen .danger-icon {
+            font-size: 56px;
+            color: #E74C3C;
+        }
+
+        .danger-screen h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1A2B3C;
+        }
+
+        .danger-screen p {
+            font-size: 14px;
+            color: #5A6B7C;
+            line-height: 1.7;
+        }
+
+        /* Loading text */
+        .loading-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Safety overlay (shown once per session) -->
+    <div class="safety-overlay" id="safety-overlay">
+        <div class="safety-box">
+            <div class="safety-icon-wrap">⚠️</div>
+            <div class="safety-title">ご利用の前に<br>安全確認をお願いします</div>
+            <div class="safety-msg">
+                このアプリを使うときは、<br>
+                必ず<strong>周囲の安全を確認</strong>し、<br>
+                車などに気を付けてください。<br><br>
+                <strong>決して歩きスマホはしないでください。</strong>
+            </div>
+            <div class="safety-buttons">
+                <button class="btn-safety-yes" id="safety-yes-btn">
+                    ✓ はい、理解しました
+                </button>
+                <button class="btn-safety-no" id="safety-no-btn">
+                    いいえ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Screen (shown when "No" is pressed) -->
+    <div class="danger-screen" id="danger-screen">
+        <div class="danger-icon">🚫</div>
+        <h2>ご理解いただけなかった場合</h2>
+        <p>安全のため、アプリを終了してください。<br>いつでも安全な場所でご利用いただけます。</p>
+    </div>
+
+    <p class="loading-text" id="loading-text" style="display:none;">読み込み中...</p>
+
+    <script>
+        const SAFETY_KEY = 'stepby_safety_ok';
+        const overlay = document.getElementById('safety-overlay');
+        const dangerScreen = document.getElementById('danger-screen');
+        const loadingText = document.getElementById('loading-text');
+
+        // If already confirmed this session, skip dialog
+        if (sessionStorage.getItem(SAFETY_KEY) === 'true') {
+            overlay.style.display = 'none';
+            loadingText.style.display = 'block';
+            window.location.replace('./signup/Index.html');
+        }
+
+        document.getElementById('safety-yes-btn').addEventListener('click', () => {
+            sessionStorage.setItem(SAFETY_KEY, 'true');
+            overlay.style.display = 'none';
+            loadingText.style.display = 'block';
+            window.location.replace('./signup/Index.html');
+        });
+
+        document.getElementById('safety-no-btn').addEventListener('click', () => {
+            overlay.style.display = 'none';
+            dangerScreen.style.display = 'flex';
+        });
+
+        // PWA Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+                .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+                .catch(err => console.warn('[SW] Registration failed:', err));
+        }
+    </script>
+</body>
+</html>

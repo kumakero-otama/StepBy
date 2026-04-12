@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>プロフィール編集 — StepBy</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2E9E8F">
+    <link rel="stylesheet" href="../common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ---- Form Card ---- */
+        .form-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            padding: 20px 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .form-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-card-title i {
+            color: var(--primary);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-bg);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-label .lock-icon {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--bg-white);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 158, 143, 0.1);
+        }
+
+        /* ---- Radio Group ---- */
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .radio-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .radio-option input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .radio-option label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-white);
+        }
+
+        .radio-option input:checked+label {
+            border-color: var(--primary);
+            background: var(--primary-bg);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        /* ---- Date Row ---- */
+        .date-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .date-select {
+            flex: 1;
+            padding: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--bg-white);
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            transition: border-color 0.2s;
+        }
+
+        .date-select:focus {
+            border-color: var(--primary);
+        }
+
+        .form-hint {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 6px;
+        }
+
+        /* ---- Icon Upload ---- */
+        .icon-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-preview {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--bg-gray);
+            border: 2px dashed var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 32px;
+            color: var(--text-light);
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .icon-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .icon-no-image {
+            position: absolute;
+            bottom: 10px;
+            font-size: 8px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .icon-buttons {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .icon-btn {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 500;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .icon-btn:active {
+            background: var(--primary-bg);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            transform: scale(0.97);
+        }
+
+        /* ---- Submit Area ---- */
+        .submit-area {
+            padding: 0 16px 16px;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn-back {
+            flex: 0 0 auto;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--border);
+            background: var(--bg-white);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-back:active {
+            background: var(--bg-gray);
+            transform: scale(0.97);
+        }
+
+        .pad-bottom { padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px); }
+
+        /* ---- Password Section ---- */
+        .pw-current-wrap {
+            position: relative;
+        }
+
+        .pw-masked {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--bg-gray);
+            outline: none;
+            letter-spacing: 3px;
+        }
+
+        .pw-current-wrap .pw-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .pw-current-wrap .pw-toggle:active {
+            color: var(--primary);
+        }
+
+        .pw-input-wrap {
+            position: relative;
+        }
+
+        .pw-input-wrap .form-input {
+            padding-right: 44px;
+        }
+
+        .pw-input-wrap .pw-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .pw-input-wrap .pw-toggle:active {
+            color: var(--primary);
+        }
+
+        .pw-forgot {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            margin-top: 8px;
+        }
+
+        .pw-forgot:hover {
+            text-decoration: underline;
+        }
+
+        .pw-strength {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--bg-gray);
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .pw-strength-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <!-- Header (3 buttons: map / settings / profile) -->
+        <header class="top-bar">
+            <div class="top-bar-title">プロフィール編集</div>
+            <div class="header-actions">
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                    <i class="fas fa-map"></i>
+                </a>
+                <div class="settings-wrap">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settings-dropdown">
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
+                    </div>
+                </div>
+                <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="scroll-content">
+            <!-- Basic Info -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="fas fa-user"></i> 基本情報
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ユーザー名</label>
+                    <input type="text" class="form-input" value="" id="edit-username" placeholder="ユーザー名を入力">
+                </div>
+            </div>
+
+            <!-- Icon -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="fas fa-camera"></i> アイコン画像
+                </div>
+                <div class="icon-upload" style="display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%;">
+                    
+                    <!-- Circular Preview Area -->
+                    <label for="file-upload" class="icon-preview" id="icon-preview-wrap" style="overflow: hidden; position: relative; cursor: pointer; width: 100px; height: 100px; border-radius: 50%; background: var(--bg-gray); border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <img id="icon-preview-img" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index: 2;" alt="プロフィール画像">
+                        <i class="fas fa-user" id="icon-default-icon" style="font-size: 32px; color: var(--text-light); z-index: 1;"></i>
+                        <span class="icon-no-image" id="icon-no-image-text" style="font-size: 11px; margin-top: 4px; color: var(--text-light); z-index: 1;">タップで変更</span>
+                    </label>
+
+                    <!-- Buttons Area -->
+                    <div class="icon-buttons" style="display: flex; gap: 12px; width: 100%;">
+                        <!-- Camera Button -->
+                        <label class="icon-btn" style="flex: 1; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-white); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-dark); box-shadow: var(--shadow-sm); overflow: hidden;">
+                            <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 10;" onchange="handleImageSelection(event)">
+                            <i class="fas fa-camera" style="margin-right: 6px; color: var(--primary);"></i> 写真を撮影
+                        </label>
+                        
+                        <!-- Upload Button -->
+                        <label class="icon-btn" style="flex: 1; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-white); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-dark); box-shadow: var(--shadow-sm); overflow: hidden;">
+                            <input type="file" id="file-upload" accept="image/*" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 10;" onchange="handleImageSelection(event)">
+                            <i class="fas fa-image" style="margin-right: 6px; color: var(--primary);"></i> 画像フォルダ
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="pad-bottom"></div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-area">
+        <button class="btn-primary" style="flex:1" id="save-btn" onclick="saveProfile()">変更を保存</button>
+        </div>
+    </div>
+
+    <script>
+
+        // ---- Password toggles ----
+        function setupPwToggle(toggleId, inputId) {
+            const toggle = document.getElementById(toggleId);
+            if (!toggle) return;
+            toggle.addEventListener('click', () => {
+                const pw = document.getElementById(inputId);
+                const icon = toggle.querySelector('i');
+                if (pw.type === 'password') {
+                    pw.type = 'text';
+                    icon.className = 'fas fa-eye';
+                } else {
+                    pw.type = 'password';
+                    icon.className = 'fas fa-eye-slash';
+                }
+            });
+        }
+        setupPwToggle('toggle-current-pw', 'current-pw');
+        setupPwToggle('toggle-new-pw', 'new-pw');
+        setupPwToggle('toggle-confirm-pw', 'confirm-pw');
+
+        // ---- Password strength ----
+        const newPw = document.getElementById('new-pw');
+        const strengthBar = document.getElementById('pw-strength-bar');
+        newPw.addEventListener('input', () => {
+            const val = newPw.value;
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (val.length >= 12) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+
+            const pct = Math.min(score / 5 * 100, 100);
+            const colors = ['#FF6B6B', '#FF6B6B', '#FFB847', '#4DBFB0', '#2E9E5F', '#2E9E5F'];
+            strengthBar.style.width = pct + '%';
+            strengthBar.style.background = colors[score];
+            checkMatch();
+        });
+
+        // ---- Confirm match ----
+        const confirmPw = document.getElementById('confirm-pw');
+        const matchHint = document.getElementById('pw-match-hint');
+        function checkMatch() {
+            if (!confirmPw.value) { matchHint.textContent = ''; return; }
+            if (confirmPw.value === newPw.value) {
+                matchHint.textContent = '✓ パスワードが一致しています';
+                matchHint.style.color = 'var(--success)';
+            } else {
+                matchHint.textContent = '✗ パスワードが一致しません';
+                matchHint.style.color = 'var(--danger)';
+            }
+        }
+        confirmPw.addEventListener('input', checkMatch);
+
+
+
+        async function saveProfile() {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = '保存中...';
+
+            const username = document.getElementById('edit-username').value.trim();
+            const iconPreviewImg = document.getElementById('icon-preview-img');
+            let iconData = null;
+            if (iconPreviewImg && iconPreviewImg.style.display !== 'none' && iconPreviewImg.src && iconPreviewImg.src.startsWith('data:')) {
+                iconData = iconPreviewImg.src;
+            }
+
+            if (!username) {
+                alert('ユーザー名を入力してください。');
+                saveBtn.disabled = false;
+                saveBtn.textContent = '変更を保存';
+                return;
+            }
+
+            // Always save locally first (works even without server)
+            localStorage.setItem('UI1_username', username);
+            if (iconData) localStorage.setItem('UI1_avatar', iconData);
+
+            // Try to save to server if authenticated
+            if (window.AuthToken && window.AuthToken.getAccessToken()) {
+                const payload = { username: username };
+                if (iconData) payload.icon_data_url = iconData;
+
+                try {
+                    const res = await window.AuthToken.authFetch(
+                        '/auth/profile',
+                        { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }
+                    );
+                    if (!res.ok) {
+                        console.warn('Server save failed, local save succeeded');
+                    }
+                } catch (e) {
+                    console.warn('Server unreachable, local save succeeded:', e.message);
+                }
+            }
+
+            saveBtn.textContent = '✓ 保存しました';
+            saveBtn.style.background = 'var(--primary)';
+            setTimeout(() => {
+                window.location.assign('../profile/Index.html');
+            }, 800);
+        }
+
+        // ---- Icon Upload Handling ----
+        const fileUpload = document.getElementById('file-upload');
+        const fileCamera = document.getElementById('file-camera');
+        const iconPreviewImg = document.getElementById('icon-preview-img');
+        const iconDefaultIcon = document.getElementById('icon-default-icon');
+        const iconNoImageText = document.getElementById('icon-no-image-text');
+
+        function handleImageSelection(event) {
+            const file = (event.target || event).files ? (event.target || event).files[0] : event;
+            if (!file) { console.warn('No file selected'); return; }
+            console.log('Image selected:', file.name, file.size, file.type);
+
+            // Re-fetch elements each time to avoid stale references
+            const _iconPreviewImg = document.getElementById('icon-preview-img');
+            const _iconDefaultIcon = document.getElementById('icon-default-icon');
+            const _iconNoImageText = document.getElementById('icon-no-image-text');
+
+            if (!_iconPreviewImg) { console.error('icon-preview-img not found!'); return; }
+
+            // Immediately hide default icons
+            if (_iconDefaultIcon) _iconDefaultIcon.style.display = 'none';
+            if (_iconNoImageText) _iconNoImageText.style.display = 'none';
+
+            const renderImage = (dataUrl) => {
+                _iconPreviewImg.src = dataUrl;
+                _iconPreviewImg.style.display = 'block';
+                _iconPreviewImg.style.position = 'absolute';
+                _iconPreviewImg.style.top = '0';
+                _iconPreviewImg.style.left = '0';
+                _iconPreviewImg.style.width = '100%';
+                _iconPreviewImg.style.height = '100%';
+                _iconPreviewImg.style.objectFit = 'cover';
+                _iconPreviewImg.style.borderRadius = '50%';
+                console.log('Image rendered to preview');
+            };
+
+            if (window.resizeImage) {
+                window.resizeImage(file, 800, 0.7)
+                    .then(renderImage)
+                    .catch(e => {
+                        console.error('Image resize failed, using FileReader:', e);
+                        const reader = new FileReader();
+                        reader.onload = (ev) => renderImage(ev.target.result);
+                        reader.readAsDataURL(file);
+                    });
+            } else {
+                const reader = new FileReader();
+                reader.onload = (ev) => renderImage(ev.target.result);
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Event listeners now handled by onchange attributes on inputs
+    </script>
+<script src="../config.js"></script><script src="../token_client.js"></script><script src="../i18n.js"></script><script src="../common.js"></script>
+    <script>
+        // ---- /auth/me からユーザー名を読み込む ----
+        (async function() {
+            const usernameInput = document.getElementById('edit-username');
+            if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
+            try {
+                const res = await window.AuthToken.authFetch('/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    const u = data.user || data;
+                                        if (usernameInput && u.username) usernameInput.value = u.username;
+                    // Add avatar loading
+                    const avatarUrl = u.avatarUrl || u.avatar_url || u.photoURL || null;
+                    if (avatarUrl) {
+                        const iconPreviewImg = document.getElementById('icon-preview-img');
+                        const iconDefaultIcon = document.getElementById('icon-default-icon');
+                        const iconNoImageText = document.getElementById('icon-no-image-text');
+                        if (iconPreviewImg) {
+                            iconPreviewImg.onerror = () => { iconPreviewImg.style.display='none'; if(iconDefaultIcon) iconDefaultIcon.style.display='block'; };
+                            let _url = avatarUrl; iconPreviewImg.src = ((_url.startsWith('http') || _url.startsWith('data:')) ? _url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + _url));
+                            iconPreviewImg.style.display = 'block';
+                            if(iconDefaultIcon) iconDefaultIcon.style.display = 'none';
+                            if(iconNoImageText) iconNoImageText.style.display = 'none';
+                        }
+                    }
+                }
+            } catch {}
+        })();
+
+        // ---- Password toggles (Googleログインのためパスワード変更は非表示) ----
+        // setupPwToggle 関連のコードは削除済み
+    </script>
+</body>
+
+</html>
