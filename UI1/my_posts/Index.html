@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -460,7 +460,6 @@
             div.innerHTML = `
                 <div class="post-item-photo-wrap skeleton"></div>
                 <div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; z-index: 100;">
-                    <button class="action-btn delete-req-btn" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); color: #e74c3c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer;"><i class="fas fa-trash"></i></button>
                     <button class="action-btn edit-req-btn" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); color: #2E9E8F; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer;"><i class="fas fa-pen"></i></button>
                 </div>
                 <div class="post-item-body">
@@ -477,30 +476,7 @@
             `;
 
             // Action Logic
-            const deleteBtn = div.querySelector('.delete-req-btn');
             const editBtn = div.querySelector('.edit-req-btn');
-
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm('この投稿情報を削除してもよろしいですか？')) {
-                    div.style.transition = 'opacity 0.3s, transform 0.3s';
-                    div.style.opacity = '0';
-                    div.style.transform = 'scale(0.9)';
-                    setTimeout(() => {
-                        div.remove();
-                        // Local count tracking to decrement
-                        let count = parseInt(localStorage.getItem('myTotalPosts') || '21', 10);
-                        if (count > 0) count--;
-                        localStorage.setItem('myTotalPosts', count.toString());
-
-                        // Update stats text on the page to reflect deleted item
-                        const currentPosts = document.querySelectorAll('.post-item').length;
-                        document.getElementById('stats-text').textContent = `${currentPosts} 件の投稿履歴が見つかりました`;
-                    }, 300);
-                    // In a real app, we would send a DELETE request here
-                    // fetch(`${API_BASE}/api/road-info?pointId=${pt.id}`, {method: 'DELETE'})
-                }
-            });
 
             editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
