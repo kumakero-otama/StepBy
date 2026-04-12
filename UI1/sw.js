@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stepby-ui1-v1775973235454';
+const CACHE_NAME = 'stepby-ui1-v1775973467349';
 const BASE = '/StepBy/UI1';
 const ASSETS = [
     BASE + '/',

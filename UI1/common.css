@@ -1048,3 +1048,31 @@ details.settings-wrap .settings-dropdown a i {
 /* ==== Font Size Options ==== */
 html[data-font-size="small"] .scroll-content, html[data-font-size="small"] .bottom-nav { zoom: 0.85; }
 html[data-font-size="large"] .scroll-content, html[data-font-size="large"] .bottom-nav { zoom: 1.15; }
+
+/* ==== Google Translate Hiding ==== */
+#google_translate_hidden, .goog-te-banner-frame,
+.goog-te-gadget-simple, .skiptranslate:not(#stepby-lang-picker):not(#stepby-lang-picker *) {
+    display: none !important;
+}
+body { top: 0 !important; }
+
+/* 翻訳時：テキスト縮小・折り返し対応 */
+.translated-ltr .feature-card-title,
+.translated-ltr .feature-pill-label,
+.translated-ltr [class*="card-title"],
+html.translated-ltr .feature-card-title,
+html.translated-ltr [class*="card-title"] {
+    font-size: 10px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    line-height: 1.2 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+}
+.feature-card-title font,
+[class*="card-title"] font {
+    white-space: normal !important;
+    font-size: 10px !important;
+    word-break: break-word !important;
+}
