@@ -1,0 +1,296 @@
+// ==========================================
+// StepBy - Common Javascript for all pages
+// ==========================================
+
+// ===== テーマ・文字サイズを全ページに適用 =====
+(function() {
+    const theme = localStorage.getItem('UI1_theme') || 'light';
+    const size = localStorage.getItem('UI1_fontSize') || 'medium';
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (theme === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    document.documentElement.setAttribute('data-font-size', size);
+})();
+
+// ===== Google翻訳 + カスタム言語ボタン =====
+(function() {
+    const LANGS = [
+        { code: 'ja',    label: '🇯🇵 日本語' },
+        { code: 'en',    label: '🇺🇸 English' },
+        { code: 'hi',    label: '🇮🇳 हिंदी' },
+        { code: 'zh-CN', label: '🇨🇳 中文' },
+        { code: 'ko',    label: '🇰🇷 한국어' },
+        { code: 'es',    label: '🇪🇸 Español' },
+        { code: 'fr',    label: '🇫🇷 Français' },
+        { code: 'ar',    label: '🇸🇦 العربية' },
+    ];
+
+    // Googleウィジェット用の非表示div
+    window.googleTranslateElementInit = function() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'ja',
+            includedLanguages: 'en,hi,zh-CN,ko,es,fr,ar',
+            autoDisplay: false
+        }, 'google_translate_hidden');
+    };
+
+    // Google翻訳を起動する（グローバルに公開）
+    window.stepByTriggerLang = function(langCode) {
+        const tryTrigger = () => {
+            const combo = document.querySelector('.goog-te-combo');
+            if (combo) {
+                combo.value = langCode;
+                combo.dispatchEvent(new Event('change'));
+                return true;
+            }
+            return false;
+        };
+        setTimeout(tryTrigger, 300);
+        setTimeout(tryTrigger, 800);
+        setTimeout(tryTrigger, 1500);
+        setTimeout(tryTrigger, 3000);
+    };
+
+    // カスタム言語ボタンを作成
+    function createLangPicker() {
+        const css = document.createElement('style');
+        css.textContent = `
+            /* Google翻訳のUIを完全非表示 */
+            #google_translate_hidden, .goog-te-banner-frame,
+            .goog-te-gadget-simple, .skiptranslate:not(#stepby-lang-picker):not(#stepby-lang-picker *) {
+                display: none !important;
+            }
+            body { top: 0 !important; }
+            /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
+            /* Google Translateはhtmlにもbodyにもクラスを付けるため両方対応 */
+            .translated-ltr .feature-card-title,
+            .translated-ltr .feature-pill-label,
+            .translated-ltr [class*="card-title"],
+            html.translated-ltr .feature-card-title,
+            html.translated-ltr [class*="card-title"] {
+                font-size: 10px !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                line-height: 1.2 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                text-overflow: unset !important;
+            }
+            /* Google翻訳のfontタグ対応（翻訳後テキストのみ） */
+            .feature-card-title font,
+            [class*="card-title"] font {
+                white-space: normal !important;
+                font-size: 10px !important;
+                word-break: break-word !important;
+            }
+
+            /* カスタム言語ピッカー */
+            #stepby-lang-picker {
+                position: fixed;
+                bottom: 80px;
+                right: 12px;
+                z-index: 99999;
+            }
+            #stepby-lang-btn {
+                background: var(--primary, #2E9E8F);
+                color: #fff;
+                border: none;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+                cursor: pointer;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: inherit;
+                transition: transform 0.15s;
+            }
+            #stepby-lang-btn:active { transform: scale(0.95); }
+            #stepby-lang-dropdown {
+                display: none;
+                position: absolute;
+                bottom: 48px;
+                right: 0;
+                background: #fff;
+                border-radius: 14px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+                overflow: hidden;
+                min-width: 160px;
+            }
+            #stepby-lang-dropdown.open { display: block; }
+            .stepby-lang-option {
+                padding: 12px 16px;
+                font-size: 14px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #333;
+                transition: background 0.15s;
+                font-family: inherit;
+            }
+            .stepby-lang-option:hover { background: #f5f5f5; }
+            .stepby-lang-option.active { color: var(--primary, #2E9E8F); font-weight: 700; }
+        `;
+        document.head.appendChild(css);
+
+        const picker = document.createElement('div');
+        picker.id = 'stepby-lang-picker';
+        picker.setAttribute('translate', 'no');  // ピッカー全体を翻訳対象外に
+        picker.className = 'notranslate';
+
+        const btn = document.createElement('button');
+        btn.id = 'stepby-lang-btn';
+        btn.innerHTML = '🌐';
+        btn.title = 'Language / 言語';
+        btn.setAttribute('translate', 'no');
+
+        const dropdown = document.createElement('div');
+        dropdown.id = 'stepby-lang-dropdown';
+
+        LANGS.forEach(lang => {
+            const opt = document.createElement('div');
+            opt.className = 'stepby-lang-option';
+            opt.setAttribute('translate', 'no');  // Google翻訳対象外
+            opt.textContent = lang.label;
+            opt.dataset.code = lang.code;
+            opt.addEventListener('click', () => {
+                dropdown.classList.remove('open');
+                if (lang.code === 'ja') {
+                    localStorage.removeItem('UI1_language');
+                    // Google翻訳のCookieをクリアして日本語にリセット
+                    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.github.io';
+                    window.location.reload(true);
+                } else {
+                    localStorage.setItem('UI1_language', lang.code);
+                    window.stepByTriggerLang(lang.code);
+                }
+            });
+            dropdown.appendChild(opt);
+        });
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+        picker.appendChild(dropdown);
+        picker.appendChild(btn);
+        document.body.appendChild(picker);
+
+        // 保存済み言語をチェックし、Cookieとズレていれば修正して自動リロードする
+        const saved = localStorage.getItem('UI1_language');
+        const match = document.cookie.match(/googtrans=\/ja\/([^;]+)/);
+        const currentCookie = match ? match[1] : 'ja';
+
+        if (saved && saved !== 'ja') {
+            if (currentCookie !== saved) {
+                const val = `/ja/${saved}`;
+                document.cookie = `googtrans=${val}; path=/`;
+                document.cookie = `googtrans=${val}; path=/; domain=${location.hostname}`;
+                document.cookie = `googtrans=${val}; path=/; domain=.${location.hostname}`;
+                window.location.reload();
+            } else {
+                // Widget fallback if somehow not applied immediately
+                window.stepByTriggerLang(saved);
+            }
+        } else {
+            if (currentCookie !== 'ja' && currentCookie !== '') {
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + location.hostname;
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.' + location.hostname;
+                window.location.reload();
+            } else {
+                // 日本語モード：Google翻訳が自動翻訳するのを防ぐ
+                const resetToJapanese = () => {
+                    const combo = document.querySelector('.goog-te-combo');
+                    if (combo && combo.value !== '' && combo.value !== 'ja') {
+                        combo.value = '';
+                        combo.dispatchEvent(new Event('change'));
+                    }
+                };
+                [800, 1500, 2500].forEach(t => setTimeout(resetToJapanese, t));
+            }
+        }
+    }
+
+    // Google翻訳スクリプトを読み込む
+    const hiddenDiv = document.createElement('div');
+    hiddenDiv.id = 'google_translate_hidden';
+    hiddenDiv.style.display = 'none';
+
+    const script = document.createElement('script');
+    script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+
+document.addEventListener('DOMContentLoaded', () => {
+        document.body.appendChild(hiddenDiv);
+        document.body.appendChild(script);
+        // 言語ボタンは各ページで個別に呼び出す（common.jsでは注入しない）
+        if (typeof window._stepByShowLangBtn !== 'undefined' && window._stepByShowLangBtn) {
+            createLangPicker();
+        }
+    });
+})();
+
+// ===== Settings dropdown (header) =====
+// NOTE: Handled inline in each page's HTML for reliable mobile behavior
+
+// ===== PWA Service Worker registration =====
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../sw.js', { scope: '../' })
+            .catch(() => {
+                // Try root scope as fallback (for pages at different depths)
+                navigator.serviceWorker.register('/StepBy/UI1/sw.js', { scope: '/StepBy/UI1/' })
+                    .catch(err => console.warn('[SW] Registration failed:', err));
+            });
+    });
+}
+
+// ===== Image/Photo Resizer Utility =====
+window.resizeImage = function(file, maxDim = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        if (!file) {
+            reject(new Error('No file provided'));
+            return;
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            // 縮小処理
+            if (width > maxDim || height > maxDim) {
+                if (width > height) {
+                    height = Math.round((height * maxDim) / width);
+                    width = maxDim;
+                } else {
+                    width = Math.round((width * maxDim) / height);
+                    height = maxDim;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            URL.revokeObjectURL(img.src); // Free memory
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(img.src);
+            reject(new Error('Image failed to load'));
+        };
+        img.src = URL.createObjectURL(file);
+    });
+};
