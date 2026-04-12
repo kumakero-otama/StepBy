@@ -349,6 +349,10 @@
             const applyLocalCache = () => {
                 const savedName = localStorage.getItem('UI1_username');
                 const savedAvatar = localStorage.getItem('UI1_avatar');
+                const savedTactile = localStorage.getItem('UI1_totalTactile');
+                const savedRoadPosts = localStorage.getItem('UI1_totalRoadPosts');
+                const savedHearts = localStorage.getItem('UI1_totalHearts');
+
                 if (savedName) {
                     const nameEl = document.getElementById('profile-name');
                     const userEl = document.getElementById('profile-username');
@@ -366,6 +370,18 @@
                         if (placeholder) placeholder.style.display = 'none';
                         wrap.appendChild(img);
                     }
+                }
+                if (savedTactile != null) {
+                    const el = document.getElementById('stat-km');
+                    if (el) el.innerHTML = Number(savedTactile).toFixed(2) + '<small>km</small>';
+                }
+                if (savedRoadPosts != null) {
+                    const el = document.getElementById('total-posts-count');
+                    if (el) el.textContent = savedRoadPosts;
+                }
+                if (savedHearts != null) {
+                    const el = document.getElementById('stat-hearts');
+                    if (el) el.innerHTML = savedHearts + '<small>♥</small>';
                 }
             };
 
@@ -405,6 +421,27 @@
                     if (placeholder) placeholder.style.display = 'none';
                     if (!wrap.querySelector('img')) wrap.appendChild(img);
                 }
+
+                // Stats
+                const totalTactile = user.totalTactileLength || user.total_tactile_length || 0;
+                const statKmEl = document.getElementById('stat-km');
+                if (statKmEl) statKmEl.innerHTML = Number(totalTactile).toFixed(2) + '<small>km</small>';
+
+                const totalRoadPosts = user.totalRoadPosts || user.total_road_posts || 0;
+                const totalPostsEl = document.getElementById('total-posts-count');
+                if (totalPostsEl) totalPostsEl.textContent = Number(totalRoadPosts).toString();
+
+                const totalHearts = user.totalHearts || user.total_hearts || 0;
+                const statHeartsEl = document.getElementById('stat-hearts');
+                if (statHeartsEl) statHeartsEl.innerHTML = Number(totalHearts).toString() + '<small>♥</small>';
+
+                // CACHE SAVING
+                localStorage.setItem('UI1_username', displayName);
+                if (avatarUrl) localStorage.setItem('UI1_avatar', avatarUrl);
+                localStorage.setItem('UI1_totalTactile', totalTactile);
+                localStorage.setItem('UI1_totalRoadPosts', totalRoadPosts);
+                localStorage.setItem('UI1_totalHearts', totalHearts);
+
             } catch (e) {
                 console.log('Profile API not available (Network / CORS):', e.message);
                 applyLocalCache();

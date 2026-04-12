@@ -581,15 +581,15 @@
             <!-- Stats -->
             <div class="stats-row">
                 <div class="stat-card">
-                    <div class="stat-value">6.27<small>km</small></div>
+                    <div class="stat-value"><span id="stat-km">0.00</span><small>km</small></div>
                     <div class="stat-label">総点字ブロック記録</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">21<small>件</small></div>
+                    <div class="stat-value"><span id="stat-posts">0</span><small>件</small></div>
                     <div class="stat-label">総道情報投稿</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">7<small>♥</small></div>
+                    <div class="stat-value"><span id="stat-hearts">0</span><small>♥</small></div>
                     <div class="stat-label">送られたハート</div>
                 </div>
             </div>
@@ -823,19 +823,36 @@
 <script src="../config.js"></script><script src="../token_client.js"></script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
 <script>
-    // ログイン済みなら名前を更新
+    // ログイン済みなら名前と数値を更新
     (async function() {
         if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
         try {
             const res = await window.AuthToken.authFetch('/auth/me', { cache: 'no-store' });
             if (!res.ok) return;
             const payload = await res.json();
-            const name = payload && payload.user && payload.user.username;
-            if (!name) return;
-            const d = document.getElementById('rank-my-name-distance');
-            const p = document.getElementById('rank-my-name-posts');
-            if (d) d.textContent = `${name}（あなた）`;
-            if (p) p.textContent = `${name}（あなた）`;
+            const user = payload && payload.user;
+            if (!user) return;
+            const name = user.username;
+            if (name) {
+                const d = document.getElementById('rank-my-name-distance');
+                const p = document.getElementById('rank-my-name-posts');
+                if (d) d.textContent = `${name}（あなた）`;
+                if (p) p.textContent = `${name}（あなた）`;
+            }
+            
+            // Stats Update
+            const totalTactile = user.totalTactileLength || user.total_tactile_length || 0;
+            const statKmEl = document.getElementById('stat-km');
+            if (statKmEl) statKmEl.textContent = Number(totalTactile).toFixed(2);
+
+            const totalRoadPosts = user.totalRoadPosts || user.total_road_posts || 0;
+            const statPostsEl = document.getElementById('stat-posts');
+            if (statPostsEl) statPostsEl.textContent = Number(totalRoadPosts).toString();
+
+            const totalHearts = user.totalHearts || user.total_hearts || 0;
+            const statHeartsEl = document.getElementById('stat-hearts');
+            if (statHeartsEl) statHeartsEl.textContent = Number(totalHearts).toString();
+
         } catch {}
     })();
 </script>
