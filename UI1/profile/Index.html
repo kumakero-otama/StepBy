@@ -423,13 +423,7 @@
                 if (nameEl) nameEl.textContent = displayName;
                 if (userEl) userEl.textContent = displayName;
 
-                // Check PRO status
-                const isPro = user.is_pro === true || user.isPro === true;
-                localStorage.setItem('UI1_is_pro', isPro ? 'true' : 'false');
-                const proPill = document.getElementById('pill-pro');
-                if (proPill) {
-                    proPill.style.display = isPro ? 'inline-block' : 'none';
-                }
+                // DO NOT overwrite PRO status from API as it often drops the bit
 
                 // Avatar image
                 const avatarUrl = user.avatarUrl || user.avatar_url || user.photoURL || user.iconUrl || user.icon_url  || null;

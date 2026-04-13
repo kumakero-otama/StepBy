@@ -187,18 +187,6 @@ function parseIsProStatus(payload) {
 
 async function loadCurrentUserProStatus() {
   isCurrentUserPro = localStorage.getItem('UI1_is_pro') === 'true';
-  try {
-    const res = await apiFetch("/api/pro-status", { cache: "no-store" });
-    if (!res.ok) return;
-    const payload = await res.json().catch(() => null);
-    const parsed = parseIsProStatus(payload);
-    if (typeof parsed === "boolean") {
-        isCurrentUserPro = parsed;
-        localStorage.setItem('UI1_is_pro', parsed ? 'true' : 'false');
-    }
-  } catch {
-    // Retain local storage value on error
-  }
 }
 
 function extractTraceCoordinates(data, rawShape) {

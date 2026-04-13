@@ -694,10 +694,7 @@
                     const u = data.user || data;
                     if (usernameInput && u.username) usernameInput.value = u.username;
                     
-                    if (proToggle && (u.is_pro !== undefined || u.isPro !== undefined)) {
-                        proToggle.checked = u.is_pro === true || u.isPro === true;
-                        localStorage.setItem('UI1_is_pro', proToggle.checked ? 'true' : 'false');
-                    }
+                    // Do not let API overwrite the PRO toggle locally, wait for explicit saves.
                     // Add avatar loading
                     const avatarUrl = u.avatarUrl || u.avatar_url || u.photoURL || null;
                     if (avatarUrl) {
