@@ -224,7 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.cookie = `googtrans=${val}; path=/; domain=.${location.hostname}`;
             window.location.reload();
         } else {
-            // Widget fallback if somehow not applied immediately
+            // Widget fallback: Force hash into URL for strict iOS PWA environments
+            if (!window.location.hash.includes('googtrans')) {
+                // history.replaceState to avoid polluting back history, but change hash
+                window.location.hash = '#googtrans(ja|' + saved + ')';
+            }
             window.stepByTriggerLang(saved);
         }
     } else {

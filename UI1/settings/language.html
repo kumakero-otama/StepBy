@@ -269,7 +269,8 @@
             btn.style.background = '#27AE60';
             
             setTimeout(() => {
-                window.location.href = '../map/Index.html';
+                const hash = lang === 'ja' ? '' : '#googtrans(ja|' + lang + ')';
+                window.location.href = '../map/Index.html' + hash;
             }, 600);
         });
     </script>
