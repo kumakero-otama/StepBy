@@ -571,11 +571,11 @@ function showAllSessionPathsOnMap(paths) {
     const coordinates = geom.coordinates.map(([lng, lat]) => [lat, lng]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
     if (coordinates.length < 2) return;
     const polyline = L.polyline(coordinates, { color: "#00b050", weight: 4, opacity: 0.85, interactive: false }).addTo(leafletMap);
-    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 20, opacity: 0.01, bubblingMouseEvents: false, interactive: true }).addTo(leafletMap);
+    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 20, opacity: 0.01, interactive: true }).addTo(leafletMap);
     
     // Click interaction for detail modal
     hitPolyline.on("click", (e) => {
-        L.DomEvent.stop(e);
+        L.DomEvent.stopPropagation(e);
         openTraceDetailModal(path);
     });
     
