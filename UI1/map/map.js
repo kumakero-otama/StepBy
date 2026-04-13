@@ -631,7 +631,7 @@ function openTraceDetailModal(path) {
 
     const actionsEl = document.getElementById("trace-detail-actions");
     if (actionsEl) {
-        if (localStorage.getItem("UI1_isPro") === "true") {
+        if (localStorage.getItem("UI1_is_pro") === "true") {
             actionsEl.style.display = "flex";
             actionsEl.classList.remove("hidden");
         } else {
@@ -648,15 +648,32 @@ function openTraceDetailModal(path) {
 
     const deleteBtn = document.getElementById("trace-delete-btn");
     if (deleteBtn) {
-        deleteBtn.onclick = () => {
+        // Clone to remove old event listeners
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+        newDeleteBtn.onclick = async () => {
             if (confirm("本当にこの点字ブロック記録を削除しますか？")) {
-                alert("削除しました（モック動作）。");
-                modal.classList.add("hidden");
-                // Remove from map: find and remove by ID
-                allRecordsMarkers.forEach((m, i) => {
-                    try { leafletMap.removeLayer(m); } catch (ex) { /* ignore */ }
-                });
-                allRecordsMarkers.length = 0;
+                newDeleteBtn.disabled = true;
+                newDeleteBtn.style.opacity = "0.5";
+                try {
+                    const sessionId = path.id || path.sessionId || path.session_id;
+                    const res = await apiFetch(`${API_BASE}/api/session/deactivate`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ sessionId: sessionId }),
+                    });
+                    if (!res.ok) {
+                         throw new Error(`Delete failed: ${res.status}`);
+                    }
+                    modal.classList.add("hidden");
+                    // Reload the map strictly through the main function
+                    loadAndShowAllRecords();
+                } catch(e) {
+                    console.error("Trace delete error", e);
+                    alert("削除に失敗しました。ご自身の記録ではない可能性があります。");
+                    newDeleteBtn.disabled = false;
+                    newDeleteBtn.style.opacity = "1";
+                }
             }
         };
     }
