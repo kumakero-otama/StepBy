@@ -358,9 +358,13 @@ function openTraceConfirmModal(coordinates) {
     }
 
     if (recordedFeaturesDiv) {
-        recordedFeaturesDiv.style.display = "block";
-        recordedFeaturesDiv.classList.remove("hidden");
-        loadTraceTags();
+        if (!isCurrentUserPro) {
+            recordedFeaturesDiv.style.display = "none";
+        } else {
+            recordedFeaturesDiv.style.display = "block";
+            recordedFeaturesDiv.classList.remove("hidden");
+            loadTraceTags();
+        }
     }
     if (traceMemoInput) traceMemoInput.value = "";
     document.querySelectorAll(".tag-chip.active").forEach(el => {
