@@ -1692,7 +1692,7 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
                     btnRecordPause.style.color = 'white';
                     btnRecordPause.querySelector('i').className = 'fas fa-play-circle';
                     btnRecordPause.querySelector('span').textContent = '再開';
-                    if (toggleRecord) { toggleRecord.checked = false; toggleRecord.dispatchEvent(new Event('change')); }
+                    window.isRecordingPaused = true;
                 } else if (recordState === 'paused') {
                     recordState = 'recording';
                     btnRecordPause.classList.remove('recording', 'active');
@@ -1700,7 +1700,7 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
                     btnRecordPause.style.color = '#2E9E8F';
                     btnRecordPause.querySelector('i').className = 'fas fa-pause-circle';
                     btnRecordPause.querySelector('span').textContent = '一時停止';
-                    if (toggleRecord) { toggleRecord.checked = true; toggleRecord.dispatchEvent(new Event('change')); }
+                    window.isRecordingPaused = false;
                 }
             });
         }

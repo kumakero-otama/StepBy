@@ -505,7 +505,7 @@ function pollAndSendLocation() {
   if (isRequestingMatch) return; // Prevent concurrent requests piling up
   const { lat, lng } = latestLocation;
 
-  if (recordEnabled) {
+  if (recordEnabled && !window.isRecordingPaused) {
     recordedRawPoints.push({ lat, lng });
   } else if (lastSent) {
     // If not recording, don't spam the API unless we moved > 5 meters
