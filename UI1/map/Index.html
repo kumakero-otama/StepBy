@@ -866,7 +866,7 @@
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: 1.5px solid rgba(0, 0, 0, 0.06);
-            background: #fff;
+            background: var(--bg-white);
             scroll-snap-align: start;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
@@ -1347,10 +1347,10 @@
                 <div id="trace-recorded-features" style="margin-top:12px; text-align:left;">
                     <label style="font-size:12px; font-weight:600; color:var(--primary);"><i class="fas fa-tag"></i> タグ</label>
                     <div style="display:flex; gap:8px; margin:4px 0;">
-                        <input type="text" id="trace-tag-add-input" placeholder="新しいタグを入力..." style="flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                        <input type="text" id="trace-tag-add-input" placeholder="新しいタグを入力..." style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; box-sizing:border-box; background:var(--bg-white); color:var(--text-dark);">
                         <button id="trace-tag-add-btn" class="btn-primary" style="padding:0 16px; border-radius:8px; font-weight:bold; white-space:nowrap;">追加</button>
                     </div>
-                    <div id="trace-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 10px; max-height:130px; overflow-y:auto; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; align-content:flex-start;">
+                    <div id="trace-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 10px; max-height:130px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gray); align-content:flex-start;">
                         <!-- Tags will be dynamically loaded via API -->
                     </div>
                     <label style="font-size:12px; font-weight:600; color:var(--primary);"><i class="fas fa-comment-dots"></i> メモ</label>

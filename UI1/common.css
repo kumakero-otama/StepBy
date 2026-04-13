@@ -61,6 +61,11 @@ html[data-theme="dark"] body {
   color: var(--text-dark);
 }
 
+html[data-theme="dark"] .tag-chip,
+html[data-theme="dark"] .btn-secondary {
+  color: var(--text-dark) !important;
+}
+
 * {
   margin: 0;
   padding: 0;
