@@ -7,7 +7,7 @@ const API_BASE = "https://barrierfree-map.loophole.site";
 let userLocationMarker = null;
 let accuracyCircle = null;
 let currentHeading = 0;
-let isCurrentUserPro = false;
+let isCurrentUserPro = localStorage.getItem('UI1_is_pro') === 'true';
 
 const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken())
     ? window.AuthToken.authFetch(url, opts)
