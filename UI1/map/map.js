@@ -103,9 +103,21 @@ const MAP_TAP_SUPPRESS_AFTER_ZOOM_MS = 400;
 
 function shouldIgnoreMapTap(event) {
   if (isZooming || Date.now() < suppressMapTapUntil) return true;
+  
+  const modal = document.getElementById("trace-detail-modal");
+  if (modal && !modal.classList.contains("hidden")) return true;
+
   const originalEvent = event?.originalEvent;
   if (!originalEvent) return false;
-  return originalEvent.type === "dblclick" || originalEvent.type === "wheel" || originalEvent.type === "mousewheel";
+  
+  if (originalEvent.type === "dblclick" || originalEvent.type === "wheel" || originalEvent.type === "mousewheel") return true;
+
+  const target = originalEvent.target;
+  if (target && target.closest && target.closest(".leaflet-control")) {
+    return true;
+  }
+  
+  return false;
 }
 
 leafletMap.on("zoomstart", () => {
