@@ -1344,13 +1344,14 @@
                 </p>
                 <div id="trace-confirm-map"></div>
 
-                <div id="trace-pro-features" class="hidden" style="margin-top:12px; text-align:left;">
+                <div id="trace-recorded-features" style="margin-top:12px; text-align:left;">
                     <label style="font-size:12px; font-weight:600; color:var(--primary);"><i class="fas fa-tag"></i> タグ</label>
-                    <div id="trace-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px;">
-                        <span class="tag-chip" style="cursor:pointer;" onclick="this.classList.toggle('active')">点字ブロック</span>
-                        <span class="tag-chip" style="cursor:pointer;" onclick="this.classList.toggle('active')">音響信号機</span>
-                        <span class="tag-chip" style="cursor:pointer;" onclick="this.classList.toggle('active')">段差なし</span>
-                        <span class="tag-chip" style="cursor:pointer;" onclick="this.classList.toggle('active')">スロープ</span>
+                    <div style="display:flex; gap:8px; margin:4px 0;">
+                        <input type="text" id="trace-tag-add-input" placeholder="新しいタグを入力..." style="flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                        <button id="trace-tag-add-btn" class="btn-primary" style="padding:0 16px; border-radius:8px; font-weight:bold; white-space:nowrap;">追加</button>
+                    </div>
+                    <div id="trace-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 10px; max-height:130px; overflow-y:auto; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; align-content:flex-start;">
+                        <!-- Tags will be dynamically loaded via API -->
                     </div>
                     <label style="font-size:12px; font-weight:600; color:var(--primary);"><i class="fas fa-comment-dots"></i> メモ</label>
                     <textarea id="trace-memo-input" placeholder="道の状態など、ちょっとしたメモを残せます" style="width:100%; height:80px; border:1px solid #ddd; border-radius:8px; padding:12px; font-size:13px; resize:none; margin-top:4px; box-sizing:border-box;"></textarea>

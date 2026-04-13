@@ -235,19 +235,84 @@ function closeTraceConfirmModal() {
   if (traceConfirmMap) { traceConfirmMap.remove(); traceConfirmMap = null; }
 }
 
+async function loadTraceTags() {
+    const container = document.getElementById("trace-tags-container");
+    if (!container) return;
+    try {
+        const fetcher = window.AuthToken ? window.AuthToken.authFetch : fetch;
+        const res = await fetcher(`${API_BASE}/api/post-tags`, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+            const data = await res.json();
+            const fromApi = Array.isArray(data) ? data : (Array.isArray(data.tags) ? data.tags : null);
+            if (fromApi && fromApi.length > 0) {
+                container.innerHTML = '';
+                fromApi.forEach(t => {
+                    const label = t.labelJa || t.label || t.name || t.value || "タグ";
+                    const value = t.id || t.value || label;
+                    const span = document.createElement("span");
+                    span.className = "tag-chip";
+                    span.style.cursor = "pointer";
+                    span.textContent = label;
+                    span.dataset.value = value;
+                    span.onclick = () => span.classList.toggle("active");
+                    container.appendChild(span);
+                });
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to load tags for trace modal", e);
+    }
+}
+
+async function handleTraceTagAdd() {
+    const input = document.getElementById("trace-tag-add-input");
+    const val = input ? input.value.trim() : "";
+    if (!val) return;
+    try {
+        const fetcher = window.AuthToken ? window.AuthToken.authFetch : fetch;
+        await fetcher(`${API_BASE}/api/post-tags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label: val })
+        });
+        const container = document.getElementById("trace-tags-container");
+        const span = document.createElement("span");
+        span.className = "tag-chip active";
+        span.style.cursor = "pointer";
+        span.textContent = val;
+        span.dataset.value = val;
+        span.onclick = () => span.classList.toggle("active");
+        container.prepend(span);
+        if (input) input.value = '';
+    } catch(e) {
+        console.error("タグ追加エラー:", e);
+        alert("タグの追加に失敗しました");
+    }
+}
+
 function openTraceConfirmModal(coordinates) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) { resolve({result: "cancel"}); return; }
     
-    // Check PRO feature visibility
-    const proFeaturesDiv = document.getElementById("trace-pro-features");
+    // Unrestrict PRO feature visibility
+    const recordedFeaturesDiv = document.getElementById("trace-recorded-features");
     const traceMemoInput = document.getElementById("trace-memo-input");
-    if (proFeaturesDiv) {
-        if (localStorage.getItem("UI1_isPro") === "true") {
-            proFeaturesDiv.classList.remove("hidden");
-        } else {
-            proFeaturesDiv.classList.add("hidden");
+    const addTagBtn = document.getElementById("trace-tag-add-btn");
+    
+    if (addTagBtn && !addTagBtn.hasAttribute("data-listener")) {
+        addTagBtn.addEventListener("click", handleTraceTagAdd);
+        addTagBtn.setAttribute("data-listener", "true");
+        const input = document.getElementById("trace-tag-add-input");
+        if (input) {
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleTraceTagAdd(); }
+            });
         }
+    }
+
+    if (recordedFeaturesDiv) {
+        recordedFeaturesDiv.classList.remove("hidden");
+        loadTraceTags(); // Load tags asynchronously
     }
     if (traceMemoInput) traceMemoInput.value = "";
     document.querySelectorAll(".tag-chip.active").forEach(el => {
@@ -269,9 +334,11 @@ function openTraceConfirmModal(coordinates) {
         
         let memo = "";
         let tags = [];
-        if (resultValue === "ok" && localStorage.getItem("UI1_isPro") === "true") {
+        if (resultValue === "ok") {
             if (traceMemoInput) memo = traceMemoInput.value.trim();
-            document.querySelectorAll("#trace-tags-container .tag-chip.active").forEach(el => tags.push(el.textContent));
+            document.querySelectorAll("#trace-tags-container .tag-chip.active").forEach(el => {
+                tags.push(el.dataset.value || el.textContent);
+            });
         }
         resolve({ result: resultValue, memo, tags }); 
     };
