@@ -571,7 +571,7 @@ function showAllSessionPathsOnMap(paths) {
     const coordinates = geom.coordinates.map(([lng, lat]) => [lat, lng]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
     if (coordinates.length < 2) return;
     const polyline = L.polyline(coordinates, { color: "#00b050", weight: 4, opacity: 0.85, interactive: false }).addTo(leafletMap);
-    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 12, opacity: 0, bubblingMouseEvents: false }).addTo(leafletMap);
+    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 20, opacity: 0.01, bubblingMouseEvents: false, interactive: true }).addTo(leafletMap);
     
     // Click interaction for detail modal
     hitPolyline.on("click", (e) => {
