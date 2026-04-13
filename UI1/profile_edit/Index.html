@@ -349,6 +349,29 @@
             border-radius: 2px;
             transition: width 0.3s, background 0.3s;
         }
+
+        /* ---- PRO Toggle ---- */
+        .pro-setting-row { margin-top: 24px; padding-top: 16px; border-top: 1px dotted var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .pro-setting-copy { display: flex; flex-direction: column; }
+        .pro-toggle-title-row { display: flex; align-items: center; gap: 8px; }
+        .pro-toggle-label { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-dark); }
+        .pro-help-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; outline: none; }
+        .pro-help-btn i { font-size: 16px; color: var(--text-light); }
+        .pro-toggle-row { display: flex; align-items: center; gap: 8px; }
+        .toggle-label { font-size: 12px; font-weight: 600; color: var(--text-mid); }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* ---- Help Modal ---- */
+        .pro-help-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 1; transition: opacity 0.3s; }
+        .pro-help-modal.hidden { opacity: 0; pointer-events: none; }
+        .pro-help-panel { background: var(--bg-white); width: 85%; max-width: 320px; border-radius: 12px; padding: 24px 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .pro-help-close-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 20px; color: var(--text-light); cursor: pointer; }
+        .pro-help-message { font-size: 13px; line-height: 1.6; color: var(--text-dark); margin: 0; font-weight: 500; }
     </style>
 </head>
 
@@ -387,6 +410,25 @@
                 <div class="form-group">
                     <label class="form-label">ユーザー名</label>
                     <input type="text" class="form-input" value="" id="edit-username" placeholder="ユーザー名を入力">
+                </div>
+
+                <div class="pro-setting-row">
+                    <div class="pro-setting-copy">
+                        <div class="pro-toggle-title-row">
+                            <p class="pro-toggle-label">PROアカウント</p>
+                            <button id="profile-pro-help-btn" class="pro-help-btn" type="button" aria-label="ヘルプ">
+                                <i class="fas fa-question-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pro-toggle-row">
+                        <span class="toggle-label">OFF</span>
+                        <label class="switch">
+                            <input id="profile-pro-toggle-input" type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">ON</span>
+                    </div>
                 </div>
             </div>
 
@@ -429,6 +471,16 @@
         <!-- Submit -->
         <div class="submit-area">
         <button class="btn-primary" style="flex:1" id="save-btn" onclick="saveProfile()">変更を保存</button>
+        </div>
+    </div>
+
+    <!-- PRO Help Modal -->
+    <div id="pro-help-modal" class="pro-help-modal hidden">
+        <div class="pro-help-panel">
+            <button id="pro-help-close-btn" class="pro-help-close-btn">&times;</button>
+            <p class="pro-help-message">
+                視覚障害者を支援するプロの仕事をしている方が、点字ブロックの種類など詳細な情報を記録できるモードです。<br><br>有料プランというわけではありません。
+            </p>
         </div>
     </div>
 
@@ -516,6 +568,8 @@
             // Try to save to server if authenticated
             if (window.AuthToken && window.AuthToken.getAccessToken()) {
                 const payload = { username: username };
+                const proToggle = document.getElementById('profile-pro-toggle-input');
+                if (proToggle) payload.is_pro = proToggle.checked;
                 if (iconData) payload.icon_data_url = iconData;
 
                 try {
@@ -603,7 +657,12 @@
                 if (res.ok) {
                     const data = await res.json();
                     const u = data.user || data;
-                                        if (usernameInput && u.username) usernameInput.value = u.username;
+                    if (usernameInput && u.username) usernameInput.value = u.username;
+                    
+                    const proToggle = document.getElementById('profile-pro-toggle-input');
+                    if (proToggle && (u.is_pro !== undefined || u.isPro !== undefined)) {
+                        proToggle.checked = u.is_pro === true || u.isPro === true;
+                    }
                     // Add avatar loading
                     const avatarUrl = u.avatarUrl || u.avatar_url || u.photoURL || null;
                     if (avatarUrl) {
@@ -624,6 +683,18 @@
 
         // ---- Password toggles (Googleログインのためパスワード変更は非表示) ----
         // setupPwToggle 関連のコードは削除済み
+
+        // ---- PRO Help Modal Logic ----
+        const proHelpBtn = document.getElementById('profile-pro-help-btn');
+        const proHelpCloseBtn = document.getElementById('pro-help-close-btn');
+        const proHelpModal = document.getElementById('pro-help-modal');
+        if (proHelpBtn && proHelpModal && proHelpCloseBtn) {
+            proHelpBtn.addEventListener('click', () => proHelpModal.classList.remove('hidden'));
+            proHelpCloseBtn.addEventListener('click', () => proHelpModal.classList.add('hidden'));
+            proHelpModal.addEventListener('click', (e) => {
+                if (e.target === proHelpModal) proHelpModal.classList.add('hidden');
+            });
+        }
     </script>
 </body>
 

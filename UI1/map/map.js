@@ -4,6 +4,11 @@
 // ===============================================
 
 const API_BASE = "https://barrierfree-map.loophole.site";
+let userLocationMarker = null;
+let accuracyCircle = null;
+let currentHeading = 0;
+let isCurrentUserPro = false;
+
 const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken())
     ? window.AuthToken.authFetch(url, opts)
     : fetch(url, opts);
@@ -166,7 +171,31 @@ function postSessionLifecycle(action, payload) {
     body: JSON.stringify(payload),
   })
     .then((res) => { if (!res.ok) throw new Error(`session ${action} failed: ${res.status}`); return res.json(); })
-    .catch((err) => { console.error(`[Session] ${action} error:`, err); });
+    .catch((err) => { console.error(`[Lifecycle] ${action} error:`, err); });
+}
+
+function parseIsProStatus(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  if (typeof payload.isPro === "boolean") return payload.isPro;
+  if (typeof payload.is_pro === "boolean") return payload.is_pro;
+  if (payload.data && typeof payload.data === "object") {
+    if (typeof payload.data.isPro === "boolean") return payload.data.isPro;
+    if (typeof payload.data.is_pro === "boolean") return payload.data.is_pro;
+  }
+  return null;
+}
+
+async function loadCurrentUserProStatus() {
+  isCurrentUserPro = false;
+  try {
+    const res = await apiFetch("/api/pro-status", { cache: "no-store" });
+    if (!res.ok) return;
+    const payload = await res.json().catch(() => null);
+    const parsed = parseIsProStatus(payload);
+    if (typeof parsed === "boolean") isCurrentUserPro = parsed;
+  } catch {
+    isCurrentUserPro = false;
+  }
 }
 
 function extractTraceCoordinates(data, rawShape) {
@@ -239,8 +268,7 @@ async function loadTraceTags() {
     const container = document.getElementById("trace-tags-container");
     if (!container) return;
     try {
-        const fetcher = window.AuthToken ? window.AuthToken.authFetch : fetch;
-        const res = await fetcher(`${API_BASE}/api/post-tags`, { signal: AbortSignal.timeout(4000) });
+        const res = await apiFetch(`${API_BASE}/api/post-tags`, { signal: AbortSignal.timeout(4000) });
         if (res.ok) {
             const data = await res.json();
             const fromApi = Array.isArray(data) ? data : (Array.isArray(data.tags) ? data.tags : null);
@@ -269,8 +297,7 @@ async function handleTraceTagAdd() {
     const val = input ? input.value.trim() : "";
     if (!val) return;
     try {
-        const fetcher = window.AuthToken ? window.AuthToken.authFetch : fetch;
-        await fetcher(`${API_BASE}/api/post-tags`, {
+        await apiFetch(`${API_BASE}/api/post-tags`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ label: val })
@@ -294,7 +321,6 @@ function openTraceConfirmModal(coordinates) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) { resolve({result: "cancel"}); return; }
     
-    // Unrestrict PRO feature visibility
     const recordedFeaturesDiv = document.getElementById("trace-recorded-features");
     const traceMemoInput = document.getElementById("trace-memo-input");
     const addTagBtn = document.getElementById("trace-tag-add-btn");
@@ -311,8 +337,13 @@ function openTraceConfirmModal(coordinates) {
     }
 
     if (recordedFeaturesDiv) {
-        recordedFeaturesDiv.classList.remove("hidden");
-        loadTraceTags(); // Load tags asynchronously
+        if (!isCurrentUserPro) {
+            recordedFeaturesDiv.style.display = "none";
+        } else {
+            recordedFeaturesDiv.style.display = "block";
+            recordedFeaturesDiv.classList.remove("hidden");
+            loadTraceTags();
+        }
     }
     if (traceMemoInput) traceMemoInput.value = "";
     document.querySelectorAll(".tag-chip.active").forEach(el => {
@@ -320,6 +351,9 @@ function openTraceConfirmModal(coordinates) {
         el.style.background = "";
         el.style.color = "";
     });
+
+    const errorEl = document.getElementById("trace-tag-error");
+    if (errorEl) { errorEl.classList.add("hidden"); errorEl.textContent = ""; }
 
     traceConfirmModalEl.classList.remove("hidden");
     traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
@@ -343,7 +377,22 @@ function openTraceConfirmModal(coordinates) {
         resolve({ result: resultValue, memo, tags }); 
     };
     
-    const onOk = () => cleanupAndResolve("ok");
+    const onOk = () => {
+        if (isCurrentUserPro) {
+            let selectedTags = document.querySelectorAll("#trace-tags-container .tag-chip.active");
+            if (selectedTags.length === 0) {
+                const errorEl = document.getElementById("trace-tag-error");
+                if (errorEl) {
+                    errorEl.textContent = "※プロアカウントの場合、タグを1つ以上選択してください";
+                    errorEl.classList.remove("hidden");
+                } else {
+                    alert("タグを1つ以上選択してください");
+                }
+                return;
+            }
+        }
+        cleanupAndResolve("ok");
+    };
     const onCancel = () => cleanupAndResolve("cancel");
     traceConfirmOkBtn.addEventListener("click", onOk);
     traceConfirmCancelBtn.addEventListener("click", onCancel);
@@ -373,19 +422,27 @@ async function handleRecordStopWithConfirmation(finishedSessionId) {
   }
   if (traceConfirmMessageEl) traceConfirmMessageEl.textContent = "セッション全体でフィッティングした経路を黄緑線で表示しています。";
   const decisionData = await openTraceConfirmModal(previewCoords);
-  if (decisionData.result === "ok") {
-    await postSessionLifecycle("end", { sessionId: finishedSessionId, endedAt: new Date().toISOString() });
-    
-    // Optional: send memo/tags if PRO
-    if (decisionData.memo) {
-         try {
-             // Fake or real api call
-             // await apiFetch(`${API_BASE}/api/session/memo?sessionId=${finishedSessionId}`, { method: "PUT", body: JSON.stringify({memo: decisionData.memo}) });
-             console.log("Mock saved memo:", decisionData.memo);
-         } catch(e) {}
-    }
-    
-    await processAndDisplayTrace(finishedSessionId);
+    if (decisionData.result === "ok") {
+        
+        let tags = decisionData.tags || [];
+        let memo = decisionData.memo || "";
+        
+        await postSessionLifecycle("end", { sessionId: finishedSessionId, endedAt: new Date().toISOString() });
+        
+        if (isCurrentUserPro) {
+            try {
+                if (tags.length > 0) {
+                    await apiFetch(`${API_BASE}/api/session/tags?sessionId=${finishedSessionId}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ tagIds: tags }) });
+                }
+            } catch(e) { console.error("Tags save error:", e); }
+            if (memo) {
+                 try {
+                     await apiFetch(`${API_BASE}/api/session/memo?sessionId=${finishedSessionId}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({memo: memo}) });
+                 } catch(e) { console.error("Memo save error:", e); }
+            }
+        }
+        
+        await processAndDisplayTrace(finishedSessionId);
     return;
   }
   await postSessionLifecycle("cancel", { sessionId: finishedSessionId, deviceId: deviceUuid });
