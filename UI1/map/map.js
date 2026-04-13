@@ -258,29 +258,59 @@ function closeTraceConfirmModal() {
 async function loadTraceTags() {
     const container = document.getElementById("trace-tags-container");
     if (!container) return;
+    
+    const DEFAULT_TAGS = [
+        { value: "audio_signal_sound",    icon: "fa-volume-up",           label: "音が鳴る信号機" },
+        { value: "audio_signal_no_sound", icon: "fa-volume-xmark",        label: "音が鳴らない信号機" },
+        { value: "push_button_signal",    icon: "fa-hand-pointer",        label: "押しボタン式信号機" },
+        { value: "sensor_signal",         icon: "fa-tower-broadcast",     label: "感知式信号機" },
+        { value: "timed_signal",          icon: "fa-clock",               label: "時間式信号機" },
+        { value: "crosswalk",             icon: "fa-road",                label: "横断歩道" },
+        { value: "misplaced_tactile",     icon: "fa-triangle-exclamation",label: "配置が不適切な点字ブロック" },
+        { value: "degraded_tactile",      icon: "fa-circle-exclamation",  label: "劣化した点字ブロック" },
+        { value: "blocked_tactile",       icon: "fa-ban",                 label: "物が置かれて通れない点字ブロック" },
+        { value: "footbridge_stairs",     icon: "fa-stairs",              label: "歩道橋の階段の出入口" },
+        { value: "footbridge_elevator",   icon: "fa-elevator",            label: "歩道橋のエレベーターの出入口" },
+        { value: "footbridge_slope",      icon: "fa-wheelchair-move",     label: "歩道橋のスロープの出入口" },
+        { value: "test",                  icon: "fa-flask",               label: "テスト用" },
+    ];
+    
+    // Function to render tags
+    const renderTags = (tagsList) => {
+        container.innerHTML = '';
+        tagsList.forEach(t => {
+            const label = t.labelJa || t.label || t.name || t.value || "タグ";
+            const value = t.id || t.value || label;
+            const span = document.createElement("span");
+            span.className = "tag-chip";
+            span.style.cursor = "pointer";
+            if (t.icon) {
+                 span.innerHTML = `<i class="fas ${t.icon}"></i> ${label}`;
+            } else {
+                 span.textContent = label;
+            }
+            span.dataset.value = value;
+            span.onclick = () => span.classList.toggle("active");
+            container.appendChild(span);
+        });
+    };
+
     try {
         const res = await apiFetch(`${API_BASE}/api/post-tags`, { signal: AbortSignal.timeout(4000) });
         if (res.ok) {
             const data = await res.json();
             const fromApi = Array.isArray(data) ? data : (Array.isArray(data.tags) ? data.tags : null);
             if (fromApi && fromApi.length > 0) {
-                container.innerHTML = '';
-                fromApi.forEach(t => {
-                    const label = t.labelJa || t.label || t.name || t.value || "タグ";
-                    const value = t.id || t.value || label;
-                    const span = document.createElement("span");
-                    span.className = "tag-chip";
-                    span.style.cursor = "pointer";
-                    span.textContent = label;
-                    span.dataset.value = value;
-                    span.onclick = () => span.classList.toggle("active");
-                    container.appendChild(span);
-                });
+                renderTags(fromApi);
+                return;
             }
         }
     } catch (e) {
         console.warn("Failed to load tags for trace modal", e);
     }
+    
+    // Fallback if API fails or returns empty
+    renderTags(DEFAULT_TAGS);
 }
 
 async function handleTraceTagAdd() {
