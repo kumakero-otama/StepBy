@@ -282,7 +282,7 @@ async function loadTraceTags() {
             const label = t.labelJa || t.label || t.name || t.value || "タグ";
             const value = t.id || t.value || label;
             const span = document.createElement("span");
-            span.className = "tag-chip";
+            span.className = "tag-chip outline";
             span.style.cursor = "pointer";
             if (t.icon) {
                  span.innerHTML = `<i class="fas ${t.icon}"></i> ${label}`;
@@ -325,7 +325,7 @@ async function handleTraceTagAdd() {
         });
         const container = document.getElementById("trace-tags-container");
         const span = document.createElement("span");
-        span.className = "tag-chip selected";
+        span.className = "tag-chip outline selected";
         span.style.cursor = "pointer";
         span.textContent = val;
         span.dataset.value = val;
