@@ -613,22 +613,48 @@ function openTraceDetailModal(path) {
     if (timeEl) timeEl.textContent = path.created_at ? new Date(path.created_at).toLocaleString('ja-JP', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : new Date().toLocaleString('ja-JP');
 
     const tagsContainer = document.getElementById("trace-detail-tags");
-    if (tagsContainer) {
-        const rawTags = Array.isArray(path.tags) ? path.tags : [];
-        const tagsHtml = rawTags.map(t => `<span class="tag-chip" style="background:rgba(255,160,0,0.1); color:#8A4000; padding:4px 8px; border-radius:12px; font-size:12px;"><i class="fas fa-tag"></i> ${t.name || t}</span>`).join("");
-        tagsContainer.innerHTML = tagsHtml;
-        tagsContainer.style.display = rawTags.length > 0 ? "flex" : "none";
-    }
-
     const memoContainer = document.getElementById("trace-detail-memo-container");
     const memoEl = document.getElementById("trace-detail-memo");
-    if (memoContainer && memoEl) {
-        if (path.memo) {
-            memoEl.textContent = path.memo;
-            memoContainer.style.display = "block";
-        } else {
-            memoContainer.style.display = "none";
-        }
+    
+    if (tagsContainer) {
+        tagsContainer.innerHTML = '<span style="color:#888;font-size:12px;"><i class="fas fa-spinner fa-spin"></i> 読み込み中...</span>';
+        tagsContainer.style.display = "flex";
+    }
+    if (memoContainer) memoContainer.style.display = "none";
+    
+    const sessionId = path.id || path.sessionId || path.session_id;
+    if (sessionId) {
+        apiFetch(`${API_BASE}/api/tactile-session-info?sessionId=${sessionId}`)
+            .then(res => res.ok ? res.json() : null)
+            .then(payload => {
+                const sessionInfo = payload && payload.success ? payload.session : null;
+                
+                if (tagsContainer) {
+                    const rawTags = sessionInfo && Array.isArray(sessionInfo.tags) ? sessionInfo.tags : (Array.isArray(path.tags) ? path.tags : []);
+                    if (rawTags.length > 0) {
+                        const tagsHtml = rawTags.map(t => `<span class="tag-chip outline" style="background:rgba(255,160,0,0.1); color:#8A4000; padding:4px 8px; border-radius:12px; font-size:12px; border: 1px solid #8A4000;"><i class="fas fa-tag"></i> ${t.name || t}</span>`).join("");
+                        tagsContainer.innerHTML = tagsHtml;
+                        tagsContainer.style.display = "flex";
+                    } else {
+                        tagsContainer.innerHTML = "";
+                        tagsContainer.style.display = "none";
+                    }
+                }
+                if (memoContainer && memoEl) {
+                    const sessionMemo = sessionInfo && sessionInfo.memo ? sessionInfo.memo : path.memo;
+                    if (sessionMemo) {
+                        memoEl.textContent = sessionMemo;
+                        memoContainer.style.display = "block";
+                        path.memo = sessionMemo;
+                    } else {
+                        memoContainer.style.display = "none";
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Failed to fetch session info", err);
+                if (tagsContainer) { tagsContainer.innerHTML = ""; tagsContainer.style.display = "none"; }
+            });
     }
 
     const actionsEl = document.getElementById("trace-detail-actions");
