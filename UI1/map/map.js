@@ -592,8 +592,13 @@ function openTraceDetailModal(path) {
 
     const userEl = document.getElementById("trace-detail-user");
     const timeEl = document.getElementById("trace-detail-time");
-    if (userEl) userEl.textContent = path.owner_name || "ユーザー";
-    const avatarContainer = document.querySelector('#trace-detail-modal .fa-user').parentElement;
+    const ownerUserId = Number(path && (path.user_id || path.userId));
+    const currentUserId = window.AuthToken ? Number(window.AuthToken.decodeToken().sub) : null;
+    const isOwnRecord = Number.isFinite(ownerUserId) && Number.isFinite(currentUserId) && ownerUserId === currentUserId;
+    
+    if (userEl) userEl.textContent = isOwnRecord ? `${path.owner_name || "ユーザー"} (あなた)` : (path.owner_name || "ユーザー");
+
+    const avatarContainer = document.querySelector('#trace-detail-modal .fa-user')?.parentElement || null;
     if (avatarContainer) {
         avatarContainer.innerHTML = '';
         const avatarUrl = path.owner_avatar_url || path.avatarUrl || path.avatar_url || null;
@@ -610,6 +615,7 @@ function openTraceDetailModal(path) {
             avatarContainer.innerHTML = '<i class="fas fa-user" style="color:#ccc;"></i>';
         }
     }
+    
     if (timeEl) timeEl.textContent = path.created_at ? new Date(path.created_at).toLocaleString('ja-JP', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : new Date().toLocaleString('ja-JP');
 
     const tagsContainer = document.getElementById("trace-detail-tags");
@@ -629,10 +635,32 @@ function openTraceDetailModal(path) {
             .then(payload => {
                 const sessionInfo = payload && payload.success ? payload.session : null;
                 
+                // Update username and icon from live session info
+                if (sessionInfo) {
+                    if (sessionInfo.username && userEl) {
+                        userEl.textContent = isOwnRecord ? `${sessionInfo.username} (あなた)` : sessionInfo.username;
+                    }
+                    if (sessionInfo.iconUrl && avatarContainer) {
+                        const img = document.createElement('img');
+                        const url = sessionInfo.iconUrl;
+                        img.src = ((url.startsWith('http') || url.startsWith('data:')) ? url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + url));
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        img.onerror = () => { avatarContainer.innerHTML = '<i class="fas fa-user" style="color:#ccc;"></i>'; };
+                        avatarContainer.innerHTML = '';
+                        avatarContainer.appendChild(img);
+                    }
+                }
+
                 if (tagsContainer) {
-                    const rawTags = sessionInfo && Array.isArray(sessionInfo.tags) ? sessionInfo.tags : (Array.isArray(path.tags) ? path.tags : []);
+                    const rawTags = sessionInfo && Array.isArray(sessionInfo.tags) ? sessionInfo.tags : [];
                     if (rawTags.length > 0) {
-                        const tagsHtml = rawTags.map(t => `<span class="tag-chip outline" style="background:rgba(255,160,0,0.1); color:#8A4000; padding:4px 8px; border-radius:12px; font-size:12px; border: 1px solid #8A4000;"><i class="fas fa-tag"></i> ${t.name || t}</span>`).join("");
+                        const tagsHtml = rawTags.map(t => {
+                            if (!t) return "";
+                            const name = t.name || t;
+                            return `<span class="tag-chip outline" style="background:rgba(255,160,0,0.1); color:#8A4000; padding:4px 8px; border-radius:12px; font-size:12px; border: 1px solid #8A4000;"><i class="fas fa-tag"></i> ${name}</span>`;
+                        }).join("");
                         tagsContainer.innerHTML = tagsHtml;
                         tagsContainer.style.display = "flex";
                     } else {
@@ -641,7 +669,7 @@ function openTraceDetailModal(path) {
                     }
                 }
                 if (memoContainer && memoEl) {
-                    const sessionMemo = sessionInfo && sessionInfo.memo ? sessionInfo.memo : path.memo;
+                    const sessionMemo = sessionInfo && sessionInfo.memo ? sessionInfo.memo : null;
                     if (sessionMemo) {
                         memoEl.textContent = sessionMemo;
                         memoContainer.style.display = "block";
@@ -653,13 +681,17 @@ function openTraceDetailModal(path) {
             })
             .catch(err => {
                 console.error("Failed to fetch session info", err);
-                if (tagsContainer) { tagsContainer.innerHTML = ""; tagsContainer.style.display = "none"; }
+                if (tagsContainer) {
+                    tagsContainer.innerHTML = '<span style="color:#888;font-size:12px;">データ取得失敗</span>';
+                }
             });
+    } else {
+        if (tagsContainer) { tagsContainer.innerHTML = ""; tagsContainer.style.display = "none"; }
     }
 
     const actionsEl = document.getElementById("trace-detail-actions");
     if (actionsEl) {
-        if (localStorage.getItem("UI1_is_pro") === "true") {
+        if (isOwnRecord) {
             actionsEl.style.display = "flex";
             actionsEl.classList.remove("hidden");
         } else {
