@@ -373,6 +373,22 @@
         .pro-help-close-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 20px; color: var(--text-light); cursor: pointer; }
         .pro-help-message { font-size: 13px; line-height: 1.6; color: var(--text-dark); margin: 0; font-weight: 500; }
     </style>
+
+    <!-- Anti-Flicker for Google Translate -->
+    <script>
+        if (localStorage.getItem('UI1_language') && localStorage.getItem('UI1_language') !== 'ja') {
+            document.documentElement.style.opacity = '0';
+            document.documentElement.style.transition = 'opacity 0.4s ease';
+            setTimeout(() => { document.documentElement.style.opacity = '1'; }, 1500);
+            const observer = new MutationObserver((mutations) => {
+                if (document.documentElement.classList.contains('translated-ltr')) {
+                    document.documentElement.style.opacity = '1';
+                    observer.disconnect();
+                }
+            });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        }
+    </script>
 </head>
 
 <body>
