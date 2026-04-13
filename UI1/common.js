@@ -46,12 +46,13 @@
             const combo = document.querySelector('.goog-te-combo');
             if (combo) {
                 combo.value = langCode;
-                combo.dispatchEvent(new Event('change'));
+                combo.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
                 return true;
             }
             return false;
         };
-        setTimeout(tryTrigger, 500);
+        setTimeout(tryTrigger, 300);
+        setTimeout(tryTrigger, 800);
         setTimeout(tryTrigger, 1500);
         setTimeout(tryTrigger, 3000);
         setTimeout(tryTrigger, 6000);
@@ -63,7 +64,10 @@
         /* Google翻訳のUIを完全非表示 */
         #google_translate_hidden, .goog-te-banner-frame,
         .goog-te-gadget-simple, .skiptranslate:not(#stepby-lang-picker):not(#stepby-lang-picker *) {
-            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
         body { top: 0 !important; }
         /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
@@ -196,7 +200,7 @@
     // Google翻訳スクリプトを読み込む
     const hiddenDiv = document.createElement('div');
     hiddenDiv.id = 'google_translate_hidden';
-    hiddenDiv.style.display = 'none';
+    hiddenDiv.style.cssText = 'position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden;';
 
     const script = document.createElement('script');
     script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
