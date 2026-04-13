@@ -13,6 +13,9 @@
         if (prefersDark) document.documentElement.setAttribute('data-theme', 'dark');
     }
     document.documentElement.setAttribute('data-font-size', size);
+
+    // iOS Safariでボタンの :active（押した時のへこみ・色変化）を即座に反応させるための魔法のコード
+    document.addEventListener("touchstart", function() {}, {passive: true});
 })();
 
 // ===== Google翻訳 + カスタム言語ボタン =====
