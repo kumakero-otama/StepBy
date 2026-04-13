@@ -685,6 +685,10 @@
                 if (localPro === 'true') proToggle.checked = true;
                 else if (localPro === 'false') proToggle.checked = false;
             }
+            if (usernameInput) {
+                const localName = localStorage.getItem('UI1_username');
+                if (localName) usernameInput.value = localName;
+            }
 
             if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
             try {

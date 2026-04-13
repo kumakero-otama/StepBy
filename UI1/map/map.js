@@ -358,13 +358,9 @@ function openTraceConfirmModal(coordinates) {
     }
 
     if (recordedFeaturesDiv) {
-        if (!isCurrentUserPro) {
-            recordedFeaturesDiv.style.display = "none";
-        } else {
-            recordedFeaturesDiv.style.display = "block";
-            recordedFeaturesDiv.classList.remove("hidden");
-            loadTraceTags();
-        }
+        recordedFeaturesDiv.style.display = "block";
+        recordedFeaturesDiv.classList.remove("hidden");
+        loadTraceTags();
     }
     if (traceMemoInput) traceMemoInput.value = "";
     document.querySelectorAll(".tag-chip.active").forEach(el => {
