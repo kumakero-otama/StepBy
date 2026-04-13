@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -222,128 +222,65 @@
                 <p>StepByの使い方をご案内します</p>
             </div>
 
-            <!-- Search -->
-            <div class="help-search">
-                <div class="help-search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="質問を検索...">
-                </div>
-            </div>
-
-            <!-- Map section -->
+            <!-- FAQ section -->
             <div class="help-section">
                 <div class="help-section-title">
-                    <i class="fas fa-map"></i> 地図について
+                    <i class="fas fa-question-circle"></i> FAQ
                 </div>
 
                 <div class="faq-card">
-                    <div class="faq-question">
-                        点字ブロックを地図に表示するには？
+                    <div class="faq-question" aria-expanded="false" aria-controls="faq-1">
+                        Q1. StepByはどんなアプリですか？
                         <i class="fas fa-chevron-down faq-arrow"></i>
                     </div>
-                    <div class="faq-answer">
-                        地図画面下のパネルにある「点字ブロック表示」カードをタップすると、OpenStreetMapの点字ブロックデータが地図上に表示されます。
+                    <div class="faq-answer" id="faq-1">
+                        A1. StepByは、点字ブロックや道情報を地図上で確認・投稿できるアプリです。
                     </div>
                 </div>
 
                 <div class="faq-card">
-                    <div class="faq-question">
-                        現在地が表示されないときは？
+                    <div class="faq-question" aria-expanded="false" aria-controls="faq-2">
+                        Q2. 設定はどこから変更できますか？
                         <i class="fas fa-chevron-down faq-arrow"></i>
                     </div>
-                    <div class="faq-answer">
-                        画面右上の位置情報ボタン（矢印アイコン）をタップしてください。ブラウザから位置情報の使用を許可するようにしてください。
+                    <div class="faq-answer" id="faq-2">
+                        A2. 画面右上の設定メニュー（歯車アイコン）から設定画面を開いて変更できます。
                     </div>
                 </div>
             </div>
 
-            <!-- Recording section -->
+            <!-- How to use section -->
             <div class="help-section" style="margin-top:8px">
                 <div class="help-section-title">
-                    <i class="fas fa-circle-dot"></i> 点字ブロック記録
+                    <i class="fas fa-mobile-screen"></i> アプリの使い方
                 </div>
-
-                <div class="faq-card">
-                    <div class="faq-question">
-                        記録の始め方は？
-                        <i class="fas fa-chevron-down faq-arrow"></i>
-                    </div>
-                    <div class="faq-answer">
-                        地図画面下の緑色の「記録開始」ボタンをタップすると記録が始まります。もう一度タップすると一時停止、再度タップすると記録を終了して保存できます。
-                    </div>
-                </div>
-
-                <div class="faq-card">
-                    <div class="faq-question">
-                        記録したデータはどこで確認できる？
-                        <i class="fas fa-chevron-down faq-arrow"></i>
-                    </div>
-                    <div class="faq-answer">
-                        「みんなの記録」をオンにすると、あなたを含む他のユーザーが記録した道が地図上に表示されます。自分の投稿だけ見たいときは設定画面から絞り込めます。
-                    </div>
+                
+                <div style="background:var(--bg-white); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; font-size:14px; color:var(--text-mid); line-height:1.6; margin-bottom: 8px;">
+                    <div style="margin-bottom: 12px; font-weight: 600; color: var(--text-dark);">アプリ説明動画:</div>
+                    <video controls playsinline preload="metadata" style="width: 100%; border-radius: 8px; background: #000; display: block; margin-bottom: 16px;">
+                        <source src="../assets/videos/StepBy_CPJ2026.mp4" type="video/mp4" />
+                    </video>
+                    
+                    <div style="font-weight: 600; color: var(--text-dark);">アプリの詳しい紹介ページ:</div>
+                    <a href="https://protopedia.net/prototype/8070" target="_blank" rel="noopener noreferrer" style="color: var(--primary); display: inline-block; margin-top: 4px; word-break: break-all;">https://protopedia.net/prototype/8070</a>
                 </div>
             </div>
 
-            <!-- Posts section -->
+            <!-- Forms section -->
             <div class="help-section" style="margin-top:8px">
                 <div class="help-section-title">
-                    <i class="fas fa-camera"></i> 道の情報投稿
+                    <i class="fas fa-clipboard-list"></i> フォーム一覧
                 </div>
-
-                <div class="faq-card">
-                    <div class="faq-question">
-                        道の情報を投稿するには？
-                        <i class="fas fa-chevron-down faq-arrow"></i>
+                
+                <div style="background:var(--bg-white); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; font-size:14px; color:var(--text-mid); line-height:1.6;">
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-weight: 600; color: var(--text-dark);">StepByご利用アンケート:</div>
+                        <a href="https://forms.gle/hUGfTrXDmqXiUkSB6" target="_blank" rel="noopener noreferrer" style="color: var(--primary); display: inline-block; margin-top: 4px; word-break: break-all;">https://forms.gle/hUGfTrXDmqXiUkSB6</a>
                     </div>
-                    <div class="faq-answer">
-                        地図画面下の「道の情報を投稿する」ボタンをタップしてください。写真・場所・コメントを入力して送信できます。
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-dark);">StepBy不具合報告フォーム:</div>
+                        <a href="https://forms.gle/iaj2DDPDCq8CabJLA" target="_blank" rel="noopener noreferrer" style="color: var(--primary); display: inline-block; margin-top: 4px; word-break: break-all;">https://forms.gle/iaj2DDPDCq8CabJLA</a>
                     </div>
-                </div>
-
-                <div class="faq-card">
-                    <div class="faq-question">
-                        投稿した情報を編集・削除したい
-                        <i class="fas fa-chevron-down faq-arrow"></i>
-                    </div>
-                    <div class="faq-answer">
-                        プロフィール画面の「自分の投稿履歴」から、過去の投稿の確認・編集・削除ができます。
-                    </div>
-                </div>
-            </div>
-
-            <!-- Account section -->
-            <div class="help-section" style="margin-top:8px">
-                <div class="help-section-title">
-                    <i class="fas fa-user"></i> アカウント
-                </div>
-
-                <div class="faq-card">
-                    <div class="faq-question">
-                        アカウントを作るには？
-                        <i class="fas fa-chevron-down faq-arrow"></i>
-                    </div>
-                    <div class="faq-answer">
-                        Googleアカウントでログインできます。右上のログインボタンをタップして「Sign in with Google」を選んでください。
-                    </div>
-                </div>
-
-                <div class="faq-card">
-                    <div class="faq-question">
-                        プロフィールを変更したい
-                        <i class="fas fa-chevron-down faq-arrow"></i>
-                    </div>
-                    <div class="faq-answer">
-                        下のナビバーの「MY」→「プロフィール編集」からニックネームやアイコンを変更できます。
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contact -->
-            <div class="contact-card">
-                <div class="contact-icon"><i class="fas fa-envelope"></i></div>
-                <div class="contact-text">
-                    <div class="title">解決しなかった場合</div>
-                    <div class="desc">アプリ内アンケートからフィードバックをお送りください</div>
                 </div>
             </div>
 
@@ -354,12 +291,76 @@
         
     </div>
 
+    <!-- In-App Browser Modal -->
+    <div id="in-app-browser" class="modal-overlay hidden" style="z-index: 10000; align-items: flex-end; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.5); display: flex;">
+        <div class="modal-box" style="width: 100%; height: 95vh; margin: 0; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; padding: 0; background: var(--bg-white); transform: translateY(0); box-shadow: 0 -5px 25px rgba(0,0,0,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); border-radius: 20px 20px 0 0; background: var(--bg-white);">
+                <h3 id="in-app-browser-title" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-globe" style="margin-right:6px; color:var(--text-light)"></i>外部ページ</h3>
+                <button id="in-app-browser-close" style="background: none; border: none; font-size: 24px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-gray); color: var(--text-dark); cursor: pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="flex: 1; overflow: hidden; position: relative; background: #fff;">
+                 <div id="in-app-browser-loading" style="position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--text-light);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+                 <iframe id="in-app-browser-iframe" style="width: 100%; height: 100%; border: none; position: relative; z-index: 1;"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
         // FAQ accordion
         document.querySelectorAll('.faq-card').forEach(card => {
-            card.querySelector('.faq-question').addEventListener('click', () => {
+            const btn = card.querySelector('.faq-question');
+            btn.addEventListener('click', () => {
+                const isOpen = card.classList.contains('open');
                 card.classList.toggle('open');
+                btn.setAttribute('aria-expanded', !isOpen);
             });
+        });
+
+        // In-App Browser logic
+        document.querySelectorAll('a[target="_blank"]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                let url = link.href;
+                
+                // Convert google forms shortlinks to embedded links to avoid X-Frame-Options blocked
+                if (url.includes('forms.gle/hUGfTrXDmqXiUkSB6')) {
+                    url = 'https://docs.google.com/forms/d/e/1FAIpQLSeSb8O3OhW32TioUTRIjypU0oqfIpYjJzjOmeK1OfZ5IUeeIA/viewform?embedded=true';
+                } else if (url.includes('forms.gle/iaj2DDPDCq8CabJLA')) {
+                    url = 'https://docs.google.com/forms/d/e/1FAIpQLSevhpzggAeNuweW9hJD_vsxetzTNcb2Yg4pTOUKdKpS08ST8Q/viewform?embedded=true';
+                }
+                
+                const browser = document.getElementById('in-app-browser');
+                const iframe = document.getElementById('in-app-browser-iframe');
+                const loading = document.getElementById('in-app-browser-loading');
+                const title = document.getElementById('in-app-browser-title');
+                
+                // Keep the title generic or specific if possible
+                if (url.includes('forms')) {
+                    title.innerHTML = '<i class="fas fa-clipboard-list" style="margin-right:6px; color:var(--primary)"></i> Googleフォーム';
+                } else if (url.includes('protopedia')) {
+                    title.innerHTML = '<i class="fas fa-star" style="margin-right:6px; color:var(--primary)"></i> Protopedia';
+                } else {
+                    title.innerHTML = '<i class="fas fa-globe" style="margin-right:6px; color:var(--text-light)"></i> 外部ページ';
+                }
+
+                loading.style.display = 'block';
+                iframe.onload = () => { loading.style.display = 'none'; };
+                iframe.src = url;
+                browser.classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('in-app-browser-close').addEventListener('click', () => {
+            document.getElementById('in-app-browser').classList.add('hidden');
+            document.getElementById('in-app-browser-iframe').src = ''; // Clear iframe to stop media/audio and reset
+        });
+
+        // Close on overlay click
+        document.getElementById('in-app-browser').addEventListener('click', (e) => {
+            if (e.target.id === 'in-app-browser') {
+                document.getElementById('in-app-browser').classList.add('hidden');
+                document.getElementById('in-app-browser-iframe').src = '';
+            }
         });
     </script>
 <script src="../i18n.js"></script><script src="../common.js"></script>
