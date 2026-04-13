@@ -585,15 +585,17 @@
                 return;
             }
 
+            const proToggle = document.getElementById('profile-pro-toggle-input');
+            const isPro = proToggle ? proToggle.checked : false;
+
             // Always save locally first (works even without server)
             localStorage.setItem('UI1_username', username);
+            localStorage.setItem('UI1_is_pro', isPro ? 'true' : 'false');
             if (iconData) localStorage.setItem('UI1_avatar', iconData);
 
             // Try to save to server if authenticated
             if (window.AuthToken && window.AuthToken.getAccessToken()) {
-                const payload = { username: username };
-                const proToggle = document.getElementById('profile-pro-toggle-input');
-                if (proToggle) payload.is_pro = proToggle.checked;
+                const payload = { username: username, is_pro: isPro };
                 if (iconData) payload.icon_data_url = iconData;
 
                 try {
@@ -675,6 +677,15 @@
         // ---- /auth/me からユーザー名を読み込む ----
         (async function() {
             const usernameInput = document.getElementById('edit-username');
+            const proToggle = document.getElementById('profile-pro-toggle-input');
+            
+            // Load local state first for immediate UI
+            if (proToggle) {
+                const localPro = localStorage.getItem('UI1_is_pro');
+                if (localPro === 'true') proToggle.checked = true;
+                else if (localPro === 'false') proToggle.checked = false;
+            }
+
             if (!window.AuthToken || !window.AuthToken.getAccessToken()) return;
             try {
                 const res = await window.AuthToken.authFetch('/auth/me');
@@ -683,9 +694,9 @@
                     const u = data.user || data;
                     if (usernameInput && u.username) usernameInput.value = u.username;
                     
-                    const proToggle = document.getElementById('profile-pro-toggle-input');
                     if (proToggle && (u.is_pro !== undefined || u.isPro !== undefined)) {
                         proToggle.checked = u.is_pro === true || u.isPro === true;
+                        localStorage.setItem('UI1_is_pro', proToggle.checked ? 'true' : 'false');
                     }
                     // Add avatar loading
                     const avatarUrl = u.avatarUrl || u.avatar_url || u.photoURL || null;

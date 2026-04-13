@@ -273,7 +273,7 @@
                 </div>
                 <div class="profile-name" id="profile-name">---</div>
                 <div class="profile-badge-row">
-                    
+                    <span class="profile-badge-pill pro-badge" id="pill-pro" style="display:none; background: linear-gradient(135deg, #FFD700, #FDB931); color: #fff; font-weight: 800; border: none; box-shadow: 0 2px 8px rgba(255,215,0,0.4);"><i class="fas fa-crown"></i> PRO</span>
                     <span class="profile-badge-pill" id="pill-km" style="display:none;">👟 0.00km</span>
                 </div>
                 <a href="../profile_edit/Index.html" class="profile-edit-btn">
@@ -361,6 +361,12 @@
                 const savedTactile = localStorage.getItem('UI1_totalTactile');
                 const savedRoadPosts = localStorage.getItem('UI1_totalRoadPosts');
                 const savedHearts = localStorage.getItem('UI1_totalHearts');
+                const savedIsPro = localStorage.getItem('UI1_is_pro');
+
+                if (savedIsPro === 'true') {
+                    const proPill = document.getElementById('pill-pro');
+                    if (proPill) proPill.style.display = 'inline-block';
+                }
 
                 if (savedName) {
                     const nameEl = document.getElementById('profile-name');
@@ -416,6 +422,14 @@
                 const userEl = document.getElementById('profile-username');
                 if (nameEl) nameEl.textContent = displayName;
                 if (userEl) userEl.textContent = displayName;
+
+                // Check PRO status
+                const isPro = user.is_pro === true || user.isPro === true;
+                localStorage.setItem('UI1_is_pro', isPro ? 'true' : 'false');
+                const proPill = document.getElementById('pill-pro');
+                if (proPill) {
+                    proPill.style.display = isPro ? 'inline-block' : 'none';
+                }
 
                 // Avatar image
                 const avatarUrl = user.avatarUrl || user.avatar_url || user.photoURL || user.iconUrl || user.icon_url  || null;
