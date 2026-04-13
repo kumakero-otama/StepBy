@@ -144,15 +144,23 @@
         }
     </style>
 
-    <!-- Anti-Flicker for Google Translate -->
+    <!-- Anti-Flicker overlay for Google Translate -->
     <script>
         if (localStorage.getItem('UI1_language') && localStorage.getItem('UI1_language') !== 'ja') {
-            document.documentElement.style.opacity = '0';
-            document.documentElement.style.transition = 'opacity 0.4s ease';
-            setTimeout(() => { document.documentElement.style.opacity = '1'; }, 1500);
-            const observer = new MutationObserver((mutations) => {
+            const overlay = document.createElement('div');
+            overlay.id = 'gt-flicker-overlay';
+            overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#fff; z-index:9999999; transition:opacity 0.4s ease; pointer-events:none;';
+            document.documentElement.appendChild(overlay);
+            
+            const removeOverlay = () => {
+                if(overlay.style.opacity === '0') return;
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 400);
+            };
+            setTimeout(removeOverlay, 1500);
+            const observer = new MutationObserver(() => {
                 if (document.documentElement.classList.contains('translated-ltr')) {
-                    document.documentElement.style.opacity = '1';
+                    removeOverlay();
                     observer.disconnect();
                 }
             });
