@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>道情報の投稿 — StepBy</title>
+    <title>道情報の投稿  EStepBy</title>
     <link rel="manifest" href="../manifest.webmanifest">
     <meta name="theme-color" content="#2E9E8F">
     <link rel="stylesheet" href="../common.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <style>
         .scroll-content {
             flex: 1;
@@ -152,17 +152,17 @@
             <button class="back-btn" id="back-btn"><i class="fas fa-arrow-left"></i></button>
             <h1 style="flex: 1;">道情報の投稿</h1>
             <div class="header-actions">
-                <a href="../map/Index.html" class="header-action-btn" aria-label="マップ">
+                <a href="../map/Index.html" class="header-action-btn" aria-label="マッチE>
                     <i class="fas fa-map"></i>
                 </a>
                 <div class="settings-wrap">
-                    <button class="header-action-btn" id="settings-toggle" aria-label="設定">
+                    <button class="header-action-btn" id="settings-toggle" aria-label="設宁E>
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settings-dropdown">
-                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設定</a>
-                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設定</a>
-                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルプ</a>
+                        <a href="../settings/display.html"><i class="fas fa-palette"></i> 表示設宁E/a>
+                        <a href="../settings/language.html"><i class="fas fa-language"></i> 言語設宁E/a>
+                        <a href="../help/Index.html"><i class="fas fa-circle-question"></i> ヘルチE/a>
                     </div>
                 </div>
                 <a href="../profile/Index.html" class="header-action-btn" aria-label="プロフィール">
@@ -181,7 +181,7 @@
                     <div id="post-map"></div>
                     <div class="map-center-mark" aria-hidden="true"></div>
                 </div>
-                <div class="map-center-coords" id="location-coords">中心座標: Lat --, Lng --</div>
+                <div class="map-center-coords" id="location-coords">中忁E��樁E Lat --, Lng --</div>
 
             </div>
 
@@ -193,7 +193,7 @@
                 </div>
                 <!-- Free tag input -->
                 <div class="tag-add-row">
-                    <input type="text" class="tag-add-input" id="tag-add-input" placeholder="タグを自由に追加...（例：段差あり）" maxlength="30" style="background:var(--bg-white); color:var(--text-dark); border:1px solid var(--border);">
+                    <input type="text" class="tag-add-input" id="tag-add-input" placeholder="タグを�E由に追加...�E�例：段差あり�E�E maxlength="30" style="background:var(--bg-white); color:var(--text-dark); border:1px solid var(--border);">
                     <button class="tag-add-btn" id="tag-add-btn"><i class="fas fa-plus"></i> 追加</button>
                 </div>
             </div>
@@ -201,16 +201,16 @@
             <!-- 一言メモ (全ユーザー書き込み可) -->
             <div class="section" id="detail-section">
                 <div class="section-title"><i class="fas fa-comment"></i> 一言メモ</div>
-                <textarea class="detail-input" id="detail-input" placeholder="この場所について一言メモを書いてください..."></textarea>
+                <textarea class="detail-input" id="detail-input" placeholder="こ�E場所につぁE��一言メモを書ぁE��ください..."></textarea>
             </div>
 
             <!-- Photos -->
             <div class="section">
-                <div class="section-title"><i class="fas fa-camera"></i> 画像アップロード</div>
+                <div class="section-title"><i class="fas fa-camera"></i> 画像アチE�EローチE/div>
                 <div class="photo-upload-area" id="photo-upload-area">
                     <i class="fas fa-cloud-arrow-up"></i>
-                    <p>タップして写真を選択</p>
-                    <small>JPG, PNG（最大10MB）</small>
+                    <p>タチE�Eして写真を選抁E/p>
+                    <small>JPG, PNG�E�最大10MB�E�E/small>
                 </div>
                 <div class="photo-buttons">
                     <button class="photo-btn" id="photo-library-btn"><i class="fas fa-images"></i> ライブラリ</button>
@@ -249,7 +249,7 @@
 
         function updateCoordsDisplay() {
             if (lat && lng) {
-                locationCoordsEl.textContent = `中心座標: Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
+                locationCoordsEl.textContent = `中忁E��樁E Lat ${Number(lat).toFixed(6)}, Lng ${Number(lng).toFixed(6)}`;
             }
         }
         updateCoordsDisplay();
@@ -261,7 +261,7 @@
         
         const map = L.map('post-map', { zoomControl: false }).setView([startLat, startLng], 16);
         L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
-            attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>地理院タイル</a>",
+            attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>地琁E��タイル</a>",
             maxZoom: 18
         }).addTo(map);
 
@@ -284,7 +284,7 @@
                         updateCoordsDisplay(); 
                         map.setView([Number(lat), Number(lng)], 17);
                     },
-                    () => { locationCoordsEl.textContent = '⚠️ 位置情報を取得できませんでした'; },
+                    () => { locationCoordsEl.textContent = '⚠�E�E位置惁E��を取得できませんでした'; },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
                 );
             }
@@ -292,19 +292,19 @@
 
         // --- Default tag list (fallback if no API) ---
         const DEFAULT_TAGS = [
-            { value: "audio_signal_sound",    icon: "fa-volume-up",           label: "音が鳴る信号機" },
-            { value: "audio_signal_no_sound", icon: "fa-volume-xmark",        label: "音が鳴らない信号機" },
-            { value: "push_button_signal",    icon: "fa-hand-pointer",        label: "押しボタン式信号機" },
-            { value: "sensor_signal",         icon: "fa-tower-broadcast",     label: "感知式信号機" },
-            { value: "timed_signal",          icon: "fa-clock",               label: "時間式信号機" },
-            { value: "crosswalk",             icon: "fa-road",                label: "横断歩道" },
-            { value: "misplaced_tactile",     icon: "fa-triangle-exclamation",label: "配置が不適切な点字ブロック" },
-            { value: "degraded_tactile",      icon: "fa-circle-exclamation",  label: "劣化した点字ブロック" },
-            { value: "blocked_tactile",       icon: "fa-ban",                 label: "物が置かれて通れない点字ブロック" },
-            { value: "footbridge_stairs",     icon: "fa-stairs",              label: "歩道橋の階段の出入口" },
-            { value: "footbridge_elevator",   icon: "fa-elevator",            label: "歩道橋のエレベーターの出入口" },
-            { value: "footbridge_slope",      icon: "fa-wheelchair-move",     label: "歩道橋のスロープの出入口" },
-            { value: "test",                  icon: "fa-flask",               label: "テスト用" },
+            { value: "audio_signal_sound",    icon: "fa-volume-up",           label: "音が鳴る信号橁E },
+            { value: "audio_signal_no_sound", icon: "fa-volume-xmark",        label: "音が鳴らなぁE��号橁E },
+            { value: "push_button_signal",    icon: "fa-hand-pointer",        label: "押し�Eタン式信号橁E },
+            { value: "sensor_signal",         icon: "fa-tower-broadcast",     label: "感知式信号橁E },
+            { value: "timed_signal",          icon: "fa-clock",               label: "時間式信号橁E },
+            { value: "crosswalk",             icon: "fa-road",                label: "横断歩遁E },
+            { value: "misplaced_tactile",     icon: "fa-triangle-exclamation",label: "配置が不適刁E��点字ブロチE��" },
+            { value: "degraded_tactile",      icon: "fa-circle-exclamation",  label: "劣化した点字ブロチE��" },
+            { value: "blocked_tactile",       icon: "fa-ban",                 label: "物が置かれて通れなぁE��字ブロチE��" },
+            { value: "footbridge_stairs",     icon: "fa-stairs",              label: "歩道橋�E階段の出入口" },
+            { value: "footbridge_elevator",   icon: "fa-elevator",            label: "歩道橋�Eエレベ�Eターの出入口" },
+            { value: "footbridge_slope",      icon: "fa-wheelchair-move",     label: "歩道橋�Eスロープ�E出入口" },
+            { value: "test",                  icon: "fa-flask",               label: "チE��ト用" },
         ];
 
         const tagGrid = document.getElementById("tag-grid");
@@ -329,7 +329,7 @@
             tagChip.appendChild(document.createTextNode(' ' + label));
             if (isCustom) {
                 const del = document.createElement('span');
-                del.textContent = ' ×';
+                del.textContent = ' ÁE;
                 del.style.cssText = 'margin-left:4px;cursor:pointer;font-weight:700;color:#FF6B6B;';
                 del.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -461,20 +461,20 @@
                 .map((cb) => cb.value);
 
             if (!lat || !lng) {
-                alert("位置情報が取得できていません。\n一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください。");
+                alert("位置惁E��が取得できてぁE��せん、En一度マップ画面に戻り、地図の好きな場所を「長押し」して投稿場所を指定してください、E);
                 return;
             }
 
             const token = window.AuthToken ? window.AuthToken.getAccessToken() : null;
             if (!token) {
                 const returnUrl = encodeURIComponent(window.location.href);
-                alert('投稿にはログインが必要です。\nGoogleアカウントでログインしてください。');
+                alert('投稿にはログインが忁E��です、EnGoogleアカウントでログインしてください、E);
                 window.location.assign(`../signup/Index.html?return=${returnUrl}`);
                 return;
             }
 
             if (selectedFiles.length < 1 && checkedTagIds.length < 1 && !detail) {
-                alert('タグ・一言メモ・画像のいずれかを選択・入力してください。');
+                alert('タグ・一言メモ・画像�EぁE��れかを選択�E入力してください、E);
                 return;
             }
 
@@ -504,7 +504,7 @@
 
                 if (res.status === 401 || res.status === 403) {
                     const returnUrl = encodeURIComponent(window.location.href);
-                    alert('セッションが切れました。再度ログインしてください。');
+                    alert('セチE��ョンが�Eれました。�E度ログインしてください、E);
                     window.location.assign(`../signup/Index.html?return=${returnUrl}`);
                     return;
                 }
@@ -516,10 +516,10 @@
                         <div style="width:80px;height:80px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
                             <i class="fas fa-check" style="font-size:36px;color:white;"></i>
                         </div>
-                        <h2 style="font-size:22px;font-weight:800;color:#1A2B3C;margin-bottom:12px;">投稿が完了しました！</h2>
-                        <p style="font-size:14px;color:#5A6B7E;line-height:1.6;margin-bottom:24px;">情報を共有していただきありがとうございます</p>
+                        <h2 style="font-size:22px;font-weight:800;color:#1A2B3C;margin-bottom:12px;">投稿が完亁E��ました�E�E/h2>
+                        <p style="font-size:14px;color:#5A6B7E;line-height:1.6;margin-bottom:24px;">惁E��を�E有してぁE��だきありがとぁE��ざいまぁE/p>
                         <button onclick="window.location.assign('../map/Index.html')" style="padding:14px 32px;background:linear-gradient(135deg,#2E9E8F,#3BB49F);color:white;border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">
-                            <i class="fas fa-map"></i> マップに戻る
+                            <i class="fas fa-map"></i> マップに戻めE
                         </button>
                     </div>`;
                 const sa = document.querySelector('.submit-area');
