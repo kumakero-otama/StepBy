@@ -290,7 +290,7 @@ async function loadTraceTags() {
                  span.textContent = label;
             }
             span.dataset.value = value;
-            span.onclick = () => span.classList.toggle("active");
+            span.onclick = () => span.classList.toggle("selected");
             container.appendChild(span);
         });
     };
@@ -325,7 +325,7 @@ async function handleTraceTagAdd() {
         });
         const container = document.getElementById("trace-tags-container");
         const span = document.createElement("span");
-        span.className = "tag-chip active";
+        span.className = "tag-chip selected";
         span.style.cursor = "pointer";
         span.textContent = val;
         span.dataset.value = val;
@@ -367,8 +367,8 @@ function openTraceConfirmModal(coordinates) {
         }
     }
     if (traceMemoInput) traceMemoInput.value = "";
-    document.querySelectorAll(".tag-chip.active").forEach(el => {
-        el.classList.remove("active");
+    document.querySelectorAll(".tag-chip.selected").forEach(el => {
+        el.classList.remove("selected");
         el.style.background = "";
         el.style.color = "";
     });
@@ -391,7 +391,7 @@ function openTraceConfirmModal(coordinates) {
         let tags = [];
         if (resultValue === "ok") {
             if (traceMemoInput) memo = traceMemoInput.value.trim();
-            document.querySelectorAll("#trace-tags-container .tag-chip.active").forEach(el => {
+            document.querySelectorAll("#trace-tags-container .tag-chip.selected").forEach(el => {
                 tags.push(el.dataset.value || el.textContent);
             });
         }
@@ -400,7 +400,7 @@ function openTraceConfirmModal(coordinates) {
     
     const onOk = () => {
         if (isCurrentUserPro) {
-            let selectedTags = document.querySelectorAll("#trace-tags-container .tag-chip.active");
+            let selectedTags = document.querySelectorAll("#trace-tags-container .tag-chip.selected");
             if (selectedTags.length === 0) {
                 const errorEl = document.getElementById("trace-tag-error");
                 if (errorEl) {
