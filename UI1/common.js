@@ -48,45 +48,48 @@
             }
             return false;
         };
-        setTimeout(tryTrigger, 300);
-        setTimeout(tryTrigger, 800);
+        setTimeout(tryTrigger, 500);
         setTimeout(tryTrigger, 1500);
         setTimeout(tryTrigger, 3000);
+        setTimeout(tryTrigger, 6000);
+        setTimeout(tryTrigger, 10000);
     };
+
+    const globalCss = document.createElement('style');
+    globalCss.textContent = `
+        /* Google翻訳のUIを完全非表示 */
+        #google_translate_hidden, .goog-te-banner-frame,
+        .goog-te-gadget-simple, .skiptranslate:not(#stepby-lang-picker):not(#stepby-lang-picker *) {
+            display: none !important;
+        }
+        body { top: 0 !important; }
+        /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
+        .translated-ltr .feature-card-title,
+        .translated-ltr .feature-pill-label,
+        .translated-ltr [class*="card-title"],
+        html.translated-ltr .feature-card-title,
+        html.translated-ltr [class*="card-title"] {
+            font-size: 10px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            line-height: 1.2 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+        }
+        .feature-card-title font,
+        [class*="card-title"] font {
+            white-space: normal !important;
+            font-size: 10px !important;
+            word-break: break-word !important;
+        }
+    `;
+    document.head.appendChild(globalCss);
 
     // カスタム言語ボタンを作成
     function createLangPicker() {
         const css = document.createElement('style');
         css.textContent = `
-            /* Google翻訳のUIを完全非表示 */
-            #google_translate_hidden, .goog-te-banner-frame,
-            .goog-te-gadget-simple, .skiptranslate:not(#stepby-lang-picker):not(#stepby-lang-picker *) {
-                display: none !important;
-            }
-            body { top: 0 !important; }
-            /* 翻訳時：固定幅カードのテキストを縮小・折り返し対応 */
-            /* Google Translateはhtmlにもbodyにもクラスを付けるため両方対応 */
-            .translated-ltr .feature-card-title,
-            .translated-ltr .feature-pill-label,
-            .translated-ltr [class*="card-title"],
-            html.translated-ltr .feature-card-title,
-            html.translated-ltr [class*="card-title"] {
-                font-size: 10px !important;
-                white-space: normal !important;
-                word-break: break-word !important;
-                line-height: 1.2 !important;
-                max-height: none !important;
-                overflow: visible !important;
-                text-overflow: unset !important;
-            }
-            /* Google翻訳のfontタグ対応（翻訳後テキストのみ） */
-            .feature-card-title font,
-            [class*="card-title"] font {
-                white-space: normal !important;
-                font-size: 10px !important;
-                word-break: break-word !important;
-            }
-
             /* カスタム言語ピッカー */
             #stepby-lang-picker {
                 position: fixed;
@@ -193,7 +196,7 @@
     hiddenDiv.style.display = 'none';
 
     const script = document.createElement('script');
-    script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
 
 document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(hiddenDiv);
