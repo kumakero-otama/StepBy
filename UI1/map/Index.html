@@ -1234,8 +1234,8 @@
             <div class="banner-content">
                 <i class="fas fa-rocket"></i>
                 <div>
-                    <strong>v1.2.0 アップデート</strong><br>
-                    <span style="font-size: 11px; opacity: 0.9;">PWAアプリ対応・新画面レイアウト・現在地からの投稿機能を追加しました！</span>
+                    <strong>マップ操作改善アップデート</strong><br>
+                    <span style="font-size: 11px; opacity: 0.9;">点字ブロック周辺のタップ操作がしやすくなり、指で楽に詳細情報が見れるようになりました！</span>
                 </div>
             </div>
             <button class="close-banner" id="close-version-banner"><i class="fas fa-times"></i></button>
@@ -1713,7 +1713,7 @@ const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q
         (function() {
             const banner = document.getElementById('version-notice-banner');
             const closeBtn = document.getElementById('close-version-banner');
-            const VERSION_KEY = 'stepby_v103_seen';
+            const VERSION_KEY = 'stepby_v104_seen';
             if (banner && closeBtn) {
                 if (!localStorage.getItem(VERSION_KEY)) {
                     banner.style.display = 'flex';
