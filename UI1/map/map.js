@@ -141,16 +141,44 @@ function disableGpsSnapping() {
 leafletMap.on("dragstart", () => { disableGpsSnapping(); });
 leafletMap.on("popupopen", () => { disableGpsSnapping(); });
 
+let mapClickTimer = null;
+
+leafletMap.on("dblclick", () => {
+    if (mapClickTimer) clearTimeout(mapClickTimer);
+});
+
 leafletMap.on("click", (event) => {
   if (shouldIgnoreMapTap(event)) return;
-  const lat = Number(event?.latlng?.lat);
-  const lng = Number(event?.latlng?.lng);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    const params = new URLSearchParams({ lat: lat.toString(), lng: lng.toString() });
-    window.location.assign(`../post_road/Index.html?${params.toString()}`);
-    return;
+
+  // iOSでポリラインとマップのclickが同時発火する場合の防御:
+  // タッチ/クリックのターゲットがleaflet-interactive（ポリライン等）なら無視
+  const oe = event?.originalEvent;
+  if (oe && oe.target) {
+    const t = oe.target;
+    if (
+      t.classList && t.classList.contains("leaflet-interactive") ||
+      (t.closest && t.closest(".leaflet-interactive"))
+    ) {
+      return;
+    }
+    // SVGのpath要素（点字ブロック等のポリライン本体）の場合も無視
+    if (t.tagName === "path" || t.tagName === "polyline" || t.tagName === "circle") {
+      return;
+    }
   }
-  window.location.assign("../post_road/Index.html");
+
+  if (mapClickTimer) clearTimeout(mapClickTimer);
+  mapClickTimer = setTimeout(() => {
+      if (Date.now() < suppressMapTapUntil) return; // 二重チェック
+      const lat = Number(event?.latlng?.lat);
+      const lng = Number(event?.latlng?.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const params = new URLSearchParams({ lat: lat.toString(), lng: lng.toString() });
+        window.location.assign(`../post_road/Index.html?${params.toString()}`);
+        return;
+      }
+      window.location.assign("../post_road/Index.html");
+  }, 350); // iOSダブルタップ(~300ms)も確実にカバー
 });
 
 function generateUUID() {
@@ -582,14 +610,27 @@ function showAllSessionPathsOnMap(paths) {
     if (!geom || geom.type !== "LineString" || !Array.isArray(geom.coordinates)) return;
     const coordinates = geom.coordinates.map(([lng, lat]) => [lat, lng]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
     if (coordinates.length < 2) return;
-    const polyline = L.polyline(coordinates, { color: "#00b050", weight: 4, opacity: 0.85, interactive: false }).addTo(leafletMap);
-    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 20, opacity: 0.01, interactive: true }).addTo(leafletMap);
-    
-    // Click interaction for detail modal
-    hitPolyline.on("click", (e) => {
-        L.DomEvent.stopPropagation(e);
+    const clickHandler = (e) => {
+        // DOMイベントも止める
+        if (e.originalEvent) {
+            L.DomEvent.stopPropagation(e.originalEvent);
+            L.DomEvent.preventDefault(e.originalEvent);
+        }
+        // タイマーも潰す（三重の安全策）
+        if (typeof mapClickTimer !== 'undefined' && mapClickTimer) {
+            clearTimeout(mapClickTimer);
+            mapClickTimer = null;
+        }
+        suppressMapTapUntil = Date.now() + 1000;
         openTraceDetailModal(path);
-    });
+    };
+
+    const polyline = L.polyline(coordinates, { color: "#00b050", weight: 4, opacity: 0.85, interactive: true }).addTo(leafletMap);
+    // iOS WebKit対策: 極低透明度はヒット判定から除外されるため、可視の縁取りレイヤー(グロー効果・透明度25%)を採用して確実なタップ判定を構成
+    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 30, opacity: 0.25, interactive: true }).addTo(leafletMap);
+    
+    polyline.on("click", clickHandler);
+    hitPolyline.on("click", clickHandler);
     
     allRecordsMarkers.push(polyline);
     allRecordsMarkers.push(hitPolyline);
@@ -605,7 +646,7 @@ function openTraceDetailModal(path) {
     const userEl = document.getElementById("trace-detail-user");
     const timeEl = document.getElementById("trace-detail-time");
     const ownerUserId = Number(path && (path.user_id || path.userId));
-    const currentUserId = window.AuthToken ? Number(window.AuthToken.decodeToken().sub) : null;
+    const currentUserId = window.AuthToken ? Number(window.AuthToken.decodeToken()?.sub) : null;
     const isOwnRecord = Number.isFinite(ownerUserId) && Number.isFinite(currentUserId) && ownerUserId === currentUserId;
     
     if (userEl) userEl.textContent = isOwnRecord ? `${path.owner_name || "ユーザー"} (あなた)` : (path.owner_name || "ユーザー");
@@ -845,13 +886,61 @@ function showOsmTactileWaysOnMap(features) {
       if (!Array.isArray(feature.geometry.coordinates)) return;
       const coordinates = feature.geometry.coordinates.map(([lng, lat]) => [lat, lng]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
       if (coordinates.length < 2) return;
-      osmTactileMarkers.push(L.polyline(coordinates, { color: "#0066ff", weight: 4, opacity: 0.9 }).addTo(leafletMap));
+      const polyline = L.polyline(coordinates, { color: "#0066ff", weight: 4, opacity: 0.9, interactive: true }).addTo(leafletMap);
+      const hitPolyline = L.polyline(coordinates, { color: "#0066ff", weight: 30, opacity: 0.25, interactive: true }).addTo(leafletMap);
+      const clickHandler = (e) => {
+          if (e.originalEvent) {
+              L.DomEvent.stopPropagation(e.originalEvent);
+              L.DomEvent.preventDefault(e.originalEvent);
+          }
+          if (typeof mapClickTimer !== 'undefined' && mapClickTimer) {
+              clearTimeout(mapClickTimer);
+              mapClickTimer = null;
+          }
+          suppressMapTapUntil = Date.now() + 1000;
+          const osmTraceData = {
+              owner_name: "OpenStreetMap",
+              avatarUrl: null,
+              created_at: new Date().toISOString(),
+              tags: Object.entries(feature.properties || {}).map(([k, v]) => `${k}:${v}`),
+              memo: "（OSMからの自動取得データ）"
+          };
+          if (typeof openTraceDetailModal === 'function') openTraceDetailModal(osmTraceData);
+      };
+      polyline.on("click", clickHandler);
+      hitPolyline.on("click", clickHandler);
+      osmTactileMarkers.push(polyline);
+      osmTactileMarkers.push(hitPolyline);
       return;
     }
     if (feature.geometry.type === "Point") {
       const [lng, lat] = Array.isArray(feature.geometry.coordinates) ? feature.geometry.coordinates : [NaN, NaN];
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      osmTactileMarkers.push(L.circleMarker([lat, lng], { radius: 4, color: "#0066ff", fillColor: "#0066ff", fillOpacity: 0.95, weight: 1 }).addTo(leafletMap));
+      const marker = L.circleMarker([lat, lng], { radius: 4, color: "#0066ff", fillColor: "#0066ff", fillOpacity: 0.95, weight: 1, interactive: true }).addTo(leafletMap);
+      const hitMarker = L.circleMarker([lat, lng], { radius: 24, color: "#0066ff", fillColor: "#0066ff", fillOpacity: 0.25, opacity: 0.25, weight: 1, interactive: true }).addTo(leafletMap);
+      const markerClickHandler = (e) => {
+          if (e.originalEvent) {
+              L.DomEvent.stopPropagation(e.originalEvent);
+              L.DomEvent.preventDefault(e.originalEvent);
+          }
+          if (typeof mapClickTimer !== 'undefined' && mapClickTimer) {
+              clearTimeout(mapClickTimer);
+              mapClickTimer = null;
+          }
+          suppressMapTapUntil = Date.now() + 1000;
+          const osmTraceData = {
+              owner_name: "OpenStreetMap",
+              avatarUrl: null,
+              created_at: new Date().toISOString(),
+              tags: Object.entries(feature.properties || {}).map(([k, v]) => `${k}:${v}`),
+              memo: "（OSMからの自動取得データ）"
+          };
+          if (typeof openTraceDetailModal === 'function') openTraceDetailModal(osmTraceData);
+      };
+      marker.on("click", markerClickHandler);
+      hitMarker.on("click", markerClickHandler);
+      osmTactileMarkers.push(marker);
+      osmTactileMarkers.push(hitMarker);
     }
   });
 }

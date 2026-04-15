@@ -89,6 +89,19 @@
     return fetch(target, options);
   }
 
+  function decodeToken() {
+    const token = getAccessToken();
+    if (!token) return null;
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return payload;
+    } catch (e) {
+      return null;
+    }
+  }
+
   globalScope.AppPath = { toApp, toApi, toApiAsset };
-  globalScope.AuthToken = { setAccessToken, getAccessToken, clearAccessToken, buildAuthHeaders, authFetch };
+  globalScope.AuthToken = { setAccessToken, getAccessToken, clearAccessToken, buildAuthHeaders, authFetch, decodeToken };
 })(window);
