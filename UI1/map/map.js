@@ -626,8 +626,8 @@ function showAllSessionPathsOnMap(paths) {
     };
 
     const polyline = L.polyline(coordinates, { color: "#00b050", weight: 4, opacity: 0.85, interactive: true }).addTo(leafletMap);
-    // iOS WebKit対策: 極低透明度はヒット判定から除外されるため、可視の縁取りレイヤー(グロー効果・透明度25%)を採用して確実なタップ判定を構成
-    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 30, opacity: 0.25, interactive: true }).addTo(leafletMap);
+    // iOS WebKit対策: 極低透明度はヒット判定から除外されるため、可視の縁取りレイヤー(グロー効果・透明度8%)を採用して確実なタップ判定を構成
+    const hitPolyline = L.polyline(coordinates, { color: "#00b050", weight: 30, opacity: 0.08, interactive: true }).addTo(leafletMap);
     
     polyline.on("click", clickHandler);
     hitPolyline.on("click", clickHandler);
@@ -887,7 +887,7 @@ function showOsmTactileWaysOnMap(features) {
       const coordinates = feature.geometry.coordinates.map(([lng, lat]) => [lat, lng]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
       if (coordinates.length < 2) return;
       const polyline = L.polyline(coordinates, { color: "#0066ff", weight: 4, opacity: 0.9, interactive: true }).addTo(leafletMap);
-      const hitPolyline = L.polyline(coordinates, { color: "#0066ff", weight: 30, opacity: 0.25, interactive: true }).addTo(leafletMap);
+      const hitPolyline = L.polyline(coordinates, { color: "#0066ff", weight: 30, opacity: 0.08, interactive: true }).addTo(leafletMap);
       const clickHandler = (e) => {
           if (e.originalEvent) {
               L.DomEvent.stopPropagation(e.originalEvent);
@@ -917,7 +917,7 @@ function showOsmTactileWaysOnMap(features) {
       const [lng, lat] = Array.isArray(feature.geometry.coordinates) ? feature.geometry.coordinates : [NaN, NaN];
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
       const marker = L.circleMarker([lat, lng], { radius: 4, color: "#0066ff", fillColor: "#0066ff", fillOpacity: 0.95, weight: 1, interactive: true }).addTo(leafletMap);
-      const hitMarker = L.circleMarker([lat, lng], { radius: 24, color: "#0066ff", fillColor: "#0066ff", fillOpacity: 0.25, opacity: 0.25, weight: 1, interactive: true }).addTo(leafletMap);
+      const hitMarker = L.circleMarker([lat, lng], { radius: 24, color: "#0066ff", fillColor: "#0066ff", fillOpacity: 0.08, opacity: 0.08, weight: 1, interactive: true }).addTo(leafletMap);
       const markerClickHandler = (e) => {
           if (e.originalEvent) {
               L.DomEvent.stopPropagation(e.originalEvent);
