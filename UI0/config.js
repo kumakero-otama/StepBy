@@ -1,6 +1,6 @@
 (function initAppConfig(globalScope) {
   const defaults = {
-    APP_BASE_PATH: "/StepBy/UI0",
+    APP_BASE_PATH: "/StepBy/UI2",
     API_BASE_URL: "https://barrierfree-map.loophole.site",
   };
 

@@ -15,21 +15,58 @@
     <link rel="stylesheet" href="map.css" />
   </head>
   <body>
-    <header class="app-bar">
-      <h1 class="app-bar-title">HOME</h1>
-      <div class="app-bar-actions" aria-label="App menu">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
-          <img src="../assets/buttons/home.png" alt="" />
+
+    <div class="splash" id="splash" aria-hidden="true">
+      <div class="splash-particles" id="splash-particles"></div>
+      <div class="splash-logo-wrap">
+        <div class="splash-logo-ring">
+          <div class="splash-logo-inner">
+            <img src="../assets/StepBy_icon_192.png" alt="" />
+          </div>
+        </div>
+      </div>
+      <div class="splash-title">StepBy</div>
+      <div class="splash-subtitle">BARRIER-FREE MAP</div>
+      <div class="splash-tagline">
+        Your <em>step</em> becomes<br>someone else's <em>path</em>.
+      </div>
+      <div class="splash-dots" aria-hidden="true">
+        <div class="splash-dot"></div>
+        <div class="splash-dot"></div>
+        <div class="splash-dot"></div>
+      </div>
+    </div>
+    <header class="app-bar map-app-bar">
+      <div class="map-app-bar-brand">
+        <a class="map-app-bar-logo" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/StepBy_icon_192.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <div class="map-app-bar-copy">
+          <div class="map-app-bar-name">StepBy</div>
+          <div class="map-app-bar-tagline">barrier-free map</div>
+        </div>
+        <span id="gps-indicator" class="map-gps-indicator" aria-hidden="true">
+          <img src="../assets/displays/GPS_white.png" alt="" />
+        </span>
+      </div>
+      <div class="app-bar-actions map-app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link map-app-bar-action is-current" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/buttons/map_white.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link map-app-bar-action" href="../profile/Index.html" aria-label="Profile">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
+        <a class="app-bar-icon-link map-app-bar-action map-app-bar-settings" href="../otasuke/Index.html" aria-label="Settings">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
     </header>
-    <div class="app-bar-spacer" aria-hidden="true"></div>
+    <div class="app-bar-spacer map-app-bar-spacer" aria-hidden="true"></div>
+    <div class="map-app-bar-wave" aria-hidden="true">
+      <svg viewBox="0 0 500 18" preserveAspectRatio="none">
+        <path d="M0,0 C150,18 350,0 500,12 L500,18 L0,18 Z" fill="#f5f7fa"></path>
+      </svg>
+    </div>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
     <script>
@@ -44,14 +81,24 @@
           const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
             ? window.AuthToken.authFetch
             : fetch;
+          const getAccessToken = window.AuthToken && typeof window.AuthToken.getAccessToken === "function"
+            ? window.AuthToken.getAccessToken
+            : () => "";
+          const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
+            ? window.AuthToken.isTemporaryError
+            : () => false;
           const res = await authFetch("/auth/me");
-          if (!res.ok) {
-            if ((res.status === 401 || res.status === 403)
-              && window.AuthToken
-              && typeof window.AuthToken.clearAccessToken === "function") {
+          if (res.status === 401 || res.status === 403) {
+            if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
               window.AuthToken.clearAccessToken();
             }
             window.location.replace(AppPath.toApp("/auth/login.html"));
+            return;
+          }
+          if (!res.ok) {
+            if (!getAccessToken()) {
+              window.location.replace(AppPath.toApp("/auth/login.html"));
+            }
             return;
           }
           const payload = await res.json();
@@ -61,8 +108,11 @@
             }
             window.location.replace(AppPath.toApp("/auth/login.html"));
           }
-        } catch {
+        } catch (error) {
           // 一時的な通信障害ではトークンを消さず、次回の再試行余地を残す。
+          if (isTemporaryError(error) && getAccessToken()) {
+            return;
+          }
           window.location.replace(AppPath.toApp("/auth/login.html"));
         }
       })();
@@ -102,44 +152,70 @@
           aria-label="Toggle map controls"
           aria-expanded="true"
         >
-          <span class="map-controls-handle-bar"></span>
+          <span class="map-controls-handle-label">
+            <img id="map-controls-handle-icon" class="map-controls-handle-icon" src="../assets/displays/down_66gray.png" alt="" />
+            <span id="map-controls-handle-label" class="map-controls-handle-text">Close menu</span>
+          </span>
         </button>
         <div id="map-controls-content" class="map-controls-content">
           <div class="meta">
             <div class="meta-controls">
               <div class="meta-toggles">
-                <div class="record-toggle" role="group" aria-label="Show map info toggle">
-                  <span class="record-title">Show map info:</span>
-                  <span class="record-label">OFF</span>
-                  <label class="switch">
-                    <input id="toggle-show-map-info" type="checkbox" aria-label="Show map info" />
-                    <span class="slider"></span>
-                  </label>
-                  <span class="record-label">ON</span>
-                </div>
-                <div class="record-toggle" role="group" aria-label="Center on current location toggle">
-                  <span class="record-title">Center on current location:</span>
-                  <span class="record-label">OFF</span>
-                  <label class="switch">
-                    <input
-                      id="toggle-center-current"
-                      type="checkbox"
-                      aria-label="Center on current location"
-                      checked
-                    />
-                    <span class="slider"></span>
-                  </label>
-                  <span class="record-label">ON</span>
-                </div>
-              </div>
-              <div id="gps-indicator" class="gps-indicator" aria-hidden="true">
-                <img src="../assets/GPS.png" alt="" />
+                <label class="record-toggle record-toggle-card map-info-card" aria-label="Show map info">
+                  <input id="toggle-show-map-info" class="record-toggle-input" type="checkbox" aria-label="Show map info" />
+                  <span class="record-toggle-status" aria-hidden="true"></span>
+                  <span class="record-title">Map Info</span>
+                  <span class="record-toggle-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                      <path d="M12 3.5c4.7 0 8.5 3.8 8.5 8.5s-3.8 8.5-8.5 8.5-8.5-3.8-8.5-8.5 3.8-8.5 8.5-8.5Z"></path>
+                      <path d="M12 3.5c2.1 2.2 3.3 5.2 3.3 8.5s-1.2 6.3-3.3 8.5m0-17c-2.1 2.2-3.3 5.2-3.3 8.5s1.2 6.3 3.3 8.5M4 12h16M6.3 7.2h11.4M6.3 16.8h11.4"></path>
+                    </svg>
+                  </span>
+                </label>
+                <label class="record-toggle record-toggle-card center-current-card" aria-label="Center current location">
+                  <input
+                    id="toggle-center-current"
+                    class="record-toggle-input"
+                    type="checkbox"
+                    aria-label="Center current location"
+                    checked
+                  />
+                  <span class="record-toggle-status" aria-hidden="true"></span>
+                  <span class="record-title">Center Current</span>
+                  <span class="record-toggle-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                      <circle cx="12" cy="12" r="2.8"></circle>
+                      <path d="M12 2.5v4.2M12 17.3v4.2M2.5 12h4.2M17.3 12h4.2"></path>
+                      <circle cx="12" cy="12" r="6.3"></circle>
+                    </svg>
+                  </span>
+                </label>
               </div>
             </div>
           </div>
         </div>
       </section>
     </main>
+    <div
+      id="safety-confirm-modal"
+      class="safety-confirm-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="safety-confirm-title"
+      aria-describedby="safety-confirm-message"
+    >
+      <div class="safety-confirm-panel">
+        <h2 id="safety-confirm-title">Safety Confirmation</h2>
+        <p id="safety-confirm-message" class="safety-confirm-message">
+          Before using this app, always make sure your surroundings are safe.<br />
+          Never use your smartphone while walking.
+        </p>
+        <div class="safety-confirm-actions">
+          <button id="safety-confirm-accept" class="safety-confirm-accept-btn" type="button">Yes</button>
+          <button id="safety-confirm-reject" class="safety-confirm-reject-btn" type="button">No</button>
+        </div>
+      </div>
+    </div>
     <div id="osm-loading-overlay" class="osm-loading-overlay hidden" aria-live="polite" aria-busy="true">
       <div class="osm-loading-spinner" aria-hidden="true"></div>
       <div class="osm-loading-text">Loading OSM data...</div>
@@ -179,11 +255,74 @@
           </section>
         </div>
         <div class="trace-confirm-actions">
-          <button id="trace-confirm-ok" class="btn" type="button">OK</button>
-          <button id="trace-confirm-cancel" class="btn secondary" type="button">Cancel</button>
+          <button id="trace-confirm-ok" class="trace-confirm-ok-btn" type="button">
+            <img class="trace-confirm-ok-icon" src="../assets/displays/check_white.png" alt="" />
+            <span>Save</span>
+          </button>
+          <button id="trace-confirm-cancel" class="trace-confirm-cancel-btn" type="button">Cancel</button>
         </div>
       </div>
     </div>
+
+    <script>
+      (() => {
+        const splash = document.getElementById("splash");
+        const particlesContainer = document.getElementById("splash-particles");
+        const notifySplashFinished = () => {
+          window.dispatchEvent(new CustomEvent("ui2:splash-finished"));
+        };
+        if (!splash || !particlesContainer) {
+          notifySplashFinished();
+          return;
+        }
+
+        const SPLASH_SESSION_KEY = "ui2_home_splash_seen_v1";
+        let hasSeenSplash = false;
+        try {
+          hasSeenSplash = window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "1";
+        } catch {
+          hasSeenSplash = false;
+        }
+
+        if (hasSeenSplash) {
+          splash.remove();
+          notifySplashFinished();
+          return;
+        }
+
+        try {
+          window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+        } catch {
+          // ignore storage errors and keep the current display behavior
+        }
+
+        for (let i = 0; i < 20; i += 1) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.animationDuration = `${4 + Math.random() * 6}s`;
+          particle.style.animationDelay = `${Math.random() * 5}s`;
+          const size = 3 + Math.random() * 6;
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+          particlesContainer.appendChild(particle);
+        }
+
+        const dismissSplash = () => {
+          if (splash.classList.contains("fade-out")) {
+            return;
+          }
+          splash.classList.add("fade-out");
+          window.setTimeout(() => {
+            splash.remove();
+            notifySplashFinished();
+          }, 800);
+        };
+
+        window.setTimeout(dismissSplash, 3500);
+        splash.addEventListener("click", dismissSplash);
+      })();
+    </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="map.js"></script>
     <script src="../pwa.js"></script>

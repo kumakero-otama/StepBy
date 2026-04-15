@@ -9,41 +9,47 @@
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="auth.css" />
   </head>
-  <body>
-    <main class="auth-shell">
-      <section class="auth-card" aria-labelledby="signup-profile-title">
-        <h1 id="signup-profile-title">साइन अप</h1>
+  <body class="signup-profile-page">
+    <main class="auth-shell signup-profile-shell">
+      <section class="auth-card signup-profile-card" aria-labelledby="signup-profile-title">
+        <h1 id="signup-profile-title">अकाउंट बनाएं</h1>
         <p class="auth-subtitle">अपना खाता नाम और प्रोफ़ाइल आइकन सेट करें।</p>
 
         <form id="signup-profile-form" novalidate>
-          <div class="form-row">
+          <div class="form-row signup-profile-field">
             <label for="signup-profile-username">खाता नाम</label>
+            <p class="signup-profile-note">गोपनीयता की सुरक्षा के लिए, अपना असली नाम कभी दर्ज न करें।</p>
             <input
               id="signup-profile-username"
               name="username"
               type="text"
               maxlength="50"
               autocomplete="username"
+              placeholder=""
             />
           </div>
-          <div class="form-row">
-            <label for="signup-profile-icon">प्रोफ़ाइल आइकन</label>
-            <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
-            <img
-              id="signup-profile-icon-preview"
-              class="signup-icon-preview hidden"
-              alt="चुने गए प्रोफ़ाइल आइकन का पूर्वावलोकन"
-            />
+          <div class="form-row signup-profile-field">
+            <label for="signup-profile-icon">प्रोफ़ाइल आइकन (वैकल्पिक)</label>
+            <div class="signup-icon-preview-wrap">
+              <img
+                id="signup-profile-icon-preview"
+                class="signup-icon-preview hidden"
+                alt="चुने गए प्रोफ़ाइल आइकन का पूर्वावलोकन"
+              />
+              <label class="signup-file-button" for="signup-profile-icon">छवि चुनें</label>
+              <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
+            </div>
           </div>
-          <div class="agreement-row">
+          <div class="agreement-row signup-profile-agreement-row">
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
-              <span>मैं सेवा की शर्तों से सहमत हूं</span>
+              <span>
+                मैं <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">सेवा की शर्तों</button> से सहमत हूं
+              </span>
             </label>
-            <button id="open-user-agreement" type="button" class="agreement-link">सेवा की शर्तें</button>
           </div>
           <div class="actions">
-            <button class="btn btn-primary" id="signup-profile-submit" type="submit">रजिस्टर करें</button>
+            <button class="btn btn-primary signup-profile-submit" id="signup-profile-submit" type="submit">रजिस्टर करें</button>
           </div>
         </form>
         <p id="google-auth-status" class="helper-text"></p>

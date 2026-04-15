@@ -9,41 +9,47 @@
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="auth.css" />
   </head>
-  <body>
-    <main class="auth-shell">
-      <section class="auth-card" aria-labelledby="signup-profile-title">
-        <h1 id="signup-profile-title">サインアップ</h1>
+  <body class="signup-profile-page">
+    <main class="auth-shell signup-profile-shell">
+      <section class="auth-card signup-profile-card" aria-labelledby="signup-profile-title">
+        <h1 id="signup-profile-title">アカウント登録</h1>
         <p class="auth-subtitle">アカウント名とアイコン画像を設定してください。</p>
 
         <form id="signup-profile-form" novalidate>
-          <div class="form-row">
+          <div class="form-row signup-profile-field">
             <label for="signup-profile-username">アカウント名</label>
+            <p class="signup-profile-note">プライバシー保護のため、本名は絶対に入力しないでください</p>
             <input
               id="signup-profile-username"
               name="username"
               type="text"
               maxlength="50"
               autocomplete="username"
+              placeholder=""
             />
           </div>
-          <div class="form-row">
-            <label for="signup-profile-icon">アイコン画像</label>
-            <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
-            <img
-              id="signup-profile-icon-preview"
-              class="signup-icon-preview hidden"
-              alt="選択したアイコン画像のプレビュー"
-            />
+          <div class="form-row signup-profile-field">
+            <label for="signup-profile-icon">アイコン画像（任意）</label>
+            <div class="signup-icon-preview-wrap">
+              <img
+                id="signup-profile-icon-preview"
+                class="signup-icon-preview hidden"
+                alt="選択したアイコン画像のプレビュー"
+              />
+              <label class="signup-file-button" for="signup-profile-icon">画像を選ぶ</label>
+              <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
+            </div>
           </div>
-          <div class="agreement-row">
+          <div class="agreement-row signup-profile-agreement-row">
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
-              <span>利用規約に同意します</span>
+              <span>
+                <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">利用規約</button>に同意します
+              </span>
             </label>
-            <button id="open-user-agreement" type="button" class="agreement-link">利用規約</button>
           </div>
           <div class="actions">
-            <button class="btn btn-primary" id="signup-profile-submit" type="submit">登録</button>
+            <button class="btn btn-primary signup-profile-submit" id="signup-profile-submit" type="submit">登録する</button>
           </div>
         </form>
         <p id="google-auth-status" class="helper-text"></p>

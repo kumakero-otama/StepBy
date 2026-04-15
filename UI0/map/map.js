@@ -8,6 +8,8 @@ const lastUpdatedEl = document.getElementById("last-updated");
 const gpsIndicatorEl = document.getElementById("gps-indicator");
 const mapControlsPanelEl = document.getElementById("map-controls-panel");
 const mapControlsHandleEl = document.getElementById("map-controls-handle");
+const mapControlsHandleLabelEl = document.getElementById("map-controls-handle-label");
+const mapControlsHandleIconEl = document.getElementById("map-controls-handle-icon");
 const recordActionBtn = document.getElementById("record-action-btn");
 const recordActionIconEl = document.getElementById("record-action-icon");
 const recordActionTextEl = document.getElementById("record-action-text");
@@ -18,6 +20,9 @@ const toggleShowMapInfoBtn = document.getElementById("toggle-show-map-info");
 const toggleCenterCurrentBtn = document.getElementById("toggle-center-current");
 const osmLoadingOverlayEl = document.getElementById("osm-loading-overlay");
 const recordsLoadingOverlayEl = document.getElementById("records-loading-overlay");
+const safetyConfirmModalEl = document.getElementById("safety-confirm-modal");
+const safetyConfirmAcceptBtn = document.getElementById("safety-confirm-accept");
+const safetyConfirmRejectBtn = document.getElementById("safety-confirm-reject");
 const traceConfirmModalEl = document.getElementById("trace-confirm-modal");
 const traceConfirmMapEl = document.getElementById("trace-confirm-map");
 const traceConfirmOkBtn = document.getElementById("trace-confirm-ok");
@@ -29,7 +34,21 @@ const traceTagListEl = document.getElementById("trace-tag-list");
 const traceTagErrorEl = document.getElementById("trace-tag-error");
 const traceMemoPanelEl = document.getElementById("trace-memo-panel");
 const traceMemoInputEl = document.getElementById("trace-memo-input");
+const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
+const clientLogApi = window.ClientLogs || null;
+
+const SAFETY_CONFIRM_TEXT = {
+  ja: {
+    invalidSelection: "この選択は無効です",
+  },
+  en: {
+    invalidSelection: "This choice is invalid.",
+  },
+  hi: {
+    invalidSelection: "यह चयन अमान्य है।",
+  },
+};
 
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
@@ -42,6 +61,40 @@ function clearAccessToken() {
   if (authTokenApi && typeof authTokenApi.clearAccessToken === "function") {
     authTokenApi.clearAccessToken();
   }
+}
+
+function logMapEvent(event, extra) {
+  if (!clientLogApi || typeof clientLogApi.logEvent !== "function") {
+    return;
+  }
+  void clientLogApi.logEvent({
+    category: (extra && extra.category) || "api",
+    event,
+    level: (extra && extra.level) || "info",
+    path: extra && extra.path ? extra.path : "",
+    method: extra && extra.method ? extra.method : "",
+    status: extra && Number.isFinite(extra.status) ? extra.status : null,
+    message: extra && extra.message ? extra.message : "",
+    meta: extra && extra.meta ? extra.meta : null,
+  });
+}
+
+function bindToggleCards() {
+  recordToggleCardEls.forEach((cardEl) => {
+    const inputEl = cardEl.querySelector(".record-toggle-input");
+    if (!inputEl) {
+      return;
+    }
+
+    cardEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      inputEl.checked = !inputEl.checked;
+      inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
 }
 
 function getCurrentLanguage() {
@@ -101,6 +154,58 @@ function getTraceConfirmText() {
   return TRACE_CONFIRM_TEXT[language] || TRACE_CONFIRM_TEXT.ja;
 }
 
+function getSafetyConfirmText() {
+  const language = getCurrentLanguage();
+  return SAFETY_CONFIRM_TEXT[language] || SAFETY_CONFIRM_TEXT.ja;
+}
+
+function hideSafetyConfirmModal() {
+  if (!safetyConfirmModalEl) {
+    return;
+  }
+  safetyConfirmModalEl.classList.add("hidden");
+  safetyConfirmModalEl.setAttribute("aria-hidden", "true");
+}
+
+function showSafetyConfirmModal() {
+  if (!safetyConfirmModalEl) {
+    return;
+  }
+  safetyConfirmModalEl.classList.remove("hidden");
+  safetyConfirmModalEl.removeAttribute("aria-hidden");
+  if (safetyConfirmAcceptBtn) {
+    window.setTimeout(() => safetyConfirmAcceptBtn.focus(), 0);
+  }
+}
+
+function initSafetyConfirmModal() {
+  if (!safetyConfirmModalEl || !safetyConfirmAcceptBtn || !safetyConfirmRejectBtn) {
+    return;
+  }
+
+  safetyConfirmAcceptBtn.addEventListener("click", () => {
+    hideSafetyConfirmModal();
+  });
+
+  safetyConfirmRejectBtn.addEventListener("click", () => {
+    const lang = getCurrentLanguage();
+    const targetPath = lang === "en"
+      ? "/map/exit_notice_en.html"
+      : (lang === "hi" ? "/map/exit_notice_hi.html" : "/map/exit_notice.html");
+    window.location.replace(AppPath.toApp(targetPath));
+  });
+
+  hideSafetyConfirmModal();
+
+  window.addEventListener("ui2:splash-finished", () => {
+    showSafetyConfirmModal();
+  }, { once: true });
+
+  if (!document.getElementById("splash")) {
+    showSafetyConfirmModal();
+  }
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -117,7 +222,7 @@ const TACTILE_SESSION_TEXT = {
     sessionId: "session_id",
     tags: "タグ",
     memo: "ひとことメモ",
-    memoEdit: "メモ編集",
+    memoEdit: "メモを編集",
     memoPrompt: "ひとことメモを入力してください",
     memoSaveFailed: "ひとことメモの保存に失敗しました。",
     selfLabel: "あなた",
@@ -315,23 +420,33 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const iconSrc = escapeHtml(iconUrl || AppPath.toApp("/assets/account_default.png"));
   const closeIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/close.png"));
   const memoEditIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/memo_edit.png"));
+  const deleteIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/delete.png"));
   const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
-  const memoHtml = isOwnTactileSession(ownerUserId) && memoValue
+  const canEditOwnSession = isOwnTactileSession(ownerUserId);
+  const memoHtml = memoValue
     ? `
     <div class="tactile-session-card-memo">
       <div class="tactile-session-card-memo-head">
         <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
+        ${canEditOwnSession ? `
         <button class="tactile-session-card-memo-edit" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}" aria-label="${escapeHtml(text.memoEdit)}">
           <img src="${memoEditIconUrl}" alt="">
-        </button>
+        </button>` : ""}
       </div>
       <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
     </div>`
     : "";
-  const deleteButtonHtml = isOwnTactileSession(ownerUserId)
+  const actionButtons = canEditOwnSession
     ? `
     <div class="tactile-session-card-actions">
-      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">${escapeHtml(text.delete)}</button>
+      <button class="tactile-session-card-edit-action" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}">
+        <img src="${memoEditIconUrl}" alt="">
+        <span>${escapeHtml(text.memoEdit)}</span>
+      </button>
+      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">
+        <img src="${deleteIconUrl}" alt="">
+        <span>${escapeHtml(text.delete)}</span>
+      </button>
     </div>`
     : "";
 
@@ -339,8 +454,8 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
     <div class="tactile-session-card-header">
       <img class="tactile-session-card-avatar" src="${iconSrc}" alt="${username}" onerror="this.onerror=null;this.src='${fallbackIconUrl}'">
       <div class="tactile-session-card-meta">
-        <span class="tactile-session-card-time">${createdAt}</span>
         <span class="tactile-session-card-username">${username}</span>
+        <span class="tactile-session-card-time">${createdAt}</span>
       </div>
       <button class="tactile-session-card-close" type="button" data-close-tactile-session-card aria-label="close">
         <img src="${closeIconUrl}" alt="">
@@ -348,11 +463,25 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
     </div>
     <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
     ${memoHtml}
-    ${deleteButtonHtml}`;
+    ${actionButtons}`;
 }
 
 function ensureTactileSessionCard() {
-  if (tactileSessionCardEl || !mapRowEl) {
+  if (!mapRowEl) {
+    return tactileSessionCardEl;
+  }
+  if (!tactileSessionBackdropEl) {
+    tactileSessionBackdropEl = document.createElement("div");
+    tactileSessionBackdropEl.className = "tactile-session-backdrop hidden";
+    tactileSessionBackdropEl.addEventListener("click", () => {
+      hideTactileSessionCard();
+    });
+    tactileSessionBackdropEl.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+    mapRowEl.appendChild(tactileSessionBackdropEl);
+  }
+  if (tactileSessionCardEl) {
     return tactileSessionCardEl;
   }
   tactileSessionCardEl = document.createElement("section");
@@ -378,6 +507,9 @@ function hideTactileSessionCard() {
     });
   }
   activeTactileSessionPolyline = null;
+  if (tactileSessionBackdropEl) {
+    tactileSessionBackdropEl.classList.add("hidden");
+  }
   if (!tactileSessionCardEl) {
     return;
   }
@@ -414,30 +546,16 @@ function setActiveTactileSessionPolyline(polyline) {
 }
 
 function positionTactileSessionCard(latlng) {
-  if (!tactileSessionCardEl || tactileSessionCardEl.classList.contains("hidden") || !latlng || !mapRowEl) {
+  if (!tactileSessionCardEl || tactileSessionCardEl.classList.contains("hidden") || !mapRowEl) {
     return;
   }
-  const point = map.latLngToContainerPoint(latlng);
-  const cardRect = tactileSessionCardEl.getBoundingClientRect();
   const rowRect = mapRowEl.getBoundingClientRect();
-  const gap = 12;
-  const cardWidth = cardRect.width || Math.min(280, Math.max(220, rowRect.width - 24));
-  const cardHeight = cardRect.height || 120;
-  let left = point.x + gap;
-  let top = point.y - cardHeight - gap;
-
-  if (left + cardWidth > rowRect.width - 8) {
-    left = point.x - cardWidth - gap;
-  }
-  if (left < 8) {
-    left = Math.max(8, Math.min(point.x + gap, rowRect.width - cardWidth - 8));
-  }
-  if (top < 8) {
-    top = point.y + gap;
-  }
-  if (top + cardHeight > rowRect.height - 8) {
-    top = Math.max(8, rowRect.height - cardHeight - 8);
-  }
+  const cardRect = tactileSessionCardEl.getBoundingClientRect();
+  const horizontalInset = 22;
+  const bottomInset = 20;
+  const cardWidth = Math.min(cardRect.width || rowRect.width - horizontalInset * 2, rowRect.width - horizontalInset * 2);
+  const left = Math.max(horizontalInset, (rowRect.width - cardWidth) / 2);
+  const top = Math.max(12, rowRect.height - (cardRect.height || 0) - bottomInset);
 
   tactileSessionCardEl.style.left = `${Math.round(left)}px`;
   tactileSessionCardEl.style.top = `${Math.round(top)}px`;
@@ -450,6 +568,9 @@ function renderTactileSessionCard(contentHtml, latlng) {
   }
   tactileSessionCardLatLng = latlng || null;
   card.innerHTML = contentHtml;
+  if (tactileSessionBackdropEl) {
+    tactileSessionBackdropEl.classList.remove("hidden");
+  }
   card.classList.remove("hidden");
   const closeBtn = card.querySelector("[data-close-tactile-session-card]");
   if (closeBtn) {
@@ -727,6 +848,7 @@ let cachedVisibleSessionPaths = [];
 let cachedOsmFeatures = [];
 let cachedVisibleRoadInfoPoints = [];
 const tactileSessionInfoCache = new Map();
+let tactileSessionBackdropEl = null;
 let tactileSessionCardEl = null;
 let tactileSessionCardLatLng = null;
 let activeTactileSessionPolyline = null;
@@ -1040,6 +1162,21 @@ function setMapControlsCollapsed(collapsed) {
   mapControlsPanelEl.classList.toggle("collapsed", collapsed);
   mapLayoutEl.classList.toggle("panel-collapsed", collapsed);
   mapControlsHandleEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  if (mapControlsHandleIconEl) {
+    mapControlsHandleIconEl.src = collapsed
+      ? "../assets/displays/up_66gray.png"
+      : "../assets/displays/down_66gray.png";
+  }
+  if (mapControlsHandleLabelEl) {
+    const lang = getCurrentLanguage();
+    if (lang === "en") {
+      mapControlsHandleLabelEl.textContent = collapsed ? "Open menu" : "Close menu";
+    } else if (lang === "hi") {
+      mapControlsHandleLabelEl.textContent = collapsed ? "मेनू खोलें" : "मेनू बंद करें";
+    } else {
+      mapControlsHandleLabelEl.textContent = collapsed ? "メニューを開く" : "メニューを閉じる";
+    }
+  }
   saveMapControlsCollapsed(collapsed);
   requestAnimationFrame(() => {
     map.invalidateSize();
@@ -1234,20 +1371,58 @@ function generateUUID() {
 }
 
 async function loadCurrentUserId() {
-  const res = await authFetch("/auth/me");
-  if (!res.ok) {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
-    throw new Error("unauthorized");
+  try {
+    const res = await authFetch("/auth/me", { cache: "no-store" });
+    if (res.status === 401 || res.status === 403) {
+      logMapEvent("map_auth_required", {
+        category: "auth",
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        status: res.status,
+        message: "Map bootstrap detected unauthorized session",
+      });
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      throw new Error("unauthorized");
+    }
+    if (!res.ok) {
+      logMapEvent("map_user_id_load_deferred", {
+        category: "auth",
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        status: res.status,
+        message: "Map bootstrap could not confirm user id, continuing without it",
+      });
+      currentUserId = null;
+      return;
+    }
+    const payload = await res.json();
+    const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
+    if (!Number.isFinite(userId) || userId <= 0) {
+      clearAccessToken();
+      window.location.replace(AppPath.toApp("/auth/login.html"));
+      throw new Error("invalid_user");
+    }
+    currentUserId = userId;
+  } catch (error) {
+    const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
+      ? window.AuthToken.isTemporaryError(error)
+      : false;
+    if (isTemporaryError) {
+      logMapEvent("map_user_id_load_deferred", {
+        category: "auth",
+        level: "warn",
+        path: "/auth/me",
+        method: "GET",
+        message: error && error.message ? String(error.message) : "temporary auth error",
+      });
+      currentUserId = null;
+      return;
+    }
+    throw error;
   }
-  const payload = await res.json();
-  const userId = payload && payload.user ? Number(payload.user.userId) : NaN;
-  if (!Number.isFinite(userId) || userId <= 0) {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
-    throw new Error("invalid_user");
-  }
-  currentUserId = userId;
 }
 
 function updateRecordButton() {
@@ -2555,6 +2730,7 @@ function loadConfig() {
 }
 
 initTraceTagUiEvents();
+initSafetyConfirmModal();
 
 if ("geolocation" in navigator) {
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
@@ -2610,10 +2786,33 @@ if ("geolocation" in navigator) {
 
   // 設定を読み込んでから位置情報取得を開始
   loadConfig().then(async () => {
-    await loadCurrentUserId();
-    await loadCurrentUserProStatus();
+    logMapEvent("map_gps_bootstrap_start", {
+      category: "navigation",
+      path: window.location.pathname,
+      method: "LOAD",
+      message: "Starting GPS bootstrap after config load",
+    });
+    try {
+      await loadCurrentUserId();
+      await loadCurrentUserProStatus();
+    } catch (error) {
+      logMapEvent("map_gps_bootstrap_partial", {
+        category: "auth",
+        level: "warn",
+        message: error && error.message ? String(error.message) : "map bootstrap failed before gps start",
+      });
+      if (error && (error.message === "unauthorized" || error.message === "invalid_user")) {
+        return;
+      }
+    }
     // 監視を開始
     startWatching();
+    logMapEvent("gps_watch_start", {
+      category: "navigation",
+      path: window.location.pathname,
+      method: "WATCH",
+      message: "Geolocation watch started",
+    });
     
     // 2秒おきに最新の位置情報を読み取って送信する（ポーリング）
     setInterval(pollAndSendLocation, 2000);
@@ -2717,6 +2916,8 @@ if ("geolocation" in navigator) {
       });
     }
     
+    bindToggleCards();
+
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {
         console.log(`[toggleShowMapInfo] showMapInfo=${toggleShowMapInfoBtn.checked}`);
@@ -2739,6 +2940,7 @@ if ("geolocation" in navigator) {
     }
     
   });
+
 } else {
   const cachedLocation = loadLastKnownLocation();
   const hasCachedLocation = applyCachedLocation(cachedLocation);

@@ -3,28 +3,66 @@ const iconPreviewEl = document.getElementById("profile-icon-preview");
 const cameraInputEl = document.getElementById("profile-icon-camera-input");
 const uploadInputEl = document.getElementById("profile-icon-upload-input");
 const proToggleInputEl = document.getElementById("profile-pro-toggle-input");
+const proHelpBtnEl = document.getElementById("profile-pro-help-btn");
+const proHelpModalEl = document.getElementById("pro-help-modal");
+const proHelpCloseBtnEl = document.getElementById("pro-help-close-btn");
 const backBtnEl = document.getElementById("profile-edit-back-btn");
 const saveBtnEl = document.getElementById("profile-edit-save-btn");
 const saveToastEl = document.getElementById("profile-save-toast");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
+const PROFILE_EDIT_TEXT = {
+  ja: {
+    guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+  },
+  en: {
+    guestEditLocked: "Profile editing is not available for guest accounts.",
+  },
+  hi: {
+    guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+  },
+};
+
+function getCurrentLanguage() {
+  const lang = String(document.documentElement && document.documentElement.lang || "").trim().toLowerCase();
+  if (!lang) {
+    return "ja";
+  }
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+  if (lang.startsWith("hi")) {
+    return "hi";
+  }
+  return "ja";
+}
+
+function getProfileEditText() {
+  const language = getCurrentLanguage();
+  return PROFILE_EDIT_TEXT[language] || PROFILE_EDIT_TEXT.ja;
+}
 
 function getProfileCacheStorage() {
+  return getProfileCacheStorages()[0] || null;
+}
+
+function getProfileCacheStorages() {
+  const storages = [];
   try {
     if (window.localStorage) {
-      return window.localStorage;
+      storages.push(window.localStorage);
     }
   } catch {
     // ignore storage access errors
   }
   try {
-    if (window.sessionStorage) {
-      return window.sessionStorage;
+    if (window.sessionStorage && !storages.includes(window.sessionStorage)) {
+      storages.push(window.sessionStorage);
     }
   } catch {
     // ignore storage access errors
   }
-  return null;
+  return storages;
 }
 
 function authFetch(input, init) {
@@ -40,8 +78,35 @@ function clearAccessToken() {
   }
 }
 
+function getAccessToken() {
+  if (authTokenApi && typeof authTokenApi.getAccessToken === "function") {
+    return authTokenApi.getAccessToken();
+  }
+  return "";
+}
+
+function isTemporaryAuthError(error) {
+  if (authTokenApi && typeof authTokenApi.isTemporaryError === "function") {
+    return authTokenApi.isTemporaryError(error);
+  }
+  return Boolean(
+    error && (
+      error.code === "auth_timeout"
+      || error.name === "AuthTimeoutError"
+      || error.name === "TypeError"
+    )
+  );
+}
+
 let selectedIconDataUrl = null;
 let saving = false;
+
+function setProHelpModalOpen(open) {
+  if (!proHelpModalEl) {
+    return;
+  }
+  proHelpModalEl.classList.toggle("hidden", !open);
+}
 
 function saveCachedProfileUser(user) {
   if (!user || typeof user !== "object") {
@@ -52,17 +117,21 @@ function saveCachedProfileUser(user) {
     userId: Number(user.userId || user.user_id || 0) || null,
     username: user.username == null ? null : String(user.username),
     iconUrl: user.iconUrl || user.icon_url || null,
+    isGuest: Boolean(user.isGuest || user.is_guest),
     isPro: typeof user.isPro === "boolean" ? user.isPro : (typeof user.is_pro === "boolean" ? user.is_pro : existing && typeof existing.isPro === "boolean" ? existing.isPro : null),
     totalTactileLength: Number(user.totalTactileLength || user.total_tactile_length || 0) || 0,
     totalRoadPosts: Number(user.totalRoadPosts || user.total_road_posts || 0) || 0,
     totalHearts: Number(user.totalHearts || user.total_hearts || 0) || 0,
   };
   try {
-    const storage = getProfileCacheStorage();
-    if (!storage) {
+    const storages = getProfileCacheStorages();
+    if (!storages.length) {
       return;
     }
-    storage.setItem(PROFILE_CACHE_KEY, JSON.stringify(normalized));
+    const serialized = JSON.stringify(normalized);
+    storages.forEach((storage) => {
+      storage.setItem(PROFILE_CACHE_KEY, serialized);
+    });
   } catch {
     // ignore storage errors
   }
@@ -70,18 +139,33 @@ function saveCachedProfileUser(user) {
 
 function loadCachedProfileUser() {
   try {
-    const storage = getProfileCacheStorage();
-    if (!storage) {
-      return null;
+    for (const storage of getProfileCacheStorages()) {
+      const raw = storage.getItem(PROFILE_CACHE_KEY);
+      if (!raw) {
+        continue;
+      }
+      return JSON.parse(raw);
     }
-    const raw = storage.getItem(PROFILE_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw);
+    return null;
   } catch {
     return null;
   }
+}
+
+function clearCachedProfileUser() {
+  try {
+    getProfileCacheStorages().forEach((storage) => {
+      storage.removeItem(PROFILE_CACHE_KEY);
+    });
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function redirectToLogin() {
+  clearAccessToken();
+  clearCachedProfileUser();
+  window.location.replace(AppPath.toApp("/auth/login.html"));
 }
 
 function applyCachedProfileUser(user) {
@@ -141,16 +225,22 @@ async function loadCurrentProfile() {
     const res = await authFetch("/auth/me", {
       cache: "no-store",
     });
+    if (res.status === 401 || res.status === 403) {
+      redirectToLogin();
+      return;
+    }
     if (!res.ok) {
-      clearAccessToken();
-      window.location.replace(AppPath.toApp("/auth/login.html"));
       return;
     }
     const payload = await res.json();
     const user = payload && payload.user ? payload.user : null;
     if (!user) {
-      clearAccessToken();
-      window.location.replace(AppPath.toApp("/auth/login.html"));
+      redirectToLogin();
+      return;
+    }
+    if (user.isGuest === true || user.is_guest === true) {
+      window.alert(getProfileEditText().guestEditLocked);
+      window.location.replace(AppPath.toApp("/profile/Index.html"));
       return;
     }
     const username = user.username || "";
@@ -167,9 +257,12 @@ async function loadCurrentProfile() {
     }
     saveCachedProfileUser(user);
     await loadCurrentProStatus(user);
-  } catch {
-    clearAccessToken();
-    window.location.replace(AppPath.toApp("/auth/login.html"));
+  } catch (error) {
+    if (isTemporaryAuthError(error) && (cached || getAccessToken())) {
+      console.warn("[profile-edit] auth check temporarily failed", error);
+      return;
+    }
+    redirectToLogin();
   }
 }
 
@@ -323,6 +416,26 @@ if (backBtnEl) {
 
 if (saveBtnEl) {
   saveBtnEl.addEventListener("click", saveProfile);
+}
+
+if (proHelpBtnEl) {
+  proHelpBtnEl.addEventListener("click", () => {
+    setProHelpModalOpen(true);
+  });
+}
+
+if (proHelpCloseBtnEl) {
+  proHelpCloseBtnEl.addEventListener("click", () => {
+    setProHelpModalOpen(false);
+  });
+}
+
+if (proHelpModalEl) {
+  proHelpModalEl.addEventListener("click", (event) => {
+    if (event.target === proHelpModalEl) {
+      setProHelpModalOpen(false);
+    }
+  });
 }
 
 loadCurrentProfile();

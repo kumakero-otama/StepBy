@@ -1,7 +1,7 @@
-const CACHE_VERSION = "1.18.0"; // このバージョンはpackage.jsonから自動生成されます
-const APP_BASE_PATH = "/StepBy/UI0";
+const CACHE_VERSION = "1.18.1"; // このバージョンはpackage.jsonから自動生成されます
+const APP_BASE_PATH = "/StepBy/UI2";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
-const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
+const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui2-${Date.now()}`;
 const API_ORIGIN = new URL(API_BASE_URL).origin;
 const API_PATH_PREFIX = new URL(API_BASE_URL).pathname.replace(/\/+$/, "");
 const CORE_ASSETS = [

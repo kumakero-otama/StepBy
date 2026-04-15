@@ -14,7 +14,7 @@
       <h1 class="app-bar-title">सड़क जानकारी विवरण</h1>
       <div class="app-bar-actions" aria-label="ऐप मेनू">
         <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
-          <img src="../assets/buttons/home.png" alt="" />
+          <img src="../assets/buttons/map_white.png" alt="" />
         </a>
         <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
           <img src="../assets/buttons/account.png" alt="" />
@@ -29,42 +29,69 @@
     <main class="detail-wrap">
       <div class="detail-main">
         <p id="detail-error" class="detail-error hidden"></p>
-        <section id="detail-content" class="hidden">
-          <div class="tags-block">
-            <h2 class="section-label">टैग</h2>
-            <ul id="tags-list" class="tags-list"></ul>
+        <section id="detail-content" class="detail-content hidden">
+          <div class="detail-section tags-block">
+            <div class="section-heading">
+              <h2 class="section-label">
+                <span class="section-label-icon" aria-hidden="true">
+                  <img src="../assets/displays/tag_green.png" alt="" />
+                </span>
+                <span>टैग</span>
+              </h2>
+            </div>
+            <div class="section-card">
+              <ul id="tags-list" class="tags-list"></ul>
+            </div>
           </div>
 
-          <div class="posts-head">
-            <h2 class="section-label">पोस्ट <span id="post-count" class="post-count">(कुल 0)</span></h2>
+          <div class="detail-section">
+            <div class="posts-head">
+              <div class="section-heading">
+                <h2 class="section-label">
+                  <span class="section-label-icon" aria-hidden="true">
+                    <img src="../assets/displays/comment_green.png" alt="" />
+                  </span>
+                  <span>पोस्ट</span>
+                  <span id="post-count" class="post-count">(कुल 0)</span>
+                </h2>
+              </div>
+            </div>
+            <div id="posts-list" class="posts-list"></div>
           </div>
-
-          <div id="posts-list" class="posts-list"></div>
         </section>
-        <section id="detail-loading">लोड हो रहा है...</section>
+        <section id="detail-loading" class="detail-loading-card">लोड हो रहा है...</section>
       </div>
 
       <!-- 画面下部の固定操作ボタン -->
       <div class="bottom-actions">
         <button id="post-self-btn" class="btn btn-primary" type="button">यहां भी पोस्ट करें</button>
-        <button id="delete-point-btn" class="btn btn-danger hidden" type="button">इस सड़क जानकारी को हटाएं</button>
-        <button id="back-btn" class="btn" type="button">वापस</button>
+        <button id="delete-point-btn" class="btn btn-danger hidden" type="button">
+          <img class="bottom-action-icon" src="../assets/buttons/delete_white.png" alt="" />
+          <span>इस सड़क जानकारी को हटाएं</span>
+        </button>
       </div>
       <!-- 共通バージョン表示 -->
     </main>
     <div id="comment-modal" class="comment-modal hidden" role="dialog" aria-modal="true" aria-label="टिप्पणी पोस्ट करें">
       <div class="comment-window">
-        <div class="comment-window-head">
-          <div class="comment-window-title">टिप्पणी पोस्ट करें</div>
-          <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="बंद करें">×</button>
-        </div>
+        <button id="comment-close-btn" class="comment-close-btn" type="button" aria-label="बंद करें">×</button>
         <div class="comment-window-body">
+          <div class="comment-window-title">टिप्पणी पोस्ट करें</div>
           <label class="comment-label" for="comment-body-input">विवरण</label>
           <textarea
             id="comment-body-input"
             class="comment-body-input"
             placeholder="टिप्पणी का विवरण यहां लिखें"
           ></textarea>
+
+          <div class="comment-label">छवि अपलोड</div>
+          <div class="comment-upload-buttons">
+            <button id="comment-photo-library-btn" class="btn" type="button">फोटो लाइब्रेरी</button>
+            <button id="comment-camera-btn" class="btn" type="button">फोटो लें</button>
+          </div>
+          <div id="comment-image-preview" class="comment-image-preview">
+            <div class="comment-image-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
+          </div>
 
           <div class="comment-label">टैग जोड़ें (वैकल्पिक)</div>
           <section class="comment-tag-panel" aria-label="टैग चयन">
@@ -89,15 +116,6 @@
               </button>
             </div>
           </section>
-
-          <div class="comment-label">छवि अपलोड</div>
-          <div class="comment-upload-buttons">
-            <button id="comment-photo-library-btn" class="btn" type="button">फोटो लाइब्रेरी</button>
-            <button id="comment-camera-btn" class="btn" type="button">फोटो लें</button>
-          </div>
-          <div id="comment-image-preview" class="comment-image-preview">
-            <div class="comment-image-empty">चयनित छवियां यहां दिखाई जाएंगी</div>
-          </div>
 
           <input
             id="comment-photo-library-input"

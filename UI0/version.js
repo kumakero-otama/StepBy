@@ -1,6 +1,7 @@
+// UI2: V1.17.1
 // アプリケーションバージョン
-const FRONTEND_VERSION = "1.8.11";
-const BACKEND_VERSION = "1.23.0";
+const FRONTEND_VERSION = "1.17.2";
+const BACKEND_VERSION = "1.25.0";
 
 const VERSION_LABELS = {
   ja: {

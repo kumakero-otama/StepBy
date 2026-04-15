@@ -15,9 +15,9 @@
       <h1 class="app-bar-title">Edit Profile</h1>
       <div class="app-bar-actions" aria-label="App menu">
         <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
-          <img src="../assets/buttons/home.png" alt="" />
+          <img src="../assets/buttons/map_white.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <a class="app-bar-icon-link is-current" href="../profile/Index.html" aria-label="Profile">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
         <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="Settings">
@@ -29,40 +29,80 @@
 
     <main class="profile-edit-page">
       <section class="profile-edit-card">
-        <label class="form-label" for="profile-username-input">Username</label>
-        <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
-
-        <p class="form-label icon-label">Profile Icon</p>
-        <div class="icon-row">
-          <img
-            id="profile-icon-preview"
-            class="icon-preview"
-            src="../assets/account_default.png"
-            alt="Current icon"
-          />
-          <div class="icon-action-col">
-            <label class="choice-btn" for="profile-icon-camera-input">Take Photo</label>
-            <label class="choice-btn" for="profile-icon-upload-input">Upload Image</label>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">
+              <img src="../assets/displays/person_green.png" alt="" />
+            </span>
+            <span>Basic info</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="profile-username-input">Username</label>
+            <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
+          </div>
+          <div class="pro-setting-row" role="group" aria-label="PRO account switch">
+            <div class="pro-setting-copy">
+              <div class="pro-toggle-title-row">
+                <p class="form-label pro-toggle-label">PRO Account</p>
+                <button id="profile-pro-help-btn" class="pro-help-btn" type="button" aria-label="About PRO account">
+                  <img src="../assets/buttons/help_66gray.png" alt="" />
+                </button>
+              </div>
+            </div>
+            <div class="pro-toggle-row">
+              <span class="toggle-label">OFF</span>
+              <label class="switch">
+                <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO account" />
+                <span class="slider"></span>
+              </label>
+              <span class="toggle-label">ON</span>
+            </div>
           </div>
         </div>
 
-        <div class="pro-toggle-row" role="group" aria-label="PRO account switch">
-          <p class="form-label pro-toggle-label">PRO Account</p>
-          <span class="toggle-label">OFF</span>
-          <label class="switch">
-            <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO account" />
-            <span class="slider"></span>
-          </label>
-          <span class="toggle-label">ON</span>
+        <div class="form-card">
+          <div class="form-card-title">
+            <span class="form-card-icon" aria-hidden="true">
+              <img src="../assets/displays/camera_green.png" alt="" />
+            </span>
+            <span>Profile icon</span>
+          </div>
+          <div class="icon-upload">
+            <img
+              id="profile-icon-preview"
+              class="icon-preview"
+              src="../assets/account_default.png"
+              alt="Current icon"
+            />
+            <div class="icon-action-col">
+              <label class="choice-btn" for="profile-icon-camera-input">
+                <img src="../assets/displays/camera_green.png" alt="" />
+                <span>Take Photo</span>
+              </label>
+              <label class="choice-btn" for="profile-icon-upload-input">
+                <img src="../assets/displays/library_green.png" alt="" />
+                <span>Photo Library</span>
+              </label>
+            </div>
+          </div>
         </div>
       </section>
     </main>
+
+    <div id="pro-help-modal" class="pro-help-modal hidden" role="dialog" aria-modal="true" aria-label="About PRO account">
+      <div class="pro-help-panel">
+        <button id="pro-help-close-btn" class="pro-help-close-btn" type="button" aria-label="Close">×</button>
+        <p class="pro-help-message">
+          This mode allows professionals who support visually impaired people to record detailed information such as the type of tactile blocks.<br />
+          It is not a paid plan.
+        </p>
+      </div>
+    </div>
 
     <input id="profile-icon-camera-input" class="hidden-input" type="file" accept="image/*" capture="environment" />
     <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />
 
     <footer class="edit-footer">
-      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">Back</button>
       <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">Save changes</button>
     </footer>
     <div id="profile-save-toast" class="save-toast" role="status" aria-live="polite">

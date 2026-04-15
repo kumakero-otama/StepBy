@@ -9,41 +9,47 @@
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="auth.css" />
   </head>
-  <body>
-    <main class="auth-shell">
-      <section class="auth-card" aria-labelledby="signup-profile-title">
-        <h1 id="signup-profile-title">Sign Up</h1>
+  <body class="signup-profile-page">
+    <main class="auth-shell signup-profile-shell">
+      <section class="auth-card signup-profile-card" aria-labelledby="signup-profile-title">
+        <h1 id="signup-profile-title">Create Account</h1>
         <p class="auth-subtitle">Set your account name and profile icon.</p>
 
         <form id="signup-profile-form" novalidate>
-          <div class="form-row">
+          <div class="form-row signup-profile-field">
             <label for="signup-profile-username">Account name</label>
+            <p class="signup-profile-note">For privacy protection, never enter your real name.</p>
             <input
               id="signup-profile-username"
               name="username"
               type="text"
               maxlength="50"
               autocomplete="username"
+              placeholder=""
             />
           </div>
-          <div class="form-row">
-            <label for="signup-profile-icon">Profile Icon</label>
-            <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
-            <img
-              id="signup-profile-icon-preview"
-              class="signup-icon-preview hidden"
-              alt="Preview of selected profile icon"
-            />
+          <div class="form-row signup-profile-field">
+            <label for="signup-profile-icon">Profile Icon (Optional)</label>
+            <div class="signup-icon-preview-wrap">
+              <img
+                id="signup-profile-icon-preview"
+                class="signup-icon-preview hidden"
+                alt="Preview of selected profile icon"
+              />
+              <label class="signup-file-button" for="signup-profile-icon">Choose Image</label>
+              <input id="signup-profile-icon" name="icon" type="file" accept="image/*" />
+            </div>
           </div>
-          <div class="agreement-row">
+          <div class="agreement-row signup-profile-agreement-row">
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
-              <span>I agree to the Terms of Service</span>
+              <span>
+                I agree to the <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">Terms of Service</button>
+              </span>
             </label>
-            <button id="open-user-agreement" type="button" class="agreement-link">Terms of Service</button>
           </div>
           <div class="actions">
-            <button class="btn btn-primary" id="signup-profile-submit" type="submit">Register</button>
+            <button class="btn btn-primary signup-profile-submit" id="signup-profile-submit" type="submit">Register</button>
           </div>
         </form>
         <p id="google-auth-status" class="helper-text"></p>

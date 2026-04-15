@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>प्रोफ़ाइल</title>
+    <meta name="theme-color" content="#348f82" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="profile.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">प्रोफ़ाइल</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="profile-page">
+      <section class="profile-card">
+        <div class="profile-avatar-wrap">
+          <img
+            id="profile-avatar"
+            class="profile-avatar"
+            src="../assets/account_default.png"
+            alt="प्रोफ़ाइल आइकन"
+          />
+          <div class="profile-mini-actions" aria-label="प्रोफ़ाइल क्रियाएं">
+            <button id="profile-edit-btn" class="profile-mini-btn" type="button" aria-label="प्रोफ़ाइल संपादित करें">
+              <img src="../assets/buttons/profile_edit.png" alt="" />
+            </button>
+            <button id="profile-logout-btn" class="profile-mini-btn" type="button" aria-label="लॉग आउट">
+              <img src="../assets/buttons/logout.png" alt="" />
+            </button>
+          </div>
+        </div>
+
+        <h2 id="profile-username" class="profile-username">username</h2>
+
+        <h3 class="achievement-title">उपलब्धियां</h3>
+        <ul class="achievement-list">
+          <li>कुल स्पर्श मार्ग दूरी: <span id="total-tactile-length">0m</span></li>
+          <li>कुल सड़क जानकारी पोस्ट: <span id="total-road-posts">0</span></li>
+          <li>कुल प्राप्त हार्ट: <span id="total-hearts">0</span></li>
+        </ul>
+      </section>
+    </main>
+    <script src="../config.js"></script>
+
+    <script src="../auth/token_client.js"></script>
+    <script src="profile.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

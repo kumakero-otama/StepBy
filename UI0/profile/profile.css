@@ -5,47 +5,118 @@ body {
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.app-bar {
+  background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 52%, #3bb49f 100%);
+  box-shadow: 0 10px 28px rgba(30, 122, 109, 0.26);
+  overflow: hidden;
+}
+
+.app-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.12), transparent 20%),
+    linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.1) 50%, transparent 78%);
+  pointer-events: none;
+}
+
+.app-bar .app-bar-title {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.app-bar-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.app-bar-icon-link {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+.app-bar-spacer {
+  background: linear-gradient(180deg, rgba(46, 158, 143, 0.12), rgba(46, 158, 143, 0));
+}
+
 .profile-page {
   max-width: 860px;
   margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: 0 16px 40px;
 }
 
 .profile-card {
-  padding: 16px 0 8px;
+  padding: 0 0 8px;
+}
+
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 28px 20px 30px;
+  background: linear-gradient(135deg, #0d3535 0%, #1a5c5c 25%, #2e9e8f 55%, #3bb49f 80%, #4bdbb4 100%);
+  box-shadow: 0 18px 36px rgba(24, 82, 80, 0.24);
+  text-align: center;
+  margin: 0 -16px;
+}
+
+.profile-hero::before {
+  content: "";
+  position: absolute;
+  top: -46px;
+  right: -34px;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+}
+
+.profile-hero::after {
+  content: "";
+  position: absolute;
+  bottom: -36px;
+  left: -28px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 184, 71, 0.12) 0%, transparent 70%);
+}
+
+.profile-hero-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .profile-avatar-wrap {
   position: relative;
-  width: 180px;
-  margin: 0 auto;
+  width: 108px;
+  height: 108px;
+  margin: 0 auto 14px;
 }
 
 .profile-avatar {
-  width: 180px;
-  height: 180px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 10px solid #6a6e73;
-  background: #fff;
-}
-
-.profile-mini-actions {
-  position: absolute;
-  right: -132px;
-  top: 6px;
-  display: inline-flex;
-  gap: 8px;
+  border: 3px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
 .profile-mini-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  border: 1px solid rgba(61, 83, 104, 0.35);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 6px;
-  cursor: pointer;
+  display: none;
 }
 
 .profile-mini-btn img {
@@ -56,44 +127,223 @@ body {
 }
 
 .profile-username {
+  position: relative;
+  z-index: 1;
   margin: 16px 0 12px;
   text-align: center;
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: 800;
-  color: #3d5368;
+  color: #fff;
   line-height: 1.15;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.achievement-title {
-  margin: 12px 0 8px;
-  font-size: 2rem;
-  font-weight: 800;
-  color: #1f2d3a;
+.profile-badge-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  min-height: 22px;
+  margin-bottom: 14px;
 }
 
-.achievement-list {
-  margin: 0;
-  padding-left: 1.2em;
-  list-style: disc;
+.profile-edit-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.profile-edit-btn:disabled,
+.profile-edit-btn.is-disabled {
+  cursor: default;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0.8;
+}
+
+.profile-edit-btn:disabled img,
+.profile-edit-btn.is-disabled img {
+  opacity: 0.55;
+}
+
+.profile-edit-btn img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+}
+
+.stats-row {
   display: grid;
-  gap: 6px;
-  font-size: 2rem;
-  color: #111;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
 }
 
-.achievement-list li {
+.profile-wide-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.profile-wide-btn {
+  box-sizing: border-box;
+  width: 100%;
+  height: 88px;
+  min-height: 88px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(223, 230, 236, 0.95);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(31, 51, 68, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  text-decoration: none;
+  color: #355066;
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile-wide-btn-danger {
+  color: #2f3f4f;
+}
+
+.profile-wide-btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-wide-btn-icon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+.profile-wide-btn-icon-help {
+  background: #4e8de8;
+}
+
+.profile-wide-btn-icon-logout {
+  background: #f35f5f;
+}
+
+.profile-wide-btn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-wide-btn-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #23384b;
+  line-height: 1.2;
+}
+
+.profile-wide-btn-description {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a0acb8;
   line-height: 1.35;
 }
 
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  background: #fff;
+  border: 1px solid rgba(223, 230, 236, 0.95);
+  border-radius: 22px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 12px 28px rgba(31, 51, 68, 0.1);
+  text-align: center;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #2e9e8f;
+}
+
+.stat-card:nth-child(2)::before {
+  background: #f2c230;
+}
+
+.stat-label {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #97a4b2;
+  line-height: 1.4;
+}
+
+.stat-value {
+  font-size: 2.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-card:first-child .stat-value {
+  color: #2e9e8f;
+}
+
+.stat-card:nth-child(2) .stat-value {
+  color: #d99800;
+}
+
+.stat-value .unit,
+.stat-value .suffix {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
 @media (max-width: 720px) {
+  .profile-page {
+    padding: 0 12px 32px;
+  }
+
+  .profile-hero {
+    padding: 24px 16px 26px;
+    margin: 0 -12px;
+  }
+
   .profile-avatar-wrap {
-    width: 130px;
+    width: 92px;
+    height: 92px;
   }
 
   .profile-avatar {
-    width: 130px;
-    height: 130px;
-    border-width: 7px;
+    border-width: 3px;
   }
 
   .profile-mini-btn {
@@ -102,20 +352,31 @@ body {
     padding: 5px;
   }
 
-  .profile-mini-actions {
-    right: -86px;
-    top: 4px;
-  }
-
   .profile-username {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
 
-  .achievement-title {
-    font-size: 1.5rem;
+  .profile-edit-btn {
+    width: 100%;
+    max-width: 240px;
   }
 
-  .achievement-list {
-    font-size: 1.35rem;
+  .stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .profile-wide-actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    border-radius: 18px;
+    padding: 16px 14px;
+  }
+
+  .stat-value {
+    font-size: 1.85rem;
   }
 }

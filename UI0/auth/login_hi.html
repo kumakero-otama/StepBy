@@ -2,7 +2,7 @@
 <html lang="hi">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <script src="../language_redirect.js"></script>
     <title>लॉग इन | Draggable Map</title>
     <meta name="theme-color" content="#0f766e" />
@@ -10,19 +10,47 @@
     <link rel="stylesheet" href="auth.css" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
-  <body>
-    <main class="auth-shell">
-      <section class="auth-card" aria-labelledby="login-title">
-        <div class="actions">
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-hero" aria-label="StepBy introduction">
+        <div class="login-logo"><img src="../assets/StepBy_icon_192.png" alt="StepBy" /></div>
+        <h1 class="login-title">StepBy</h1>
+        <p class="login-subtitle">सबके साथ मिलकर<br />बैरियर-फ्री मैप बनाएं</p>
+        <ul class="login-features" aria-label="Main features">
+          <li class="login-feature">
+            <span class="login-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13Zm4 2.2a.8.8 0 0 0-.8.8v7a.8.8 0 0 0 1.3.61l2.68-2.22a1 1 0 0 1 1.24 0l1.94 1.58a1 1 0 0 0 1.3-.06l2.8-2.8a.8.8 0 0 0-.57-1.37H17.8a.8.8 0 0 0-.57.24l-2.13 2.13a1 1 0 0 1-1.34.05L11 11.52a1 1 0 0 0-1.24-.01L7.5 13.34a.8.8 0 0 1-1.3-.63V8.5a.8.8 0 0 1 .8-.8H7Z"/></svg></span>
+            <span class="login-feature-label">मैप देखें</span>
+          </li>
+          <li class="login-feature">
+            <span class="login-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7.5 4A3.5 3.5 0 1 1 4 7.5 3.5 3.5 0 0 1 7.5 4Zm9 0A3.5 3.5 0 1 1 13 7.5 3.5 3.5 0 0 1 16.5 4ZM7.5 13A3.5 3.5 0 1 1 4 16.5 3.5 3.5 0 0 1 7.5 13Zm9 0A3.5 3.5 0 1 1 13 16.5 3.5 3.5 0 0 1 16.5 13Z"/></svg></span>
+            <span class="login-feature-label">स्पर्श मार्ग दर्ज करें</span>
+          </li>
+          <li class="login-feature">
+            <span class="login-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 7.5h3l1.3-2h6.4l1.3 2h3A1.5 1.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5V9a1.5 1.5 0 0 1 1.5-1.5Zm7 2.5a4 4 0 1 0 0 8a4 4 0 0 0 0-8Zm0 1.8a2.2 2.2 0 1 1 0 4.4a2.2 2.2 0 0 1 0-4.4Z"/></svg></span>
+            <span class="login-feature-label">सड़क जानकारी साझा करें</span>
+          </li>
+        </ul>
+      </section>
+      <section class="login-card" aria-labelledby="login-title-panel">
+        <p id="login-title-panel" class="login-card-hint">अपने खाते से लॉग इन करें</p>
+        <div id="login-processing-panel" class="login-processing-panel hidden" aria-live="polite" aria-hidden="true">
+          <div class="login-processing-spinner" aria-hidden="true"></div>
+          <p id="login-processing-title" class="login-processing-title">लॉग इन किया जा रहा है...</p>
+          <p id="login-processing-message" class="login-processing-message">Google साइन-इन की पुष्टि की जा रही है। कृपया इसी स्क्रीन पर प्रतीक्षा करें।</p>
+        </div>
+        <div class="login-google-wrap">
           <div id="google-signin-button" class="google-signin-button"></div>
         </div>
-        <p id="google-auth-status" class="helper-text"></p>
+        <div class="login-divider" aria-hidden="true"><span>गेस्ट के रूप में उपयोग करें</span></div>
+        <div class="login-guest-wrap">
+          <button id="guest-login-button" class="login-guest-button" type="button">गेस्ट के रूप में जारी रखें</button>
+        </div>
+        <p id="google-auth-status" class="helper-text login-status"></p>
       </section>
     </main>
     <script src="../config.js"></script>
-
     <script src="../auth/token_client.js"></script>
-    <script src="auth.js?v=20260228"></script>
+    <script src="auth.js?v=20260404"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>

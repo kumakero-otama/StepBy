@@ -1,7 +1,7 @@
 (() => {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const PROFILE_CACHE_KEY = "cached_profile_user.v1";
-  const DEFAULT_APP_BASE_PATH = "/StepBy/UI0";
+  const DEFAULT_APP_BASE_PATH = "/StepBy/UI2";
   const DEFAULT_API_BASE_URL = "https://barrierfree-map.loophole.site";
 
   function normalizeBasePath(value) {
@@ -54,34 +54,38 @@
   }
 
   function getProfileCacheStorage() {
+    return getProfileCacheStorages()[0] || null;
+  }
+
+  function getProfileCacheStorages() {
+    const storages = [];
     try {
       if (window.localStorage) {
-        return window.localStorage;
+        storages.push(window.localStorage);
       }
     } catch {
       // ignore storage access errors
     }
     try {
-      if (window.sessionStorage) {
-        return window.sessionStorage;
+      if (window.sessionStorage && !storages.includes(window.sessionStorage)) {
+        storages.push(window.sessionStorage);
       }
     } catch {
       // ignore storage access errors
     }
-    return null;
+    return storages;
   }
 
   function loadCachedProfileUser() {
     try {
-      const storage = getProfileCacheStorage();
-      if (!storage) {
-        return null;
+      for (const storage of getProfileCacheStorages()) {
+        const raw = storage.getItem(PROFILE_CACHE_KEY);
+        if (!raw) {
+          continue;
+        }
+        return JSON.parse(raw);
       }
-      const raw = storage.getItem(PROFILE_CACHE_KEY);
-      if (!raw) {
-        return null;
-      }
-      return JSON.parse(raw);
+      return null;
     } catch {
       return null;
     }
@@ -89,18 +93,21 @@
 
   function saveCachedProfileUserIsPro(isPro) {
     try {
-      const storage = getProfileCacheStorage();
-      if (!storage) {
+      const storages = getProfileCacheStorages();
+      if (!storages.length) {
         return;
       }
       const existing = loadCachedProfileUser();
       if (!existing || typeof existing !== "object") {
         return;
       }
-      storage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+      const serialized = JSON.stringify({
         ...existing,
         isPro,
-      }));
+      });
+      storages.forEach((storage) => {
+        storage.setItem(PROFILE_CACHE_KEY, serialized);
+      });
     } catch {
       // ignore storage errors
     }

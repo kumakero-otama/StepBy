@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script src="../language_redirect.js"></script>
+    <title>मानचित्र | Draggable Map</title>
+    <meta name="theme-color" content="#222222" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="map.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">होम</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+    <script src="../config.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script>
+      // 認証機能未実装の暫定対応:
+      // 明示的なデバッグ遷移（?debug=1）または有効なセッションがある場合のみ表示する。
+      (async () => {
+        const query = new URLSearchParams(window.location.search);
+        if (query.get("debug") === "1") {
+          return;
+        }
+        try {
+          const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
+            ? window.AuthToken.authFetch
+            : fetch;
+          const res = await authFetch("/auth/me");
+          if (!res.ok) {
+            if ((res.status === 401 || res.status === 403)
+              && window.AuthToken
+              && typeof window.AuthToken.clearAccessToken === "function") {
+              window.AuthToken.clearAccessToken();
+            }
+            window.location.replace(AppPath.toApp("/auth/login.html"));
+            return;
+          }
+          const payload = await res.json();
+          if (!payload || !payload.authenticated) {
+            if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
+              window.AuthToken.clearAccessToken();
+            }
+            window.location.replace(AppPath.toApp("/auth/login.html"));
+          }
+        } catch {
+          // 一時的な通信障害ではトークンを消さず、次回の再試行余地を残す。
+          window.location.replace(AppPath.toApp("/auth/login.html"));
+        }
+      })();
+    </script>
+    <main id="map-layout" class="wrap map-layout">
+      <!-- 地図本体 -->
+      <div class="map-row">
+        <div id="map" aria-label="मानचित्र"></div>
+      </div>
+      <div class="record-actions" role="group" aria-label="स्पर्श मार्ग रिकॉर्डिंग क्रियाएं">
+        <button id="record-action-btn" class="record-action-btn record-main-btn" type="button" aria-pressed="false" data-start-label="रिकॉर्ड" data-stop-label="रिकॉर्ड समाप्त">
+          <span id="record-action-icon" class="record-action-icon record-action-icon-circle" aria-hidden="true"></span>
+          <span id="record-action-text" class="record-action-text">रिकॉर्ड</span>
+        </button>
+        <button
+          id="pause-action-btn"
+          class="record-action-btn pause-btn"
+          type="button"
+          disabled
+          aria-disabled="true"
+          data-pause-label="रोकें"
+          data-resume-label="रिकॉर्ड फिर शुरू"
+        >
+          <span id="pause-action-icon" class="pause-icon" aria-hidden="true">
+            <span class="pause-bar"></span>
+            <span class="pause-bar"></span>
+          </span>
+          <span id="pause-action-text" class="record-action-text">रोकें</span>
+        </button>
+      </div>
+      <!-- 共通バージョン表示 -->
+      <section id="map-controls-panel" class="map-controls-panel" aria-label="मानचित्र controls">
+        <button
+          id="map-controls-handle"
+          class="map-controls-handle"
+          type="button"
+          aria-label="मानचित्र नियंत्रण दिखाएं/छुपाएं"
+          aria-expanded="true"
+        >
+          <span class="map-controls-handle-bar"></span>
+        </button>
+        <div id="map-controls-content" class="map-controls-content">
+          <div class="meta">
+            <div class="meta-controls">
+              <div class="meta-toggles">
+                <div class="record-toggle" role="group" aria-label="मानचित्र जानकारी टॉगल">
+                  <span class="record-title">मानचित्र जानकारी दिखाएं:</span>
+                  <span class="record-label">बंद</span>
+                  <label class="switch">
+                    <input id="toggle-show-map-info" type="checkbox" aria-label="मानचित्र जानकारी दिखाएं" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="record-label">चालू</span>
+                </div>
+                <div class="record-toggle" role="group" aria-label="वर्तमान स्थान केंद्रित टॉगल">
+                  <span class="record-title">वर्तमान स्थान केंद्र में रखें:</span>
+                  <span class="record-label">बंद</span>
+                  <label class="switch">
+                    <input
+                      id="toggle-center-current"
+                      type="checkbox"
+                      aria-label="वर्तमान स्थान केंद्र में रखें"
+                      checked
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="record-label">चालू</span>
+                </div>
+              </div>
+              <div id="gps-indicator" class="gps-indicator" aria-hidden="true">
+                <img src="../assets/GPS.png" alt="" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="osm-loading-overlay" class="osm-loading-overlay hidden" aria-live="polite" aria-busy="true">
+      <div class="osm-loading-spinner" aria-hidden="true"></div>
+      <div class="osm-loading-text">OSM डेटा लोड हो रहा है...</div>
+    </div>
+    <div id="records-loading-overlay" class="records-loading-overlay hidden" aria-live="polite" aria-busy="true">
+      <div class="records-loading-spinner" aria-hidden="true"></div>
+      <div class="records-loading-text">स्पर्श मार्ग डेटा लोड हो रहा है...</div>
+    </div>
+    <!-- 記録停止時の確認モーダル -->
+    <div id="trace-confirm-modal" class="trace-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trace-confirm-title">
+      <div class="trace-confirm-panel">
+        <h2 id="trace-confirm-title">この経路で保存しますか</h2>
+        <div class="trace-confirm-scroll">
+          <div id="trace-confirm-map" aria-label="सहेजने से पहले मार्ग पूर्वावलोकन"></div>
+          <section id="trace-tag-panel" class="trace-tag-panel hidden" aria-label="टैग चयन">
+            <h3 class="trace-tag-title">タグ</h3>
+            <input
+              id="trace-tag-search"
+              class="trace-tag-search"
+              type="text"
+              placeholder="検索または追加..."
+              enterkeyhint="done"
+            />
+            <div id="trace-tag-selected" class="trace-tag-selected"></div>
+            <div id="trace-tag-list" class="trace-tag-list"></div>
+            <div id="trace-tag-error" class="trace-tag-error hidden" role="alert" aria-live="assertive"></div>
+          </section>
+          <section id="trace-memo-panel" class="trace-memo-panel hidden" aria-label="छोटा मेमो">
+            <label class="trace-memo-title" for="trace-memo-input">छोटा मेमो</label>
+            <textarea
+              id="trace-memo-input"
+              class="trace-memo-input"
+              rows="3"
+              placeholder="वैकल्पिक मेमो लिखें"
+            ></textarea>
+            <p class="trace-memo-note">यह छोटा मेमो केवल आपको ही दिखाई देगा।</p>
+          </section>
+        </div>
+        <div class="trace-confirm-actions">
+          <button id="trace-confirm-ok" class="btn" type="button">ठीक है</button>
+          <button id="trace-confirm-cancel" class="btn secondary" type="button">रद्द करें</button>
+        </div>
+      </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="map.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>प्रोफ़ाइल संपादन</title>
+    <meta name="theme-color" content="#348f82" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="edit.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">प्रोफ़ाइल संपादन</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index.html" aria-label="सेटिंग्स">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="profile-edit-page">
+      <section class="profile-edit-card">
+        <label class="form-label" for="profile-username-input">उपयोगकर्ता नाम</label>
+        <input id="profile-username-input" class="form-input" type="text" maxlength="50" autocomplete="nickname" />
+
+        <p class="form-label icon-label">प्रोफ़ाइल आइकन</p>
+        <div class="icon-row">
+          <img
+            id="profile-icon-preview"
+            class="icon-preview"
+            src="../assets/account_default.png"
+            alt="वर्तमान आइकन"
+          />
+          <div class="icon-action-col">
+            <label class="choice-btn" for="profile-icon-camera-input">फोटो लें</label>
+            <label class="choice-btn" for="profile-icon-upload-input">छवि अपलोड करें</label>
+          </div>
+        </div>
+
+        <div class="pro-toggle-row" role="group" aria-label="PRO खाता स्विच">
+          <p class="form-label pro-toggle-label">PRO खाता</p>
+          <span class="toggle-label">बंद</span>
+          <label class="switch">
+            <input id="profile-pro-toggle-input" type="checkbox" aria-label="PRO खाता" />
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label">चालू</span>
+        </div>
+      </section>
+    </main>
+
+    <input id="profile-icon-camera-input" class="hidden-input" type="file" accept="image/*" capture="environment" />
+    <input id="profile-icon-upload-input" class="hidden-input" type="file" accept="image/*" />
+
+    <footer class="edit-footer">
+      <button id="profile-edit-back-btn" class="footer-btn footer-btn-light" type="button">वापस</button>
+      <button id="profile-edit-save-btn" class="footer-btn footer-btn-solid" type="button">बदलाव सहेजें</button>
+    </footer>
+    <div id="profile-save-toast" class="save-toast" role="status" aria-live="polite">
+      प्रोफ़ाइल बदलाव सहेजे गए!
+    </div>
+    <script src="../config.js"></script>
+
+    <script src="../auth/token_client.js"></script>
+    <script src="edit.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

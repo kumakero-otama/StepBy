@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>Help | Draggable Map</title>
+    <link rel="stylesheet" href="../appbar.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f7f7f7;
+        overflow-x: hidden;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .help-wrap {
+        width: min(860px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 16px 0 28px;
+      }
+
+      .help-card {
+        border: 2px solid #222;
+        border-radius: 14px;
+        background: #fff;
+        padding: 16px;
+        color: #111;
+      }
+
+      .help-section + .help-section {
+        margin-top: 18px;
+      }
+
+      .section-title {
+        margin: 0 0 10px;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .faq-item + .faq-item {
+        margin-top: 10px;
+      }
+
+      .faq-trigger {
+        width: 100%;
+        border: 1px solid #222;
+        border-radius: 10px;
+        background: #fff;
+        color: #111;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: left;
+        padding: 12px 14px;
+        cursor: pointer;
+      }
+
+      .faq-trigger::after {
+        content: "＋";
+        float: right;
+      }
+
+      .faq-trigger[aria-expanded="true"]::after {
+        content: "－";
+      }
+
+      .faq-answer {
+        margin: 8px 0 0;
+        padding: 12px 14px;
+        border: 1px solid #d8d8d8;
+        border-radius: 10px;
+        background: #f9f9f9;
+        line-height: 1.6;
+      }
+
+      .faq-answer[hidden] {
+        display: none;
+      }
+
+      .help-list {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .help-list li + li {
+        margin-top: 10px;
+      }
+
+      .help-list li {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .help-list a {
+        display: inline-block;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        vertical-align: top;
+      }
+
+    </style>
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">HELP</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/buttons/home.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../otasuke/Index_en.html" aria-label="Settings">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="help-wrap">
+      <section class="help-card" aria-label="Help">
+        <section class="help-section" aria-label="FAQ">
+          <h2 class="section-title">FAQ</h2>
+          <div class="faq-item">
+            <button class="faq-trigger" type="button" aria-expanded="false" aria-controls="faq-answer-1-en">
+              Q1. What is StepBy?
+            </button>
+            <p id="faq-answer-1-en" class="faq-answer" hidden>
+              A1. StepBy is an app where you can view and post tactile blocks and road information on a map.
+            </p>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" type="button" aria-expanded="false" aria-controls="faq-answer-2-en">
+              Q2. Where can I change settings?
+            </button>
+            <p id="faq-answer-2-en" class="faq-answer" hidden>
+              A2. You can open the settings screen from the settings icon at the top right.
+            </p>
+          </div>
+        </section>
+
+        <section class="help-section" aria-label="How to use the app">
+          <h2 class="section-title">How to Use the App</h2>
+          <ul class="help-list">
+            <li>
+              App introduction video:
+              <a href="https://drive.google.com/file/d/1mu7Pg66f_OTjb1eTBp93KYheRiE9v9VQ/view?usp=sharing" target="_blank" rel="noopener noreferrer">https://drive.google.com/file/d/1mu7Pg66f_OTjb1eTBp93KYheRiE9v9VQ/view?usp=sharing</a>
+            </li>
+            <li>
+              Detailed app introduction page:
+              <a href="https://protopedia.net/prototype/8070" target="_blank" rel="noopener noreferrer">https://protopedia.net/prototype/8070</a>
+            </li>
+          </ul>
+        </section>
+
+        <section class="help-section" aria-label="Form list">
+          <h2 class="section-title">Form List</h2>
+          <ul class="help-list">
+            <li>
+              StepBy user survey:
+              <a href="https://forms.gle/hUGfTrXDmqXiUkSB6" target="_blank" rel="noopener noreferrer">https://forms.gle/hUGfTrXDmqXiUkSB6</a>
+            </li>
+            <li>
+              StepBy bug report form:
+              <a href="https://forms.gle/iaj2DDPDCq8CabJLA" target="_blank" rel="noopener noreferrer">https://forms.gle/iaj2DDPDCq8CabJLA</a>
+            </li>
+          </ul>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      document.querySelectorAll(".faq-trigger").forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const targetId = trigger.getAttribute("aria-controls");
+          const panel = targetId ? document.getElementById(targetId) : null;
+          if (!panel) {
+            return;
+          }
+          const expanded = trigger.getAttribute("aria-expanded") === "true";
+          trigger.setAttribute("aria-expanded", expanded ? "false" : "true");
+          panel.hidden = expanded;
+        });
+      });
+    </script>
+    <script src="../config.js"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>
