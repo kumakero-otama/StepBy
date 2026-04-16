@@ -15,7 +15,7 @@
     - OSM点字ブロック表示
     - 道情報の表示
     - 現在地の中央表示
-  - お助け投稿ボタン（`/otasuke/Index.html`）
+  - 設定ボタン（`/setting/Index.html`）
   - バージョン表示
   - 記録停止時の確認モーダル
 - 読み込むスクリプト:
@@ -44,4 +44,3 @@
   - 道情報ピン表示（`/api/road-info`）
   - 道情報ピンクリックで詳細画面へ遷移（`/road_info_detail/Index.html?pointId=...`）
   - 地図タップで投稿画面へ遷移（`/post_road/Index.html`）
-

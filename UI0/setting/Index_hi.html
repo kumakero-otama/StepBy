@@ -1,11 +1,11 @@
 <!doctype html>
-<!-- このファイルは おたすけ画面の英語マークアップを定義する。 -->
-<html lang="en">
+<!-- このファイルは おたすけ画面のヒンディー語マークアップを定義する。 -->
+<html lang="hi">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="../language_redirect.js"></script>
-    <title>Settings | Draggable Map</title>
+    <title>सेटिंग्स | Draggable Map</title>
     <link rel="stylesheet" href="../appbar.css" />
     <style>
       html,
@@ -327,15 +327,15 @@
   </head>
   <body>
     <header class="app-bar">
-      <h1 class="app-bar-title">SETTINGS</h1>
-      <div class="app-bar-actions" aria-label="App menu">
-        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+      <h1 class="app-bar-title">सेटिंग्स</h1>
+      <div class="app-bar-actions" aria-label="ऐप मेनू">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="होम">
           <img src="../assets/buttons/map_white.png" alt="" />
         </a>
-        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="प्रोफ़ाइल">
           <img src="../assets/buttons/account.png" alt="" />
         </a>
-        <a class="app-bar-icon-link is-current" href="../otasuke/Index_en.html" aria-label="Settings">
+        <a class="app-bar-icon-link is-current" href="../setting/Index_hi.html" aria-label="सेटिंग्स">
           <img src="../assets/buttons/setting.png" alt="" />
         </a>
       </div>
@@ -343,72 +343,72 @@
     <div class="app-bar-spacer" aria-hidden="true"></div>
 
     <main class="settings-wrap">
-      <section class="settings-card" aria-label="Settings list">
+      <section class="settings-card" aria-label="सेटिंग्स सूची">
         <div class="accordion-item">
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-map-display">
             <span class="accordion-trigger-label">
               <img class="accordion-trigger-icon" src="../assets/displays/map_green.png" alt="" aria-hidden="true" />
-              <span>Map display</span>
+              <span>मानचित्र प्रदर्शन</span>
             </span>
           </button>
           <div id="panel-map-display" class="accordion-panel" hidden>
             <div class="setting-group">
-              <div class="record-toggle" role="group" aria-label="My tactile blocks toggle">
-                <span class="record-title">My tactile blocks</span>
-                <span class="record-label">OFF</span>
+              <div class="record-toggle" role="group" aria-label="मेरे स्पर्श मार्ग toggle">
+                <span class="record-title">मेरे स्पर्श मार्ग</span>
+                <span class="record-label">बंद</span>
                 <label class="switch">
                   <input
                     id="setting-show-only-my-tactile"
                     type="checkbox"
-                    aria-label="My tactile blocks"
+                    aria-label="मेरे स्पर्श मार्ग"
                   />
                   <span class="slider"></span>
                 </label>
-                <span class="record-label">ON</span>
+                <span class="record-label">चालू</span>
               </div>
               <div class="record-toggle" role="group" aria-label="App tactile blocks toggle">
-                <span class="record-title">Tactile blocks posted in app</span>
-                <span class="record-label">OFF</span>
+                <span class="record-title">ऐप से पोस्ट किए गए स्पर्श मार्ग</span>
+                <span class="record-label">बंद</span>
                 <label class="switch">
-                  <input id="setting-show-app-tactile" type="checkbox" aria-label="Tactile blocks posted in app" />
+                  <input id="setting-show-app-tactile" type="checkbox" aria-label="ऐप से पोस्ट किए गए स्पर्श मार्ग" />
                   <span class="slider"></span>
                 </label>
-                <span class="record-label">ON</span>
+                <span class="record-label">चालू</span>
               </div>
               <div class="record-toggle" role="group" aria-label="OSM tactile blocks toggle">
-                <span class="record-title">Tactile blocks from OSM</span>
-                <span class="record-label">OFF</span>
+                <span class="record-title">OSM से स्पर्श मार्ग</span>
+                <span class="record-label">बंद</span>
                 <label class="switch">
-                  <input id="setting-show-osm-tactile" type="checkbox" aria-label="Tactile blocks from OSM" />
+                  <input id="setting-show-osm-tactile" type="checkbox" aria-label="OSM से स्पर्श मार्ग" />
                   <span class="slider"></span>
                 </label>
-                <span class="record-label">ON</span>
+                <span class="record-label">चालू</span>
               </div>
-              <div class="record-toggle" role="group" aria-label="My road info toggle">
-                <span class="record-title">My road info</span>
-                <span class="record-label">OFF</span>
+              <div class="record-toggle" role="group" aria-label="मेरी सड़क जानकारी toggle">
+                <span class="record-title">मेरी सड़क जानकारी</span>
+                <span class="record-label">बंद</span>
                 <label class="switch">
                   <input
                     id="setting-show-only-my-road-info"
                     type="checkbox"
-                    aria-label="My road info"
+                    aria-label="मेरी सड़क जानकारी"
                   />
                   <span class="slider"></span>
                 </label>
-                <span class="record-label">ON</span>
+                <span class="record-label">चालू</span>
               </div>
-              <div class="record-toggle" role="group" aria-label="All road info toggle">
-                <span class="record-title">All road info</span>
-                <span class="record-label">OFF</span>
+              <div class="record-toggle" role="group" aria-label="सभी सड़क जानकारी toggle">
+                <span class="record-title">सभी सड़क जानकारी</span>
+                <span class="record-label">बंद</span>
                 <label class="switch">
                   <input
                     id="setting-show-all-road-info"
                     type="checkbox"
-                    aria-label="All road info"
+                    aria-label="सभी सड़क जानकारी"
                   />
                   <span class="slider"></span>
                 </label>
-                <span class="record-label">ON</span>
+                <span class="record-label">चालू</span>
               </div>
             </div>
           </div>
@@ -418,22 +418,22 @@
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-theme">
             <span class="accordion-trigger-label">
               <img class="accordion-trigger-icon" src="../assets/displays/contrast_green.png" alt="" aria-hidden="true" />
-              <span>Light / Dark</span>
+              <span>लाइट / डार्क</span>
             </span>
           </button>
           <div id="panel-theme" class="accordion-panel placeholder-panel" hidden>
             <div class="language-options">
               <label class="language-option" for="theme-light">
                 <input id="theme-light" type="radio" name="theme-mode" value="light" checked />
-                <span>Light</span>
+                <span>लाइट</span>
               </label>
               <label class="language-option" for="theme-dark">
                 <input id="theme-dark" type="radio" name="theme-mode" value="dark" />
-                <span>Dark</span>
+                <span>डार्क</span>
               </label>
               <label class="language-option" for="theme-system">
                 <input id="theme-system" type="radio" name="theme-mode" value="system" />
-                <span>Follow device setting</span>
+                <span>डिवाइस सेटिंग का पालन करें</span>
               </label>
             </div>
           </div>
@@ -443,22 +443,22 @@
           <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="panel-text-size">
             <span class="accordion-trigger-label">
               <img class="accordion-trigger-icon" src="../assets/displays/textsize_green.png" alt="" aria-hidden="true" />
-              <span>Text size</span>
+              <span>टेक्स्ट आकार</span>
             </span>
           </button>
           <div id="panel-text-size" class="accordion-panel placeholder-panel" hidden>
             <div class="language-options">
               <label class="language-option" for="text-size-small">
                 <input id="text-size-small" type="radio" name="text-size" value="small" checked />
-                <span>Small</span>
+                <span>छोटा</span>
               </label>
               <label class="language-option" for="text-size-medium">
                 <input id="text-size-medium" type="radio" name="text-size" value="medium" />
-                <span>Medium</span>
+                <span>मध्यम</span>
               </label>
               <label class="language-option" for="text-size-large">
                 <input id="text-size-large" type="radio" name="text-size" value="large" />
-                <span>Large</span>
+                <span>बड़ा</span>
               </label>
             </div>
           </div>
@@ -489,13 +489,13 @@
           </div>
         </div>
       </section>
-      <a class="help-link" href="../help/Index_en.html" aria-label="Go to help page">
+      <a class="help-link" href="../help/Index_hi.html" aria-label="सहायता पेज पर जाएं">
         <span class="help-link-icon" aria-hidden="true">
           <img src="../assets/buttons/help_white.png" alt="" />
         </span>
         <span class="help-link-body">
-          <span class="help-link-label">Help</span>
-          <span class="help-link-description">How to use and FAQ</span>
+          <span class="help-link-label">सहायता</span>
+          <span class="help-link-description">उपयोग विधि और सामान्य प्रश्न</span>
         </span>
       </a>
       <footer class="version-footer">
@@ -514,9 +514,9 @@
         showOnlyMyRoadInfo: false,
       };
       const DEFAULT_LANGUAGE = "ja";
-      const JA_SETTINGS_PATH = "../otasuke/Index.html";
-      const EN_SETTINGS_PATH = "../otasuke/Index_en.html";
-      const HI_SETTINGS_PATH = "../otasuke/Index_hi.html";
+      const JA_SETTINGS_PATH = "../setting/Index.html";
+      const EN_SETTINGS_PATH = "../setting/Index_en.html";
+      const HI_SETTINGS_PATH = "../setting/Index_hi.html";
 
       function loadSettings() {
         try {
@@ -552,11 +552,11 @@
 
       const settings = loadSettings();
       const selectedLanguage = loadLanguageSetting();
-      const isEnglishPage = window.location.pathname.endsWith("/otasuke/Index_en.html");
-      if (selectedLanguage === "ja" && isEnglishPage) {
+      const isहिंदीPage = window.location.pathname.endsWith("/setting/Index_hi.html");
+      if (selectedLanguage === "ja" && isहिंदीPage) {
         window.location.replace(JA_SETTINGS_PATH);
-      } else if (selectedLanguage === "hi") {
-        window.location.replace(HI_SETTINGS_PATH);
+      } else if (selectedLanguage === "en") {
+        window.location.replace(EN_SETTINGS_PATH);
       }
       const appTactileToggle = document.getElementById("setting-show-app-tactile");
       const osmTactileToggle = document.getElementById("setting-show-osm-tactile");
