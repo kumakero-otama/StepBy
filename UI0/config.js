@@ -1,7 +1,7 @@
 // このファイルは UI0 全体で使う API の接続先やパス解決の共通設定をまとめる。
 (function initAppConfig(globalScope) {
   const defaults = {
-    APP_BASE_PATH: "/StepBy/UI2",
+    APP_BASE_PATH: "/StepBy/UI0",
     API_BASE_URL: "https://barrierfree-map.loophole.site",
   };
 
