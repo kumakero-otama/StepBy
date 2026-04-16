@@ -2,7 +2,7 @@
 (() => {
   const LANGUAGE_SETTINGS_KEY = "displayLanguage.v1";
   const DEFAULT_LANGUAGE = "ja";
-  const HINDI_UNSUPPORTED_PREFIXES = ["/home/", "/analog/"];
+  const HINDI_UNSUPPORTED_PREFIXES = [];
 
   function loadLanguageSetting() {
     try {

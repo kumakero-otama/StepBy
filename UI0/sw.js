@@ -1,5 +1,5 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.1"; // このバージョンはpackage.jsonから自動生成されます
+const CACHE_VERSION = "1.18.2"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI2";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui2-${Date.now()}`;
@@ -8,14 +8,9 @@ const API_PATH_PREFIX = new URL(API_BASE_URL).pathname.replace(/\/+$/, "");
 const CORE_ASSETS = [
   `${APP_BASE_PATH}/`,
   `${APP_BASE_PATH}/config.js`,
-  `${APP_BASE_PATH}/home/Index.html`,
   `${APP_BASE_PATH}/style.css`,
   `${APP_BASE_PATH}/appbar.css`,
-  `${APP_BASE_PATH}/home/app.js`,
   `${APP_BASE_PATH}/version.js`,
-  `${APP_BASE_PATH}/analog/Index.html`,
-  `${APP_BASE_PATH}/analog/analog.css`,
-  `${APP_BASE_PATH}/analog/analog.js`,
   `${APP_BASE_PATH}/map/Index.html`,
   `${APP_BASE_PATH}/map/map.css`,
   `${APP_BASE_PATH}/map/map.js`,

@@ -1,7 +1,5 @@
-// このファイルは UI0 画面で共通利用するバージョン表示の差し込みを担当する。
-// UI2: V1.17.1
 // アプリケーションバージョン
-const FRONTEND_VERSION = "1.18.0";
+const FRONTEND_VERSION = "1.18.1";
 const BACKEND_VERSION = "1.26.0";
 
 const VERSION_LABELS = {
