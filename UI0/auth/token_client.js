@@ -1,3 +1,4 @@
+// このファイルはアクセストークンの保持、更新、認証付き fetch の共通処理を提供する。
 (function initAuthTokenClient(globalScope) {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const DEFAULT_APP_BASE_PATH = "/StepBy/UI2";

@@ -1,3 +1,4 @@
+// このファイルは UI0 全体で使う API の接続先やパス解決の共通設定をまとめる。
 (function initAppConfig(globalScope) {
   const defaults = {
     APP_BASE_PATH: "/StepBy/UI2",

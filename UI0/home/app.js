@@ -1,3 +1,4 @@
+// このファイルはホーム画面の時計表示を定期更新する。
 const clockEl = document.getElementById("clock");
 
 // ホーム画面の時刻表示を現在時刻で更新する。

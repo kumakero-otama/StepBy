@@ -1,3 +1,4 @@
+// このファイルは道情報詳細の取得、表示更新、編集関連 UI の制御を担当する。
 const detailLoadingEl = document.getElementById("detail-loading");
 const detailContentEl = document.getElementById("detail-content");
 const detailErrorEl = document.getElementById("detail-error");

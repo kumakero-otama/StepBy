@@ -1,3 +1,4 @@
+// このファイルはプロフィール編集画面の入力補助、画像選択、保存処理を担当する。
 const usernameInputEl = document.getElementById("profile-username-input");
 const iconPreviewEl = document.getElementById("profile-icon-preview");
 const cameraInputEl = document.getElementById("profile-icon-camera-input");

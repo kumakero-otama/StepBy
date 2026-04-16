@@ -1,3 +1,4 @@
+// このファイルはプロフィール表示に必要なユーザー情報の取得と反映を担当する。
 const profileAvatarEl = document.getElementById("profile-avatar");
 const profileUsernameEl = document.getElementById("profile-username");
 const profileProChipEl = document.getElementById("profile-pro-chip");

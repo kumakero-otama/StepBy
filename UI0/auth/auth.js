@@ -1,3 +1,5 @@
+// このファイルはログイン、ゲスト利用、Google 認証、サインアップ補助の画面制御をまとめて扱う。
+// 認証画面全体で使う定数と主要 DOM 参照を先にまとめて保持する。
 const GOOGLE_CLIENT_ID = "808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com";
 const googleStatusElement = document.getElementById("google-auth-status");
 const guestLoginButton = document.getElementById("guest-login-button");
@@ -11,6 +13,7 @@ const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
+// 画面上の状態表示やエラーメッセージは言語別テキストから引き当てる。
 const AUTH_TEXT = {
   ja: {
     guestChecking: "ゲストログインを確認中です...",
@@ -81,6 +84,7 @@ function getAuthText() {
   return AUTH_TEXT[language] || AUTH_TEXT.ja;
 }
 
+// PWA 表示時も崩れにくいよう、見えているビューポート高を測って CSS 変数へ反映する。
 function measureVisibleViewportHeight() {
   if (window.visualViewport && Number.isFinite(window.visualViewport.height) && window.visualViewport.height > 0) {
     return Number(window.visualViewport.height);
@@ -167,6 +171,7 @@ function setLoginProcessingState(active, options) {
   }
 }
 
+// 認証処理の遷移ログと画面遷移記録を送る共通ラッパー。
 function logAuthEvent(event, extra) {
   if (!clientLogApi || typeof clientLogApi.logEvent !== "function") {
     return;
@@ -307,6 +312,7 @@ function renderMarkdownToHtml(markdown) {
   return parts.join("");
 }
 
+// 新規登録途中の Google 情報やアクセストークンを安全に保持する。
 function setPendingSignupIdToken(idToken) {
   if (!idToken || typeof idToken !== "string") {
     return;
@@ -384,6 +390,7 @@ function isTemporaryAuthError(error) {
   return isTimeoutError(error) || Boolean(error && error.name === "TypeError");
 }
 
+// ログイン後すぐにプロフィール表示へ反映できるよう、ユーザー情報を複数ストレージへ保存する。
 function getProfileCacheStorages() {
   const storages = [];
   try {
@@ -667,6 +674,7 @@ async function loginAsGuest() {
   }
 }
 
+// アイコン画像は送信前に Data URL 化してプレビューと保存処理で共用する。
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -957,6 +965,7 @@ async function handleGoogleCredential(response) {
   await loginWithGoogle(idToken);
 }
 
+// ここから先で、Google ログインとゲストログインの初期化を起動する。
 function initGoogleSignIn() {
   if (signupProfilePage) {
     return;

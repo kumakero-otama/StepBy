@@ -1,3 +1,4 @@
+// このファイルはブラウザ言語と現在の URL を見て適切な言語ページへ誘導する。
 (() => {
   const LANGUAGE_SETTINGS_KEY = "displayLanguage.v1";
   const DEFAULT_LANGUAGE = "ja";

@@ -1,3 +1,5 @@
+// このファイルは地図画面の位置取得、表示切替、記録操作、関連 API 通信を統括する。
+// 地図本体と、後続の表示更新で使う主要 DOM 参照を先に束ねておく。
 const map = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
 const mapLayoutEl = document.getElementById("map-layout");
 const mapRowEl = document.querySelector(".map-row");
@@ -38,6 +40,7 @@ const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
 
+// 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
   ja: {
     invalidSelection: "この選択は無効です",
@@ -50,6 +53,7 @@ const SAFETY_CONFIRM_TEXT = {
   },
 };
 
+// 認証付き API 呼び出しやクライアントログ送信の薄いラッパーを定義する。
 function authFetch(input, init) {
   if (authTokenApi && typeof authTokenApi.authFetch === "function") {
     return authTokenApi.authFetch(input, init);
@@ -159,6 +163,7 @@ function getSafetyConfirmText() {
   return SAFETY_CONFIRM_TEXT[language] || SAFETY_CONFIRM_TEXT.ja;
 }
 
+// 起動直後に表示する安全確認モーダルの開閉をまとめて扱う。
 function hideSafetyConfirmModal() {
   if (!safetyConfirmModalEl) {
     return;
@@ -215,6 +220,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+// 記録済み点字ブロックのカード表示で使う文言と描画補助をここからまとめる。
 const TACTILE_SESSION_TEXT = {
   ja: {
     title: "点字ブロック記録",
@@ -865,6 +871,7 @@ const CENTER_CURRENT_KEY = "centerCurrentEnabled.v1";
 const LAST_LOCATION_CACHE_KEY = "lastKnownLocation.v1";
 const MAP_RETURN_CACHE_KEY = "mapReturnCache.v1";
 const MAP_RETURN_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+// 地図表示のトグル状態はローカル保存して再訪時に復元する。
 const DEFAULT_MAP_DISPLAY_SETTINGS = {
   showAppTactile: true,
   showOsmTactile: true,
@@ -1362,6 +1369,7 @@ window.addEventListener("pageshow", () => {
 });
 
 // UUID v4 生成関数
+// 記録セッションの管理と軌跡生成に使う内部ユーティリティ群。
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -2134,6 +2142,7 @@ async function handleRecordStopWithConfirmation() {
   }
 }
 
+// 現在地取得結果をスナップし、表示更新と記録中の追跡へつなげる。
 function requestSnappedLocation(latitude, longitude) {
   if (!currentUserId) {
     return;
@@ -2328,6 +2337,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
 }
 
 // session_pathsを取得して表示
+// 地図上に重ねる各種データレイヤーの取得と再描画を担当する。
 function loadAndShowAllRecords() {
   refreshMapDisplaySettings();
   const requestSeq = ++recordsLoadRequestSeq;
@@ -2710,6 +2720,7 @@ function applyMapInfoVisibility() {
 }
 
 // サーバーから設定を取得
+// 依存設定の読込後に、初期レイヤーと現在地追跡を起動する。
 function loadConfig() {
   return authFetch("/api/config")
     .then((res) => {

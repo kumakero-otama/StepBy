@@ -1,3 +1,4 @@
+// このファイルは UI0 の PWA 起動時に必要な共通初期化と表示補助を担当する。
 (() => {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const PROFILE_CACHE_KEY = "cached_profile_user.v1";

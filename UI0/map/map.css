@@ -1,3 +1,4 @@
+/* このファイルは地図画面の地図領域、操作パネル、モーダル類の見た目を定義する。 */
 :root {
   --map-layout-height: calc(100dvh - (56px + env(safe-area-inset-top)));
   --system-ui-bottom: 0px;

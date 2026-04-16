@@ -1,3 +1,4 @@
+// このファイルはアナログ画面の UI 操作と表示更新を担当する。
 const hourHand = document.getElementById("hour-hand");
 const minuteHand = document.getElementById("minute-hand");
 const secondHand = document.getElementById("second-hand");
