@@ -1,5 +1,5 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.4"; // このバージョンはpackage.jsonから自動生成されます
+const CACHE_VERSION = "1.18.5"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
