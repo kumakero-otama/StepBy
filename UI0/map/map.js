@@ -865,6 +865,10 @@ function decodePolyline(str, precision) {
 
 let allRecordsMarkers = [];
 let osmTactileMarkers = [];
+// 復帰直後はマップ表示位置の自動中央追従を抑止するフラグ。
+// applyCachedLocation または restoreMapReturnCache で mapReturnCache の位置を復元した直後に true にし、
+// ユーザーが地図に触れる（ドラッグ／ズーム）まで auto-center を抑止する。
+let suppressAutoCenterAfterReturn = false;
 let roadInfoMarkers = [];
 let cachedVisibleSessionPaths = [];
 let cachedOsmFeatures = [];
@@ -1097,6 +1101,8 @@ function restoreMapReturnCache() {
   if (cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
     const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
     map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
+    // 復帰時の保存位置を表示したので、ユーザーが地図に触れるまで自動中央追従を止める。
+    suppressAutoCenterAfterReturn = true;
   }
 
   // 取得済みデータの復元は、地図情報表示ONで保存されていたときのみ行う。
@@ -1191,6 +1197,8 @@ function applyCachedLocation(cached) {
         ? Number(returnCache.zoom)
         : map.getZoom();
       map.setView([returnCache.center.lat, returnCache.center.lng], nextZoom, { animate: false });
+      // 復帰時の保存位置を表示したので、ユーザーが地図に触れるまで自動中央追従を止める。
+      suppressAutoCenterAfterReturn = true;
     } else {
       const currentZoom = map.getZoom();
       map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
@@ -1371,6 +1379,11 @@ map.on("move", () => {
   if (tactileSessionCardLatLng) {
     positionTactileSessionCard(tactileSessionCardLatLng);
   }
+});
+
+// ユーザーが地図に触れたら、復帰直後の自動中央追従抑止を解除する。
+map.on("dragstart zoomstart", () => {
+  suppressAutoCenterAfterReturn = false;
 });
 
 window.addEventListener("pagehide", () => {
@@ -2290,7 +2303,7 @@ function isCenterCurrentEnabled() {
 }
 
 function recenterToLatestLocation() {
-  if (!isCenterCurrentEnabled()) {
+  if (!isCenterCurrentEnabled() || suppressAutoCenterAfterReturn) {
     return;
   }
   const currentZoom = map.getZoom();
@@ -2338,7 +2351,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   }
 
   // 「現在地の中央表示」がONのときのみ地図の表示位置を更新
-  if (isCenterCurrentEnabled()) {
+  if (isCenterCurrentEnabled() && !suppressAutoCenterAfterReturn) {
     const currentZoom = map.getZoom();
     console.log(`[updateDisplay] Moving map to (${snappedLat}, ${snappedLng}) with zoom ${currentZoom}`);
     map.setView([snappedLat, snappedLng], currentZoom, { animate: false });
@@ -3004,6 +3017,8 @@ if ("geolocation" in navigator) {
       toggleCenterCurrentBtn.addEventListener("change", () => {
         console.log(`[toggleCenterCurrent] centerCurrentLocation=${toggleCenterCurrentBtn.checked}`);
         saveCenterCurrentEnabled(toggleCenterCurrentBtn.checked);
+        // ユーザーが明示的にトグルを切り替えたら、復帰直後の自動中央追従抑止を解除する。
+        suppressAutoCenterAfterReturn = false;
         recenterToLatestLocation();
         saveMapReturnCache();
       });
