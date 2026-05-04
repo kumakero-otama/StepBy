@@ -7,6 +7,43 @@ const totalRoadPostsEl = document.getElementById("total-road-posts");
 const logoutBtnEl = document.getElementById("profile-logout-btn");
 const editBtnEl = document.getElementById("profile-edit-btn");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
+const PROFILE_ICON_CACHE_KEY = "cachedProfileIcon.v1";
+
+// プロフィールアイコン画像本体をbase64データURLとしてlocalStorageに保存する。
+// 次回プロフィール画面を開いたとき、ヘッダーのインラインスクリプトがこのキャッシュを参照して
+// ネットワークアクセス無しに即時表示できるようにする目的。
+function saveCachedProfileIconImage(absoluteUrl) {
+  if (!absoluteUrl || typeof absoluteUrl !== "string") return;
+  // 既に同じURLでキャッシュ済みなら何もしない
+  try {
+    const existing = localStorage.getItem(PROFILE_ICON_CACHE_KEY);
+    if (existing) {
+      const parsed = JSON.parse(existing);
+      if (parsed && parsed.url === absoluteUrl && parsed.dataUrl) return;
+    }
+  } catch (e) {}
+  fetch(absoluteUrl, { credentials: "include" })
+    .then((res) => (res && res.ok ? res.blob() : null))
+    .then((blob) => {
+      if (!blob) return null;
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    })
+    .then((dataUrl) => {
+      if (!dataUrl) return;
+      try {
+        localStorage.setItem(
+          PROFILE_ICON_CACHE_KEY,
+          JSON.stringify({ url: absoluteUrl, dataUrl })
+        );
+      } catch (e) {}
+    })
+    .catch(() => {});
+}
 const authTokenApi = window.AuthToken || null;
 const PROFILE_TEXT = {
   ja: {
@@ -179,6 +216,7 @@ function clearCachedProfileUser() {
   try {
     getProfileCacheStorages().forEach((storage) => {
       storage.removeItem(PROFILE_CACHE_KEY);
+      storage.removeItem(PROFILE_ICON_CACHE_KEY);
     });
   } catch {
     // ignore storage errors
@@ -230,6 +268,10 @@ function applyProfileUser(user) {
   if (profileAvatarEl) {
     profileAvatarEl.src = iconUrl;
     profileAvatarEl.alt = `${username}のアイコン`;
+    // ネットワーク経由で読み込めた画像をbase64でlocalStorageに保存し、次回からは即時表示できるようにする。
+    if (user.iconUrl != null) {
+      saveCachedProfileIconImage(iconUrl);
+    }
   }
   if (profileUsernameEl) {
     profileUsernameEl.textContent = username;

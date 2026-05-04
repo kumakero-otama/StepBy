@@ -68,7 +68,22 @@
                     if (src.indexOf("http") !== 0) {
                       src = "https://barrierfree-map.loophole.site" + (src.indexOf("/") === 0 ? src : "/" + src);
                     }
-                    avEl.src = src;
+                    // base64データURLでlocalStorageキャッシュ済みであればネットワークを経由せず即時表示する。
+                    var iconRaw = null;
+                    try { iconRaw = localStorage.getItem("cachedProfileIcon.v1"); } catch (e) {}
+                    var usedDataUrl = false;
+                    if (iconRaw) {
+                      try {
+                        var iconCache = JSON.parse(iconRaw);
+                        if (iconCache && iconCache.url === src && iconCache.dataUrl) {
+                          avEl.src = iconCache.dataUrl;
+                          usedDataUrl = true;
+                        }
+                      } catch (e) {}
+                    }
+                    if (!usedDataUrl) {
+                      avEl.src = src;
+                    }
                   }
                 }
               } catch (e) {}
