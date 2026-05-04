@@ -1,8 +1,11 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.17"; // このバージョンはpackage.jsonから自動生成されます
+const CACHE_VERSION = "1.18.18"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
+// 画像（プロフィール画像など）はバージョンが変わっても保持し続けるための専用キャッシュ。
+// CACHE_NAMEと違いタイムスタンプを含めず、activateハンドラの古いキャッシュ削除フィルタにも引っかからない名前にする。
+const IMAGE_CACHE_NAME = "barrierfree-map-images-v1";
 const API_ORIGIN = new URL(API_BASE_URL).origin;
 const API_PATH_PREFIX = new URL(API_BASE_URL).pathname.replace(/\/+$/, "");
 const CORE_ASSETS = [
@@ -69,24 +72,25 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   // API origin の /uploads/ 配下（プロフィール画像など）は stale-while-revalidate でキャッシュ。
-  // キャッシュがあれば即座に返してネットワーク往復を待たないようにし、裏で最新版に更新する。
+  // 専用の IMAGE_CACHE_NAME に保存することで、バージョンアップで他のキャッシュが消えても画像は保持される。
   if (url.origin === API_ORIGIN && url.pathname.startsWith("/uploads/")) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        const networkFetch = fetch(request)
-          .then((response) => {
-            if (response && (response.status === 200 || response.type === "opaque")) {
-              const copy = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-            }
-            return response;
-          })
-          .catch((err) => {
-            if (cached) return cached;
-            throw err;
-          });
-        return cached || networkFetch;
-      })
+      caches.open(IMAGE_CACHE_NAME).then((cache) =>
+        cache.match(request).then((cached) => {
+          const networkFetch = fetch(request)
+            .then((response) => {
+              if (response && (response.status === 200 || response.type === "opaque")) {
+                cache.put(request, response.clone());
+              }
+              return response;
+            })
+            .catch((err) => {
+              if (cached) return cached;
+              throw err;
+            });
+          return cached || networkFetch;
+        })
+      )
     );
     return;
   }
