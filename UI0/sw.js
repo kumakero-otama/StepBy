@@ -1,5 +1,5 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.14"; // このバージョンはpackage.jsonから自動生成されます
+const CACHE_VERSION = "1.18.15"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
@@ -67,6 +67,30 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   const url = new URL(request.url);
+
+  // API origin の /uploads/ 配下（プロフィール画像など）は stale-while-revalidate でキャッシュ。
+  // キャッシュがあれば即座に返してネットワーク往復を待たないようにし、裏で最新版に更新する。
+  if (url.origin === API_ORIGIN && url.pathname.startsWith("/uploads/")) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const networkFetch = fetch(request)
+          .then((response) => {
+            if (response && (response.status === 200 || response.type === "opaque")) {
+              const copy = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+          .catch((err) => {
+            if (cached) return cached;
+            throw err;
+          });
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
+
   if (url.origin !== self.location.origin) {
     return;
   }
