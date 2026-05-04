@@ -615,6 +615,29 @@
           }
         });
       });
+      // テーマ・文字サイズ設定をlocalStorageに保存し、即座に画面へ反映する。
+      // language_redirect.js で公開された window.UI0Appearance を使う。
+      const themeRadios = document.querySelectorAll('input[name="theme-mode"]');
+      const fontSizeRadios = document.querySelectorAll('input[name="text-size"]');
+      const currentTheme = (window.UI0Appearance && window.UI0Appearance.getTheme && window.UI0Appearance.getTheme()) || "light";
+      const currentFontSize = (window.UI0Appearance && window.UI0Appearance.getFontSize && window.UI0Appearance.getFontSize()) || "small";
+      themeRadios.forEach((r) => { r.checked = (r.value === currentTheme); });
+      fontSizeRadios.forEach((r) => { r.checked = (r.value === currentFontSize); });
+      themeRadios.forEach((r) => {
+        r.addEventListener("change", () => {
+          if (!r.checked) return;
+          try { localStorage.setItem("displayTheme.v1", r.value); } catch (e) {}
+          if (window.UI0Appearance && window.UI0Appearance.apply) window.UI0Appearance.apply();
+        });
+      });
+      fontSizeRadios.forEach((r) => {
+        r.addEventListener("change", () => {
+          if (!r.checked) return;
+          try { localStorage.setItem("displayFontSize.v1", r.value); } catch (e) {}
+          if (window.UI0Appearance && window.UI0Appearance.apply) window.UI0Appearance.apply();
+        });
+      });
+
 
       document.querySelectorAll(".accordion-trigger").forEach((trigger) => {
         trigger.addEventListener("click", () => {

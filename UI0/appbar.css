@@ -85,3 +85,76 @@
 .app-bar-spacer {
   height: calc(56px + env(safe-area-inset-top));
 }
+
+/* ========================== テーマ（ライト/ダーク） ========================== */
+/* <html data-theme="dark"> 時に各画面の主要な配色を上書きする */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+:root[data-theme="dark"] body {
+  background: #14181a;
+  color: #e8edf2;
+}
+:root[data-theme="dark"] main,
+:root[data-theme="dark"] .settings-wrap,
+:root[data-theme="dark"] .profile-page {
+  color: #e8edf2;
+}
+:root[data-theme="dark"] .help-link,
+:root[data-theme="dark"] .accordion-item,
+:root[data-theme="dark"] .profile-wide-btn,
+:root[data-theme="dark"] .profile-edit-btn,
+:root[data-theme="dark"] .stats-row,
+:root[data-theme="dark"] .language-options {
+  background: #1f262b;
+  border-color: #2c343a;
+  color: #e8edf2;
+}
+:root[data-theme="dark"] .help-link-label,
+:root[data-theme="dark"] .accordion-trigger,
+:root[data-theme="dark"] .accordion-trigger-label,
+:root[data-theme="dark"] .language-option,
+:root[data-theme="dark"] .profile-username,
+:root[data-theme="dark"] .profile-wide-btn-label {
+  color: #e8edf2;
+}
+:root[data-theme="dark"] .help-link-description,
+:root[data-theme="dark"] .profile-wide-btn-description,
+:root[data-theme="dark"] .version-footer,
+:root[data-theme="dark"] #app-version {
+  color: #9aa6b1;
+}
+
+/* ========================== 文字サイズ（小/中/大） ========================== */
+/* :root の --ui0-font-scale を切り替え、body と主要なテキスト要素の font-size をスケーリングする */
+:root[data-font-size="small"] {
+  --ui0-font-scale: 1;
+}
+:root[data-font-size="medium"] {
+  --ui0-font-scale: 1.15;
+}
+:root[data-font-size="large"] {
+  --ui0-font-scale: 1.3;
+}
+:root[data-font-size="medium"] body,
+:root[data-font-size="large"] body {
+  font-size: calc(16px * var(--ui0-font-scale, 1));
+}
+:root[data-font-size="medium"] .help-link-label,
+:root[data-font-size="large"] .help-link-label,
+:root[data-font-size="medium"] .accordion-trigger-label > span,
+:root[data-font-size="large"] .accordion-trigger-label > span,
+:root[data-font-size="medium"] .language-option,
+:root[data-font-size="large"] .language-option,
+:root[data-font-size="medium"] .profile-wide-btn-label,
+:root[data-font-size="large"] .profile-wide-btn-label,
+:root[data-font-size="medium"] .profile-username,
+:root[data-font-size="large"] .profile-username {
+  font-size: calc(15px * var(--ui0-font-scale, 1));
+}
+:root[data-font-size="medium"] .help-link-description,
+:root[data-font-size="large"] .help-link-description,
+:root[data-font-size="medium"] .profile-wide-btn-description,
+:root[data-font-size="large"] .profile-wide-btn-description {
+  font-size: calc(12px * var(--ui0-font-scale, 1));
+}
