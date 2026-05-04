@@ -2716,8 +2716,15 @@ function applyMapInfoVisibility() {
     return;
   }
 
+  // 既にキャッシュがあれば再フェッチせずキャッシュから表示する。
+  // 他画面からマップ画面に戻ったときに毎回APIを叩かないようにする目的。
+  // キャッシュが無い場合（初回起動・キャッシュ期限切れ等）のみAPIから読み込む。
   if (shouldShowAppTactile()) {
-    loadAndShowAllRecords();
+    if (cachedVisibleSessionPaths.length > 0) {
+      showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
+    } else {
+      loadAndShowAllRecords();
+    }
   } else {
     recordsLoadRequestSeq += 1;
     setRecordsLoadingVisible(false);
@@ -2725,7 +2732,11 @@ function applyMapInfoVisibility() {
   }
 
   if (shouldShowOsmTactile()) {
-    loadAndShowOsmTactileWays();
+    if (cachedOsmFeatures.length > 0) {
+      showOsmTactileWaysOnMap(cachedOsmFeatures);
+    } else {
+      loadAndShowOsmTactileWays();
+    }
   } else {
     osmTactileLoadRequestSeq += 1;
     setOsmLoadingVisible(false);
@@ -2733,7 +2744,11 @@ function applyMapInfoVisibility() {
   }
 
   if (shouldShowRoadInfo()) {
-    loadAndShowRoadInfoPoints();
+    if (cachedVisibleRoadInfoPoints.length > 0) {
+      showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
+    } else {
+      loadAndShowRoadInfoPoints();
+    }
   } else {
     roadInfoLoadRequestSeq += 1;
     clearRoadInfoPointsFromMap();
