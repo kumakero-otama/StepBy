@@ -1177,8 +1177,24 @@ function applyCachedLocation(cached) {
     marker.setLatLng([cached.lat, cached.lng]);
   }
   if (isCenterCurrentEnabled()) {
-    const currentZoom = map.getZoom();
-    map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
+    // 直近のセッション内に保存された地図表示位置（mapReturnCache）があれば、
+    // 現在地ではなくそちらに即座にsetViewして、復帰時に一瞬現在地中央が見えるチラつきを防ぐ。
+    // mapReturnCacheが無い／期限切れの場合は従来どおり現在地（last known）を中央に表示する。
+    const returnCache = loadMapReturnCache();
+    if (
+      returnCache
+      && returnCache.center
+      && Number.isFinite(returnCache.center.lat)
+      && Number.isFinite(returnCache.center.lng)
+    ) {
+      const nextZoom = Number.isFinite(Number(returnCache.zoom))
+        ? Number(returnCache.zoom)
+        : map.getZoom();
+      map.setView([returnCache.center.lat, returnCache.center.lng], nextZoom, { animate: false });
+    } else {
+      const currentZoom = map.getZoom();
+      map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
+    }
   }
   return true;
 }
