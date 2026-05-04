@@ -1088,33 +1088,38 @@ function applyPersistedHomeToggleState() {
 
 function restoreMapReturnCache() {
   const cached = loadMapReturnCache();
-  if (!cached || !cached.mapInfoEnabled) {
+  if (!cached) {
     return false;
   }
 
+  // 地図位置とズームは地図情報表示の状態に関わらず常に復元し、
+  // 他画面から戻ったときに表示位置がリセットされないようにする。
   if (cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
     const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
     map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
   }
 
-  cachedVisibleSessionPaths = Array.isArray(cached.visibleSessionPaths)
-    ? cloneSerializable(cached.visibleSessionPaths) || []
-    : [];
-  cachedOsmFeatures = Array.isArray(cached.osmFeatures)
-    ? cloneSerializable(cached.osmFeatures) || []
-    : [];
-  cachedVisibleRoadInfoPoints = Array.isArray(cached.visibleRoadInfoPoints)
-    ? cloneSerializable(cached.visibleRoadInfoPoints) || []
-    : [];
+  // 取得済みデータの復元は、地図情報表示ONで保存されていたときのみ行う。
+  if (cached.mapInfoEnabled) {
+    cachedVisibleSessionPaths = Array.isArray(cached.visibleSessionPaths)
+      ? cloneSerializable(cached.visibleSessionPaths) || []
+      : [];
+    cachedOsmFeatures = Array.isArray(cached.osmFeatures)
+      ? cloneSerializable(cached.osmFeatures) || []
+      : [];
+    cachedVisibleRoadInfoPoints = Array.isArray(cached.visibleRoadInfoPoints)
+      ? cloneSerializable(cached.visibleRoadInfoPoints) || []
+      : [];
 
-  if (shouldShowAppTactile() && cachedVisibleSessionPaths.length > 0) {
-    showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
-  }
-  if (shouldShowOsmTactile() && cachedOsmFeatures.length > 0) {
-    showOsmTactileWaysOnMap(cachedOsmFeatures);
-  }
-  if (shouldShowRoadInfo() && cachedVisibleRoadInfoPoints.length > 0) {
-    showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
+    if (shouldShowAppTactile() && cachedVisibleSessionPaths.length > 0) {
+      showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
+    }
+    if (shouldShowOsmTactile() && cachedOsmFeatures.length > 0) {
+      showOsmTactileWaysOnMap(cachedOsmFeatures);
+    }
+    if (shouldShowRoadInfo() && cachedVisibleRoadInfoPoints.length > 0) {
+      showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
+    }
   }
 
   return true;
