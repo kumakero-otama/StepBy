@@ -183,12 +183,24 @@ function showSafetyConfirmModal() {
   }
 }
 
+const SAFETY_CONFIRM_ACCEPTED_KEY = "safetyConfirmAccepted.v1";
+
 function initSafetyConfirmModal() {
   if (!safetyConfirmModalEl || !safetyConfirmAcceptBtn || !safetyConfirmRejectBtn) {
     return;
   }
 
+  // 同一セッション内で一度「はい」を押したら、画面遷移で戻ってきたときには再表示しない。
+  // ブラウザタブ/PWAウィンドウを閉じて再起動するとsessionStorageがクリアされ、再表示される。
+  let acceptedThisSession = false;
+  try {
+    acceptedThisSession = sessionStorage.getItem(SAFETY_CONFIRM_ACCEPTED_KEY) === "1";
+  } catch (e) {}
+
   safetyConfirmAcceptBtn.addEventListener("click", () => {
+    try {
+      sessionStorage.setItem(SAFETY_CONFIRM_ACCEPTED_KEY, "1");
+    } catch (e) {}
     hideSafetyConfirmModal();
   });
 
@@ -201,6 +213,10 @@ function initSafetyConfirmModal() {
   });
 
   hideSafetyConfirmModal();
+
+  if (acceptedThisSession) {
+    return;
+  }
 
   window.addEventListener("ui2:splash-finished", () => {
     showSafetyConfirmModal();
