@@ -2969,6 +2969,13 @@ if ("geolocation" in navigator) {
       toggleShowMapInfoBtn.addEventListener("change", () => {
         console.log(`[toggleShowMapInfo] showMapInfo=${toggleShowMapInfoBtn.checked}`);
         saveMapInfoVisibility(toggleShowMapInfoBtn.checked);
+        if (toggleShowMapInfoBtn.checked) {
+          // ユーザーが明示的にONに切り替えたタイミングは、現在の地図中心位置を基準に
+          // 再フェッチさせる（画面遷移復帰時のキャッシュ表示と区別する目的）。
+          cachedVisibleSessionPaths = [];
+          cachedOsmFeatures = [];
+          cachedVisibleRoadInfoPoints = [];
+        }
         applyMapInfoVisibility();
         saveMapReturnCache();
       });
