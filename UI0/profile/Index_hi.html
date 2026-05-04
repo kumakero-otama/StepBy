@@ -43,6 +43,37 @@
           </div>
 
           <h2 id="profile-username" class="profile-username">username</h2>
+          <script>
+            (function () {
+              // プロフィール画面表示時にキャッシュをできるだけ早くDOMに反映する先回り処理。
+              // HTMLパース中にこの位置で実行されるため、profile.jsの実行を待たずに
+              // キャッシュ済みのユーザー名・アイコンが初回ペイントから表示される。
+              try {
+                var raw = null;
+                try { raw = window.localStorage && localStorage.getItem("cached_profile_user.v1"); } catch (e) {}
+                if (!raw) {
+                  try { raw = window.sessionStorage && sessionStorage.getItem("cached_profile_user.v1"); } catch (e) {}
+                }
+                if (!raw) return;
+                var c = JSON.parse(raw);
+                if (!c) return;
+                if (c.username) {
+                  var unEl = document.getElementById("profile-username");
+                  if (unEl) unEl.textContent = c.username;
+                }
+                if (c.iconUrl) {
+                  var avEl = document.getElementById("profile-avatar");
+                  if (avEl) {
+                    var src = c.iconUrl;
+                    if (src.indexOf("http") !== 0) {
+                      src = "https://barrierfree-map.loophole.site" + (src.indexOf("/") === 0 ? src : "/" + src);
+                    }
+                    avEl.src = src;
+                  }
+                }
+              } catch (e) {}
+            })();
+          </script>
           <div class="profile-badge-row">
             <span id="profile-pro-chip" class="pro-badge hidden">PRO</span>
           </div>
