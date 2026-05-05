@@ -1,5 +1,5 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.27"; // このバージョンはpackage.jsonから自動生成されます
+const CACHE_VERSION = "1.18.28"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
@@ -9,7 +9,6 @@ const IMAGE_CACHE_NAME = "barrierfree-map-images-v1";
 const API_ORIGIN = new URL(API_BASE_URL).origin;
 const API_PATH_PREFIX = new URL(API_BASE_URL).pathname.replace(/\/+$/, "");
 const CORE_ASSETS = [
-  `${APP_BASE_PATH}/`,
   `${APP_BASE_PATH}/config.js`,
   `${APP_BASE_PATH}/style.css`,
   `${APP_BASE_PATH}/appbar.css`,
@@ -38,8 +37,17 @@ const CORE_ASSETS = [
 
 self.addEventListener("install", (event) => {
   console.log("[SW] Installing new service worker...");
+  // 個別に cache.add する。1ファイルが取得失敗してもインストール全体を止めない（addAllだと止まる）。
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(
+        CORE_ASSETS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn("[SW] Failed to precache " + url + ":", err && err.message ? err.message : err);
+          })
+        )
+      )
+    )
   );
   // 新しいService Workerをすぐにアクティブにする
   self.skipWaiting();
