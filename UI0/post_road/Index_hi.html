@@ -1027,10 +1027,24 @@
               clearInputsAndGoBack();
             } else {
               // 大きい（画像入りなど）リクエストは keepalive のサイズ制限を超えるので、
-              // サービスワーカーに渡してバックグラウンドで送信させ、ページは即マップへ戻る。
-              // SWが利用できない環境では、従来通り完了まで待ってから戻るフォールバックを取る。
-              const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
-              if (sw) {
+              // サービスワーカーに postMessage で送信を委譲し、ページは即マップへ戻る。
+              // navigator.serviceWorker.controller は null になることがあるため、
+              // navigator.serviceWorker.ready から registration.active を取得する方式にする。
+              let activeSw = null;
+              try {
+                if (navigator.serviceWorker) {
+                  if (navigator.serviceWorker.controller) {
+                    activeSw = navigator.serviceWorker.controller;
+                  } else {
+                    const reg = await navigator.serviceWorker.ready.catch(() => null);
+                    if (reg && reg.active) {
+                      activeSw = reg.active;
+                    }
+                  }
+                }
+              } catch (e) {}
+
+              if (activeSw) {
                 const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://barrierfree-map.loophole.site";
                 const fullUrl = apiBase.replace(/\/+$/, "") + "/api/road-info";
                 const accessToken = (window.AuthToken && typeof window.AuthToken.getAccessToken === "function")
@@ -1041,7 +1055,7 @@
                   headers["Authorization"] = "Bearer " + accessToken;
                 }
                 try {
-                  sw.postMessage({
+                  activeSw.postMessage({
                     type: "background-fetch",
                     id: "post-road-info-" + Date.now(),
                     url: fullUrl,
@@ -1052,9 +1066,11 @@
                       credentials: "include",
                     },
                   });
-                } catch (e) { /* ignore postMessage errors */ }
+                  console.log("[post_road] sent background-fetch to SW");
+                } catch (e) { console.warn("[post_road] SW postMessage failed:", e); }
                 clearInputsAndGoBack();
               } else {
+                console.log("[post_road] no active SW, falling back to await fetch");
                 const res = await authFetch("/api/road-info", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
