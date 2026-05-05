@@ -985,45 +985,66 @@
           try {
             await refreshImageLimitFromConfig();
             const images = await buildImagePayloads();
-            // 投稿リクエストはバックグラウンドで送り、ユーザーは即座にマップ画面へ戻れるようにする。
-            // keepalive: true でページ離脱後もリクエストの送出は完了する。
-            // 完了通知用のフラグをsessionStorageに置き、マップ画面側でトーストを表示する。
-            try {
-              authFetch("/api/road-info", {
+            const body = JSON.stringify({
+              lat: currentMapCenter.lat,
+              lng: currentMapCenter.lng,
+              tagIds: Array.from(selectedTagIds),
+              detail: detailInputEl ? detailInputEl.value : "",
+              images,
+            });
+            // keepalive: true には合計約64KBのボディ上限があるため、それを超える場合は
+            // 通常のfetchで投稿完了まで待ってから戻る。閾値は安全マージンを取って60KB。
+            const KEEPALIVE_BODY_LIMIT = 60 * 1024;
+            const bodySize = new Blob([body]).size;
+
+            const clearInputsAndGoBack = () => {
+              try { sessionStorage.setItem("roadInfoPostJustSubmitted.v1", "1"); } catch (e) {}
+              if (detailInputEl) {
+                detailInputEl.value = "";
+              }
+              selectedTagIds.clear();
+              for (const image of selectedImages) {
+                if (image && image.url) {
+                  URL.revokeObjectURL(image.url);
+                }
+              }
+              selectedImages.splice(0, selectedImages.length);
+              renderTagUi();
+              renderSelectedImages();
+              window.history.back();
+            };
+
+            if (bodySize <= KEEPALIVE_BODY_LIMIT) {
+              // 小さいリクエストは keepalive でバックグラウンド送信し、即座にマップ画面へ戻る。
+              try {
+                authFetch("/api/road-info", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body,
+                  keepalive: true,
+                }).catch(() => {});
+              } catch (e) { /* ignore fetch start errors */ }
+              clearInputsAndGoBack();
+            } else {
+              // 大きい（画像入りなど）リクエストは keepalive のサイズ制限を超えるので、
+              // 完了まで待ってから戻る。投稿失敗時はその旨をアラートで知らせる。
+              const res = await authFetch("/api/road-info", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  lat: currentMapCenter.lat,
-                  lng: currentMapCenter.lng,
-                  tagIds: Array.from(selectedTagIds),
-                  detail: detailInputEl ? detailInputEl.value : "",
-                  images,
-                }),
-                keepalive: true,
-              }).catch(() => {});
-            } catch (e) { /* ignore fetch start errors */ }
-
-            try { sessionStorage.setItem("roadInfoPostJustSubmitted.v1", "1"); } catch (e) {}
-
-            if (detailInputEl) {
-              detailInputEl.value = "";
-            }
-            selectedTagIds.clear();
-            for (const image of selectedImages) {
-              if (image && image.url) {
-                URL.revokeObjectURL(image.url);
+                body,
+              });
+              if (!res.ok) {
+                throw new Error("submit_failed:" + res.status);
               }
+              clearInputsAndGoBack();
             }
-            selectedImages.splice(0, selectedImages.length);
-            renderTagUi();
-            renderSelectedImages();
-            window.history.back();
           } catch (err) {
             console.warn("[post_road] submit failed:", err);
             if (err && err.message === "image_too_large") {
               alert("छवि का आकार बहुत बड़ा है। कृपया छोटी छवि का उपयोग करें।");
               return;
             }
+            alert("पोस्ट सहेजने में विफल। कृपया बाद में पुनः प्रयास करें।");
           } finally {
             isSubmitting = false;
             submitButton.disabled = false;
