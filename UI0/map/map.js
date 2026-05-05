@@ -2410,19 +2410,27 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
     marker.setLatLng([snappedLat, snappedLng]);
   }
 
-  // ドット（点）だけを表示
-  const dotColor = isRecordingActive() ? "#9acd32" : "#111";
-  const dot = L.circleMarker([snappedLat, snappedLng], {
-    radius: 3,
-    color: dotColor,
-    fillColor: dotColor,
-    fillOpacity: 0.7,
-    weight: 0,
-  }).addTo(map);
-  
-  trail.push(dot);
-  if (trail.length > MAX_TRAIL) {
-    map.removeLayer(trail.shift());
+  // 記録中のみ軌跡のドットを表示する。記録していないときは現在地の黒い点を出さず、
+  // 残っている古い軌跡があれば消去する。
+  if (isRecordingActive()) {
+    const dot = L.circleMarker([snappedLat, snappedLng], {
+      radius: 3,
+      color: "#9acd32",
+      fillColor: "#9acd32",
+      fillOpacity: 0.7,
+      weight: 0,
+    }).addTo(map);
+    trail.push(dot);
+    if (trail.length > MAX_TRAIL) {
+      map.removeLayer(trail.shift());
+    }
+  } else if (trail.length > 0) {
+    while (trail.length > 0) {
+      const old = trail.shift();
+      if (old) {
+        map.removeLayer(old);
+      }
+    }
   }
   
   console.log('[updateDisplay] Display update complete');
