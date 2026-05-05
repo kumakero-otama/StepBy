@@ -1027,16 +1027,44 @@
               clearInputsAndGoBack();
             } else {
               // 大きい（画像入りなど）リクエストは keepalive のサイズ制限を超えるので、
-              // 完了まで待ってから戻る。投稿失敗時はその旨をアラートで知らせる。
-              const res = await authFetch("/api/road-info", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body,
-              });
-              if (!res.ok) {
-                throw new Error("submit_failed:" + res.status);
+              // サービスワーカーに渡してバックグラウンドで送信させ、ページは即マップへ戻る。
+              // SWが利用できない環境では、従来通り完了まで待ってから戻るフォールバックを取る。
+              const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+              if (sw) {
+                const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://barrierfree-map.loophole.site";
+                const fullUrl = apiBase.replace(/\/+$/, "") + "/api/road-info";
+                const accessToken = (window.AuthToken && typeof window.AuthToken.getAccessToken === "function")
+                  ? window.AuthToken.getAccessToken()
+                  : "";
+                const headers = { "Content-Type": "application/json" };
+                if (accessToken) {
+                  headers["Authorization"] = "Bearer " + accessToken;
+                }
+                try {
+                  sw.postMessage({
+                    type: "background-fetch",
+                    id: "post-road-info-" + Date.now(),
+                    url: fullUrl,
+                    init: {
+                      method: "POST",
+                      headers,
+                      body,
+                      credentials: "include",
+                    },
+                  });
+                } catch (e) { /* ignore postMessage errors */ }
+                clearInputsAndGoBack();
+              } else {
+                const res = await authFetch("/api/road-info", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body,
+                });
+                if (!res.ok) {
+                  throw new Error("submit_failed:" + res.status);
+                }
+                clearInputsAndGoBack();
               }
-              clearInputsAndGoBack();
             }
           } catch (err) {
             console.warn("[post_road] submit failed:", err);

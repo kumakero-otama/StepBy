@@ -1,5 +1,5 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.25"; // このバージョンはpackage.jsonから自動生成されます
+const CACHE_VERSION = "1.18.26"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://barrierfree-map.loophole.site";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
@@ -138,10 +138,53 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// メッセージを受け取ってskipWaitingを実行
+// メッセージを受け取って処理する。
+// - SKIP_WAITING: 新サービスワーカーを即座にアクティブ化する。
+// - background-fetch: ページから渡された fetch リクエストをサービスワーカーで実行し、
+//   ページが遷移して unload してもリクエストの完了まで生き残らせる（event.waitUntil）。
+//   キープアライブの 64KB 制限を超えるリクエスト（画像入りの道情報投稿など）に使う。
+//   結果はクライアントへ postMessage で通知し、必要があれば map 側でトーストを出す。
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
+  if (!event.data || typeof event.data !== "object") return;
+
+  if (event.data.type === "SKIP_WAITING") {
     console.log("[SW] Received SKIP_WAITING message");
     self.skipWaiting();
+    return;
+  }
+
+  if (event.data.type === "background-fetch") {
+    const requestId = event.data.id || "";
+    const url = event.data.url || "";
+    const init = event.data.init || {};
+    if (!url) return;
+    event.waitUntil(
+      fetch(url, init)
+        .then((res) => {
+          return self.clients.matchAll({ includeUncontrolled: true, type: "window" }).then((clients) => {
+            clients.forEach((c) => {
+              c.postMessage({
+                type: "background-fetch-result",
+                id: requestId,
+                ok: res.ok,
+                status: res.status,
+              });
+            });
+          });
+        })
+        .catch((err) => {
+          return self.clients.matchAll({ includeUncontrolled: true, type: "window" }).then((clients) => {
+            clients.forEach((c) => {
+              c.postMessage({
+                type: "background-fetch-result",
+                id: requestId,
+                ok: false,
+                error: String(err && err.message ? err.message : err),
+              });
+            });
+          });
+        })
+    );
+    return;
   }
 });
