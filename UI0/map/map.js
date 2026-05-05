@@ -3140,7 +3140,8 @@ if ("geolocation" in navigator) {
 // ===== 道情報投稿完了トーストの表示 =====
 // post_road からの遷移直後にトーストを表示する。
 // post_road 側で投稿リクエストを keepalive で送信し、sessionStorage にフラグを置く設計。
-(function showRoadInfoPostToastIfNeeded() {
+// 戻るで遷移したときはbfcacheから復元されるためIIFEは再実行されない。pageshow（persistedありなし両方）で毎回チェックする。
+function showRoadInfoPostToastIfNeeded() {
   let flag = null;
   try { flag = sessionStorage.getItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   if (!flag) return;
@@ -3164,4 +3165,10 @@ if ("geolocation" in navigator) {
     toastEl.classList.remove("visible");
     setTimeout(() => { toastEl.classList.add("hidden"); }, 300);
   }, 2800);
-})();
+}
+
+// 初回ロードと bfcache 復元の両方で動くよう、pageshow と DOMContentLoaded 両方にフックする。
+showRoadInfoPostToastIfNeeded();
+window.addEventListener("pageshow", () => {
+  showRoadInfoPostToastIfNeeded();
+});
