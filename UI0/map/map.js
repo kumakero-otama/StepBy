@@ -793,6 +793,24 @@ let lastSent = null;
 let lastRequestTime = 0;
 let recordEnabled = false;
 let recordPaused = false;
+// post_road 等の他画面で録音が継続されていた場合に備え、localStorage から状態を復元する。
+// 期限は1時間とし、それより古いものは破棄する（誤動作・取り残し対策）。
+(function restoreRecordingStateFromStorage() {
+  try {
+    const raw = localStorage.getItem("recordingState.v1");
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.recordEnabled || !parsed.currentSessionId) return;
+    if (Number.isFinite(parsed.savedAt) && Date.now() - parsed.savedAt > 60 * 60 * 1000) {
+      localStorage.removeItem("recordingState.v1");
+      return;
+    }
+    recordEnabled = true;
+    recordPaused = Boolean(parsed.recordPaused);
+    // currentSessionId は後で宣言される変数なので、グローバルに直接代入する。
+    window.__restoredRecordingSessionId = parsed.currentSessionId;
+  } catch (e) {}
+})();
 let recordedRawPoints = []; // 記録開始から終了までのrawデータ（全セッション合算）
 let recordedSnappedPoints = []; // 記録開始から終了までのsnappedデータ（全セッション合算）
 let currentSessionRawPoints = []; // 現在セッションのrawデータ
@@ -802,6 +820,10 @@ let currentSessionSnappedStartIndex = 0;
 let recordingSessionIds = []; // 記録開始から終了までに作成したセッションID一覧
 let tracePolyline = null; // trace_attributesの結果を表示する黄緑線
 let currentSessionId = null;
+if (typeof window !== "undefined" && window.__restoredRecordingSessionId) {
+  currentSessionId = window.__restoredRecordingSessionId;
+  delete window.__restoredRecordingSessionId;
+}
 let currentSessionStartedAt = null;
 let traceConfirmMap = null;
 let traceConfirmPathLayer = null;
@@ -1595,6 +1617,23 @@ function rollbackCurrentSessionPointsFromRecording() {
   clearCurrentSessionPoints();
 }
 
+// 記録状態を localStorage に永続化する。post_road 等の他画面が記録継続のために参照する。
+const RECORDING_STATE_KEY = "recordingState.v1";
+function saveRecordingStateToStorage() {
+  try {
+    if (recordEnabled && currentSessionId) {
+      localStorage.setItem(RECORDING_STATE_KEY, JSON.stringify({
+        recordEnabled: true,
+        recordPaused: Boolean(recordPaused),
+        currentSessionId,
+        savedAt: Date.now(),
+      }));
+    } else {
+      localStorage.removeItem(RECORDING_STATE_KEY);
+    }
+  } catch (e) {}
+}
+
 function resetRecordingState() {
   recordEnabled = false;
   recordPaused = false;
@@ -1604,6 +1643,7 @@ function resetRecordingState() {
   recordedSnappedPoints = [];
   clearCurrentSessionPoints();
   recordingSessionIds = [];
+  saveRecordingStateToStorage();
 }
 
 function markTrailDotsAsIdle() {
@@ -1629,6 +1669,7 @@ async function startRecordingSession() {
     startedAt: currentSessionStartedAt,
   });
   console.log(`[Record] Started recording session=${currentSessionId}`);
+  saveRecordingStateToStorage();
 }
 
 async function cancelRecordingSessions(sessionIds) {
@@ -2971,6 +3012,7 @@ if ("geolocation" in navigator) {
             resetRecordingState();
             recordEnabled = true;
             recordPaused = false;
+            saveRecordingStateToStorage();
             await startRecordingSession();
             updateRecordButton();
             console.log(`[Record] Started recording session=${currentSessionId}`);
@@ -2978,6 +3020,7 @@ if ("geolocation" in navigator) {
             // レコードOFF：記録開始以降の全セッションをまとめて確認
             recordEnabled = false;
             recordPaused = false;
+            saveRecordingStateToStorage();
 
             updateRecordButton();
             console.log(
@@ -3012,11 +3055,13 @@ if ("geolocation" in navigator) {
             const pausedSessionId = currentSessionId;
             // 表示だけ先に切り替えて、体感遅延をなくす。
             recordPaused = true;
+            saveRecordingStateToStorage();
             updateRecordButton();
 
             const persistResult = await persistCurrentSessionWithoutConfirmation();
             if (!persistResult.success) {
               recordPaused = false;
+              saveRecordingStateToStorage();
               updateRecordButton();
               alert("一時停止時の保存に失敗しました。通信状況を確認してもう一度お試しください。");
               return;
