@@ -985,22 +985,26 @@
           try {
             await refreshImageLimitFromConfig();
             const images = await buildImagePayloads();
-            const res = await authFetch("/api/road-info", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                lat: currentMapCenter.lat,
-                lng: currentMapCenter.lng,
-                tagIds: Array.from(selectedTagIds),
-                detail: detailInputEl ? detailInputEl.value : "",
-                images,
-              }),
-            });
-            if (!res.ok) {
-              throw new Error(`submit_failed:${res.status}`);
-            }
+            // 投稿リクエストはバックグラウンドで送り、ユーザーは即座にマップ画面へ戻れるようにする。
+            // keepalive: true でページ離脱後もリクエストの送出は完了する。
+            // 完了通知用のフラグをsessionStorageに置き、マップ画面側でトーストを表示する。
+            try {
+              authFetch("/api/road-info", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  lat: currentMapCenter.lat,
+                  lng: currentMapCenter.lng,
+                  tagIds: Array.from(selectedTagIds),
+                  detail: detailInputEl ? detailInputEl.value : "",
+                  images,
+                }),
+                keepalive: true,
+              }).catch(() => {});
+            } catch (e) { /* ignore fetch start errors */ }
 
-            alert("投稿を保存しました。");
+            try { sessionStorage.setItem("roadInfoPostJustSubmitted.v1", "1"); } catch (e) {}
+
             if (detailInputEl) {
               detailInputEl.value = "";
             }
@@ -1020,7 +1024,6 @@
               alert("画像サイズが大きすぎます。より小さい画像で再度お試しください。");
               return;
             }
-            alert("投稿の保存に失敗しました。時間をおいて再度お試しください。");
           } finally {
             isSubmitting = false;
             submitButton.disabled = false;

@@ -1611,3 +1611,29 @@ body {
 :root[data-theme="dark"] .map-tap-popup-coords {
   color: #e8edf2;
 }
+
+/* ====== 画面上端トースト（道情報投稿完了通知など） ====== */
+.map-toast {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4000;
+  background: #2e9e8f;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+.map-toast.visible { opacity: 1; }
+.map-toast.hidden { display: none; }
+:root[data-theme="dark"] .map-toast {
+  background: #348f82;
+}

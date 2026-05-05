@@ -3091,3 +3091,32 @@ if ("geolocation" in navigator) {
     }
   }
 }
+
+// ===== 道情報投稿完了トーストの表示 =====
+// post_road からの遷移直後にトーストを表示する。
+// post_road 側で投稿リクエストを keepalive で送信し、sessionStorage にフラグを置く設計。
+(function showRoadInfoPostToastIfNeeded() {
+  let flag = null;
+  try { flag = sessionStorage.getItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
+  if (!flag) return;
+  try { sessionStorage.removeItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
+  const toastEl = document.getElementById("map-toast");
+  if (!toastEl) return;
+  const lang = getCurrentLanguage();
+  const messages = {
+    ja: "道情報の投稿が完了しました！",
+    en: "Road info posted!",
+    hi: "सड़क जानकारी पोस्ट हो गई!",
+  };
+  const text = messages[lang] || messages.ja;
+  const textEl = toastEl.querySelector(".map-toast-text");
+  if (textEl) textEl.textContent = text;
+  toastEl.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    toastEl.classList.add("visible");
+  });
+  setTimeout(() => {
+    toastEl.classList.remove("visible");
+    setTimeout(() => { toastEl.classList.add("hidden"); }, 300);
+  }, 2800);
+})();
