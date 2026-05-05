@@ -1390,6 +1390,20 @@ window.addEventListener("pagehide", () => {
   saveMapReturnCache();
 });
 
+// 地図タップ時の小さなポップアップに表示する文言（言語別）
+const MAP_TAP_POPUP_TEXT = {
+  ja: { lat: "緯度", lng: "経度", postRoad: "→ 道情報の投稿" },
+  en: { lat: "Lat", lng: "Lng", postRoad: "→ Post road info" },
+  hi: { lat: "अक्षांश", lng: "देशांतर", postRoad: "→ सड़क जानकारी पोस्ट" },
+};
+
+function getMapTapPopupText() {
+  const language = getCurrentLanguage();
+  return MAP_TAP_POPUP_TEXT[language] || MAP_TAP_POPUP_TEXT.ja;
+}
+
+// 地図タップ時：直接画面遷移せず、緯度経度と「道情報の投稿」ボタンを持つ
+// 小さなポップアップを開く。ボタン押下で /post_road/Index.html へ遷移する。
 map.on("click", (event) => {
   if (shouldIgnoreMapTap(event)) {
     return;
@@ -1397,17 +1411,45 @@ map.on("click", (event) => {
 
   const lat = Number(event?.latlng?.lat);
   const lng = Number(event?.latlng?.lng);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lng: lng.toString(),
-    });
-    saveMapReturnCache();
-    window.location.assign(AppPath.toApp(`/post_road/Index.html?${params.toString()}`));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return;
   }
+
+  const text = getMapTapPopupText();
+  const html = `
+    <div class="map-tap-popup">
+      <div class="map-tap-popup-coords">
+        <div>${escapeHtml(text.lat)}: ${lat.toFixed(6)}</div>
+        <div>${escapeHtml(text.lng)}: ${lng.toFixed(6)}</div>
+      </div>
+      <button
+        type="button"
+        class="map-tap-popup-btn"
+        data-map-tap-post-road
+        data-lat="${lat}"
+        data-lng="${lng}"
+      >${escapeHtml(text.postRoad)}</button>
+    </div>
+  `;
+
+  L.popup({ closeOnClick: true, autoClose: true, autoPan: false })
+    .setLatLng([lat, lng])
+    .setContent(html)
+    .openOn(map);
+});
+
+// ポップアップ内の「道情報の投稿」ボタン押下を委譲で受け取る。
+document.addEventListener("click", (e) => {
+  const target = e && e.target && typeof e.target.closest === "function"
+    ? e.target.closest("[data-map-tap-post-road]")
+    : null;
+  if (!target) return;
+  const lat = target.getAttribute("data-lat");
+  const lng = target.getAttribute("data-lng");
+  if (!lat || !lng) return;
+  const params = new URLSearchParams({ lat, lng });
   saveMapReturnCache();
-  window.location.assign(AppPath.toApp("/post_road/Index.html"));
+  window.location.assign(AppPath.toApp(`/post_road/Index.html?${params.toString()}`));
 });
 
 initMapControlsPanelGesture();
