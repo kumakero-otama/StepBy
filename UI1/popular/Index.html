@@ -418,7 +418,7 @@
     <script>
         console.log('[Posts] Script started');
         window.addEventListener('load', () => { setTimeout(() => { const ls = document.getElementById('loading-state'); if(ls) { ls.classList.add('hidden'); console.log('[Posts] Safety timer hidden spinner'); } }, 12000); });
-        const API_BASE = "https://barrierfree-map.loophole.site";
+        const API_BASE = "https://barrierfree-map.tail5de5e1.ts.net";
         const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
         const postsListEl = document.getElementById('posts-list');

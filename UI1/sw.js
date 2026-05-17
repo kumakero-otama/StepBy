@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
     // API calls: network only (never cache)
-    if (url.hostname.includes('loophole.site') || url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
+    if (url.hostname.includes('tail5de5e1.ts.net') || url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
         event.respondWith(fetch(event.request));
         return;
     }

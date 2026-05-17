@@ -1,5 +1,5 @@
 
-        const API_BASE = "https://barrierfree-map.loophole.site";
+        const API_BASE = "https://barrierfree-map.tail5de5e1.ts.net";
         // ログイン済みならauthFetch、未ログインはfetch
         const apiFetch = (url, opts) => {
             if (window.AuthToken && window.AuthToken.getAccessToken()) {

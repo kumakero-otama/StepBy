@@ -2,7 +2,7 @@
 (function initAuthTokenClient(globalScope) {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const DEFAULT_APP_BASE_PATH = "/StepBy/UI1";
-  const DEFAULT_API_BASE_URL = "https://barrierfree-map.loophole.site";
+  const DEFAULT_API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net";
 
   function getConfig() {
     const config = globalScope.APP_CONFIG || {};

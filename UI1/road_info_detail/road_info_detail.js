@@ -3,7 +3,7 @@
 // 既存ロジックを保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
 
-const API_BASE = "https://barrierfree-map.loophole.site";
+const API_BASE = "https://barrierfree-map.tail5de5e1.ts.net";
 const apiFetch = (url, opts) => (window.AuthToken && window.AuthToken.getAccessToken()) ? window.AuthToken.authFetch(url, opts) : fetch(url, opts);
 
 const detailLoadingEl = document.getElementById("detail-loading");

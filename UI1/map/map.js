@@ -3,7 +3,7 @@
 // 既存のロジックをそのまま保持し、新HTMLのIDに合わせたバージョン
 // ===============================================
 
-const API_BASE = "https://barrierfree-map.loophole.site";
+const API_BASE = "https://barrierfree-map.tail5de5e1.ts.net";
 let userLocationMarker = null;
 let accuracyCircle = null;
 let currentHeading = 0;
@@ -658,7 +658,7 @@ function openTraceDetailModal(path) {
         if (avatarUrl) {
             const img = document.createElement('img');
             let _url = avatarUrl;
-            img.src = ((_url.startsWith('http') || _url.startsWith('data:')) ? _url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + _url));
+            img.src = ((_url.startsWith('http') || _url.startsWith('data:')) ? _url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.tail5de5e1.ts.net') + _url));
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'cover';
@@ -696,7 +696,7 @@ function openTraceDetailModal(path) {
                     if (sessionInfo.iconUrl && avatarContainer) {
                         const img = document.createElement('img');
                         const url = sessionInfo.iconUrl;
-                        img.src = ((url.startsWith('http') || url.startsWith('data:')) ? url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.loophole.site') + url));
+                        img.src = ((url.startsWith('http') || url.startsWith('data:')) ? url : (((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : 'https://barrierfree-map.tail5de5e1.ts.net') + url));
                         img.style.width = '100%';
                         img.style.height = '100%';
                         img.style.objectFit = 'cover';

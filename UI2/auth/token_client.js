@@ -1,7 +1,7 @@
 (function initAuthTokenClient(globalScope) {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const DEFAULT_APP_BASE_PATH = "/StepBy/UI2";
-  const DEFAULT_API_BASE_URL = "https://barrierfree-map.loophole.site";
+  const DEFAULT_API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net";
   const DEFAULT_AUTH_TIMEOUT_MS = 12000;
   const REQUEST_ID_STORAGE_KEY = "client_log_request_id.v1";
   const SESSION_ID_STORAGE_KEY = "client_log_session_id.v1";

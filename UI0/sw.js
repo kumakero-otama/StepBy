@@ -1,7 +1,7 @@
 // このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
 const CACHE_VERSION = "1.18.28"; // このバージョンはpackage.jsonから自動生成されます
 const APP_BASE_PATH = "/StepBy/UI0";
-const API_BASE_URL = "https://barrierfree-map.loophole.site";
+const API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
 // 画像（プロフィール画像など）はバージョンが変わっても保持し続けるための専用キャッシュ。
 // CACHE_NAMEと違いタイムスタンプを含めず、activateハンドラの古いキャッシュ削除フィルタにも引っかからない名前にする。
