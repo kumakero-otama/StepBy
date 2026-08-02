@@ -62,6 +62,84 @@
     return best;
   }
 
+  function buildWayGraph(ways) {
+    const byNode = new Map();
+    const byId = new Map();
+    ways.forEach((way) => {
+      byId.set(way.id, way);
+      (way.nodes || []).forEach((nodeId) => {
+        if (!byNode.has(nodeId)) byNode.set(nodeId, []);
+        byNode.get(nodeId).push(way.id);
+      });
+    });
+    const neighbors = new Map(ways.map((way) => [way.id, new Set()]));
+    byNode.forEach((wayIds) => {
+      wayIds.forEach((wayId) => wayIds.forEach((otherId) => {
+        if (wayId !== otherId) neighbors.get(wayId).add(otherId);
+      }));
+    });
+    return { byId, neighbors };
+  }
+
+  function findConnectedWayPath(ways, startWayId, endWayId) {
+    if (startWayId === endWayId) return [startWayId];
+    const graph = buildWayGraph(ways);
+    if (!graph.byId.has(startWayId) || !graph.byId.has(endWayId)) return null;
+    const queue = [{ id: startWayId, cost: 0 }];
+    const costById = new Map([[startWayId, 0]]);
+    const previous = new Map();
+    while (queue.length) {
+      queue.sort((a, b) => a.cost - b.cost);
+      const current = queue.shift();
+      if (current.cost !== costById.get(current.id)) continue;
+      if (current.id === endWayId) break;
+      (graph.neighbors.get(current.id) || []).forEach((nextId) => {
+        const way = graph.byId.get(nextId);
+        const nextCost = current.cost + (way.priority === "pedestrian" ? 1 : 3);
+        if (!costById.has(nextId) || nextCost < costById.get(nextId)) {
+          costById.set(nextId, nextCost);
+          previous.set(nextId, current.id);
+          queue.push({ id: nextId, cost: nextCost });
+        }
+      });
+    }
+    if (!previous.has(endWayId)) return null;
+    const path = [endWayId];
+    while (path[0] !== startWayId) path.unshift(previous.get(path[0]));
+    return path;
+  }
+
+  function finalizeTrace(points, ways) {
+    if (!Array.isArray(points) || points.length < 2) return null;
+    const sampled = points.filter((_, index) => index === 0 || index === points.length - 1 || index % 3 === 0);
+    const matches = [];
+    let previousWayId = null;
+    sampled.forEach((point) => {
+      const match = chooseBestMatch(point, ways, previousWayId);
+      if (match) {
+        matches.push(match);
+        previousWayId = match.wayId;
+      }
+    });
+    if (matches.length < 2) return null;
+    const connectedWayIds = [matches[0].wayId];
+    for (let index = 1; index < matches.length; index += 1) {
+      const fromWayId = connectedWayIds[connectedWayIds.length - 1];
+      const toWayId = matches[index].wayId;
+      if (fromWayId === toWayId) continue;
+      const bridge = findConnectedWayPath(ways, fromWayId, toWayId);
+      if (!bridge) return null;
+      connectedWayIds.push(...bridge.slice(1));
+    }
+    return {
+      start: matches[0],
+      end: matches[matches.length - 1],
+      matches,
+      wayIds: connectedWayIds,
+      ways: connectedWayIds.map((id) => ways.find((way) => way.id === id)).filter(Boolean),
+    };
+  }
+
   function openCache() {
     return new Promise((resolve, reject) => {
       if (!global.indexedDB) { resolve(null); return; }
@@ -122,9 +200,21 @@
       if (result) this.previousWayId = result.wayId;
       return result;
     }
+
+    finalize(points) {
+      return finalizeTrace(points, this.network || []);
+    }
   }
 
-  global.StepByOsmMatcher = { BrowserMatcher, chooseBestMatch, projectToSegment, distanceMeters };
+  global.StepByOsmMatcher = {
+    BrowserMatcher,
+    chooseBestMatch,
+    projectToSegment,
+    distanceMeters,
+    buildWayGraph,
+    findConnectedWayPath,
+    finalizeTrace,
+  };
   if (global.document && global.document.documentElement) {
     global.document.documentElement.dataset.osmBrowserMatcher = "loaded";
   }

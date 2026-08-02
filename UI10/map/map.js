@@ -2227,6 +2227,21 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
+  if (browserOsmMatcher) {
+    const browserRoute = browserOsmMatcher.finalize(allTracePoints);
+    if (browserRoute) {
+      console.log("[BrowserMatcher] connected final route", {
+        wayIds: browserRoute.wayIds,
+        startWayId: browserRoute.start.wayId,
+        startFraction: browserRoute.start.fraction,
+        endWayId: browserRoute.end.wayId,
+        endFraction: browserRoute.end.fraction,
+      });
+    } else {
+      console.warn("[BrowserMatcher] could not build a connected final route");
+    }
+  }
+
   const shape = allTracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
   let previewData;
   try {
