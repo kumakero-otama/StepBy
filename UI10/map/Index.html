@@ -177,6 +177,7 @@
               <div><dt>履歴保存</dt><dd id="comparison-save-status">—</dd></div>
             </dl>
             <button id="comparison-test-button" class="comparison-test-button" type="button" data-testid="comparison-test-button">東京駅の試験座標で比較</button>
+            <button id="osm-preview-test-button" class="comparison-test-button osm-preview-test-button" type="button" data-testid="osm-preview-test-button">東京駅付近でOSM未送信プレビュー</button>
           </section>
           <div class="meta">
             <div class="meta-controls">
@@ -250,6 +251,18 @@
         <h2 id="trace-confirm-title">この経路で保存しますか</h2>
         <div class="trace-confirm-scroll">
           <div id="trace-confirm-map" aria-label="保存前の経路プレビュー"></div>
+          <section id="osm-change-preview" class="osm-change-preview hidden" aria-label="OSM未送信プレビュー">
+            <div class="osm-preview-heading"><h3>OSM変更予定プレビュー</h3><span>未送信</span></div>
+            <p>緑線は点字ブロックありとして登録予定の区間、丸印はWayの分割予定位置です。OSMには送信されません。</p>
+            <dl>
+              <div><dt>対象Way</dt><dd id="osm-preview-way-ids">—</dd></div>
+              <div><dt>開始位置</dt><dd id="osm-preview-start">—</dd></div>
+              <div><dt>終了位置</dt><dd id="osm-preview-end">—</dd></div>
+              <div><dt>予定タグ</dt><dd><code>tactile_paving=yes</code></dd></div>
+            </dl>
+            <button id="osm-preview-save-draft" type="button">変更案だけを開発DBへ保存</button>
+            <div id="osm-preview-save-status" role="status">OSM送信：無効</div>
+          </section>
           <section id="trace-tag-panel" class="trace-tag-panel hidden" aria-label="タグ選択">
             <h3 class="trace-tag-title">タグ</h3>
             <input
@@ -344,8 +357,8 @@
       })();
     </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="osm-browser-matcher.js"></script>
-    <script src="map.js"></script>
+    <script src="osm-browser-matcher.js?v=ui10-osm-preview-1"></script>
+    <script src="map.js?v=ui10-osm-preview-1"></script>
     <script src="../pwa.js"></script>
     <!-- 道情報投稿完了などを画面上端で通知するトースト -->
     <div id="map-toast" class="map-toast hidden" role="status" aria-live="polite">

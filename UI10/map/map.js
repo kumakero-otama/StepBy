@@ -36,6 +36,12 @@ const traceTagListEl = document.getElementById("trace-tag-list");
 const traceTagErrorEl = document.getElementById("trace-tag-error");
 const traceMemoPanelEl = document.getElementById("trace-memo-panel");
 const traceMemoInputEl = document.getElementById("trace-memo-input");
+const osmChangePreviewEl = document.getElementById("osm-change-preview");
+const osmPreviewWayIdsEl = document.getElementById("osm-preview-way-ids");
+const osmPreviewStartEl = document.getElementById("osm-preview-start");
+const osmPreviewEndEl = document.getElementById("osm-preview-end");
+const osmPreviewSaveDraftEl = document.getElementById("osm-preview-save-draft");
+const osmPreviewSaveStatusEl = document.getElementById("osm-preview-save-status");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
@@ -47,6 +53,7 @@ const comparisonPriorityEl = document.getElementById("comparison-priority");
 const comparisonDurationEl = document.getElementById("comparison-duration");
 const comparisonSaveStatusEl = document.getElementById("comparison-save-status");
 const comparisonTestButtonEl = document.getElementById("comparison-test-button");
+const osmPreviewTestButtonEl = document.getElementById("osm-preview-test-button");
 // UI10では新しいブラウザ側マッチャーをシャドーモードで動かす。
 // 表示・保存は当面Valhallaの結果を使い、比較結果を蓄積してから切り替える。
 const browserOsmMatcher = window.StepByOsmMatcher
@@ -2140,7 +2147,7 @@ function closeTraceConfirmModal() {
   }
 }
 
-function openTraceConfirmModal(coordinates) {
+function openTraceConfirmModal(coordinates, osmPreview = null) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) {
       resolve("cancel");
@@ -2158,10 +2165,56 @@ function openTraceConfirmModal(coordinates) {
       }).addTo(traceConfirmMap);
 
       traceConfirmPathLayer = L.polyline(coordinates, {
-        color: "#9acd32",
-        weight: 5,
-        opacity: 0.9,
+        color: "#68747d",
+        weight: 4,
+        opacity: 0.65,
       }).addTo(traceConfirmMap);
+      if (osmChangePreviewEl) osmChangePreviewEl.classList.toggle("hidden", !osmPreview);
+      if (osmPreview && window.StepByOsmMatcher) {
+        osmPreview.segments.forEach((segment) => {
+          L.polyline(segment.coordinates.map(([lng, lat]) => [lat, lng]), {
+            color: "#16a060", weight: 7, opacity: 0.92,
+          }).addTo(traceConfirmMap);
+        });
+        L.circleMarker([osmPreview.start.lat, osmPreview.start.lng], {
+          radius: 8, color: "#fff", weight: 2, fillColor: "#f0a500", fillOpacity: 1,
+        }).bindTooltip("分割予定：開始").addTo(traceConfirmMap);
+        L.circleMarker([osmPreview.end.lat, osmPreview.end.lng], {
+          radius: 8, color: "#fff", weight: 2, fillColor: "#d84b43", fillOpacity: 1,
+        }).bindTooltip("分割予定：終了").addTo(traceConfirmMap);
+        if (osmPreviewWayIdsEl) osmPreviewWayIdsEl.textContent = osmPreview.segments.map((s) => s.wayId).join(" → ");
+        if (osmPreviewStartEl) osmPreviewStartEl.textContent = `Way ${osmPreview.start.wayId} / ${osmPreview.start.lat.toFixed(6)}, ${osmPreview.start.lng.toFixed(6)}`;
+        if (osmPreviewEndEl) osmPreviewEndEl.textContent = `Way ${osmPreview.end.wayId} / ${osmPreview.end.lat.toFixed(6)}, ${osmPreview.end.lng.toFixed(6)}`;
+        if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "OSM送信：無効（まだ保存していません）";
+        if (osmPreviewSaveDraftEl) {
+          osmPreviewSaveDraftEl.disabled = false;
+          osmPreviewSaveDraftEl.onclick = async () => {
+            osmPreviewSaveDraftEl.disabled = true;
+            if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "変更案を保存中…";
+            try {
+              const response = await authFetch("/api/osm/plans", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  operationType: "merge",
+                  summary: "UI10 点字ブロック区間プレビュー（OSM未送信）",
+                  elements: osmPreview.segments.map((segment) => ({
+                    elementType: "way", action: "modify", osmId: segment.wayId, version: segment.wayVersion,
+                    before: { tags: segment.tags, nodes: segment.nodes },
+                    after: { tags: { ...segment.tags, tactile_paving: "yes" }, previewSegmentCoordinates: segment.coordinates },
+                  })),
+                  clientContext: { ui: "UI10", previewOnly: true, osmWriteRequested: false },
+                }),
+              });
+              const result = await response.json();
+              if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+              if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `変更案保存済み：${result.planId}／OSM未送信`;
+            } catch (error) {
+              osmPreviewSaveDraftEl.disabled = false;
+              if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `保存失敗：${error.message}（OSM未送信）`;
+            }
+          };
+        }
+      }
       traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
 
       const cleanupAndResolve = (result) => {
@@ -2241,9 +2294,11 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
+  let osmPreview = null;
   if (browserOsmMatcher) {
     const browserRoute = browserOsmMatcher.finalize(allTracePoints);
     if (browserRoute) {
+      osmPreview = window.StepByOsmMatcher.buildOsmChangePreview(browserRoute);
       console.log("[BrowserMatcher] connected final route", {
         wayIds: browserRoute.wayIds,
         startWayId: browserRoute.start.wayId,
@@ -2274,7 +2329,7 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
-  const decision = await openTraceConfirmModal(previewCoords);
+  const decision = await openTraceConfirmModal(previewCoords, osmPreview);
   if (decision === "ok") {
     const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
     const persistResult = await persistCurrentSessionWithoutConfirmation();
@@ -2441,6 +2496,39 @@ if (comparisonTestButtonEl) {
       await requestSnappedLocation(35.681236, 139.767125);
     } finally {
       comparisonTestButtonEl.disabled = false;
+    }
+  });
+}
+
+if (osmPreviewTestButtonEl) {
+  osmPreviewTestButtonEl.addEventListener("click", async () => {
+    if (!browserOsmMatcher || !window.StepByOsmMatcher) {
+      if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "プレビュー失敗：ブラウザ版マッチャー未読込";
+      return;
+    }
+    osmPreviewTestButtonEl.disabled = true;
+    osmPreviewTestButtonEl.textContent = "プレビュー生成中…";
+    try {
+      await browserOsmMatcher.ensureNetwork(35.681236, 139.767125);
+      const testWay = (browserOsmMatcher.network || []).find((way) =>
+        way.priority === "pedestrian" && Array.isArray(way.coordinates) && way.coordinates.length >= 2);
+      if (!testWay) throw new Error("試験に使える歩道Wayが見つかりませんでした");
+      const [aLng, aLat] = testWay.coordinates[0];
+      const [bLng, bLat] = testWay.coordinates[1];
+      const pointAt = (fraction) => ({ lat: aLat + (bLat - aLat) * fraction, lng: aLng + (bLng - aLng) * fraction });
+      const points = [pointAt(0.2), pointAt(0.5), pointAt(0.8)];
+      const route = browserOsmMatcher.finalize(points);
+      const preview = window.StepByOsmMatcher.buildOsmChangePreview(route);
+      if (!preview) throw new Error("連続したWayを確定できませんでした");
+      const previewCoordinates = preview.segments.flatMap((segment) =>
+        segment.coordinates.map(([lng, lat]) => [lat, lng]));
+      await openTraceConfirmModal(previewCoordinates, preview);
+    } catch (error) {
+      if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = `プレビュー失敗：${error.message}`;
+      alert(`OSM未送信プレビューを生成できませんでした: ${error.message}`);
+    } finally {
+      osmPreviewTestButtonEl.disabled = false;
+      osmPreviewTestButtonEl.textContent = "東京駅付近でOSM未送信プレビュー";
     }
   });
 }
