@@ -55,7 +55,8 @@
         const score = projected.distance + pedestrianPenalty + continuityPenalty;
         if (!best || score < best.score) {
           best = { ...projected, score, wayId: way.id, wayVersion: way.version, segmentIndex: index,
-            priority: way.priority, tags: way.tags, nodes: way.nodes };
+            priority: way.priority, tags: way.tags, nodes: way.nodes,
+            connectedToPrevious: !previousWay || way.id === previousWay.id || sharesNode(way, previousWay) };
         }
       }
     });

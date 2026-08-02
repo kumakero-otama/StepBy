@@ -159,6 +159,25 @@
           </span>
         </button>
         <div id="map-controls-content" class="map-controls-content">
+          <section id="fitting-comparison-panel" class="fitting-comparison-panel" aria-label="フィッティング比較" aria-live="polite">
+            <div class="comparison-heading-row">
+              <h2>フィッティング比較</h2>
+              <span id="comparison-status" class="comparison-status" data-state="waiting">GPS待ち</span>
+            </div>
+            <div class="comparison-legend" aria-label="地図上の色">
+              <span><i class="legend-dot raw"></i>GPS</span><span><i class="legend-line valhalla"></i>Valhalla</span>
+              <span><i class="legend-line browser"></i>ブラウザ版</span><span><i class="legend-line difference"></i>結果の差</span>
+            </div>
+            <dl class="comparison-values">
+              <div><dt>Valhalla Way</dt><dd id="comparison-valhalla-way">—</dd></div>
+              <div><dt>ブラウザ Way</dt><dd id="comparison-browser-way">—</dd></div>
+              <div><dt>結果間の距離</dt><dd id="comparison-distance">—</dd></div>
+              <div><dt>ブラウザ判定</dt><dd id="comparison-priority">—</dd></div>
+              <div><dt>計算時間</dt><dd id="comparison-duration">—</dd></div>
+              <div><dt>履歴保存</dt><dd id="comparison-save-status">—</dd></div>
+            </dl>
+            <button id="comparison-test-button" class="comparison-test-button" type="button" data-testid="comparison-test-button">東京駅の試験座標で比較</button>
+          </section>
           <div class="meta">
             <div class="meta-controls">
               <div class="meta-toggles">

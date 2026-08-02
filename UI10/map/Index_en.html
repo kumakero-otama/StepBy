@@ -159,6 +159,12 @@
           </span>
         </button>
         <div id="map-controls-content" class="map-controls-content">
+          <section id="fitting-comparison-panel" class="fitting-comparison-panel" aria-label="Fitting comparison" aria-live="polite">
+            <div class="comparison-heading-row"><h2>Fitting comparison</h2><span id="comparison-status" class="comparison-status" data-state="waiting">Waiting for GPS</span></div>
+            <div class="comparison-legend"><span><i class="legend-dot raw"></i>GPS</span><span><i class="legend-line valhalla"></i>Valhalla</span><span><i class="legend-line browser"></i>Browser</span><span><i class="legend-line difference"></i>Difference</span></div>
+            <dl class="comparison-values"><div><dt>Valhalla Way</dt><dd id="comparison-valhalla-way">—</dd></div><div><dt>Browser Way</dt><dd id="comparison-browser-way">—</dd></div><div><dt>Distance</dt><dd id="comparison-distance">—</dd></div><div><dt>Browser decision</dt><dd id="comparison-priority">—</dd></div><div><dt>Duration</dt><dd id="comparison-duration">—</dd></div><div><dt>History</dt><dd id="comparison-save-status">—</dd></div></dl>
+            <button id="comparison-test-button" class="comparison-test-button" type="button" data-testid="comparison-test-button">Compare at Tokyo Station</button>
+          </section>
           <div class="meta">
             <div class="meta-controls">
               <div class="meta-toggles">

@@ -39,6 +39,14 @@ const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
+const comparisonStatusEl = document.getElementById("comparison-status");
+const comparisonValhallaWayEl = document.getElementById("comparison-valhalla-way");
+const comparisonBrowserWayEl = document.getElementById("comparison-browser-way");
+const comparisonDistanceEl = document.getElementById("comparison-distance");
+const comparisonPriorityEl = document.getElementById("comparison-priority");
+const comparisonDurationEl = document.getElementById("comparison-duration");
+const comparisonSaveStatusEl = document.getElementById("comparison-save-status");
+const comparisonTestButtonEl = document.getElementById("comparison-test-button");
 // UI10では新しいブラウザ側マッチャーをシャドーモードで動かす。
 // 表示・保存は当面Valhallaの結果を使い、比較結果を蓄積してから切り替える。
 const browserOsmMatcher = window.StepByOsmMatcher
@@ -824,6 +832,12 @@ let currentSessionRawStartIndex = 0;
 let currentSessionSnappedStartIndex = 0;
 let recordingSessionIds = []; // 記録開始から終了までに作成したセッションID一覧
 let tracePolyline = null; // trace_attributesの結果を表示する黄緑線
+let comparisonRawMarker = null;
+let comparisonValhallaMarker = null;
+let comparisonBrowserMarker = null;
+let comparisonValhallaLine = null;
+let comparisonBrowserLine = null;
+let comparisonDifferenceLine = null;
 let currentSessionId = null;
 if (typeof window !== "undefined" && window.__restoredRecordingSessionId) {
   currentSessionId = window.__restoredRecordingSessionId;
@@ -2295,9 +2309,57 @@ async function handleRecordStopWithConfirmation() {
   }
 }
 
-// 現在地取得結果をスナップし、表示更新と記録中の追跡へつなげる。
+function setComparisonStatus(label, state) {
+  if (!comparisonStatusEl) return;
+  comparisonStatusEl.textContent = label;
+  comparisonStatusEl.dataset.state = state;
+}
+
+function removeComparisonLayer(layer) {
+  if (layer && map.hasLayer(layer)) map.removeLayer(layer);
+}
+
+function renderFittingComparison(raw, valhalla, browser, durations) {
+  removeComparisonLayer(comparisonRawMarker);
+  removeComparisonLayer(comparisonValhallaMarker);
+  removeComparisonLayer(comparisonBrowserMarker);
+  removeComparisonLayer(comparisonValhallaLine);
+  removeComparisonLayer(comparisonBrowserLine);
+  removeComparisonLayer(comparisonDifferenceLine);
+  comparisonRawMarker = L.circleMarker([raw.lat, raw.lng], { radius: 6, color: "#fff", weight: 2, fillColor: "#68747d", fillOpacity: 1 }).addTo(map);
+  comparisonValhallaMarker = valhalla ? L.circleMarker([valhalla.lat, valhalla.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#2474d2", fillOpacity: .9 }).addTo(map) : null;
+  comparisonBrowserMarker = browser ? L.circleMarker([browser.lat, browser.lng], { radius: 4, color: "#fff", weight: 1, fillColor: "#1b9b68", fillOpacity: 1 }).addTo(map) : null;
+  comparisonValhallaLine = valhalla ? L.polyline([[raw.lat, raw.lng], [valhalla.lat, valhalla.lng]], { color: "#2474d2", weight: 5, opacity: .9 }).addTo(map) : null;
+  comparisonBrowserLine = browser ? L.polyline([[raw.lat, raw.lng], [browser.lat, browser.lng]], { color: "#1b9b68", weight: 5, opacity: .9 }).addTo(map) : null;
+  comparisonDifferenceLine = valhalla && browser ? L.polyline([[valhalla.lat, valhalla.lng], [browser.lat, browser.lng]], { color: "#d84b43", weight: 3, dashArray: "7 6", opacity: .95 }).addTo(map) : null;
+  const resultDistance = valhalla && browser && window.StepByOsmMatcher
+    ? window.StepByOsmMatcher.distanceMeters({ lat: valhalla.lat, lng: valhalla.lng }, { lat: browser.lat, lng: browser.lng }) : null;
+  if (comparisonValhallaWayEl) comparisonValhallaWayEl.textContent = valhalla && valhalla.wayId ? String(valhalla.wayId) : "取得不可";
+  if (comparisonBrowserWayEl) comparisonBrowserWayEl.textContent = browser && browser.wayId ? String(browser.wayId) : "取得不可";
+  if (comparisonDistanceEl) comparisonDistanceEl.textContent = Number.isFinite(resultDistance) ? `${resultDistance.toFixed(2)} m` : "—";
+  if (comparisonPriorityEl) comparisonPriorityEl.textContent = browser ? `${browser.priority === "pedestrian" ? "歩道優先" : "道路"}・${browser.connectedToPrevious === false ? "非連続" : "連続"}` : "—";
+  if (comparisonDurationEl) comparisonDurationEl.textContent = `V ${durations.valhalla} ms / B ${durations.browser} ms`;
+  setComparisonStatus(valhalla && browser ? "比較完了" : "一部取得失敗", valhalla && browser ? "success" : "error");
+  return resultDistance;
+}
+
+async function saveFittingComparison(payload) {
+  if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "保存中…";
+  try {
+    const response = await authFetch("/api/fitting-comparisons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (!response.ok) throw new Error(`history save failed with status ${response.status}`);
+    const result = await response.json();
+    if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = `保存済み #${result.id}`;
+  } catch (error) {
+    if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "保存失敗";
+    console.error("[FittingComparison] history save failed", error);
+  }
+}
+
+// 現在地取得結果を新旧両方でスナップし、表示・比較履歴へつなげる。
 function requestSnappedLocation(latitude, longitude) {
   if (!currentUserId) {
+    setComparisonStatus("ログイン待ち", "waiting");
     return;
   }
   const params = new URLSearchParams({
@@ -2317,58 +2379,70 @@ function requestSnappedLocation(latitude, longitude) {
     params.set("prevLng", lastSent.longitude.toString());
   }
 
-  console.log(`[requestSnappedLocation] Requesting: lat=${latitude}, lng=${longitude}`);
+  console.log(`[requestSnappedLocation] Requesting comparison: lat=${latitude}, lng=${longitude}`);
+  setComparisonStatus("計算中…", "loading");
+  if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "—";
+  const browserStartedAt = performance.now();
+  const browserPromise = browserOsmMatcher
+    ? browserOsmMatcher.match(latitude, longitude).then((match) => ({ match, duration: Math.round(performance.now() - browserStartedAt), error: null })).catch((error) => ({ match: null, duration: Math.round(performance.now() - browserStartedAt), error }))
+    : Promise.resolve({ match: null, duration: 0, error: new Error("browser matcher unavailable") });
+  const valhallaStartedAt = performance.now();
 
-  if (browserOsmMatcher) {
-    browserOsmMatcher.match(latitude, longitude)
-      .then((match) => {
-        if (!match) return;
-        console.log("[BrowserMatcher] shadow result", {
-          wayId: match.wayId,
-          wayVersion: match.wayVersion,
-          distance: match.distance,
-          priority: match.priority,
-          lat: match.lat,
-          lng: match.lng,
-        });
-      })
-      .catch((error) => console.warn("[BrowserMatcher] shadow failed", error));
-  }
-
-  authFetch(`/api/match?${params.toString()}`)
+  return authFetch(`/api/match?${params.toString()}`)
     .then((res) => {
       console.log(`[requestSnappedLocation] Response status: ${res.status}`);
       if (res.status === 204) {
         console.log('[requestSnappedLocation] Received 204 No Content - no update');
         // 変化がなくても現在値を表示更新（時刻などは変わる）
         updateDisplay(latitude, longitude, latitude, longitude, true);
-        return null;
+        return { data: null, duration: Math.round(performance.now() - valhallaStartedAt) };
       }
       if (!res.ok) {
         throw new Error(`match failed with status ${res.status}`);
       }
-      return res.json();
+      return res.json().then((data) => ({ data, duration: Math.round(performance.now() - valhallaStartedAt) }));
     })
-    .then((data) => {
+    .then(async ({ data, duration: valhallaDuration }) => {
       console.log('[requestSnappedLocation] Response data:', data);
-      if (!data) {
-        console.log('[requestSnappedLocation] No data received (204 response)');
-        return;
-      }
-      if (typeof data.lat === "number" && typeof data.lng === "number") {
+      const valhalla = data && typeof data.lat === "number" && typeof data.lng === "number" ? data : null;
+      if (valhalla) {
         console.log(`[requestSnappedLocation] Valid snapped coordinates: lat=${data.lat}, lng=${data.lng}`);
         updateDisplay(latitude, longitude, data.lat, data.lng);
-        // スナップされた座標を次回の基準点として保存
         lastSent = { latitude: data.lat, longitude: data.lng };
       } else {
-        console.warn('[requestSnappedLocation] Invalid data format:', data);
-        return;
+        updateDisplay(latitude, longitude, latitude, longitude, true);
       }
+      const browserResult = await browserPromise;
+      const browser = browserResult.match;
+      const resultDistance = renderFittingComparison({ lat: latitude, lng: longitude }, valhalla, browser, { valhalla: valhallaDuration, browser: browserResult.duration });
+      void saveFittingComparison({
+        sessionId: currentSessionId, userId: String(currentUserId), observedAt: new Date().toISOString(), rawLat: latitude, rawLng: longitude,
+        valhallaLat: valhalla && valhalla.lat, valhallaLng: valhalla && valhalla.lng, valhallaWayId: valhalla && valhalla.wayId,
+        valhallaDistanceMeters: valhalla && valhalla.distanceMeters, browserLat: browser && browser.lat, browserLng: browser && browser.lng,
+        browserWayId: browser && browser.wayId, browserWayVersion: browser && browser.wayVersion, browserDistanceMeters: browser && browser.distance,
+        browserPriority: browser && browser.priority, resultDistanceMeters: resultDistance,
+        wayMatch: Boolean(valhalla && browser && valhalla.wayId && browser.wayId && Number(valhalla.wayId) === Number(browser.wayId)),
+        browserConnected: browser && browser.connectedToPrevious, valhallaDurationMs: valhallaDuration, browserDurationMs: browserResult.duration,
+        status: valhalla && browser ? "compared" : "partial", errorMessage: browserResult.error && browserResult.error.message,
+        clientVersion: "UI10", metadata: { source: comparisonTestButtonEl && comparisonTestButtonEl.disabled ? "fixed_test" : "gps" },
+      });
     })
     .catch((error) => {
       console.error('[requestSnappedLocation] Error:', error);
-      // keep current display on failure
+      setComparisonStatus("比較失敗", "error");
     });
+}
+
+if (comparisonTestButtonEl) {
+  comparisonTestButtonEl.addEventListener("click", async () => {
+    comparisonTestButtonEl.disabled = true;
+    try {
+      map.setView([35.681236, 139.767125], 19, { animate: false });
+      await requestSnappedLocation(35.681236, 139.767125);
+    } finally {
+      comparisonTestButtonEl.disabled = false;
+    }
+  });
 }
 
 function handleNewLocation(latitude, longitude) {
