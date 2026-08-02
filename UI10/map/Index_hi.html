@@ -78,16 +78,16 @@
         if (query.get("debug") === "1") {
           return;
         }
-        try {
-          const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
+        const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
             ? window.AuthToken.authFetch
             : fetch;
-          const getAccessToken = window.AuthToken && typeof window.AuthToken.getAccessToken === "function"
+        const getAccessToken = window.AuthToken && typeof window.AuthToken.getAccessToken === "function"
             ? window.AuthToken.getAccessToken
             : () => "";
-          const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
+        const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
             ? window.AuthToken.isTemporaryError
             : () => false;
+        try {
           const res = await authFetch("/auth/me");
           if (res.status === 401 || res.status === 403) {
             if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
