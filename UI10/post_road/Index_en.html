@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<!-- このファイルは 道情報投稿画面の英語マークアップを定義する。 -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="../language_redirect.js"></script>
+    <title>Post Road Info</title>
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      /* ページ全体で使う色と余白の基準値 */
+      :root {
+        --bg: #ffffff;
+        --text: #111111;
+        --muted: #666666;
+        --line: #d9d9d9;
+        --primary: #0066ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+      }
+
+      .app-bar {
+        background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 52%, #3bb49f 100%);
+        box-shadow: 0 10px 28px rgba(30, 122, 109, 0.26);
+        overflow: hidden;
+      }
+
+      .app-bar::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.18), transparent 22%),
+          radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.12), transparent 20%),
+          linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.1) 50%, transparent 78%);
+        pointer-events: none;
+      }
+
+      .app-bar .app-bar-title {
+        position: relative;
+        z-index: 1;
+        font-size: 1.34rem;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+      }
+
+      .app-bar-actions {
+        position: relative;
+        z-index: 1;
+      }
+
+      .app-bar-icon-link {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(6px);
+      }
+
+      .app-bar-spacer {
+        background: linear-gradient(180deg, rgba(46, 158, 143, 0.12), rgba(46, 158, 143, 0));
+      }
+
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 8px 16px 108px;
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        font-size: 1.7rem;
+      }
+
+      h2 {
+        margin: 20px 0 10px;
+        font-size: 1rem;
+      }
+
+      .section-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #172b2d;
+        letter-spacing: 0.01em;
+      }
+
+      .section-title-icon {
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #2e9e8f;
+        flex-shrink: 0;
+      }
+
+      .section-title-icon svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+        fill: currentColor;
+      }
+
+      /* Post地点を決める地図枠 */
+      .location-map-wrap {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      #post-map {
+        width: 100%;
+        height: 240px;
+      }
+
+      .map-center-mark {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 28px;
+        height: 28px;
+        pointer-events: none;
+        z-index: 500;
+      }
+
+      .map-center-mark::before,
+      .map-center-mark::after {
+        content: "";
+        position: absolute;
+        background: #d10a0a;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .map-center-mark::before {
+        width: 2px;
+        height: 28px;
+      }
+
+      .map-center-mark::after {
+        width: 28px;
+        height: 2px;
+      }
+
+      .map-center-coords {
+        display: none;
+      }
+
+      .record-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 2px 2px;
+      }
+
+      .record-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #222;
+      }
+
+      .record-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #222;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #ddd;
+        border: 1px solid #222;
+        transition: 0.2s ease;
+        border-radius: 999px;
+      }
+
+      .slider::before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        top: 2px;
+        background-color: #222;
+        transition: 0.2s ease;
+        border-radius: 50%;
+      }
+
+      .switch input:checked + .slider {
+        background-color: #b9f5c5;
+      }
+
+      .switch input:checked + .slider::before {
+        transform: translateX(22px);
+      }
+
+      /* Tags検索・選択の入力領域 */
+      .tag-panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #f5f5f5;
+        padding: 10px;
+      }
+
+      .tag-search {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 1rem;
+        background: #fff;
+      }
+
+      .tag-selected {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        min-height: 38px;
+      }
+
+      .tag-selected-empty {
+        color: var(--muted);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+      }
+
+      .tag-item {
+        border: 1px solid #666;
+        background: #fff;
+        border-radius: 999px;
+        padding: 4px 10px;
+        white-space: nowrap;
+        font-size: 0.95rem;
+        line-height: 1.25;
+      }
+
+      .tag-list {
+        margin-top: 10px;
+        border: 1px solid #aaa;
+        border-radius: 8px;
+        background: #fff;
+        max-height: 130px;
+        overflow-y: auto;
+      }
+
+      .tag-option {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        border-left: 0;
+        border-right: 0;
+        border-top: 0;
+        border-radius: 0;
+        background: #fff;
+        font-size: 1.05rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tag-option:last-child {
+        border-bottom: 0;
+      }
+
+      .tag-option:hover {
+        background: #f4f8ff;
+      }
+
+      .tag-list-empty {
+        padding: 12px;
+        color: var(--muted);
+      }
+
+      .detail-input {
+        width: 100%;
+        min-height: 130px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 1rem;
+      }
+
+      /* 画像プレビューとアップロード操作 */
+      .photo-upload-area {
+        border: 2px dashed #d7e3e1;
+        border-radius: 16px;
+        padding: 28px 18px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.12s ease;
+        background: linear-gradient(180deg, #fafdfc, #f3f8f7);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .photo-upload-area::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(46, 158, 143, 0.05), rgba(240, 204, 101, 0.04));
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+      }
+
+      .photo-upload-area:active,
+      .photo-upload-area.is-pressed {
+        border-color: #2e9e8f;
+        background: #ebf7f4;
+        transform: scale(0.99);
+      }
+
+      .photo-upload-area:active::before,
+      .photo-upload-area.is-pressed::before {
+        opacity: 1;
+      }
+
+      .photo-upload-icon {
+        width: 58px;
+        height: 58px;
+        margin: 0 auto 10px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(46, 158, 143, 0.18), rgba(240, 204, 101, 0.18));
+        color: #53a89a;
+        font-size: 1.9rem;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+      }
+
+      .photo-upload-copy {
+        position: relative;
+        z-index: 1;
+      }
+
+      .photo-upload-copy p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #4f6360;
+        font-weight: 700;
+      }
+
+      .photo-upload-copy small {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: #83928f;
+      }
+
+      .photo-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .photo-btn {
+        flex: 1;
+        min-height: 46px;
+        padding: 10px 12px;
+        border: 1.5px solid #d7e3e1;
+        border-radius: 12px;
+        background: #fff;
+        font-size: 0.87rem;
+        font-family: inherit;
+        color: #5a6b6c;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.06s ease;
+      }
+
+      .photo-btn:active,
+      .photo-btn.is-pressed {
+        border-color: #2e9e8f;
+        background: #f3fbf9;
+        transform: translateY(1px);
+      }
+
+      .photo-btn-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(46, 158, 143, 0.12);
+        color: #2e9e8f;
+        flex-shrink: 0;
+      }
+
+      .photo-btn-icon svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+
+      .photo-preview {
+        display: none;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        min-height: 0;
+      }
+
+      .photo-preview.has-images {
+        display: flex;
+      }
+
+      .preview-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .preview-card {
+        position: relative;
+        width: 88px;
+        height: 88px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #dde6e4;
+        box-shadow: 0 4px 12px rgba(17, 17, 17, 0.06);
+        flex: 0 0 auto;
+      }
+
+      .preview-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .preview-remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 999px;
+        background: rgba(20, 26, 28, 0.78);
+        color: #fff;
+        font-size: 0.82rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .version-footer {
+        margin-top: 4px;
+      }
+
+      .file-input-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      #app-version {
+        display: inline-block;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      button {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 0.95rem;
+        background: #fff;
+        color: var(--text);
+        transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease, transform 0.06s ease;
+        cursor: pointer;
+      }
+
+      .not-ready {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* 画面下部のBack/Postボタン */
+      .actions {
+        position: fixed;
+        left: 50%;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: min(900px, 100%);
+        margin-top: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.97) 28%, rgba(255, 255, 255, 0.99));
+        z-index: 1000;
+      }
+
+      .submit {
+        min-height: 56px;
+        border: none;
+        border-radius: 22px;
+        padding: 14px 20px;
+        background: linear-gradient(135deg, #31b8ae 0%, #56c7a7 54%, #f0cc65 100%);
+        color: #fff;
+        font-size: 1.02rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        box-shadow: 0 14px 28px rgba(53, 177, 168, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.26);
+      }
+
+      .submit:active,
+      .submit.is-pressed {
+        background: linear-gradient(135deg, #2ea99f 0%, #4eb79d 52%, #e5c055 100%);
+        color: #fff;
+        transform: translateY(1px);
+        box-shadow: 0 10px 22px rgba(53, 177, 168, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .submit.not-ready,
+      .submit:disabled {
+        opacity: 0.72;
+      }
+
+      .submit-loading {
+        position: fixed;
+        left: 50%;
+        top: 42%;
+        transform: translate(-50%, -50%);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        z-index: 2000;
+        color: #222;
+        pointer-events: none;
+      }
+
+      .submit-loading.visible {
+        display: flex;
+      }
+
+      .submit-loading-text {
+        font-size: 0.88rem;
+        font-weight: 600;
+      }
+
+      .submit-loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 6px solid #d7d7d7;
+        border-top-color: #0066ff;
+        border-radius: 50%;
+        animation: submit-spin 0.8s linear infinite;
+      }
+
+      @keyframes submit-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+    </style>
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">Post Road Info</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/buttons/map_white.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../profile/Index.html" aria-label="Profile">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../setting/Index.html" aria-label="Settings">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+    <!-- 道情報Postフォーム全体 -->
+    <main class="page">
+      <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5c-3.87 0-7 3.13-7 7c0 4.86 5.34 10.76 6.1 11.58a1.2 1.2 0 0 0 1.8 0C13.66 20.26 19 14.36 19 9.5c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5Z"/></svg></span><span>Location</span></h2>
+      <section aria-label="Fine-tune location">
+        <div class="location-map-wrap">
+          <div id="post-map"></div>
+          <div class="map-center-mark" aria-hidden="true"></div>
+        </div>
+        <p id="map-center-coords" class="map-center-coords">Center coordinates: Lat --, Lng --</p>
+        <div class="record-toggle" role="group" aria-label="Center on current location toggle">
+          <span class="record-title">Center on current location:</span>
+          <span class="record-label">OFF</span>
+          <label class="switch">
+            <input id="toggle-center-current" type="checkbox" aria-label="Center on current location" />
+            <span class="slider"></span>
+          </label>
+          <span class="record-label">ON</span>
+        </div>
+      </section>
+
+      <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.6 3H5a2 2 0 0 0-2 2v5.6a2 2 0 0 0 .59 1.41l8.4 8.4a2 2 0 0 0 2.82 0l5.18-5.18a2 2 0 0 0 0-2.82l-8.4-8.4A2 2 0 0 0 10.6 3ZM7.75 8.5A1.75 1.75 0 1 1 9.5 6.75 1.75 1.75 0 0 1 7.75 8.5Z"/></svg></span><span>Tags</span></h2>
+      <section class="tag-panel" aria-label="Tag selection">
+        <input id="tag-search" class="tag-search" type="text" placeholder="Search or add..." enterkeyhint="done" />
+        <div id="tag-selected" class="tag-selected"></div>
+        <div id="tag-list" class="tag-list"></div>
+      </section>
+
+      <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v12.5A1.5 1.5 0 0 1 19.5 20H7l-4 3V6a2 2 0 0 1 2-2Zm2.5 5h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h6a1 1 0 1 0 0-2h-6a1 1 0 1 0 0 2Z"/></svg></span><span>Details</span></h2>
+      <textarea class="detail-input" placeholder="Enter text here..."></textarea>
+
+      <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 7.5h3l1.3-2h6.4l1.3 2h3A1.5 1.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5V9a1.5 1.5 0 0 1 1.5-1.5Zm7 2.5a4 4 0 1 0 0 8a4 4 0 0 0 0-8Zm0 1.8a2.2 2.2 0 1 1 0 4.4a2.2 2.2 0 0 1 0-4.4Z"/></svg></span><span>Upload Image</span></h2>
+      <div id="photo-upload-area" class="photo-upload-area" role="button" tabindex="0" aria-label="Select images">
+        <div class="photo-upload-icon" aria-hidden="true">+</div>
+        <div class="photo-upload-copy">
+          <p>Tap to select photos</p>
+          <small>JPG, PNG (up to 2MB)</small>
+        </div>
+      </div>
+      <div class="photo-buttons">
+        <button id="photo-library-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4.5 7.5h3l1.3-2h6.4l1.3 2h3A1.5 1.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5V9a1.5 1.5 0 0 1 1.5-1.5Zm7 2.5a4 4 0 1 0 0 8a4 4 0 0 0 0-8Zm0 1.8a2.2 2.2 0 1 1 0 4.4a2.2 2.2 0 0 1 0-4.4Z" fill="currentColor"/></svg></span><span>Library</span></button>
+        <button id="camera-capture-button" class="photo-btn" type="button"><span class="photo-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9.8 5.5 8.7 7H6.2A2.2 2.2 0 0 0 4 9.2v8.6A2.2 2.2 0 0 0 6.2 20h11.6A2.2 2.2 0 0 0 20 17.8V9.2A2.2 2.2 0 0 0 17.8 7h-2.5l-1.1-1.5H9.8Zm2.2 3a4.5 4.5 0 1 1 0 9a4.5 4.5 0 0 1 0-9Zm0 1.8a2.7 2.7 0 1 0 0 5.4a2.7 2.7 0 0 0 0-5.4Z" fill="currentColor"/></svg></span><span>Camera</span></button>
+      </div>
+      <div id="image-preview" class="photo-preview">
+              </div>
+      <input id="photo-library-input" class="file-input-hidden" type="file" accept="image/*" multiple />
+      <input id="camera-capture-input" class="file-input-hidden" type="file" accept="image/*" capture="environment" />
+
+      <div class="actions">
+        <button type="button" class="submit not-ready" aria-disabled="true">Post</button>
+      </div>
+
+      <div id="submit-loading" class="submit-loading" aria-live="polite" aria-hidden="true">
+        <div class="submit-loading-text">Posting...</div>
+        <div class="submit-loading-spinner" aria-hidden="true"></div>
+      </div>
+    </main>
+    <script src="../config.js"></script>
+    <script src="../auth/token_client.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      // Post画面の状態管理・画像処理・送信を扱うメインスクリプト。
+      const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
+        ? window.AuthToken.authFetch
+        : fetch;
+      const fallbackTags = [
+        { id: "step", label: "段差" },
+        { id: "construction", label: "工事中" },
+        { id: "tactile", label: "点字ブロック" },
+        { id: "slope", label: "スロープあり" },
+        { id: "caution", label: "通行注意" },
+        { id: "rough_surface", label: "路面が悪い" },
+        { id: "crowded", label: "混雑" },
+        { id: "dark_at_night", label: "夜間暗い" }
+      ];
+      const tagSearchEl = document.getElementById("tag-search");
+      const tagSelectedEl = document.getElementById("tag-selected");
+      const tagListEl = document.getElementById("tag-list");
+      const backButton = document.getElementById("back-button");
+      const photoUploadArea = document.getElementById("photo-upload-area");
+      const photoLibraryButton = document.getElementById("photo-library-button");
+      const photoLibraryInput = document.getElementById("photo-library-input");
+      const cameraCaptureButton = document.getElementById("camera-capture-button");
+      const cameraCaptureInput = document.getElementById("camera-capture-input");
+      const imagePreview = document.getElementById("image-preview");
+      const mapCenterCoordsEl = document.getElementById("map-center-coords");
+      const toggleCenterCurrentEl = document.getElementById("toggle-center-current");
+      const detailInputEl = document.querySelector(".detail-input");
+      const submitButton = document.querySelector(".submit");
+      const submitLoadingEl = document.getElementById("submit-loading");
+      let maxImageBytes = 2 * 1024 * 1024;
+      let allTags = [];
+      const selectedTagIds = new Set();
+      const selectedImages = [];
+      let currentMapCenter = null;
+      let isSubmitting = false;
+
+      // タップ中の見た目（押下状態）をボタンに付与する。
+      function enablePressFeedback(buttonEl) {
+        if (!buttonEl) {
+          return;
+        }
+        const add = () => buttonEl.classList.add("is-pressed");
+        const remove = () => buttonEl.classList.remove("is-pressed");
+        buttonEl.addEventListener("pointerdown", add);
+        buttonEl.addEventListener("pointerup", remove);
+        buttonEl.addEventListener("pointercancel", remove);
+        buttonEl.addEventListener("pointerleave", remove);
+      }
+
+      enablePressFeedback(backButton);
+      enablePressFeedback(submitButton);
+
+      // Post中はローディング表示へ切り替え、二重送信を抑止する。
+      function setSubmittingUi(active) {
+        if (!submitLoadingEl) {
+          return;
+        }
+        submitLoadingEl.classList.toggle("visible", active);
+        submitLoadingEl.setAttribute("aria-hidden", active ? "false" : "true");
+      }
+
+      // Tags表示などで使う最小限のHTMLエスケープ。
+      function escapeHtml(text) {
+        return text
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      // API/ローカル定義のTagsを同じ形式に揃える。
+      function normalizeTags(rawTags) {
+        return rawTags
+          .map((tag, index) => {
+            if (!tag || typeof tag !== "object") {
+              return null;
+            }
+            const id = typeof tag.id === "string" && tag.id.trim() ? tag.id.trim() : `tag_${index}`;
+            const label = typeof tag.label === "string" ? tag.label.trim() : "";
+            if (!label) {
+              return null;
+            }
+            return { id, label };
+          })
+          .filter(Boolean);
+      }
+
+      // 検索語と選択状態から、表示対象Tagsを絞り込む。
+      function getVisibleTags() {
+        const query = tagSearchEl ? tagSearchEl.value.trim().toLowerCase() : "";
+        const filtered = query
+          ? allTags.filter((tag) => tag.label.toLowerCase().includes(query))
+          : allTags.slice();
+
+        filtered.sort((a, b) => {
+          const aSelected = selectedTagIds.has(a.id);
+          const bSelected = selectedTagIds.has(b.id);
+          if (aSelected && !bSelected) return -1;
+          if (!aSelected && bSelected) return 1;
+          return a.label.localeCompare(b.label, "ja");
+        });
+        return filtered;
+      }
+
+      // 選択済みTagsを上段のチップとして描画する。
+      function renderSelectedTags() {
+        if (!tagSelectedEl) {
+          return;
+        }
+        const selectedTags = allTags.filter((tag) => selectedTagIds.has(tag.id));
+        if (selectedTags.length === 0) {
+          tagSelectedEl.innerHTML = '<div class="tag-selected-empty">None selected</div>';
+          return;
+        }
+        tagSelectedEl.innerHTML = selectedTags
+          .map((tag) => `<button type="button" class="tag-item" data-remove-tag-id="${escapeHtml(tag.id)}">${escapeHtml(tag.label)} ×</button>`)
+          .join("");
+      }
+
+      // 候補Tags一覧を検索条件に合わせて描画する。
+      function renderTagList() {
+        if (!tagListEl) {
+          return;
+        }
+        const visibleTags = getVisibleTags();
+        if (visibleTags.length === 0) {
+          tagListEl.innerHTML = '<div class="tag-list-empty">No matching tags</div>';
+          return;
+        }
+        tagListEl.innerHTML = visibleTags
+          .map((tag) => {
+            return `<button type="button" class="tag-option" data-tag-id="${escapeHtml(tag.id)}">${escapeHtml(tag.label)}</button>`;
+          })
+          .join("");
+      }
+
+      // Tags表示全体（選択済み + 候補一覧）を更新する。
+      function renderTagUi() {
+        renderSelectedTags();
+        renderTagList();
+      }
+
+      // サーバーSettingsから画像の上限バイト数を取得する。
+      async function refreshImageLimitFromConfig() {
+        try {
+          const res = await authFetch("/api/config");
+          if (!res.ok) {
+            return;
+          }
+          const payload = await res.json();
+          const configured = Number(payload && payload.roadInfoImageMaxBytes);
+          if (Number.isFinite(configured) && configured > 0) {
+            maxImageBytes = Math.floor(configured);
+          }
+        } catch {
+          // keep default
+        }
+      }
+
+      void refreshImageLimitFromConfig();
+
+      authFetch("/api/post-tags")
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("tags_fetch_failed");
+          }
+          return res.json();
+        })
+        .then((payload) => {
+          const tags = normalizeTags(Array.isArray(payload && payload.tags) ? payload.tags : []);
+          allTags = tags.length > 0 ? tags : fallbackTags;
+          renderTagUi();
+        })
+        .catch(() => {
+          allTags = fallbackTags;
+          renderTagUi();
+        });
+
+      if (tagSearchEl) {
+        const handleTagSearchSubmit = async () => {
+          const raw = tagSearchEl.value.trim();
+          if (!raw) {
+            return;
+          }
+
+          const existing = allTags.find((tag) => tag.label === raw);
+          if (existing) {
+            selectedTagIds.add(existing.id);
+            tagSearchEl.value = "";
+            renderTagUi();
+            return;
+          }
+
+          try {
+            const res = await authFetch("/api/post-tags", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ label: raw }),
+            });
+            if (!res.ok) {
+              throw new Error(`create_tag_failed:${res.status}`);
+            }
+            const payload = await res.json();
+            const createdTag = payload && payload.tag ? payload.tag : null;
+            const normalized = normalizeTags(createdTag ? [createdTag] : []);
+            if (normalized.length === 0) {
+              throw new Error("invalid_created_tag");
+            }
+            const [tag] = normalized;
+            const alreadyExists = allTags.some((item) => item.id === tag.id);
+            if (!alreadyExists) {
+              allTags.push(tag);
+            }
+            selectedTagIds.add(tag.id);
+            tagSearchEl.value = "";
+            renderTagUi();
+          } catch (err) {
+            console.warn("[post_road] create tag failed:", err);
+            alert("Failed to add the tag. Please try again later.");
+          }
+        };
+
+        tagSearchEl.addEventListener("input", () => {
+          renderTagList();
+        });
+
+        const onEnter = (event) => {
+          const isEnter = event.key === "Enter" || event.keyCode === 13;
+          if (!isEnter) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          void handleTagSearchSubmit();
+        };
+
+        tagSearchEl.addEventListener("keydown", onEnter);
+        tagSearchEl.addEventListener("keypress", onEnter);
+      }
+
+      if (tagListEl) {
+        tagListEl.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+          const tagId = target.getAttribute("data-tag-id");
+          if (!tagId) {
+            return;
+          }
+          if (selectedTagIds.has(tagId)) {
+            selectedTagIds.delete(tagId);
+          } else {
+            selectedTagIds.add(tagId);
+          }
+          renderTagUi();
+        });
+      }
+
+      if (tagSelectedEl) {
+        tagSelectedEl.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+          const removeTagId = target.getAttribute("data-remove-tag-id");
+          if (!removeTagId) {
+            return;
+          }
+          selectedTagIds.delete(removeTagId);
+          renderTagUi();
+        });
+      }
+
+      if (backButton) {
+        backButton.addEventListener("click", () => {
+          window.history.back();
+        });
+      }
+
+      if (submitButton) {
+        submitButton.classList.remove("not-ready");
+        submitButton.removeAttribute("aria-disabled");
+        submitButton.addEventListener("click", async () => {
+          if (isSubmitting) {
+            return;
+          }
+          if (!currentMapCenter || !Number.isFinite(currentMapCenter.lat) || !Number.isFinite(currentMapCenter.lng)) {
+            alert("Could not get map center coordinates. Please wait and try again.");
+            return;
+          }
+
+          isSubmitting = true;
+          submitButton.disabled = true;
+          setSubmittingUi(true);
+          try {
+            await refreshImageLimitFromConfig();
+            const images = await buildImagePayloads();
+            const body = JSON.stringify({
+              lat: currentMapCenter.lat,
+              lng: currentMapCenter.lng,
+              tagIds: Array.from(selectedTagIds),
+              detail: detailInputEl ? detailInputEl.value : "",
+              images,
+            });
+            // keepalive: true には合計約64KBのボディ上限があるため、それを超える場合は
+            // 通常のfetchで投稿完了まで待ってから戻る。閾値は安全マージンを取って60KB。
+            const KEEPALIVE_BODY_LIMIT = 60 * 1024;
+            const bodySize = new Blob([body]).size;
+
+            const clearInputsAndGoBack = () => {
+              try { sessionStorage.setItem("roadInfoPostJustSubmitted.v1", "1"); } catch (e) {}
+              if (detailInputEl) {
+                detailInputEl.value = "";
+              }
+              selectedTagIds.clear();
+              for (const image of selectedImages) {
+                if (image && image.url) {
+                  URL.revokeObjectURL(image.url);
+                }
+              }
+              selectedImages.splice(0, selectedImages.length);
+              renderTagUi();
+              renderSelectedImages();
+              window.history.back();
+            };
+
+            if (bodySize <= KEEPALIVE_BODY_LIMIT) {
+              // 小さいリクエストは keepalive でバックグラウンド送信し、即座にマップ画面へ戻る。
+              try {
+                authFetch("/api/road-info", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body,
+                  keepalive: true,
+                }).catch(() => {});
+              } catch (e) { /* ignore fetch start errors */ }
+              clearInputsAndGoBack();
+            } else {
+              // 大きい（画像入りなど）リクエストは keepalive のサイズ制限を超えるので、
+              // サービスワーカーに postMessage で送信を委譲し、ページは即マップへ戻る。
+              // navigator.serviceWorker.controller は null になることがあるため、
+              // navigator.serviceWorker.ready から registration.active を取得する方式にする。
+              let activeSw = null;
+              try {
+                if (navigator.serviceWorker) {
+                  if (navigator.serviceWorker.controller) {
+                    activeSw = navigator.serviceWorker.controller;
+                  } else {
+                    const reg = await navigator.serviceWorker.ready.catch(() => null);
+                    if (reg && reg.active) {
+                      activeSw = reg.active;
+                    }
+                  }
+                }
+              } catch (e) {}
+
+              if (activeSw) {
+                const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://barrierfree-map.tail5de5e1.ts.net:10000";
+                const fullUrl = apiBase.replace(/\/+$/, "") + "/api/road-info";
+                const accessToken = (window.AuthToken && typeof window.AuthToken.getAccessToken === "function")
+                  ? window.AuthToken.getAccessToken()
+                  : "";
+                const headers = { "Content-Type": "application/json" };
+                if (accessToken) {
+                  headers["Authorization"] = "Bearer " + accessToken;
+                }
+                try {
+                  activeSw.postMessage({
+                    type: "background-fetch",
+                    id: "post-road-info-" + Date.now(),
+                    url: fullUrl,
+                    init: {
+                      method: "POST",
+                      headers,
+                      body,
+                      credentials: "include",
+                    },
+                  });
+                  console.log("[post_road] sent background-fetch to SW");
+                } catch (e) { console.warn("[post_road] SW postMessage failed:", e); }
+                clearInputsAndGoBack();
+              } else {
+                console.log("[post_road] no active SW, falling back to await fetch");
+                const res = await authFetch("/api/road-info", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body,
+                });
+                if (!res.ok) {
+                  throw new Error("submit_failed:" + res.status);
+                }
+                clearInputsAndGoBack();
+              }
+            }
+          } catch (err) {
+            console.warn("[post_road] submit failed:", err);
+            if (err && err.message === "image_too_large") {
+              alert("Image size is too large. Please use a smaller image.");
+              return;
+            }
+            alert("Failed to save the post. Please try again later.");
+          } finally {
+            isSubmitting = false;
+            submitButton.disabled = false;
+            setSubmittingUi(false);
+          }
+        });
+      }
+
+      // ファイル選択UIを端末に応じた方法で開く。
+      function openInputPicker(inputEl, permissionLabel) {
+        try {
+          if (typeof inputEl.showPicker === "function") {
+            inputEl.showPicker();
+            return;
+          }
+          inputEl.click();
+        } catch (err) {
+          console.warn(`[post_road] ${permissionLabel} picker open error:`, err);
+          alert(`${permissionLabel} permission is required. Please allow it in your device settings.`);
+        }
+      }
+
+      // カメラ撮影前に権限を確認する。
+      async function requestCameraPermission() {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+          return true;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+          });
+          stream.getTracks().forEach((track) => track.stop());
+          return true;
+        } catch (err) {
+          console.warn("[post_road] camera permission denied:", err);
+          alert("Camera permission is required. Please allow camera access in your device settings.");
+          return false;
+        }
+      }
+
+      if (photoUploadArea && photoLibraryInput) {
+        enablePressFeedback(photoUploadArea);
+        const openLibraryFromArea = () => {
+          openInputPicker(photoLibraryInput, "Photo Library");
+        };
+        photoUploadArea.addEventListener("click", openLibraryFromArea);
+        photoUploadArea.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") {
+            return;
+          }
+          event.preventDefault();
+          openLibraryFromArea();
+        });
+      }
+
+      if (photoLibraryButton && photoLibraryInput) {
+        enablePressFeedback(photoLibraryButton);
+        photoLibraryButton.addEventListener("click", () => {
+          openInputPicker(photoLibraryInput, "Photo Library");
+        });
+      }
+
+      if (cameraCaptureButton && cameraCaptureInput) {
+        enablePressFeedback(cameraCaptureButton);
+        cameraCaptureButton.addEventListener("click", async () => {
+          const granted = await requestCameraPermission();
+          if (!granted) {
+            return;
+          }
+          openInputPicker(cameraCaptureInput, "Camera");
+        });
+      }
+
+      // 選択された画像ファイルを内部リストへ追加する。
+      function addSelectedImageFiles(files) {
+        files.forEach((file) => {
+          if (!file.type.startsWith("image/")) {
+            return;
+          }
+          const imageId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          selectedImages.push({
+            id: imageId,
+            name: file.name || "Selected image",
+            url: URL.createObjectURL(file),
+            file,
+          });
+        });
+      }
+
+      // 画像ファイルをdata URLへ変換する。
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") {
+              resolve(reader.result);
+              return;
+            }
+            reject(new Error("file_read_failed"));
+          };
+          reader.onerror = () => reject(new Error("file_read_failed"));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // 画像サイズ取得や圧縮処理用にImageオブジェクト化する。
+      function loadImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+          const objectUrl = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(img);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("image_load_failed"));
+          };
+          img.src = objectUrl;
+        });
+      }
+
+      // data URLの実サイズ（概算バイト）を算出する。
+      function dataUrlSizeBytes(dataUrl) {
+        const commaIndex = dataUrl.indexOf(",");
+        if (commaIndex < 0) {
+          return Number.MAX_SAFE_INTEGER;
+        }
+        const base64 = dataUrl.slice(commaIndex + 1);
+        return Math.floor((base64.length * 3) / 4);
+      }
+
+      // 上限サイズに収まるまで段階的に縮小してPost用データを作る。
+      async function createCompressedImagePayload(file, nameHint) {
+        const image = await loadImageFromFile(file);
+        let scale = 1;
+        let attempt = 0;
+        let bestDataUrl = "";
+
+        while (attempt < 10) {
+          const width = Math.max(1, Math.round(image.naturalWidth * scale));
+          const height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            throw new Error("image_process_failed");
+          }
+          ctx.drawImage(image, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          bestDataUrl = dataUrl;
+          if (dataUrlSizeBytes(dataUrl) <= maxImageBytes) {
+            return {
+              name: `${(nameHint || "image").replace(/\.[^.]+$/, "")}.jpg`,
+              dataUrl,
+            };
+          }
+
+          scale *= 0.82;
+          attempt += 1;
+        }
+
+        if (dataUrlSizeBytes(bestDataUrl) > maxImageBytes) {
+          throw new Error("image_too_large");
+        }
+        return {
+          name: `${(nameHint || "image").replace(/\.[^.]+$/, "")}.jpg`,
+          dataUrl: bestDataUrl,
+        };
+      }
+
+      // 選択済み画像をPostAPI用の配列へ変換する。
+      async function buildImagePayloads() {
+        const payloads = [];
+        for (const image of selectedImages) {
+          if (!image || !image.file) {
+            continue;
+          }
+          if (image.file.size <= maxImageBytes) {
+            const dataUrl = await fileToDataUrl(image.file);
+            payloads.push({
+              name: image.name || "image",
+              dataUrl,
+            });
+            continue;
+          }
+
+          const compressed = await createCompressedImagePayload(image.file, image.name || "image");
+          payloads.push(compressed);
+        }
+        return payloads;
+      }
+
+      // 選択済み画像のサムネイル一覧を再描画する。
+      function renderSelectedImages() {
+        if (!imagePreview) {
+          return;
+        }
+
+        if (selectedImages.length === 0) {
+          imagePreview.classList.remove("has-images");
+          imagePreview.innerHTML = "";
+          return;
+        }
+
+        imagePreview.classList.add("has-images");
+        imagePreview.innerHTML = `<div class="preview-list">${selectedImages
+          .map((item) => {
+            const safeId = escapeHtml(item.id);
+            const safeSrc = escapeHtml(item.url);
+            const safeAlt = escapeHtml(item.name || "Selected image");
+            return `<div class="preview-card"><img src="${safeSrc}" alt="${safeAlt}"><button type="button" class="preview-remove" aria-label="Remove image" data-remove-image-id="${safeId}">×</button></div>`;
+          })
+          .join("")}</div>`;
+      }
+
+      if (photoLibraryInput && imagePreview) {
+        photoLibraryInput.addEventListener("change", () => {
+          const files = Array.from(photoLibraryInput.files || []);
+          if (files.length === 0) {
+            return;
+          }
+          addSelectedImageFiles(files);
+          renderSelectedImages();
+          photoLibraryInput.value = "";
+        });
+      }
+
+      if (cameraCaptureInput && imagePreview) {
+        cameraCaptureInput.addEventListener("change", () => {
+          const files = Array.from(cameraCaptureInput.files || []);
+          if (files.length === 0) {
+            return;
+          }
+          addSelectedImageFiles(files);
+          renderSelectedImages();
+          cameraCaptureInput.value = "";
+        });
+      }
+
+      if (imagePreview) {
+        imagePreview.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+          const removeImageId = target.getAttribute("data-remove-image-id");
+          if (!removeImageId) {
+            return;
+          }
+
+          const index = selectedImages.findIndex((item) => item.id === removeImageId);
+          if (index < 0) {
+            return;
+          }
+
+          URL.revokeObjectURL(selectedImages[index].url);
+          selectedImages.splice(index, 1);
+          renderSelectedImages();
+        });
+      }
+
+      if (typeof L !== "undefined") {
+        const url = new URL(window.location.href);
+        const rawLat = url.searchParams.get("lat");
+        const rawLng = url.searchParams.get("lng");
+        const queryLat = rawLat === null ? NaN : Number(rawLat);
+        const queryLng = rawLng === null ? NaN : Number(rawLng);
+        const hasQueryCenter =
+          Number.isFinite(queryLat) &&
+          Number.isFinite(queryLng) &&
+          Math.abs(queryLat) <= 90 &&
+          Math.abs(queryLng) <= 180;
+        const initialLat = hasQueryCenter ? queryLat : 35.681236;
+        const initialLng = hasQueryCenter ? queryLng : 139.767125;
+        console.log("[post_road] initial_map_center", {
+          rawLat,
+          rawLng,
+          queryLat,
+          queryLng,
+          hasQueryCenter,
+          initialLat,
+          initialLng,
+        });
+
+        const postMap = L.map("post-map", { zoomControl: true }).setView([initialLat, initialLng], 16);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(postMap);
+
+        // 地図中心の緯度経度をUIに反映する。
+        const updateCenterCoords = () => {
+          if (!mapCenterCoordsEl) {
+            return;
+          }
+          const center = postMap.getCenter();
+          currentMapCenter = { lat: center.lat, lng: center.lng };
+          mapCenterCoordsEl.textContent = `Center coordinates: Lat ${center.lat.toFixed(6)}, Lng ${center.lng.toFixed(6)}`;
+        };
+
+        postMap.on("move", updateCenterCoords);
+        postMap.on("zoom", updateCenterCoords);
+        updateCenterCoords();
+
+        let latestDevicePosition = null;
+
+        // 現在地追従トグルがONなら地図中心を現在地へ寄せる。
+        function centerToCurrentLocation(animate = true) {
+          if (!toggleCenterCurrentEl || !toggleCenterCurrentEl.checked || !latestDevicePosition) {
+            return;
+          }
+          const currentZoom = postMap.getZoom();
+          postMap.setView([latestDevicePosition.lat, latestDevicePosition.lng], currentZoom, { animate });
+        }
+
+        if (toggleCenterCurrentEl) {
+          toggleCenterCurrentEl.addEventListener("change", () => {
+            if (toggleCenterCurrentEl.checked) {
+              centerToCurrentLocation(false);
+            }
+          });
+        }
+
+        if ("geolocation" in navigator) {
+          navigator.geolocation.watchPosition(
+            (pos) => {
+              latestDevicePosition = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+              };
+              centerToCurrentLocation(true);
+            },
+            (err) => {
+              console.warn("[post_road] geolocation watch error:", err);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        }
+      }
+    </script>
+    <script>
+      // 記録中であれば、post_road 滞在中もGPSを取得して /api/match?record=1 へ送信し続ける。
+      // これによりマップ画面を離れて道情報を入力・送信している間も、点字ブロックの記録は継続する。
+      (function continueRecordingDuringPostRoad() {
+        let stateRaw = null, state = null, userRaw = null, user = null;
+        try { stateRaw = localStorage.getItem("recordingState.v1"); } catch (e) {}
+        if (!stateRaw) return;
+        try { state = JSON.parse(stateRaw); } catch (e) { return; }
+        if (!state || !state.recordEnabled || state.recordPaused || !state.currentSessionId) return;
+        // 1時間以上古い状態は無視（取り残し対策）
+        if (Number.isFinite(state.savedAt) && Date.now() - state.savedAt > 60 * 60 * 1000) return;
+
+        try { userRaw = localStorage.getItem("cached_profile_user.v1"); } catch (e) {}
+        if (!userRaw) return;
+        try { user = JSON.parse(userRaw); } catch (e) { return; }
+        if (!user || !user.userId) return;
+
+        if (!navigator.geolocation || typeof navigator.geolocation.watchPosition !== "function") return;
+
+        const authFetch = (window.AuthToken && typeof window.AuthToken.authFetch === "function")
+          ? window.AuthToken.authFetch
+          : window.fetch.bind(window);
+
+        let lastSentMs = 0;
+        let lastLat = null;
+        let lastLng = null;
+
+        const watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            lastLat = pos.coords.latitude;
+            lastLng = pos.coords.longitude;
+          },
+          (err) => { console.warn("[post_road] geolocation error:", err); },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+
+        const intervalId = setInterval(() => {
+          if (lastLat == null || lastLng == null) return;
+          const now = Date.now();
+          if (now - lastSentMs < 2000) return;
+          lastSentMs = now;
+          const params = new URLSearchParams({
+            lat: String(lastLat),
+            lng: String(lastLng),
+            userId: String(user.userId),
+            record: "1",
+            sessionId: state.currentSessionId,
+          });
+          try {
+            authFetch(`/api/match?${params.toString()}`).catch(() => {});
+          } catch (e) {}
+        }, 1000);
+
+        window.addEventListener("pagehide", () => {
+          try { navigator.geolocation.clearWatch(watchId); } catch (e) {}
+          clearInterval(intervalId);
+        });
+      })();
+    </script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>
