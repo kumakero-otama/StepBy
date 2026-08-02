@@ -54,6 +54,10 @@ const comparisonDurationEl = document.getElementById("comparison-duration");
 const comparisonSaveStatusEl = document.getElementById("comparison-save-status");
 const comparisonTestButtonEl = document.getElementById("comparison-test-button");
 const osmPreviewTestButtonEl = document.getElementById("osm-preview-test-button");
+const fittingDetailButtonEl = document.getElementById("fitting-detail-button");
+const fittingDetailModalEl = document.getElementById("fitting-detail-modal");
+const fittingDetailBodyEl = document.getElementById("fitting-detail-body");
+const fittingDetailCloseEl = document.getElementById("fitting-detail-close");
 // UI10では新しいブラウザ側マッチャーをシャドーモードで動かす。
 // 表示・保存は当面Valhallaの結果を使い、比較結果を蓄積してから切り替える。
 const browserOsmMatcher = window.StepByOsmMatcher
@@ -2412,7 +2416,7 @@ async function saveFittingComparison(payload) {
 }
 
 // 現在地取得結果を新旧両方でスナップし、表示・比較履歴へつなげる。
-function requestSnappedLocation(latitude, longitude) {
+function requestSnappedLocation(latitude, longitude, accuracy = null) {
   if (!currentUserId) {
     setComparisonStatus("ログイン待ち", "waiting");
     return;
@@ -2422,6 +2426,7 @@ function requestSnappedLocation(latitude, longitude) {
     lng: longitude.toString(),
     userId: String(currentUserId),
   });
+  if (Number.isFinite(accuracy)) params.set("accuracy", String(accuracy));
   if (isRecordingActive()) {
     params.set("record", "1");
     if (currentSessionId) {
@@ -2533,26 +2538,43 @@ if (osmPreviewTestButtonEl) {
   });
 }
 
-function handleNewLocation(latitude, longitude) {
+async function openLatestFittingDetails() {
+  if (!fittingDetailModalEl || !fittingDetailBodyEl) return;
+  fittingDetailModalEl.classList.remove("hidden");
+  fittingDetailBodyEl.innerHTML = "<p>最新記録を読み込み中…</p>";
+  try {
+    const response = await authFetch("/api/fitting-details/latest", { cache: "no-store" });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    const rows = result.points.map((p) => `<tr><td>${p.n}</td><td>${Number(p.raw_lat).toFixed(7)}, ${Number(p.raw_lng).toFixed(7)}</td><td>${p.matched_lat == null ? "—" : `${Number(p.matched_lat).toFixed(7)}, ${Number(p.matched_lng).toFixed(7)}`}</td><td>${p.accuracy == null ? "未取得" : `${Number(p.accuracy).toFixed(1)} m`}</td><td>${p.distance_m == null ? "—" : `${Number(p.distance_m).toFixed(2)} m`}</td><td>${p.way_id || "—"}</td></tr>`).join("");
+    fittingDetailBodyEl.innerHTML = `<p><strong>セッション：</strong>${result.session.session_id}<br><strong>GPS点：</strong>${result.points.length}点　<strong>OSM送信：</strong>未実施</p><div class="fitting-detail-table-wrap"><table><thead><tr><th>#</th><th>GPS生座標</th><th>フィッティング後</th><th>accuracy</th><th>移動距離</th><th>Way ID</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } catch (error) {
+    fittingDetailBodyEl.innerHTML = `<p>読込み失敗：${error.message}</p>`;
+  }
+}
+if (fittingDetailButtonEl) fittingDetailButtonEl.addEventListener("click", openLatestFittingDetails);
+if (fittingDetailCloseEl) fittingDetailCloseEl.addEventListener("click", () => fittingDetailModalEl.classList.add("hidden"));
+
+function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
-  latestLocation = { lat: latitude, lng: longitude };
+  latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
 }
 
 function pollAndSendLocation() {
   if (!latestLocation) return;
 
-  const { lat, lng } = latestLocation;
+  const { lat, lng, accuracy } = latestLocation;
 
   // 記録アクティブ時はrawデータをメモリへ保存（全体 + 現在セッション）
   if (isRecordingActive()) {
-    recordedRawPoints.push({ lat, lng });
-    currentSessionRawPoints.push({ lat, lng });
+    recordedRawPoints.push({ lat, lng, accuracy });
+    currentSessionRawPoints.push({ lat, lng, accuracy });
     console.log(`[Record] Saved raw point: total=${recordedRawPoints.length}, current=${currentSessionRawPoints.length}`);
   }
 
   // サーバーへ送信（読み取り）
-  requestSnappedLocation(lat, lng);
+  requestSnappedLocation(lat, lng, accuracy);
 }
 
 function updateTimestamp() {
@@ -3104,7 +3126,7 @@ if ("geolocation" in navigator) {
     // 手動リクエスト用
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        handleNewLocation(pos.coords.latitude, pos.coords.longitude, force);
+        handleNewLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
       },
       (err) => {
         console.error("[Geolocation] getCurrentPosition error:", err);
@@ -3128,7 +3150,7 @@ if ("geolocation" in navigator) {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         // OSから位置情報が届くたびに処理
-        handleNewLocation(pos.coords.latitude, pos.coords.longitude, false);
+        handleNewLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
       },
       (err) => {
         console.error("[Geolocation] watchPosition error:", err);
