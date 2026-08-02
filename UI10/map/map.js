@@ -39,6 +39,11 @@ const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
+// UI10では新しいブラウザ側マッチャーをシャドーモードで動かす。
+// 表示・保存は当面Valhallaの結果を使い、比較結果を蓄積してから切り替える。
+const browserOsmMatcher = window.StepByOsmMatcher
+  ? new window.StepByOsmMatcher.BrowserMatcher({ fetcher: authFetch, radiusMeters: 1000 })
+  : null;
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -2298,6 +2303,22 @@ function requestSnappedLocation(latitude, longitude) {
   }
 
   console.log(`[requestSnappedLocation] Requesting: lat=${latitude}, lng=${longitude}`);
+
+  if (browserOsmMatcher) {
+    browserOsmMatcher.match(latitude, longitude)
+      .then((match) => {
+        if (!match) return;
+        console.log("[BrowserMatcher] shadow result", {
+          wayId: match.wayId,
+          wayVersion: match.wayVersion,
+          distance: match.distance,
+          priority: match.priority,
+          lat: match.lat,
+          lng: match.lng,
+        });
+      })
+      .catch((error) => console.warn("[BrowserMatcher] shadow failed", error));
+  }
 
   authFetch(`/api/match?${params.toString()}`)
     .then((res) => {

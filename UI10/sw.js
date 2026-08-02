@@ -16,6 +16,7 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/map/Index.html`,
   `${APP_BASE_PATH}/map/map.css`,
   `${APP_BASE_PATH}/map/map.js`,
+  `${APP_BASE_PATH}/map/osm-browser-matcher.js`,
   `${APP_BASE_PATH}/manifest.webmanifest`,
   `${APP_BASE_PATH}/assets/icon.svg`,
   `${APP_BASE_PATH}/assets/otamap_logo.png`,
