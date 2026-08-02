@@ -141,6 +141,57 @@
     };
   }
 
+  function sharedNodeIndex(a, b) {
+    const other = new Set(b.nodes || []);
+    return (a.nodes || []).findIndex((nodeId) => other.has(nodeId));
+  }
+
+  function projectedCoordinate(match) {
+    return [match.lng, match.lat];
+  }
+
+  function sliceWayCoordinates(way, from, to) {
+    const coordinates = way.coordinates || [];
+    const fromIndex = from.kind === "projection" ? from.segmentIndex + from.fraction : from.index;
+    const toIndex = to.kind === "projection" ? to.segmentIndex + to.fraction : to.index;
+    const startCoordinate = from.kind === "projection" ? from.coordinate : coordinates[from.index];
+    const endCoordinate = to.kind === "projection" ? to.coordinate : coordinates[to.index];
+    const result = [startCoordinate];
+    if (fromIndex <= toIndex) {
+      for (let i = Math.floor(fromIndex) + 1; i <= Math.floor(toIndex); i += 1) result.push(coordinates[i]);
+    } else {
+      for (let i = Math.ceil(fromIndex) - 1; i >= Math.ceil(toIndex); i -= 1) result.push(coordinates[i]);
+    }
+    if (result[result.length - 1] !== endCoordinate) result.push(endCoordinate);
+    return result.filter(Boolean);
+  }
+
+  function buildOsmChangePreview(route) {
+    if (!route || !route.ways || !route.ways.length) return null;
+    const connectors = [];
+    for (let i = 0; i < route.ways.length - 1; i += 1) {
+      const leftIndex = sharedNodeIndex(route.ways[i], route.ways[i + 1]);
+      if (leftIndex < 0) return null;
+      const nodeId = route.ways[i].nodes[leftIndex];
+      connectors.push({ nodeId, leftIndex, rightIndex: route.ways[i + 1].nodes.indexOf(nodeId) });
+    }
+    const segments = route.ways.map((way, index) => {
+      const from = index === 0
+        ? { kind: "projection", segmentIndex: route.start.segmentIndex, fraction: route.start.fraction, coordinate: projectedCoordinate(route.start) }
+        : { kind: "node", index: connectors[index - 1].rightIndex };
+      const to = index === route.ways.length - 1
+        ? { kind: "projection", segmentIndex: route.end.segmentIndex, fraction: route.end.fraction, coordinate: projectedCoordinate(route.end) }
+        : { kind: "node", index: connectors[index].leftIndex };
+      return { wayId: way.id, wayVersion: way.version, tags: way.tags || {}, nodes: way.nodes || [], coordinates: sliceWayCoordinates(way, from, to) };
+    });
+    return {
+      segments,
+      start: { lat: route.start.lat, lng: route.start.lng, wayId: route.start.wayId },
+      end: { lat: route.end.lat, lng: route.end.lng, wayId: route.end.wayId },
+      connected: true,
+    };
+  }
+
   function openCache() {
     return new Promise((resolve, reject) => {
       if (!global.indexedDB) { resolve(null); return; }
@@ -215,6 +266,7 @@
     buildWayGraph,
     findConnectedWayPath,
     finalizeTrace,
+    buildOsmChangePreview,
   };
   if (global.document && global.document.documentElement) {
     global.document.documentElement.dataset.osmBrowserMatcher = "loaded";

@@ -1425,6 +1425,20 @@ body {
   overflow: hidden;
 }
 
+.osm-change-preview { margin: 12px 0; padding: 14px; border: 2px solid #1b9b68; border-radius: 12px; background: #f2fbf7; color: #18352a; }
+.osm-change-preview.hidden { display: none; }
+.osm-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.osm-preview-heading h3 { margin: 0; font-size: 1rem; }
+.osm-preview-heading span { padding: 3px 9px; border-radius: 999px; background: #4b5563; color: white; font-weight: 700; font-size: .78rem; }
+.osm-change-preview p { margin: 8px 0; font-size: .88rem; line-height: 1.5; }
+.osm-change-preview dl { margin: 0; }
+.osm-change-preview dl div { display: grid; grid-template-columns: 90px 1fr; gap: 8px; padding: 4px 0; }
+.osm-change-preview dt { font-weight: 700; }
+.osm-change-preview dd { margin: 0; overflow-wrap: anywhere; }
+#osm-preview-save-draft { width: 100%; margin-top: 10px; padding: 10px; border: 0; border-radius: 9px; background: #176b4a; color: white; font-weight: 700; }
+#osm-preview-save-status { margin-top: 7px; font-size: .82rem; font-weight: 700; }
+.osm-preview-test-button { margin-top: 8px; background: #176b4a; }
+
 .trace-tag-panel {
   border: 1px solid #cfcfcf;
   border-radius: 10px;
