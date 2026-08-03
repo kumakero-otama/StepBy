@@ -182,7 +182,16 @@
       const to = index === route.ways.length - 1
         ? { kind: "projection", segmentIndex: route.end.segmentIndex, fraction: route.end.fraction, coordinate: projectedCoordinate(route.end) }
         : { kind: "node", index: connectors[index].leftIndex };
-      return { wayId: way.id, wayVersion: way.version, tags: way.tags || {}, nodes: way.nodes || [], coordinates: sliceWayCoordinates(way, from, to) };
+      return {
+        wayId: way.id,
+        wayVersion: way.version,
+        tags: way.tags || {},
+        nodes: way.nodes || [],
+        fullCoordinates: way.coordinates || [],
+        from,
+        to,
+        coordinates: sliceWayCoordinates(way, from, to),
+      };
     });
     return {
       segments,
