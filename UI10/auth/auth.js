@@ -10,6 +10,8 @@ const loginCardElement = document.querySelector(".login-card");
 const signupPage = window.location.pathname.endsWith("/auth/signup.html");
 const signupProfilePage = window.location.pathname.endsWith("/auth/signup_profile.html");
 const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
+const TERMS_VERSION = "2026-08-03";
+const PRIVACY_VERSION = "2026-08-03";
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
@@ -585,6 +587,11 @@ async function loginWithGoogle(idToken) {
 
 async function loginAsGuest() {
   const text = getAuthText();
+  const consentCheckbox = document.getElementById("login-agreement-checkbox");
+  if (!consentCheckbox || !consentCheckbox.checked) {
+    setGoogleStatus("ゲストアカウントを作成するには、利用規約とプライバシーポリシーへの同意が必要です。");
+    return false;
+  }
   const requestId = clientLogApi && typeof clientLogApi.createRequestId === "function"
     ? clientLogApi.createRequestId("req")
     : "";
@@ -609,7 +616,12 @@ async function loginAsGuest() {
     const res = await fetch(AppPath.toApi("/auth/guest"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify({
+        terms_accepted: true,
+        privacy_accepted: true,
+        terms_version: TERMS_VERSION,
+        privacy_version: PRIVACY_VERSION,
+      }),
     });
     const payload = await res.json().catch(() => null);
     if (!res.ok) {
@@ -669,9 +681,58 @@ async function loginAsGuest() {
     return false;
   } finally {
     if (guestLoginButton) {
-      guestLoginButton.disabled = false;
+      const consentCheckbox = document.getElementById("login-agreement-checkbox");
+      guestLoginButton.disabled = Boolean(consentCheckbox && !consentCheckbox.checked);
     }
   }
+}
+
+function initLoginPolicyConsent() {
+  const checkbox = document.getElementById("login-agreement-checkbox");
+  const modal = document.getElementById("login-policy-modal");
+  const title = document.getElementById("login-policy-title");
+  const content = document.getElementById("login-policy-content");
+  const closeButton = document.getElementById("close-login-policy");
+  const documentButtons = Array.from(document.querySelectorAll(".login-policy-document"));
+  if (!checkbox || !modal || !title || !content || !closeButton || documentButtons.length === 0) {
+    return;
+  }
+
+  const documents = {
+    terms: { title: "利用規約", path: "/assets/terms.md" },
+    privacy: { title: "プライバシーポリシー", path: "/assets/privacy_policy.md" },
+  };
+  const cache = new Map();
+  const closeModal = () => modal.classList.add("hidden");
+  const openDocument = async (type) => {
+    const documentInfo = documents[type];
+    if (!documentInfo) return;
+    title.textContent = documentInfo.title;
+    content.textContent = "読み込み中...";
+    modal.classList.remove("hidden");
+    try {
+      if (!cache.has(type)) {
+        const response = await fetch(AppPath.toApp(documentInfo.path), { cache: "no-store" });
+        if (!response.ok) throw new Error(`status_${response.status}`);
+        cache.set(type, await response.text());
+      }
+      content.textContent = cache.get(type);
+    } catch {
+      content.textContent = `${documentInfo.title}を読み込めませんでした。通信状態を確認して、もう一度お試しください。`;
+    }
+  };
+
+  checkbox.addEventListener("change", () => {
+    if (guestLoginButton) guestLoginButton.disabled = !checkbox.checked;
+  });
+  if (guestLoginButton) guestLoginButton.disabled = !checkbox.checked;
+  documentButtons.forEach((button) => {
+    button.addEventListener("click", () => void openDocument(button.dataset.document));
+  });
+  closeButton.addEventListener("click", closeModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
 }
 
 // アイコン画像は送信前に Data URL 化してプレビューと保存処理で共用する。
@@ -743,8 +804,9 @@ async function initSignupProfilePage() {
   const submitButton = document.getElementById("signup-profile-submit");
   const agreementModal = document.getElementById("user-agreement-modal");
   const agreementContent = document.getElementById("user-agreement-content");
-  const openAgreementButton = document.getElementById("open-user-agreement");
+  const openPolicyButtons = Array.from(document.querySelectorAll(".open-policy-document"));
   const closeAgreementButton = document.getElementById("close-user-agreement");
+  const agreementTitle = document.getElementById("user-agreement-title");
   if (
     !form ||
     !usernameInput ||
@@ -754,30 +816,37 @@ async function initSignupProfilePage() {
     !submitButton ||
     !agreementModal ||
     !agreementContent ||
-    !openAgreementButton ||
+    !agreementTitle ||
+    openPolicyButtons.length !== 2 ||
     !closeAgreementButton
   ) {
     return;
   }
 
-  let agreementLoaded = false;
-  const openAgreementModal = async () => {
+  const loadedDocuments = new Map();
+  const openAgreementModal = async (documentType) => {
+    const isPrivacy = documentType === "privacy";
+    const documentPath = isPrivacy ? "/assets/privacy_policy.md" : "/assets/terms.md";
+    const documentLabel = isPrivacy ? "プライバシーポリシー" : "利用規約";
     agreementModal.classList.remove("hidden");
-    if (agreementLoaded) {
+    agreementTitle.textContent = documentLabel;
+    if (loadedDocuments.has(documentType)) {
+      agreementContent.innerHTML = loadedDocuments.get(documentType);
       return;
     }
     agreementContent.textContent = "読み込み中...";
     try {
-      const res = await fetch(AppPath.toApp("/assets/user_agreement.md"), { cache: "no-store" });
+      const res = await fetch(AppPath.toApp(documentPath), { cache: "no-store" });
       if (!res.ok) {
-        agreementContent.textContent = "利用規約の読み込みに失敗しました。";
+        agreementContent.textContent = `${documentLabel}の読み込みに失敗しました。`;
         return;
       }
       const text = await res.text();
-      agreementContent.innerHTML = renderMarkdownToHtml(text);
-      agreementLoaded = true;
+      const rendered = renderMarkdownToHtml(text);
+      loadedDocuments.set(documentType, rendered);
+      agreementContent.innerHTML = rendered;
     } catch {
-      agreementContent.textContent = "利用規約の読み込みに失敗しました。";
+      agreementContent.textContent = `${documentLabel}の読み込みに失敗しました。`;
     }
   };
 
@@ -789,11 +858,11 @@ async function initSignupProfilePage() {
     submitButton.disabled = !agreementCheckbox.checked;
   };
 
-  openAgreementButton.addEventListener("click", (event) => {
+  openPolicyButtons.forEach((button) => button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    openAgreementModal();
-  });
+    openAgreementModal(button.dataset.document || "terms");
+  }));
   closeAgreementButton.addEventListener("click", closeAgreementModal);
   agreementCheckbox.addEventListener("change", syncSubmitButtonState);
   agreementModal.addEventListener("click", (event) => {
@@ -837,7 +906,7 @@ async function initSignupProfilePage() {
       return;
     }
     if (!agreementCheckbox.checked) {
-      setGoogleStatus("利用規約に同意してください。");
+      setGoogleStatus("利用規約とプライバシーポリシーに同意してください。");
       return;
     }
 
@@ -855,6 +924,10 @@ async function initSignupProfilePage() {
             id_token: pendingSignupIdToken,
             username,
             icon_data_url: iconDataUrl,
+            terms_accepted: true,
+            privacy_accepted: true,
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
           }),
         });
       } else {
@@ -884,6 +957,10 @@ async function initSignupProfilePage() {
         }
         if (errorMessage === "missing_icon_image") {
           setGoogleStatus("アイコン画像を選択してください。");
+          return;
+        }
+        if (errorMessage === "consent_required" || errorMessage === "invalid_consent_version") {
+          setGoogleStatus("利用規約とプライバシーポリシーを確認し、同意してください。");
           return;
         }
         if (errorMessage === "account_not_found") {
@@ -1020,6 +1097,7 @@ function initGuestLogin() {
     initSignupProfilePage();
     return;
   }
+  initLoginPolicyConsent();
   const redirected = await redirectIfAlreadyAuthenticated();
   if (redirected) {
     return;

@@ -46,12 +46,19 @@
         <div class="login-guest-wrap">
           <button id="guest-login-button" class="login-guest-button" type="button">गेस्ट के रूप में जारी रखें</button>
         </div>
+        <label class="agreement-label login-consent-row" for="login-agreement-checkbox">
+          <input id="login-agreement-checkbox" type="checkbox" />
+          <span>मैं <button type="button" class="agreement-link agreement-link-inline login-policy-document" data-document="terms">सेवा की शर्तों</button> और <button type="button" class="agreement-link agreement-link-inline login-policy-document" data-document="privacy">गोपनीयता नीति</button> से सहमत हूं</span>
+        </label>
         <p id="google-auth-status" class="helper-text login-status"></p>
+      </section>
+      <section id="login-policy-modal" class="agreement-modal hidden" role="dialog" aria-modal="true" aria-labelledby="login-policy-title">
+        <div class="agreement-panel"><div class="agreement-header"><h2 id="login-policy-title">सेवा की शर्तें</h2><button id="close-login-policy" type="button" class="agreement-close-btn" aria-label="बंद करें"><img src="../assets/buttons/close.png" alt="" /></button></div><div id="login-policy-content" class="agreement-content">लोड हो रहा है...</div></div>
       </section>
     </main>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
-    <script src="auth.js?v=20260404"></script>
+    <script src="auth.js?v=ui10-consent-20260803"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>
