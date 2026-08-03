@@ -2196,22 +2196,29 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
             osmPreviewSaveDraftEl.disabled = true;
             if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "変更案を保存中…";
             try {
-              const response = await authFetch("/api/osm/plans", {
+              const response = await authFetch("/api/osm/split-plan", {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  operationType: "merge",
-                  summary: "UI10 点字ブロック区間プレビュー（OSM未送信）",
-                  elements: osmPreview.segments.map((segment) => ({
-                    elementType: "way", action: "modify", osmId: segment.wayId, version: segment.wayVersion,
-                    before: { tags: segment.tags, nodes: segment.nodes },
-                    after: { tags: { ...segment.tags, tactile_paving: "yes" }, previewSegmentCoordinates: segment.coordinates },
+                  summary: "UI10 点字ブロックWay分割案（OSM未送信）",
+                  segments: osmPreview.segments.map((segment) => ({
+                    wayId: segment.wayId,
+                    wayVersion: segment.wayVersion,
+                    tags: segment.tags,
+                    nodes: segment.nodes,
+                    fullCoordinates: segment.fullCoordinates,
+                    from: segment.from,
+                    to: segment.to,
                   })),
                   clientContext: { ui: "UI10", previewOnly: true, osmWriteRequested: false },
                 }),
               });
               const result = await response.json();
               if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-              if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `変更案保存済み：${result.planId}／OSM未送信`;
+              const split = result.splitPlan && result.splitPlan.summary;
+              const detail = split
+                ? `新Node ${split.createdNodes}件・新Way ${split.createdWays}件・変更Way ${split.modifiedWays}件`
+                : "分割案を生成";
+              if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `変更案保存済み：${detail}／OSM未送信（${result.planId}）`;
             } catch (error) {
               osmPreviewSaveDraftEl.disabled = false;
               if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `保存失敗：${error.message}（OSM未送信）`;
