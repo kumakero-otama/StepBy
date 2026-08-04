@@ -2191,8 +2191,13 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         if (osmPreviewEndEl) osmPreviewEndEl.textContent = `Way ${osmPreview.end.wayId} / ${osmPreview.end.lat.toFixed(6)}, ${osmPreview.end.lng.toFixed(6)}`;
         if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "OSM送信：無効（まだ保存していません）";
         if (osmPreviewSaveDraftEl) {
-          osmPreviewSaveDraftEl.disabled = false;
+          const draftRecordId = currentSessionId;
+          osmPreviewSaveDraftEl.disabled = !draftRecordId;
+          if (!draftRecordId && osmPreviewSaveStatusEl) {
+            osmPreviewSaveStatusEl.textContent = "試験プレビュー：記録IDがないため変更案は保存できません（OSM未送信）";
+          }
           osmPreviewSaveDraftEl.onclick = async () => {
+            if (!draftRecordId) return;
             osmPreviewSaveDraftEl.disabled = true;
             if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "変更案を保存中…";
             try {
@@ -2206,9 +2211,11 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
                     tags: segment.tags,
                     nodes: segment.nodes,
                     fullCoordinates: segment.fullCoordinates,
+                    relations: segment.relations || [],
                     from: segment.from,
                     to: segment.to,
                   })),
+                  recordId: draftRecordId,
                   clientContext: { ui: "UI10", previewOnly: true, osmWriteRequested: false },
                 }),
               });
@@ -2553,8 +2560,44 @@ async function openLatestFittingDetails() {
     const response = await authFetch("/api/fitting-details/latest", { cache: "no-store" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    const osm = result.osm || { status: "not_created" };
+    const statusLabels = {
+      not_created: "変更案なし",
+      draft: "変更案あり（OSM未送信）",
+      merged: "OSM送信済み",
+      revert_draft: "取消変更案あり（未送信）",
+      reverted: "取消済み",
+      failed: "送信失敗",
+      conflict: "競合のため停止",
+    };
+    const osmStatus = statusLabels[osm.status] || osm.status;
+    const osmIds = [
+      osm.mergePlanId ? `<span><strong>変更案ID：</strong>${escapeHtml(osm.mergePlanId)}</span>` : "",
+      osm.mergeChangesetId ? `<span><strong>送信changeset：</strong>${escapeHtml(osm.mergeChangesetId)}</span>` : "",
+      osm.revertPlanId ? `<span><strong>取消案ID：</strong>${escapeHtml(osm.revertPlanId)}</span>` : "",
+      osm.revertChangesetId ? `<span><strong>取消changeset：</strong>${escapeHtml(osm.revertChangesetId)}</span>` : "",
+    ].filter(Boolean).join("<br>");
+    const revertButton = osm.status === "merged"
+      ? `<button type="button" class="fitting-detail-revert-button" data-record-id="${escapeHtml(result.session.session_id)}">この記録の取消変更案を作る</button>`
+      : "";
     const rows = result.points.map((p) => `<tr><td>${p.n}</td><td>${Number(p.raw_lat).toFixed(7)}, ${Number(p.raw_lng).toFixed(7)}</td><td>${p.matched_lat == null ? "—" : `${Number(p.matched_lat).toFixed(7)}, ${Number(p.matched_lng).toFixed(7)}`}</td><td>${p.accuracy == null ? "未取得" : `${Number(p.accuracy).toFixed(1)} m`}</td><td>${p.distance_m == null ? "—" : `${Number(p.distance_m).toFixed(2)} m`}</td><td>${p.way_id || "—"}</td></tr>`).join("");
-    fittingDetailBodyEl.innerHTML = `<p><strong>セッション：</strong>${result.session.session_id}<br><strong>GPS点：</strong>${result.points.length}点　<strong>OSM送信：</strong>未実施</p><div class="fitting-detail-table-wrap"><table><thead><tr><th>#</th><th>GPS生座標</th><th>フィッティング後</th><th>accuracy</th><th>移動距離</th><th>Way ID</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    fittingDetailBodyEl.innerHTML = `<section class="fitting-detail-osm-status" data-status="${escapeHtml(osm.status)}"><strong>OSM状態：</strong>${escapeHtml(osmStatus)}${osmIds ? `<br>${osmIds}` : ""}${revertButton}</section><p><strong>セッション：</strong>${escapeHtml(result.session.session_id)}<br><strong>GPS点：</strong>${result.points.length}点</p><div class="fitting-detail-table-wrap"><table><thead><tr><th>#</th><th>GPS生座標</th><th>フィッティング後</th><th>accuracy</th><th>移動距離</th><th>Way ID</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    const revertButtonEl = fittingDetailBodyEl.querySelector(".fitting-detail-revert-button");
+    if (revertButtonEl) {
+      revertButtonEl.addEventListener("click", async () => {
+        revertButtonEl.disabled = true;
+        revertButtonEl.textContent = "取消変更案を作成中…";
+        try {
+          const revertResponse = await authFetch(`/api/osm/records/${encodeURIComponent(revertButtonEl.dataset.recordId)}/revert-plan`, { method: "POST" });
+          const revertResult = await revertResponse.json();
+          if (!revertResponse.ok) throw new Error(revertResult.error || `HTTP ${revertResponse.status}`);
+          await openLatestFittingDetails();
+        } catch (revertError) {
+          revertButtonEl.disabled = false;
+          revertButtonEl.textContent = `作成失敗：${revertError.message}`;
+        }
+      });
+    }
   } catch (error) {
     fittingDetailBodyEl.innerHTML = `<p>読込み失敗：${error.message}</p>`;
   }

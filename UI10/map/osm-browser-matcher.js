@@ -188,6 +188,7 @@
         tags: way.tags || {},
         nodes: way.nodes || [],
         fullCoordinates: way.coordinates || [],
+        relations: way.relations || [],
         from,
         to,
         coordinates: sliceWayCoordinates(way, from, to),
