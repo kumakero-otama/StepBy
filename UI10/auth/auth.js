@@ -10,6 +10,8 @@ const loginCardElement = document.querySelector(".login-card");
 const signupPage = window.location.pathname.endsWith("/auth/signup.html");
 const signupProfilePage = window.location.pathname.endsWith("/auth/signup_profile.html");
 const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
+const TERMS_VERSION = "2026-08-03";
+const PRIVACY_VERSION = "2026-08-03";
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
@@ -312,6 +314,9 @@ function renderMarkdownToHtml(markdown) {
   return parts.join("");
 }
 
+// 規約表示と自動試験で同じ安全なMarkdown整形処理を使う。
+window.StepByPolicyMarkdown = Object.freeze({ render: renderMarkdownToHtml });
+
 // 新規登録途中の Google 情報やアクセストークンを安全に保持する。
 function setPendingSignupIdToken(idToken) {
   if (!idToken || typeof idToken !== "string") {
@@ -585,6 +590,15 @@ async function loginWithGoogle(idToken) {
 
 async function loginAsGuest() {
   const text = getAuthText();
+  const lang = String(document.documentElement.lang || "ja").toLowerCase();
+  const consentMessage = lang.startsWith("en")
+    ? "To create a guest account, please confirm that you agree to the Terms of Service and Privacy Policy. Continue?"
+    : lang.startsWith("hi")
+      ? "गेस्ट अकाउंट बनाने के लिए उपयोग की शर्तों और गोपनीयता नीति से सहमति आवश्यक है। क्या आप जारी रखना चाहते हैं?"
+      : "ゲストアカウントを作成するには、利用規約とプライバシーポリシーへの同意が必要です。同意して続けますか？";
+  if (!window.confirm(consentMessage)) {
+    return false;
+  }
   const requestId = clientLogApi && typeof clientLogApi.createRequestId === "function"
     ? clientLogApi.createRequestId("req")
     : "";
@@ -609,7 +623,12 @@ async function loginAsGuest() {
     const res = await fetch(AppPath.toApi("/auth/guest"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify({
+        terms_accepted: true,
+        privacy_accepted: true,
+        terms_version: TERMS_VERSION,
+        privacy_version: PRIVACY_VERSION,
+      }),
     });
     const payload = await res.json().catch(() => null);
     if (!res.ok) {
@@ -743,8 +762,9 @@ async function initSignupProfilePage() {
   const submitButton = document.getElementById("signup-profile-submit");
   const agreementModal = document.getElementById("user-agreement-modal");
   const agreementContent = document.getElementById("user-agreement-content");
-  const openAgreementButton = document.getElementById("open-user-agreement");
+  const openPolicyButtons = Array.from(document.querySelectorAll(".open-policy-document"));
   const closeAgreementButton = document.getElementById("close-user-agreement");
+  const agreementTitle = document.getElementById("user-agreement-title");
   if (
     !form ||
     !usernameInput ||
@@ -754,30 +774,37 @@ async function initSignupProfilePage() {
     !submitButton ||
     !agreementModal ||
     !agreementContent ||
-    !openAgreementButton ||
+    !agreementTitle ||
+    openPolicyButtons.length !== 2 ||
     !closeAgreementButton
   ) {
     return;
   }
 
-  let agreementLoaded = false;
-  const openAgreementModal = async () => {
+  const loadedDocuments = new Map();
+  const openAgreementModal = async (documentType) => {
+    const isPrivacy = documentType === "privacy";
+    const documentPath = isPrivacy ? "/assets/privacy_policy.md" : "/assets/terms.md";
+    const documentLabel = isPrivacy ? "プライバシーポリシー" : "利用規約";
     agreementModal.classList.remove("hidden");
-    if (agreementLoaded) {
+    agreementTitle.textContent = documentLabel;
+    if (loadedDocuments.has(documentType)) {
+      agreementContent.innerHTML = loadedDocuments.get(documentType);
       return;
     }
     agreementContent.textContent = "読み込み中...";
     try {
-      const res = await fetch(AppPath.toApp("/assets/user_agreement.md"), { cache: "no-store" });
+      const res = await fetch(AppPath.toApp(documentPath), { cache: "no-store" });
       if (!res.ok) {
-        agreementContent.textContent = "利用規約の読み込みに失敗しました。";
+        agreementContent.textContent = `${documentLabel}の読み込みに失敗しました。`;
         return;
       }
       const text = await res.text();
-      agreementContent.innerHTML = renderMarkdownToHtml(text);
-      agreementLoaded = true;
+      const rendered = renderMarkdownToHtml(text);
+      loadedDocuments.set(documentType, rendered);
+      agreementContent.innerHTML = rendered;
     } catch {
-      agreementContent.textContent = "利用規約の読み込みに失敗しました。";
+      agreementContent.textContent = `${documentLabel}の読み込みに失敗しました。`;
     }
   };
 
@@ -789,11 +816,11 @@ async function initSignupProfilePage() {
     submitButton.disabled = !agreementCheckbox.checked;
   };
 
-  openAgreementButton.addEventListener("click", (event) => {
+  openPolicyButtons.forEach((button) => button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    openAgreementModal();
-  });
+    openAgreementModal(button.dataset.document || "terms");
+  }));
   closeAgreementButton.addEventListener("click", closeAgreementModal);
   agreementCheckbox.addEventListener("change", syncSubmitButtonState);
   agreementModal.addEventListener("click", (event) => {
@@ -837,7 +864,7 @@ async function initSignupProfilePage() {
       return;
     }
     if (!agreementCheckbox.checked) {
-      setGoogleStatus("利用規約に同意してください。");
+      setGoogleStatus("利用規約とプライバシーポリシーに同意してください。");
       return;
     }
 
@@ -855,6 +882,10 @@ async function initSignupProfilePage() {
             id_token: pendingSignupIdToken,
             username,
             icon_data_url: iconDataUrl,
+            terms_accepted: true,
+            privacy_accepted: true,
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
           }),
         });
       } else {
@@ -884,6 +915,10 @@ async function initSignupProfilePage() {
         }
         if (errorMessage === "missing_icon_image") {
           setGoogleStatus("アイコン画像を選択してください。");
+          return;
+        }
+        if (errorMessage === "consent_required" || errorMessage === "invalid_consent_version") {
+          setGoogleStatus("利用規約とプライバシーポリシーを確認し、同意してください。");
           return;
         }
         if (errorMessage === "account_not_found") {

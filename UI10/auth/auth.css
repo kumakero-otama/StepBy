@@ -668,6 +668,17 @@ body.login-page {
   margin: 0;
 }
 
+.agreement-link-inline {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #075f9f;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .agreement-link {
   padding: 0;
   border: 0;
@@ -733,31 +744,35 @@ body.login-page {
 
 .agreement-content {
   margin: 0;
-  padding: 12px;
+  padding: 18px 20px 24px;
   overflow: auto;
   word-break: break-word;
   font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.94rem;
+  line-height: 1.8;
 }
 
 .agreement-content h1,
 .agreement-content h2,
 .agreement-content h3 {
-  margin: 0 0 10px;
-  line-height: 1.4;
+  margin: 1.4em 0 0.65em;
+  line-height: 1.35;
 }
 
+.agreement-content h1:first-child { margin-top: 0; }
+
 .agreement-content h1 {
-  font-size: 1.2rem;
+  font-size: 1.55rem;
 }
 
 .agreement-content h2 {
-  font-size: 1.08rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #dbe3ea;
+  font-size: 1.25rem;
 }
 
 .agreement-content h3 {
-  font-size: 1rem;
+  font-size: 1.08rem;
 }
 
 .agreement-content p,
@@ -765,13 +780,15 @@ body.login-page {
 .agreement-content ol,
 .agreement-content blockquote,
 .agreement-content hr {
-  margin: 0 0 10px;
+  margin: 0 0 1em;
 }
 
 .agreement-content ul,
 .agreement-content ol {
-  padding-left: 20px;
+  padding-left: 1.5em;
 }
+
+.agreement-content li + li { margin-top: 0.35em; }
 
 .agreement-content blockquote {
   border-left: 3px solid #cbd5e1;
