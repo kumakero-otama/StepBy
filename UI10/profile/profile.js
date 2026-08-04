@@ -363,13 +363,25 @@ async function loadOsmConnection() {
 async function startOsmConnection() {
   if (!osmConnectBtnEl) return;
   osmConnectBtnEl.disabled = true;
+  const popupFeatures = "popup=yes,width=520,height=720,resizable=yes,scrollbars=yes";
+  const popup = window.open("about:blank", "stepby-osm-oauth", popupFeatures);
+  const mode = popup ? "popup" : "redirect";
+  if (popup) {
+    popup.document.title = "OpenStreetMap連携";
+    popup.document.body.textContent = "OpenStreetMapの認証画面を準備しています…";
+  }
   try {
     const returnUrl = window.location.origin + AppPath.toApp("/profile/Index.html");
-    const response = await authFetch(`/auth/osm/start?return_url=${encodeURIComponent(returnUrl)}`, { method: "POST" });
+    const response = await authFetch(`/auth/osm/start?mode=${mode}&return_url=${encodeURIComponent(returnUrl)}`, { method: "POST" });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.authorizationUrl) throw new Error(payload.error || "osm_start_failed");
-    window.location.assign(payload.authorizationUrl);
+    if (popup) {
+      popup.location.replace(payload.authorizationUrl);
+    } else {
+      window.location.assign(payload.authorizationUrl);
+    }
   } catch {
+    if (popup && !popup.closed) popup.close();
     setOsmStatus(getProfileText().osmFailed, "error");
     osmConnectBtnEl.disabled = false;
   }
@@ -461,6 +473,12 @@ if (editBtnEl) {
 
 if (osmConnectBtnEl) osmConnectBtnEl.addEventListener("click", startOsmConnection);
 if (osmDisconnectBtnEl) osmDisconnectBtnEl.addEventListener("click", disconnectOsmConnection);
+window.addEventListener("message", (event) => {
+  let apiOrigin = "";
+  try { apiOrigin = new URL((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "").origin; } catch {}
+  if (!apiOrigin || event.origin !== apiOrigin || !event.data || event.data.type !== "stepby-osm-oauth-result") return;
+  void loadOsmConnection();
+});
 
 loadProfile();
 void syncProfileProChip();
