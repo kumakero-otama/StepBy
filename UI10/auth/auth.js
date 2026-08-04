@@ -314,6 +314,9 @@ function renderMarkdownToHtml(markdown) {
   return parts.join("");
 }
 
+// 規約表示と自動試験で同じ安全なMarkdown整形処理を使う。
+window.StepByPolicyMarkdown = Object.freeze({ render: renderMarkdownToHtml });
+
 // 新規登録途中の Google 情報やアクセストークンを安全に保持する。
 function setPendingSignupIdToken(idToken) {
   if (!idToken || typeof idToken !== "string") {
@@ -587,9 +590,13 @@ async function loginWithGoogle(idToken) {
 
 async function loginAsGuest() {
   const text = getAuthText();
-  const consentCheckbox = document.getElementById("login-agreement-checkbox");
-  if (!consentCheckbox || !consentCheckbox.checked) {
-    setGoogleStatus("ゲストアカウントを作成するには、利用規約とプライバシーポリシーへの同意が必要です。");
+  const lang = String(document.documentElement.lang || "ja").toLowerCase();
+  const consentMessage = lang.startsWith("en")
+    ? "To create a guest account, please confirm that you agree to the Terms of Service and Privacy Policy. Continue?"
+    : lang.startsWith("hi")
+      ? "गेस्ट अकाउंट बनाने के लिए उपयोग की शर्तों और गोपनीयता नीति से सहमति आवश्यक है। क्या आप जारी रखना चाहते हैं?"
+      : "ゲストアカウントを作成するには、利用規約とプライバシーポリシーへの同意が必要です。同意して続けますか？";
+  if (!window.confirm(consentMessage)) {
     return false;
   }
   const requestId = clientLogApi && typeof clientLogApi.createRequestId === "function"
@@ -681,58 +688,9 @@ async function loginAsGuest() {
     return false;
   } finally {
     if (guestLoginButton) {
-      const consentCheckbox = document.getElementById("login-agreement-checkbox");
-      guestLoginButton.disabled = Boolean(consentCheckbox && !consentCheckbox.checked);
+      guestLoginButton.disabled = false;
     }
   }
-}
-
-function initLoginPolicyConsent() {
-  const checkbox = document.getElementById("login-agreement-checkbox");
-  const modal = document.getElementById("login-policy-modal");
-  const title = document.getElementById("login-policy-title");
-  const content = document.getElementById("login-policy-content");
-  const closeButton = document.getElementById("close-login-policy");
-  const documentButtons = Array.from(document.querySelectorAll(".login-policy-document"));
-  if (!checkbox || !modal || !title || !content || !closeButton || documentButtons.length === 0) {
-    return;
-  }
-
-  const documents = {
-    terms: { title: "利用規約", path: "/assets/terms.md" },
-    privacy: { title: "プライバシーポリシー", path: "/assets/privacy_policy.md" },
-  };
-  const cache = new Map();
-  const closeModal = () => modal.classList.add("hidden");
-  const openDocument = async (type) => {
-    const documentInfo = documents[type];
-    if (!documentInfo) return;
-    title.textContent = documentInfo.title;
-    content.textContent = "読み込み中...";
-    modal.classList.remove("hidden");
-    try {
-      if (!cache.has(type)) {
-        const response = await fetch(AppPath.toApp(documentInfo.path), { cache: "no-store" });
-        if (!response.ok) throw new Error(`status_${response.status}`);
-        cache.set(type, await response.text());
-      }
-      content.textContent = cache.get(type);
-    } catch {
-      content.textContent = `${documentInfo.title}を読み込めませんでした。通信状態を確認して、もう一度お試しください。`;
-    }
-  };
-
-  checkbox.addEventListener("change", () => {
-    if (guestLoginButton) guestLoginButton.disabled = !checkbox.checked;
-  });
-  if (guestLoginButton) guestLoginButton.disabled = !checkbox.checked;
-  documentButtons.forEach((button) => {
-    button.addEventListener("click", () => void openDocument(button.dataset.document));
-  });
-  closeButton.addEventListener("click", closeModal);
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) closeModal();
-  });
 }
 
 // アイコン画像は送信前に Data URL 化してプレビューと保存処理で共用する。
@@ -1097,7 +1055,6 @@ function initGuestLogin() {
     initSignupProfilePage();
     return;
   }
-  initLoginPolicyConsent();
   const redirected = await redirectIfAlreadyAuthenticated();
   if (redirected) {
     return;

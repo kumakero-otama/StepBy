@@ -8,7 +8,7 @@
     <title>Log In | Draggable Map</title>
     <meta name="theme-color" content="#0f766e" />
     <link rel="manifest" href="../manifest.webmanifest" />
-    <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="auth.css?v=ui10-policy-layout-20260804" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body class="login-page">
@@ -46,19 +46,12 @@
         <div class="login-guest-wrap">
           <button id="guest-login-button" class="login-guest-button" type="button">Continue as guest</button>
         </div>
-        <label class="agreement-label login-consent-row" for="login-agreement-checkbox">
-          <input id="login-agreement-checkbox" type="checkbox" />
-          <span>I agree to the <button type="button" class="agreement-link agreement-link-inline login-policy-document" data-document="terms">Terms of Service</button> and <button type="button" class="agreement-link agreement-link-inline login-policy-document" data-document="privacy">Privacy Policy</button></span>
-        </label>
         <p id="google-auth-status" class="helper-text login-status"></p>
-      </section>
-      <section id="login-policy-modal" class="agreement-modal hidden" role="dialog" aria-modal="true" aria-labelledby="login-policy-title">
-        <div class="agreement-panel"><div class="agreement-header"><h2 id="login-policy-title">Terms of Service</h2><button id="close-login-policy" type="button" class="agreement-close-btn" aria-label="Close"><img src="../assets/buttons/close.png" alt="" /></button></div><div id="login-policy-content" class="agreement-content">Loading...</div></div>
       </section>
     </main>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
-    <script src="auth.js?v=ui10-consent-20260803"></script>
+    <script src="auth.js?v=ui10-policy-layout-20260804"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>
