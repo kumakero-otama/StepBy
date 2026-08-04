@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#348f82" />
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="../appbar.css" />
-    <link rel="stylesheet" href="profile.css" />
+    <link rel="stylesheet" href="profile.css?v=ui10-osm-oauth-20260804" />
   </head>
   <body>
     <header class="app-bar">
@@ -109,6 +109,16 @@
           </article>
         </section>
 
+        <section class="osm-connection-card" aria-labelledby="osm-connection-title">
+          <div>
+            <h2 id="osm-connection-title">OpenStreetMap connection</h2>
+            <p id="osm-connection-status" class="osm-connection-status">Checking connection…</p>
+            <p class="osm-connection-note">The first connection requires signing in to or creating an OSM account and granting permission. Map uploads remain locked.</p>
+          </div>
+          <button id="osm-connect-btn" class="osm-connect-btn" type="button" disabled>Connect OSM account</button>
+          <button id="osm-disconnect-btn" class="osm-disconnect-btn hidden" type="button">Disconnect</button>
+        </section>
+
         <div class="profile-wide-actions" aria-label="More actions">
           <a class="profile-wide-btn" href="../help/Index_en.html">
             <span class="profile-wide-btn-icon profile-wide-btn-icon-help" aria-hidden="true">
@@ -134,7 +144,7 @@
     <script src="../config.js"></script>
 
     <script src="../auth/token_client.js"></script>
-    <script src="profile.js"></script>
+    <script src="profile.js?v=ui10-osm-oauth-20260804"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>

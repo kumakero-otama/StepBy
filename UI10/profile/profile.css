@@ -201,6 +201,35 @@ body {
   margin-top: 16px;
 }
 
+.osm-connection-card {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid #dbe5e3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(31, 51, 68, 0.08);
+}
+
+.osm-connection-card h2 { margin: 0 0 8px; font-size: 1.1rem; color: #244b48; }
+.osm-connection-status { margin: 0; font-weight: 700; color: #355066; }
+.osm-connection-status.is-connected { color: #18735f; }
+.osm-connection-status.is-error { color: #a33d31; }
+.osm-connection-note { margin: 8px 0 14px; color: #607180; font-size: .88rem; line-height: 1.65; }
+
+.osm-connect-btn,
+.osm-disconnect-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osm-connect-btn { border: 0; color: #fff; background: #2e8b75; }
+.osm-connect-btn:disabled { cursor: default; opacity: .5; }
+.osm-disconnect-btn { border: 1px solid #c8d2d0; color: #5d6967; background: #fff; }
+
 .profile-wide-btn {
   box-sizing: border-box;
   width: 100%;
