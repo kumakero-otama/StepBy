@@ -6,6 +6,9 @@ const totalTactileEl = document.getElementById("total-tactile-length");
 const totalRoadPostsEl = document.getElementById("total-road-posts");
 const logoutBtnEl = document.getElementById("profile-logout-btn");
 const editBtnEl = document.getElementById("profile-edit-btn");
+const osmStatusEl = document.getElementById("osm-connection-status");
+const osmConnectBtnEl = document.getElementById("osm-connect-btn");
+const osmDisconnectBtnEl = document.getElementById("osm-disconnect-btn");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const PROFILE_ICON_CACHE_KEY = "cachedProfileIcon.v1";
 
@@ -48,12 +51,33 @@ const authTokenApi = window.AuthToken || null;
 const PROFILE_TEXT = {
   ja: {
     guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+    osmChecking: "連携状態を確認しています…",
+    osmConnected: (name) => `OSMアカウント「${name}」と連携済みです。`,
+    osmNotConnected: "OSMアカウントは未連携です。",
+    osmNotConfigured: "OSM連携のアプリ登録待ちです。設定後にこのボタンが有効になります。",
+    osmFailed: "OSM連携状態を確認できませんでした。",
+    osmDisconnectConfirm: "OSMアカウントとの連携を解除しますか？",
+    osmDisconnectFailed: "OSM連携を解除できませんでした。",
   },
   en: {
     guestEditLocked: "Profile editing is not available for guest accounts.",
+    osmChecking: "Checking connection…",
+    osmConnected: (name) => `Connected to OSM account “${name}”.`,
+    osmNotConnected: "No OSM account is connected.",
+    osmNotConfigured: "Waiting for the OSM application registration. This button will be enabled after configuration.",
+    osmFailed: "Could not check the OSM connection.",
+    osmDisconnectConfirm: "Disconnect your OSM account?",
+    osmDisconnectFailed: "Could not disconnect the OSM account.",
   },
   hi: {
     guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+    osmChecking: "कनेक्शन की जांच हो रही है…",
+    osmConnected: (name) => `OSM खाता “${name}” जुड़ा हुआ है।`,
+    osmNotConnected: "कोई OSM खाता जुड़ा नहीं है।",
+    osmNotConfigured: "OSM ऐप पंजीकरण की प्रतीक्षा है। सेटिंग के बाद यह बटन सक्रिय होगा।",
+    osmFailed: "OSM कनेक्शन की जांच नहीं हो सकी।",
+    osmDisconnectConfirm: "OSM खाता कनेक्शन हटाएं?",
+    osmDisconnectFailed: "OSM कनेक्शन हटाया नहीं जा सका।",
   },
 };
 
@@ -300,6 +324,72 @@ function applyProfileEditAvailability(isGuest) {
   }
 }
 
+function setOsmStatus(message, state) {
+  if (!osmStatusEl) return;
+  osmStatusEl.textContent = message;
+  osmStatusEl.classList.toggle("is-connected", state === "connected");
+  osmStatusEl.classList.toggle("is-error", state === "error");
+}
+
+async function loadOsmConnection() {
+  if (!osmStatusEl || !osmConnectBtnEl || !osmDisconnectBtnEl) return;
+  const text = getProfileText();
+  setOsmStatus(text.osmChecking, "checking");
+  osmConnectBtnEl.disabled = true;
+  osmDisconnectBtnEl.classList.add("hidden");
+  try {
+    const response = await authFetch("/auth/osm/status", { cache: "no-store" });
+    if (response.status === 401) return redirectToLogin();
+    if (!response.ok) throw new Error("osm_status_failed");
+    const payload = await response.json();
+    if (!payload.configured) {
+      setOsmStatus(text.osmNotConfigured, "error");
+      return;
+    }
+    if (payload.connected && payload.connection) {
+      setOsmStatus(text.osmConnected(payload.connection.displayName || "OSM"), "connected");
+      osmConnectBtnEl.classList.add("hidden");
+      osmDisconnectBtnEl.classList.remove("hidden");
+      return;
+    }
+    setOsmStatus(text.osmNotConnected, "idle");
+    osmConnectBtnEl.classList.remove("hidden");
+    osmConnectBtnEl.disabled = false;
+  } catch {
+    setOsmStatus(text.osmFailed, "error");
+  }
+}
+
+async function startOsmConnection() {
+  if (!osmConnectBtnEl) return;
+  osmConnectBtnEl.disabled = true;
+  try {
+    const returnUrl = window.location.origin + AppPath.toApp("/profile/Index.html");
+    const response = await authFetch(`/auth/osm/start?return_url=${encodeURIComponent(returnUrl)}`, { method: "POST" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.authorizationUrl) throw new Error(payload.error || "osm_start_failed");
+    window.location.assign(payload.authorizationUrl);
+  } catch {
+    setOsmStatus(getProfileText().osmFailed, "error");
+    osmConnectBtnEl.disabled = false;
+  }
+}
+
+async function disconnectOsmConnection() {
+  const text = getProfileText();
+  if (!window.confirm(text.osmDisconnectConfirm)) return;
+  if (osmDisconnectBtnEl) osmDisconnectBtnEl.disabled = true;
+  try {
+    const response = await authFetch("/auth/osm/disconnect", { method: "POST" });
+    if (!response.ok) throw new Error("osm_disconnect_failed");
+    await loadOsmConnection();
+  } catch {
+    window.alert(text.osmDisconnectFailed);
+  } finally {
+    if (osmDisconnectBtnEl) osmDisconnectBtnEl.disabled = false;
+  }
+}
+
 async function loadProfile() {
   const cached = loadCachedProfileUser();
   if (cached) {
@@ -369,5 +459,9 @@ if (editBtnEl) {
   });
 }
 
+if (osmConnectBtnEl) osmConnectBtnEl.addEventListener("click", startOsmConnection);
+if (osmDisconnectBtnEl) osmDisconnectBtnEl.addEventListener("click", disconnectOsmConnection);
+
 loadProfile();
 void syncProfileProChip();
+void loadOsmConnection();
