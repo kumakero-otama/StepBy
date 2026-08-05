@@ -40,7 +40,7 @@ const osmChangePreviewEl = document.getElementById("osm-change-preview");
 const osmPreviewWayIdsEl = document.getElementById("osm-preview-way-ids");
 const osmPreviewStartEl = document.getElementById("osm-preview-start");
 const osmPreviewEndEl = document.getElementById("osm-preview-end");
-const osmPreviewSaveDraftEl = document.getElementById("osm-preview-save-draft");
+const osmPreviewTagStrategiesEl = document.getElementById("osm-preview-tag-strategies");
 const osmPreviewSaveStatusEl = document.getElementById("osm-preview-save-status");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
@@ -2151,6 +2151,115 @@ function closeTraceConfirmModal() {
   }
 }
 
+function isIndependentOsmWalkway(segment) {
+  const tags = segment && segment.tags || {};
+  return ["footway", "path", "pedestrian", "steps", "corridor"].includes(String(tags.highway || "").toLowerCase()) ||
+    String(tags.footway || "").toLowerCase() === "sidewalk";
+}
+
+function updateOsmPreviewTagStrategy(segment) {
+  segment.tagStrategy = isIndependentOsmWalkway(segment)
+    ? "tactile_paving=yes"
+    : segment.side ? `sidewalk:${segment.side}:tactile_paving=yes` : "左右を選択してください";
+}
+
+function renderOsmPreviewTagStrategies(osmPreview) {
+  if (!osmPreviewTagStrategiesEl) return;
+  osmPreviewTagStrategiesEl.innerHTML = "";
+  osmPreview.segments.forEach((segment, index) => {
+    updateOsmPreviewTagStrategy(segment);
+    const row = document.createElement("div");
+    row.className = "osm-preview-tag-row";
+    const label = document.createElement("span");
+    label.textContent = `Way ${segment.wayId}：`;
+    row.appendChild(label);
+    if (isIndependentOsmWalkway(segment)) {
+      const code = document.createElement("code");
+      code.textContent = segment.tagStrategy;
+      row.appendChild(code);
+    } else {
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", `Way ${segment.wayId} の歩道位置`);
+      [["", "左右を選択"], ["left", "道路の左側"], ["right", "道路の右側"]].forEach(([value, text]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = text;
+        option.selected = segment.side === value;
+        select.appendChild(option);
+      });
+      const code = document.createElement("code");
+      code.textContent = segment.tagStrategy;
+      select.addEventListener("change", () => {
+        segment.side = select.value || null;
+        updateOsmPreviewTagStrategy(segment);
+        code.textContent = segment.tagStrategy;
+      });
+      row.appendChild(select);
+      row.appendChild(code);
+    }
+    osmPreviewTagStrategiesEl.appendChild(row);
+  });
+}
+
+function osmPreviewHasRequiredSides(osmPreview) {
+  return !osmPreview || osmPreview.segments.every((segment) => isIndependentOsmWalkway(segment) || ["left", "right"].includes(segment.side));
+}
+
+async function loadMapOsmConnectionState() {
+  try {
+    const response = await authFetch("/auth/osm/status", { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    return { configured: Boolean(payload.configured), connected: Boolean(response.ok && payload.connected) };
+  } catch {
+    return { configured: false, connected: false };
+  }
+}
+
+function preopenOsmConnectionPopup() {
+  const popup = window.open("about:blank", "stepby-osm-oauth", "popup=yes,width=520,height=720,resizable=yes,scrollbars=yes");
+  if (popup) {
+    popup.document.title = "OpenStreetMap連携";
+    popup.document.body.textContent = "OpenStreetMapの認証画面を準備しています…";
+  }
+  return popup;
+}
+
+async function startMapOsmConnection(popup) {
+  const mode = popup ? "popup" : "redirect";
+  const returnUrl = window.location.origin + window.location.pathname;
+  const response = await authFetch(`/auth/osm/start?mode=${mode}&return_url=${encodeURIComponent(returnUrl)}`, { method: "POST" });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.authorizationUrl) throw new Error(payload.error || "osm_start_failed");
+  if (popup) popup.location.replace(payload.authorizationUrl);
+  else window.location.assign(payload.authorizationUrl);
+}
+
+async function saveOsmSplitDraft(osmPreview, recordId) {
+  const response = await authFetch("/api/osm/split-plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      summary: "UI10 点字ブロックWay分割案（OSM未送信）",
+      segments: osmPreview.segments.map((segment) => ({
+        wayId: segment.wayId,
+        wayVersion: segment.wayVersion,
+        tags: segment.tags,
+        nodes: segment.nodes,
+        fullCoordinates: segment.fullCoordinates,
+        relations: segment.relations || [],
+        side: segment.side || null,
+        from: segment.from,
+        to: segment.to,
+      })),
+      recordId,
+      clientContext: { ui: "UI10", previewOnly: true, osmWriteRequested: false, automaticDraft: true },
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+  return result;
+}
+
 function openTraceConfirmModal(coordinates, osmPreview = null) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) {
@@ -2158,8 +2267,10 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       return;
     }
 
+    let osmConnectionState = { configured: false, connected: false };
     const setupAndBind = async () => {
       await prepareTraceTagModal();
+      if (osmPreview) osmConnectionState = await loadMapOsmConnectionState();
 
       traceConfirmModalEl.classList.remove("hidden");
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
@@ -2189,48 +2300,12 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         if (osmPreviewWayIdsEl) osmPreviewWayIdsEl.textContent = osmPreview.segments.map((s) => s.wayId).join(" → ");
         if (osmPreviewStartEl) osmPreviewStartEl.textContent = `Way ${osmPreview.start.wayId} / ${osmPreview.start.lat.toFixed(6)}, ${osmPreview.start.lng.toFixed(6)}`;
         if (osmPreviewEndEl) osmPreviewEndEl.textContent = `Way ${osmPreview.end.wayId} / ${osmPreview.end.lat.toFixed(6)}, ${osmPreview.end.lng.toFixed(6)}`;
-        if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "OSM送信：無効（まだ保存していません）";
-        if (osmPreviewSaveDraftEl) {
-          const draftRecordId = currentSessionId;
-          osmPreviewSaveDraftEl.disabled = !draftRecordId;
-          if (!draftRecordId && osmPreviewSaveStatusEl) {
-            osmPreviewSaveStatusEl.textContent = "試験プレビュー：記録IDがないため変更案は保存できません（OSM未送信）";
-          }
-          osmPreviewSaveDraftEl.onclick = async () => {
-            if (!draftRecordId) return;
-            osmPreviewSaveDraftEl.disabled = true;
-            if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = "変更案を保存中…";
-            try {
-              const response = await authFetch("/api/osm/split-plan", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  summary: "UI10 点字ブロックWay分割案（OSM未送信）",
-                  segments: osmPreview.segments.map((segment) => ({
-                    wayId: segment.wayId,
-                    wayVersion: segment.wayVersion,
-                    tags: segment.tags,
-                    nodes: segment.nodes,
-                    fullCoordinates: segment.fullCoordinates,
-                    relations: segment.relations || [],
-                    from: segment.from,
-                    to: segment.to,
-                  })),
-                  recordId: draftRecordId,
-                  clientContext: { ui: "UI10", previewOnly: true, osmWriteRequested: false },
-                }),
-              });
-              const result = await response.json();
-              if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-              const split = result.splitPlan && result.splitPlan.summary;
-              const detail = split
-                ? `新Node ${split.createdNodes}件・新Way ${split.createdWays}件・変更Way ${split.modifiedWays}件`
-                : "分割案を生成";
-              if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `変更案保存済み：${detail}／OSM未送信（${result.planId}）`;
-            } catch (error) {
-              osmPreviewSaveDraftEl.disabled = false;
-              if (osmPreviewSaveStatusEl) osmPreviewSaveStatusEl.textContent = `保存失敗：${error.message}（OSM未送信）`;
-            }
-          };
+        renderOsmPreviewTagStrategies(osmPreview);
+        if (osmPreviewSaveStatusEl) {
+          const connectionText = osmConnectionState.connected
+            ? "OSM連携済み"
+            : osmConnectionState.configured ? "保存後に初回OSM連携を開きます" : "OSM連携設定を確認できません";
+          osmPreviewSaveStatusEl.textContent = `記録確定後、変更案を自動保存します。${connectionText}。OSMには送信しません。`;
         }
       }
       traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
@@ -2247,10 +2322,16 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
           setTraceTagError(getTraceTagText().requiredForPro);
           return;
         }
+        if (!osmPreviewHasRequiredSides(osmPreview)) {
+          setTraceTagError("道路中心線Wayについて、点字ブロックが道路の左側・右側のどちらにあるかを選択してください。");
+          return;
+        }
         setTraceTagError("");
-        cleanupAndResolve("ok");
+        const oauthPopup = osmPreview && osmConnectionState.configured && !osmConnectionState.connected
+          ? preopenOsmConnectionPopup() : null;
+        cleanupAndResolve({ action: "ok", osmConnectionState, oauthPopup });
       };
-      const onCancel = () => cleanupAndResolve("cancel");
+      const onCancel = () => cleanupAndResolve({ action: "cancel" });
 
       traceConfirmOkBtn.addEventListener("click", onOk);
       traceConfirmCancelBtn.addEventListener("click", onCancel);
@@ -2348,7 +2429,7 @@ async function handleRecordStopWithConfirmation() {
   }
 
   const decision = await openTraceConfirmModal(previewCoords, osmPreview);
-  if (decision === "ok") {
+  if (decision && decision.action === "ok") {
     const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
     const persistResult = await persistCurrentSessionWithoutConfirmation();
     if (!persistResult.success) {
@@ -2370,6 +2451,30 @@ async function handleRecordStopWithConfirmation() {
         console.error("[Record] save session tags error:", err);
         // セッション本体は保存済みなので、タグ保存失敗時は記録自体を取り消さない。
         alert("タグの保存に失敗しました。タグなしで記録は保存されています。");
+      }
+    }
+    if (osmPreview && activeSessionId) {
+      try {
+        const draft = await saveOsmSplitDraft(osmPreview, activeSessionId);
+        const split = draft.splitPlan && draft.splitPlan.summary;
+        const detail = split
+          ? `新Node ${split.createdNodes}件・新Way ${split.createdWays}件・変更Way ${split.modifiedWays}件`
+          : "Way分割案を生成";
+        console.log(`[OSM draft] ${detail}; plan=${draft.planId}; OSM未送信`);
+      } catch (error) {
+        if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
+        console.error("[OSM draft] automatic save failed", error);
+        alert(`記録は保存されましたが、OSM変更案を保存できませんでした：${error.message}\nOSMへの送信は行われていません。`);
+        return;
+      }
+      if (!decision.osmConnectionState.connected && decision.osmConnectionState.configured) {
+        try {
+          await startMapOsmConnection(decision.oauthPopup);
+        } catch (error) {
+          if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
+          console.error("[OSM OAuth] automatic connection failed", error);
+          alert("記録とOSM変更案は保存されました。OSMアカウント連携を開始できなかったため、プロフィール画面から再試行できます。");
+        }
       }
     }
     return;
@@ -2530,15 +2635,25 @@ if (osmPreviewTestButtonEl) {
     try {
       await browserOsmMatcher.ensureNetwork(35.681236, 139.767125);
       const testWay = (browserOsmMatcher.network || []).find((way) =>
-        way.priority === "pedestrian" && Array.isArray(way.coordinates) && way.coordinates.length >= 2);
-      if (!testWay) throw new Error("試験に使える歩道Wayが見つかりませんでした");
+        way.priority !== "pedestrian" && Array.isArray(way.coordinates) && way.coordinates.length >= 2);
+      if (!testWay) throw new Error("左右判定の試験に使える道路Wayが見つかりませんでした");
       const [aLng, aLat] = testWay.coordinates[0];
       const [bLng, bLat] = testWay.coordinates[1];
-      const pointAt = (fraction) => ({ lat: aLat + (bLat - aLat) * fraction, lng: aLng + (bLng - aLng) * fraction });
+      const length = Math.hypot(bLng - aLng, bLat - aLat) || 1;
+      const leftOffsetDegrees = 3 / 111320;
+      const pointAt = (fraction) => ({
+        lat: aLat + (bLat - aLat) * fraction + ((bLng - aLng) / length) * leftOffsetDegrees,
+        lng: aLng + (bLng - aLng) * fraction - ((bLat - aLat) / length) * leftOffsetDegrees,
+      });
       const points = [pointAt(0.2), pointAt(0.5), pointAt(0.8)];
-      const route = browserOsmMatcher.finalize(points);
+      const route = {
+        ways: [testWay],
+        rawPoints: points,
+        start: { wayId: testWay.id, segmentIndex: 0, fraction: 0.2, lat: aLat + (bLat - aLat) * 0.2, lng: aLng + (bLng - aLng) * 0.2 },
+        end: { wayId: testWay.id, segmentIndex: 0, fraction: 0.8, lat: aLat + (bLat - aLat) * 0.8, lng: aLng + (bLng - aLng) * 0.8 },
+      };
       const preview = window.StepByOsmMatcher.buildOsmChangePreview(route);
-      if (!preview) throw new Error("連続したWayを確定できませんでした");
+      if (!preview) throw new Error("道路Wayの変更予定を作成できませんでした");
       const previewCoordinates = preview.segments.flatMap((segment) =>
         segment.coordinates.map(([lng, lat]) => [lat, lng]));
       await openTraceConfirmModal(previewCoordinates, preview);
