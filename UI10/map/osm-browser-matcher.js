@@ -33,6 +33,17 @@
     };
   }
 
+  function signedOffsetMeters(point, start, end) {
+    const meanLat = ((point.lat + start.lat + end.lat) / 3) * Math.PI / 180;
+    const scaleX = EARTH_METERS_PER_DEGREE * Math.cos(meanLat);
+    const vx = (end.lng - start.lng) * scaleX;
+    const vy = (end.lat - start.lat) * EARTH_METERS_PER_DEGREE;
+    const px = (point.lng - start.lng) * scaleX;
+    const py = (point.lat - start.lat) * EARTH_METERS_PER_DEGREE;
+    const length = Math.hypot(vx, vy);
+    return length ? (vx * py - vy * px) / length : 0;
+  }
+
   function sharesNode(a, b) {
     if (!a || !b || !Array.isArray(a.nodes) || !Array.isArray(b.nodes)) return false;
     const nodes = new Set(a.nodes);
@@ -56,6 +67,8 @@
         if (!best || score < best.score) {
           best = { ...projected, score, wayId: way.id, wayVersion: way.version, segmentIndex: index,
             priority: way.priority, tags: way.tags, nodes: way.nodes,
+            sourcePoint: { lat: point.lat, lng: point.lng },
+            signedOffsetMeters: signedOffsetMeters(point, a, b),
             connectedToPrevious: !previousWay || way.id === previousWay.id || sharesNode(way, previousWay) };
         }
       }
@@ -138,6 +151,7 @@
       matches,
       wayIds: connectedWayIds,
       ways: connectedWayIds.map((id) => ways.find((way) => way.id === id)).filter(Boolean),
+      rawPoints: points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng) })),
     };
   }
 
@@ -166,6 +180,35 @@
     return result.filter(Boolean);
   }
 
+  function isIndependentWalkway(way) {
+    const tags = way && way.tags || {};
+    return ["footway", "path", "pedestrian", "steps", "corridor"].includes(String(tags.highway || "").toLowerCase()) ||
+      String(tags.footway || "").toLowerCase() === "sidewalk";
+  }
+
+  function inferWaySide(route, way) {
+    if (isIndependentWalkway(way)) return null;
+    const offsets = [];
+    (route.rawPoints || []).forEach((point) => {
+      let nearest = null;
+      for (let index = 0; index < (way.coordinates || []).length - 1; index += 1) {
+        const start = { lng: way.coordinates[index][0], lat: way.coordinates[index][1] };
+        const end = { lng: way.coordinates[index + 1][0], lat: way.coordinates[index + 1][1] };
+        const projection = projectToSegment(point, start, end);
+        if (!nearest || projection.distance < nearest.distance) {
+          nearest = { distance: projection.distance, offset: signedOffsetMeters(point, start, end) };
+        }
+      }
+      if (nearest && nearest.distance <= 30 && Math.abs(nearest.offset) >= 0.75) offsets.push(nearest.offset);
+    });
+    if (!offsets.length) return null;
+    const leftVotes = offsets.filter((offset) => offset > 0).length;
+    const rightVotes = offsets.length - leftVotes;
+    const agreement = Math.max(leftVotes, rightVotes) / offsets.length;
+    if (agreement < 0.6) return null;
+    return leftVotes > rightVotes ? "left" : "right";
+  }
+
   function buildOsmChangePreview(route) {
     if (!route || !route.ways || !route.ways.length) return null;
     const connectors = [];
@@ -182,6 +225,7 @@
       const to = index === route.ways.length - 1
         ? { kind: "projection", segmentIndex: route.end.segmentIndex, fraction: route.end.fraction, coordinate: projectedCoordinate(route.end) }
         : { kind: "node", index: connectors[index].leftIndex };
+      const side = inferWaySide(route, way);
       return {
         wayId: way.id,
         wayVersion: way.version,
@@ -189,6 +233,10 @@
         nodes: way.nodes || [],
         fullCoordinates: way.coordinates || [],
         relations: way.relations || [],
+        side,
+        tagStrategy: isIndependentWalkway(way)
+          ? "tactile_paving=yes"
+          : side ? `sidewalk:${side}:tactile_paving=yes` : "左右判定不可",
         from,
         to,
         coordinates: sliceWayCoordinates(way, from, to),
@@ -273,6 +321,9 @@
     chooseBestMatch,
     projectToSegment,
     distanceMeters,
+    signedOffsetMeters,
+    inferWaySide,
+    isIndependentWalkway,
     buildWayGraph,
     findConnectedWayPath,
     finalizeTrace,
