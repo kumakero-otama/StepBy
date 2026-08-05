@@ -58,8 +58,8 @@ const fittingDetailButtonEl = document.getElementById("fitting-detail-button");
 const fittingDetailModalEl = document.getElementById("fitting-detail-modal");
 const fittingDetailBodyEl = document.getElementById("fitting-detail-body");
 const fittingDetailCloseEl = document.getElementById("fitting-detail-close");
-// UI10では新しいブラウザ側マッチャーをシャドーモードで動かす。
-// 表示・保存は当面Valhallaの結果を使い、比較結果を蓄積してから切り替える。
+// UI10の通常記録はブラウザ側マッチャーを正として保存する。
+// Valhallaは開発用の比較パネルだけで並行実行し、通常記録の確定には使わない。
 const browserOsmMatcher = window.StepByOsmMatcher
   ? new window.StepByOsmMatcher.BrowserMatcher({ fetcher: authFetch, radiusMeters: 1000 })
   : null;
@@ -1794,8 +1794,27 @@ function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
   });
 }
 
+function requestBrowserTraceData(osmPreview, sessionId) {
+  const coordinates = osmPreview.segments.flatMap((segment, segmentIndex) =>
+    segment.coordinates.slice(segmentIndex > 0 ? 1 : 0).map(([lng, lat]) => ({ lat, lon: lng })));
+  return authFetch("/api/trace", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sessionId,
+      source: "browser",
+      matched_points: coordinates,
+      edges: osmPreview.segments.map((segment) => ({ way_id: segment.wayId })),
+    }),
+  }).then(async (res) => {
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || `browser trace failed: ${res.status}`);
+    return payload;
+  });
+}
+
 // trace_attributesでフィッティングしてマップに表示
-function processAndDisplayTrace(sessionId = null, sourcePoints = null) {
+function processAndDisplayTrace(sessionId = null, sourcePoints = null, osmPreview = null) {
   const tracePoints = Array.isArray(sourcePoints) && sourcePoints.length > 0
     ? sourcePoints
     : getAllRecordingTracePoints();
@@ -1806,7 +1825,10 @@ function processAndDisplayTrace(sessionId = null, sourcePoints = null) {
   }
 
   const shape = tracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
-  return requestTraceData(shape, { sessionId, persist: Boolean(sessionId) })
+  const traceRequest = sessionId && osmPreview
+    ? requestBrowserTraceData(osmPreview, sessionId)
+    : requestTraceData(shape, { sessionId, persist: Boolean(sessionId) });
+  return traceRequest
     .then((data) => {
       const coords = extractTraceCoordinates(data, shape);
       displayTraceLine(coords);
@@ -2350,7 +2372,7 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
   });
 }
 
-async function persistCurrentSessionWithoutConfirmation() {
+async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   if (!currentSessionId) {
     return { success: true, skipped: true };
   }
@@ -2362,7 +2384,7 @@ async function persistCurrentSessionWithoutConfirmation() {
     return { success: true, canceled: true };
   }
 
-  const persisted = await processAndDisplayTrace(sessionId, tracePoints);
+  const persisted = await processAndDisplayTrace(sessionId, tracePoints, osmPreview);
   if (!persisted) {
     await postSessionLifecycle("cancel", { sessionId });
     rollbackCurrentSessionPointsFromRecording();
@@ -2410,18 +2432,13 @@ async function handleRecordStopWithConfirmation() {
     }
   }
 
-  const shape = allTracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
-  let previewData;
-  try {
-    previewData = await requestTraceData(shape);
-  } catch (err) {
-    console.error("[Record] preview trace error:", err);
-    alert(`保存確認用の経路生成に失敗しました: ${err.message}`);
+  if (!osmPreview) {
+    alert("ブラウザ側でOSM Way上の連続した経路を確定できませんでした。記録は保存されていません。");
     await cancelRecordingSessions(allSessionIds);
     return;
   }
-
-  const previewCoords = extractTraceCoordinates(previewData, shape);
+  const previewCoords = osmPreview.segments.flatMap((segment, index) =>
+    segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
     alert("保存確認用の経路を生成できませんでした。");
     await cancelRecordingSessions(allSessionIds);
@@ -2431,7 +2448,7 @@ async function handleRecordStopWithConfirmation() {
   const decision = await openTraceConfirmModal(previewCoords, osmPreview);
   if (decision && decision.action === "ok") {
     const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
-    const persistResult = await persistCurrentSessionWithoutConfirmation();
+    const persistResult = await persistCurrentSessionWithoutConfirmation(osmPreview);
     if (!persistResult.success) {
       await cancelRecordingSessions(allSessionIds);
       return;
