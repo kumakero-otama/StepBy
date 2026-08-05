@@ -244,6 +244,12 @@
     });
     return {
       segments,
+      matchedSamples: (route.matches || []).map((match) => ({
+        lat: match.lat,
+        lon: match.lng,
+        wayId: match.wayId,
+        distance: match.distance,
+      })),
       start: { lat: route.start.lat, lng: route.start.lng, wayId: route.start.wayId },
       end: { lat: route.end.lat, lng: route.end.lng, wayId: route.end.wayId },
       connected: true,

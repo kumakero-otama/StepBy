@@ -1794,7 +1794,7 @@ function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
   });
 }
 
-function requestBrowserTraceData(osmPreview, sessionId) {
+function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
   const coordinates = osmPreview.segments.flatMap((segment, segmentIndex) =>
     segment.coordinates.slice(segmentIndex > 0 ? 1 : 0).map(([lng, lat]) => ({ lat, lon: lng })));
   return authFetch("/api/trace", {
@@ -1803,7 +1803,18 @@ function requestBrowserTraceData(osmPreview, sessionId) {
     body: JSON.stringify({
       sessionId,
       source: "browser",
+      raw_points: (rawPoints || []).map((point) => ({
+        lat: Number(point.lat),
+        lon: Number(point.lng),
+        accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null,
+      })),
       matched_points: coordinates,
+      matched_samples: (osmPreview.matchedSamples || []).map((sample) => ({
+        lat: Number(sample.lat),
+        lon: Number(sample.lon),
+        way_id: Number(sample.wayId),
+        confidence: Number.isFinite(Number(sample.distance)) ? 1 / (1 + Math.max(0, Number(sample.distance))) : null,
+      })),
       edges: osmPreview.segments.map((segment) => ({ way_id: segment.wayId })),
     }),
   }).then(async (res) => {
@@ -1826,7 +1837,7 @@ function processAndDisplayTrace(sessionId = null, sourcePoints = null, osmPrevie
 
   const shape = tracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
   const traceRequest = sessionId && osmPreview
-    ? requestBrowserTraceData(osmPreview, sessionId)
+    ? requestBrowserTraceData(osmPreview, sessionId, tracePoints)
     : requestTraceData(shape, { sessionId, persist: Boolean(sessionId) });
   return traceRequest
     .then((data) => {
@@ -2551,8 +2562,8 @@ async function saveFittingComparison(payload) {
   }
 }
 
-// 現在地取得結果を新旧両方でスナップし、表示・比較履歴へつなげる。
-function requestSnappedLocation(latitude, longitude, accuracy = null) {
+// 通常利用ではブラウザ版だけを使う。Valhallaは明示的な比較試験のときだけ呼び出す。
+function requestSnappedLocation(latitude, longitude, accuracy = null, { compareValhalla = false } = {}) {
   if (!currentUserId) {
     setComparisonStatus("ログイン待ち", "waiting");
     return;
@@ -2563,12 +2574,6 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
     userId: String(currentUserId),
   });
   if (Number.isFinite(accuracy)) params.set("accuracy", String(accuracy));
-  if (isRecordingActive()) {
-    params.set("record", "1");
-    if (currentSessionId) {
-      params.set("sessionId", currentSessionId);
-    }
-  }
   
   if (lastSent) {
     params.set("prevLat", lastSent.latitude.toString());
@@ -2582,6 +2587,21 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
   const browserPromise = browserOsmMatcher
     ? browserOsmMatcher.match(latitude, longitude).then((match) => ({ match, duration: Math.round(performance.now() - browserStartedAt), error: null })).catch((error) => ({ match: null, duration: Math.round(performance.now() - browserStartedAt), error }))
     : Promise.resolve({ match: null, duration: 0, error: new Error("browser matcher unavailable") });
+  if (!compareValhalla) {
+    return browserPromise.then((browserResult) => {
+      const browser = browserResult.match;
+      if (browser) {
+        updateDisplay(latitude, longitude, browser.lat, browser.lng);
+        lastSent = { latitude: browser.lat, longitude: browser.lng };
+      } else {
+        updateDisplay(latitude, longitude, latitude, longitude, true);
+      }
+      renderFittingComparison({ lat: latitude, lng: longitude }, null, browser, { valhalla: "—", browser: browserResult.duration });
+      setComparisonStatus(browser ? "ブラウザ版で計算" : "ブラウザ版の計算失敗", browser ? "success" : "error");
+      if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "通常記録（Valhalla未使用）";
+      return browser;
+    });
+  }
   const valhallaStartedAt = performance.now();
 
   return authFetch(`/api/match?${params.toString()}`)
@@ -2634,7 +2654,7 @@ if (comparisonTestButtonEl) {
     comparisonTestButtonEl.disabled = true;
     try {
       map.setView([35.681236, 139.767125], 19, { animate: false });
-      await requestSnappedLocation(35.681236, 139.767125);
+      await requestSnappedLocation(35.681236, 139.767125, null, { compareValhalla: true });
     } finally {
       comparisonTestButtonEl.disabled = false;
     }
