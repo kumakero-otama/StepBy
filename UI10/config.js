@@ -2,7 +2,7 @@
 (function initAppConfig(globalScope) {
   const defaults = {
     APP_BASE_PATH: "/StepBy/UI10",
-    API_BASE_URL: "https://barrierfree-map.tail5de5e1.ts.net:10000",
+    API_BASE_URL: "https://barrierfree-map.tail5de5e1.ts.net/dev-api",
     ENVIRONMENT: "development",
   };
 
