@@ -2,6 +2,7 @@
   "use strict";
 
   const EARTH_METERS_PER_DEGREE = 111320;
+  const LOW_ACCURACY_METERS = 25;
   const CACHE_DB = "stepby-ui10-osm-network-v1";
   const CACHE_STORE = "networks";
 
@@ -76,6 +77,21 @@
     return best;
   }
 
+  function preparePoints(points, lowAccuracyMeters = LOW_ACCURACY_METERS) {
+    const normalized = points.map((point, index) => ({ ...point, originalIndex: index,
+      accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null }));
+    return normalized.map((point, index) => {
+      if (point.accuracy === null || point.accuracy <= lowAccuracyMeters) return { ...point, quality: "observed" };
+      let previous = null, next = null;
+      for (let i = index - 1; i >= 0; i -= 1) if (normalized[i].accuracy === null || normalized[i].accuracy <= lowAccuracyMeters) { previous = normalized[i]; break; }
+      for (let i = index + 1; i < normalized.length; i += 1) if (normalized[i].accuracy === null || normalized[i].accuracy <= lowAccuracyMeters) { next = normalized[i]; break; }
+      if (!previous || !next || next.originalIndex === previous.originalIndex) return { ...point, quality: "discarded", discardReason: "low_accuracy_without_neighbors" };
+      const ratio = (index - previous.originalIndex) / (next.originalIndex - previous.originalIndex);
+      return { ...point, lat: previous.lat + (next.lat - previous.lat) * ratio, lng: previous.lng + (next.lng - previous.lng) * ratio,
+        quality: "interpolated", interpolatedFrom: [previous.originalIndex, next.originalIndex] };
+    });
+  }
+
   function buildWayGraph(ways) {
     const byNode = new Map();
     const byId = new Map();
@@ -125,7 +141,8 @@
 
   function finalizeTrace(points, ways) {
     if (!Array.isArray(points) || points.length < 2) return null;
-    const sampled = points.filter((_, index) => index === 0 || index === points.length - 1 || index % 3 === 0);
+    const prepared = preparePoints(points);
+    const sampled = prepared.filter((point, index) => point.quality !== "discarded" && (index === 0 || index === points.length - 1 || index % 3 === 0));
     const matches = [];
     let previousWayId = null;
     sampled.forEach((point) => {
@@ -151,7 +168,10 @@
       matches,
       wayIds: connectedWayIds,
       ways: connectedWayIds.map((id) => ways.find((way) => way.id === id)).filter(Boolean),
-      rawPoints: points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng) })),
+      rawPoints: points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng), accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null })),
+      quality: { interpolatedPointCount: prepared.filter((point) => point.quality === "interpolated").length,
+        discardedPointCount: prepared.filter((point) => point.quality === "discarded").length,
+        discardedPoints: prepared.filter((point) => point.quality === "discarded").map((point) => ({ index: point.originalIndex, accuracy: point.accuracy, reason: point.discardReason })) },
     };
   }
 
@@ -325,6 +345,7 @@
   global.StepByOsmMatcher = {
     BrowserMatcher,
     chooseBestMatch,
+    preparePoints,
     projectToSegment,
     distanceMeters,
     signedOffsetMeters,
