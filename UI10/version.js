@@ -1,5 +1,5 @@
 // アプリケーションバージョン
-const FRONTEND_VERSION = "1.23.2";
+const FRONTEND_VERSION = "1.23.3";
 const BACKEND_VERSION = "1.28.0";
 
 const VERSION_LABELS = {

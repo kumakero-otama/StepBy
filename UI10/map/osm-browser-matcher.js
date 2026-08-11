@@ -111,6 +111,19 @@
     return { byId, neighbors };
   }
 
+  function dominantConnectedComponent(ways, matches) {
+    const counts = new Map(); matches.filter(Boolean).forEach((match) => counts.set(match.wayId, (counts.get(match.wayId) || 0) + 1));
+    const graph = buildWayGraph(ways), seen = new Set(); let best = ways, bestCount = -1;
+    ways.forEach((way) => {
+      if (seen.has(way.id)) return;
+      const queue = [way.id], ids = []; seen.add(way.id);
+      while (queue.length) { const id = queue.shift(); ids.push(id); (graph.neighbors.get(id) || []).forEach((next) => { if (!seen.has(next)) { seen.add(next); queue.push(next); } }); }
+      const count = ids.reduce((sum, id) => sum + (counts.get(id) || 0), 0);
+      if (count > bestCount) { bestCount = count; best = ids.map((id) => graph.byId.get(id)).filter(Boolean); }
+    });
+    return best;
+  }
+
   function findConnectedWayPath(ways, startWayId, endWayId) {
     if (startWayId === endWayId) return [startWayId];
     const graph = buildWayGraph(ways);
@@ -143,7 +156,7 @@
     if (!Array.isArray(points) || points.length < 2) return null;
     const prepared = preparePoints(points);
     const sampled = prepared.filter((point, index) => point.quality !== "discarded" && (index === 0 || index === points.length - 1 || index % 3 === 0));
-    const matches = [];
+    let matches = [];
     let previousWayId = null;
     sampled.forEach((point) => {
       const match = chooseBestMatch(point, ways, previousWayId);
@@ -153,6 +166,16 @@
       }
     });
     if (matches.length < 2) return null;
+    let routeSmoothed = false;
+    const initiallyDisconnected = matches.slice(1).some((match, index) => !findConnectedWayPath(ways, matches[index].wayId, match.wayId));
+    if (initiallyDisconnected) {
+      const routeWays = dominantConnectedComponent(ways, matches), smoothed = [];
+      let previous = null;
+      sampled.forEach((point) => { const match = chooseBestMatch(point, routeWays, previous); if (match) { smoothed.push(match); previous = match.wayId; } });
+      if (smoothed.length >= 2 && !smoothed.slice(1).some((match, index) => !findConnectedWayPath(routeWays, smoothed[index].wayId, match.wayId))) {
+        matches = smoothed; routeSmoothed = true;
+      }
+    }
     const connectedWayIds = [matches[0].wayId];
     for (let index = 1; index < matches.length; index += 1) {
       const fromWayId = connectedWayIds[connectedWayIds.length - 1];
@@ -167,6 +190,7 @@
       end: matches[matches.length - 1],
       matches,
       wayIds: connectedWayIds,
+      routeSmoothed,
       ways: connectedWayIds.map((id) => ways.find((way) => way.id === id)).filter(Boolean),
       rawPoints: points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng), accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null })),
       quality: { interpolatedPointCount: prepared.filter((point) => point.quality === "interpolated").length,
