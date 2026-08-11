@@ -83,7 +83,10 @@ async function loadOverview() {
     experimentEl.classList.remove("hidden");
     setStatus("開発DBを読み込みました");
   } catch (error) {
-    setStatus(`読込失敗：${error.message}`, "error");
+    const detail = error && error.message === "Failed to fetch"
+      ? "APIへ接続できませんでした。ページを再読み込みしてから、もう一度お試しください"
+      : error.message;
+    setStatus(`読込失敗：${detail}`, "error");
   } finally { loadButton.disabled = false; }
 }
 
