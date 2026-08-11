@@ -807,6 +807,73 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/admin/database-overview:
+    get:
+      tags: [Admin]
+      summary: 開発DBの容量・許可済みテーブル件数一覧
+      description: 開発環境限定。Bearer認証と開発管理者キーの両方が必要。本番DBには接続しない。
+      security:
+        - bearerAuth: []
+          adminKey: []
+      responses:
+        '200': { description: 開発DB概要 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: admin_required }
+
+  /api/admin/tables/{tableKey}:
+    get:
+      tags: [Admin]
+      summary: 許可済み主要テーブルの最新レコードを読み取る
+      security:
+        - bearerAuth: []
+          adminKey: []
+      parameters:
+        - in: path
+          name: tableKey
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        '200': { description: テーブル内容 }
+        '404': { description: table_not_allowed }
+
+  /api/admin/experiments:
+    get:
+      tags: [Admin]
+      summary: 開発DB専用API実験データ一覧
+      security:
+        - bearerAuth: []
+          adminKey: []
+      responses:
+        '200': { description: 実験データ一覧 }
+    post:
+      tags: [Admin]
+      summary: 開発DB専用の試験レコードを1件作成
+      security:
+        - bearerAuth: []
+          adminKey: []
+      responses:
+        '201': { description: 作成済み }
+
+  /api/admin/experiments/{experimentId}:
+    delete:
+      tags: [Admin]
+      summary: 自分が作成した開発DB試験レコードを削除
+      description: 本体は削除し、ID・操作・payload digestだけを監査履歴へ残す。
+      security:
+        - bearerAuth: []
+          adminKey: []
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 削除済み }
+        '404': { description: experiment_not_found }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -817,6 +884,10 @@ components:
       type: apiKey
       in: cookie
       name: session
+    adminKey:
+      type: apiKey
+      in: header
+      name: X-StepBy-Admin-Key
 
   responses:
     BadRequest:

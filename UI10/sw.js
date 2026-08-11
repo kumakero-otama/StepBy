@@ -1,5 +1,5 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.22.0-valhalla-comparison-only";
+const CACHE_VERSION = "1.23.0-admin-database-dashboard";
 const APP_BASE_PATH = "/StepBy/UI10";
 const API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net:10000";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;
@@ -27,6 +27,9 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/auth/auth.css`,
   `${APP_BASE_PATH}/auth/auth.js`,
   `${APP_BASE_PATH}/auth/token_client.js`,
+  `${APP_BASE_PATH}/admin/database.html`,
+  `${APP_BASE_PATH}/admin/database.css`,
+  `${APP_BASE_PATH}/admin/database.js`,
   `${APP_BASE_PATH}/profile/Index.html`,
   `${APP_BASE_PATH}/profile/profile.css`,
   `${APP_BASE_PATH}/profile/profile.js`,

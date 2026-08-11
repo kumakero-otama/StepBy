@@ -1815,6 +1815,20 @@ function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
         way_id: Number(sample.wayId),
         confidence: Number.isFinite(Number(sample.distance)) ? 1 / (1 + Math.max(0, Number(sample.distance))) : null,
       })),
+      way_segments: osmPreview.segments.map((segment) => ({
+        way_id: segment.wayId,
+        way_version: segment.wayVersion,
+        node_ids: segment.nodes,
+        full_coordinates: segment.fullCoordinates,
+        segment_from: segment.from,
+        segment_to: segment.to,
+        original_tags: segment.tags || {},
+        relations: segment.relations || [],
+        side: segment.side || null,
+        planned_tags: isIndependentOsmWalkway(segment)
+          ? { tactile_paving: "yes" }
+          : { [`sidewalk:${segment.side}:tactile_paving`]: "yes" },
+      })),
       edges: osmPreview.segments.map((segment) => ({ way_id: segment.wayId })),
     }),
   }).then(async (res) => {
