@@ -1803,6 +1803,7 @@ function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
     body: JSON.stringify({
       sessionId,
       source: "browser",
+      route_confirmed: osmPreview.routeConfirmed === true,
       raw_points: (rawPoints || []).map((point) => ({
         lat: Number(point.lat),
         lon: Number(point.lng),
