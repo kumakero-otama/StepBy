@@ -63,6 +63,8 @@ const fittingDetailCloseEl = document.getElementById("fitting-detail-close");
 const browserOsmMatcher = window.StepByOsmMatcher
   ? new window.StepByOsmMatcher.BrowserMatcher({ fetcher: authFetch, radiusMeters: 1000 })
   : null;
+let recordUploadQueue = null;
+let lastNetworkPrefetchAt = 0;
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -2151,9 +2153,10 @@ async function prepareTraceTagModal() {
   }
 }
 
-async function saveSessionTags(sessionIds) {
+async function saveSessionTags(sessionIds, fixedTagIds = null) {
   const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
-  const selectedTags = traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
+  const tagIds = Array.isArray(fixedTagIds) ? new Set(fixedTagIds.map(Number)) : selectedTraceTagIds;
+  const selectedTags = traceTagOptions.filter((tag) => tagIds.has(Number(tag.id)));
   for (const sessionId of uniqueSessionIds) {
     for (const tag of selectedTags) {
       const res = await authFetch("/api/session-tags", {
@@ -2423,6 +2426,57 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   return { success: true, ended: true };
 }
 
+async function processQueuedRecording(payload, context) {
+  const completed = new Set(context.job.completedStages || []);
+  const runStage = async (name, operation) => {
+    if (completed.has(name)) return;
+    await operation();
+    completed.add(name);
+    await context.checkpoint(name);
+  };
+  await runStage("session_started", async () => {
+    const response = await authFetch("/api/session/start", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: payload.sessionId, startedAt: payload.startedAt }),
+    });
+    if (!response.ok) throw new Error(`queued_session_start_failed:${response.status}`);
+  });
+  await runStage("trace_saved", async () => {
+    await requestBrowserTraceData(payload.osmPreview, payload.sessionId, payload.rawPoints);
+  });
+  await runStage("session_ended", async () => {
+    const response = await authFetch("/api/session/end", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: payload.sessionId, endedAt: payload.endedAt }),
+    });
+    if (!response.ok) throw new Error(`queued_session_end_failed:${response.status}`);
+  });
+  if (payload.isPro) {
+    await runStage("memo_saved", () => saveSessionMemo(payload.sessionIds, payload.memo || ""));
+    await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
+  }
+  await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+}
+
+function initRecordUploadQueue() {
+  if (!window.StepByRecordQueue) return;
+  recordUploadQueue = new window.StepByRecordQueue.RecordQueue({
+    handler: processQueuedRecording,
+    onChange(event) {
+      if (event.type === "queued" || event.type === "sending") {
+        showMapToast("記録を端末に保存しました。送信はバックグラウンドで続けています。", 3200);
+      } else if (event.type === "completed") {
+        showMapToast("記録と変更案の保存が完了しました（OSM未送信）。", 3200);
+      } else if (event.type === "retry") {
+        showMapToast("通信できないため端末に保管しています。接続後に自動で再送します。", 4200);
+      }
+    },
+  });
+  window.addEventListener("online", () => void recordUploadQueue.flush());
+  window.addEventListener("pageshow", () => void recordUploadQueue.flush());
+  void recordUploadQueue.flush();
+}
+
 async function handleRecordStopWithConfirmation() {
   const activeSessionId = currentSessionId;
   const allSessionIds = [...recordingSessionIds];
@@ -2473,52 +2527,37 @@ async function handleRecordStopWithConfirmation() {
 
   const decision = await openTraceConfirmModal(previewCoords, osmPreview);
   if (decision && decision.action === "ok") {
-    const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
-    const persistResult = await persistCurrentSessionWithoutConfirmation(osmPreview);
-    if (!persistResult.success) {
-      await cancelRecordingSessions(allSessionIds);
+    if (!recordUploadQueue || !activeSessionId) {
+      alert("端末内の送信待ちキューを利用できないため、記録を確定できませんでした。");
       return;
     }
-    if (isCurrentUserPro) {
-      try {
-        await saveSessionMemo(allSessionIds, memo);
-      } catch (err) {
-        console.error("[Record] save session memo error:", err);
-        alert(getTraceConfirmText().memoSaveFailed);
-      }
+    const payload = {
+      id: `record:${activeSessionId}`,
+      sessionId: activeSessionId,
+      sessionIds: allSessionIds,
+      startedAt: currentSessionStartedAt || new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      rawPoints: allTracePoints.map((point) => ({ lat: point.lat, lng: point.lng, accuracy: point.accuracy == null ? null : point.accuracy })),
+      osmPreview,
+      isPro: Boolean(isCurrentUserPro),
+      memo: traceMemoInputEl ? traceMemoInputEl.value : "",
+      tagIds: Array.from(selectedTraceTagIds),
+    };
+    try {
+      await recordUploadQueue.enqueue(payload);
+    } catch (error) {
+      console.error("[RecordQueue] enqueue failed", error);
+      alert("端末に記録を保管できませんでした。空き容量を確認して、もう一度確定してください。");
+      if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
+      return;
     }
-    if (isCurrentUserPro) {
-      try {
-        await saveSessionTags(allSessionIds);
-      } catch (err) {
-        console.error("[Record] save session tags error:", err);
-        // セッション本体は保存済みなので、タグ保存失敗時は記録自体を取り消さない。
-        alert("タグの保存に失敗しました。タグなしで記録は保存されています。");
-      }
-    }
-    if (osmPreview && activeSessionId) {
-      try {
-        const draft = await saveOsmSplitDraft(osmPreview, activeSessionId);
-        const split = draft.splitPlan && draft.splitPlan.summary;
-        const detail = split
-          ? `新Node ${split.createdNodes}件・新Way ${split.createdWays}件・変更Way ${split.modifiedWays}件`
-          : "Way分割案を生成";
-        console.log(`[OSM draft] ${detail}; plan=${draft.planId}; OSM未送信`);
-      } catch (error) {
+    displayTraceLine(previewCoords);
+    if (!decision.osmConnectionState.connected && decision.osmConnectionState.configured) {
+      startMapOsmConnection(decision.oauthPopup).catch((error) => {
         if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
-        console.error("[OSM draft] automatic save failed", error);
-        alert(`記録は保存されましたが、OSM変更案を保存できませんでした：${error.message}\nOSMへの送信は行われていません。`);
-        return;
-      }
-      if (!decision.osmConnectionState.connected && decision.osmConnectionState.configured) {
-        try {
-          await startMapOsmConnection(decision.oauthPopup);
-        } catch (error) {
-          if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
-          console.error("[OSM OAuth] automatic connection failed", error);
-          alert("記録とOSM変更案は保存されました。OSMアカウント連携を開始できなかったため、プロフィール画面から再試行できます。");
-        }
-      }
+        console.error("[OSM OAuth] automatic connection failed", error);
+        showMapToast("記録は端末に保存しました。OSM連携はプロフィールから再試行できます。", 4200);
+      });
     }
     return;
   }
@@ -2776,6 +2815,12 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
+  if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
+    lastNetworkPrefetchAt = Date.now();
+    browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
+      console.warn("[BrowserMatcher] moving network prefetch deferred:", error && error.message ? error.message : error);
+    });
+  }
 }
 
 function pollAndSendLocation() {
@@ -3335,6 +3380,7 @@ function loadConfig() {
 
 initTraceTagUiEvents();
 initSafetyConfirmModal();
+initRecordUploadQueue();
 
 if ("geolocation" in navigator) {
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
@@ -3574,7 +3620,23 @@ if ("geolocation" in navigator) {
   }
 }
 
-// ===== 道情報投稿完了トーストの表示 =====
+// ===== 共通トーストと道情報投稿完了通知 =====
+let mapToastTimer = null;
+function showMapToast(message, durationMs = 2800) {
+  const toastEl = document.getElementById("map-toast");
+  if (!toastEl) return;
+  const textEl = toastEl.querySelector(".map-toast-text");
+  if (textEl) textEl.textContent = String(message || "");
+  if (mapToastTimer) clearTimeout(mapToastTimer);
+  toastEl.classList.remove("hidden");
+  requestAnimationFrame(() => toastEl.classList.add("visible"));
+  mapToastTimer = setTimeout(() => {
+    toastEl.classList.remove("visible");
+    setTimeout(() => toastEl.classList.add("hidden"), 300);
+    mapToastTimer = null;
+  }, durationMs);
+}
+
 // post_road からの遷移直後にトーストを表示する。
 // post_road 側で投稿リクエストを keepalive で送信し、sessionStorage にフラグを置く設計。
 // 戻るで遷移したときはbfcacheから復元されるためIIFEは再実行されない。pageshow（persistedありなし両方）で毎回チェックする。
@@ -3583,26 +3645,20 @@ function showRoadInfoPostToastIfNeeded() {
   try { flag = sessionStorage.getItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   if (!flag) return;
   try { sessionStorage.removeItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
-  const toastEl = document.getElementById("map-toast");
-  if (!toastEl) return;
   const lang = getCurrentLanguage();
   const messages = {
-    ja: "道情報の投稿が完了しました！",
-    en: "Road info posted!",
-    hi: "सड़क जानकारी पोस्ट हो गई!",
+    ja: "道情報を受け付けました。保存処理は裏で続けています。",
+    en: "Road information queued. Saving continues in the background.",
+    hi: "सड़क की जानकारी कतार में है। सहेजना पृष्ठभूमि में जारी है।",
   };
-  const text = messages[lang] || messages.ja;
-  const textEl = toastEl.querySelector(".map-toast-text");
-  if (textEl) textEl.textContent = text;
-  toastEl.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    toastEl.classList.add("visible");
-  });
-  setTimeout(() => {
-    toastEl.classList.remove("visible");
-    setTimeout(() => { toastEl.classList.add("hidden"); }, 300);
-  }, 2800);
+  showMapToast(messages[lang] || messages.ja);
 }
+
+window.addEventListener("stepby:road-info-queue", (event) => {
+  const status = event && event.detail && event.detail.status;
+  if (status === "completed") showMapToast("道情報の保存が完了しました。", 3000);
+  if (status === "retry") showMapToast("道情報は端末に保管中です。通信回復後に自動で再送します。", 4200);
+});
 
 // 初回ロードと bfcache 復元の両方で動くよう、pageshow と DOMContentLoaded 両方にフックする。
 showRoadInfoPostToastIfNeeded();
