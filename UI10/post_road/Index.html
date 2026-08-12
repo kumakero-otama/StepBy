@@ -1054,7 +1054,7 @@
               } catch (e) {}
 
               if (activeSw) {
-                const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://barrierfree-map.tail5de5e1.ts.net:10000";
+                const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://stepby-api-8-229-191-182.sslip.io";
                 const fullUrl = apiBase.replace(/\/+$/, "") + "/api/road-info";
                 const accessToken = (window.AuthToken && typeof window.AuthToken.getAccessToken === "function")
                   ? window.AuthToken.getAccessToken()
