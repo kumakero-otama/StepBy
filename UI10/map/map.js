@@ -3133,7 +3133,12 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
   // クラウドIPがOverpassの混雑制限を受ける場合に備え、APIプロキシと端末からの
   // 読取専用リクエストを並行し、最初に成功した結果を採用する。
-  const hosts = ["https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
+  const hosts = [
+    "https://ethiopia.overpass.openplaceguide.org/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+  ];
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
   const attempts = [
     (async () => {
