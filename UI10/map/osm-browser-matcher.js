@@ -237,8 +237,8 @@
       String(tags.footway || "").toLowerCase() === "sidewalk";
   }
 
-  function inferWaySide(route, way) {
-    if (isIndependentWalkway(way)) return null;
+  function inferWaySideDetail(route, way) {
+    if (isIndependentWalkway(way)) return { side: null, confidence: 1, method: "independent_walkway", sampleCount: 0 };
     const offsets = [];
     (route.rawPoints || []).forEach((point) => {
       let nearest = null;
@@ -250,14 +250,35 @@
           nearest = { distance: projection.distance, offset: signedOffsetMeters(point, start, end) };
         }
       }
-      if (nearest && nearest.distance <= 30 && Math.abs(nearest.offset) >= 0.75) offsets.push(nearest.offset);
+      if (nearest && nearest.distance <= 30 && Number.isFinite(nearest.offset)) {
+        const accuracy = Number.isFinite(Number(point.accuracy)) ? Math.max(1, Number(point.accuracy)) : 10;
+        offsets.push({ value: nearest.offset, weight: 1 / (accuracy + Math.max(0, nearest.distance) + 1) });
+      }
     });
-    if (!offsets.length) return null;
-    const leftVotes = offsets.filter((offset) => offset > 0).length;
-    const rightVotes = offsets.length - leftVotes;
-    const agreement = Math.max(leftVotes, rightVotes) / offsets.length;
-    if (agreement < 0.6) return null;
-    return leftVotes > rightVotes ? "left" : "right";
+    // rawがWayから遠すぎる場合は、同じWayへマッチした点に保存済みの符号付き距離を使う。
+    if (!offsets.length) {
+      (route.matches || []).filter((match) => match.wayId === way.id && Number.isFinite(match.signedOffsetMeters))
+        .forEach((match) => offsets.push({ value: match.signedOffsetMeters, weight: 1 / (Math.max(0, Number(match.distance) || 0) + 1) }));
+    }
+    if (!offsets.length) return { side: "left", confidence: 0, method: "deterministic_fallback", sampleCount: 0 };
+    const weighted = offsets.reduce((sum, item) => sum + item.value * item.weight, 0);
+    const totalWeight = offsets.reduce((sum, item) => sum + item.weight, 0) || 1;
+    const weightedMean = weighted / totalWeight;
+    const strongest = offsets.slice().sort((a, b) => Math.abs(b.value) - Math.abs(a.value))[0];
+    const signedDecision = Math.abs(weightedMean) >= 0.05 ? weightedMean : strongest.value;
+    const agreeingWeight = offsets.filter((item) => signedDecision >= 0 ? item.value >= 0 : item.value < 0)
+      .reduce((sum, item) => sum + item.weight, 0);
+    return {
+      side: signedDecision >= 0 ? "left" : "right",
+      confidence: Math.max(0, Math.min(1, agreeingWeight / totalWeight)),
+      method: Math.abs(weightedMean) >= 0.05 ? "accuracy_weighted_offset" : "strongest_offset_tiebreak",
+      sampleCount: offsets.length,
+      weightedOffsetMeters: weightedMean,
+    };
+  }
+
+  function inferWaySide(route, way) {
+    return inferWaySideDetail(route, way).side;
   }
 
   function buildOsmChangePreview(route) {
@@ -276,7 +297,8 @@
       const to = index === route.ways.length - 1
         ? { kind: "projection", segmentIndex: route.end.segmentIndex, fraction: route.end.fraction, coordinate: projectedCoordinate(route.end) }
         : { kind: "node", index: connectors[index].leftIndex };
-      const side = inferWaySide(route, way);
+      const sideDetail = inferWaySideDetail(route, way);
+      const side = sideDetail.side;
       return {
         wayId: way.id,
         wayVersion: way.version,
@@ -285,6 +307,8 @@
         fullCoordinates: way.coordinates || [],
         relations: way.relations || [],
         side,
+        sideConfidence: sideDetail.confidence,
+        sideInferenceMethod: sideDetail.method,
         tagStrategy: isIndependentWalkway(way)
           ? "tactile_paving=yes"
           : side ? `sidewalk:${side}:tactile_paving=yes` : "左右判定不可",
@@ -436,6 +460,7 @@
     distanceMeters,
     signedOffsetMeters,
     inferWaySide,
+    inferWaySideDetail,
     isIndependentWalkway,
     buildWayGraph,
     mergeWays,

@@ -2212,7 +2212,7 @@ function isIndependentOsmWalkway(segment) {
 function updateOsmPreviewTagStrategy(segment) {
   segment.tagStrategy = isIndependentOsmWalkway(segment)
     ? "tactile_paving=yes"
-    : segment.side ? `sidewalk:${segment.side}:tactile_paving=yes` : "左右を選択してください";
+    : `sidewalk:${segment.side}:tactile_paving=yes`;
 }
 
 function renderOsmPreviewTagStrategies(osmPreview) {
@@ -2225,36 +2225,16 @@ function renderOsmPreviewTagStrategies(osmPreview) {
     const label = document.createElement("span");
     label.textContent = `Way ${segment.wayId}：`;
     row.appendChild(label);
-    if (isIndependentOsmWalkway(segment)) {
-      const code = document.createElement("code");
-      code.textContent = segment.tagStrategy;
-      row.appendChild(code);
-    } else {
-      const select = document.createElement("select");
-      select.setAttribute("aria-label", `Way ${segment.wayId} の歩道位置`);
-      [["", "左右を選択"], ["left", "道路の左側"], ["right", "道路の右側"]].forEach(([value, text]) => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = text;
-        option.selected = segment.side === value;
-        select.appendChild(option);
-      });
-      const code = document.createElement("code");
-      code.textContent = segment.tagStrategy;
-      select.addEventListener("change", () => {
-        segment.side = select.value || null;
-        updateOsmPreviewTagStrategy(segment);
-        code.textContent = segment.tagStrategy;
-      });
-      row.appendChild(select);
-      row.appendChild(code);
+    const code = document.createElement("code");
+    code.textContent = segment.tagStrategy;
+    row.appendChild(code);
+    if (!isIndependentOsmWalkway(segment)) {
+      const confidence = document.createElement("small");
+      confidence.textContent = `（アプリ自動判定・信頼度 ${Math.round(Number(segment.sideConfidence || 0) * 100)}%）`;
+      row.appendChild(confidence);
     }
     osmPreviewTagStrategiesEl.appendChild(row);
   });
-}
-
-function osmPreviewHasRequiredSides(osmPreview) {
-  return !osmPreview || osmPreview.segments.every((segment) => isIndependentOsmWalkway(segment) || ["left", "right"].includes(segment.side));
 }
 
 async function loadMapOsmConnectionState() {
@@ -2377,10 +2357,6 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       const onOk = () => {
         if (isCurrentUserPro && selectedTraceTagIds.size === 0) {
           setTraceTagError(getTraceTagText().requiredForPro);
-          return;
-        }
-        if (!osmPreviewHasRequiredSides(osmPreview)) {
-          setTraceTagError("道路中心線Wayについて、点字ブロックが道路の左側・右側のどちらにあるかを選択してください。");
           return;
         }
         setTraceTagError("");
