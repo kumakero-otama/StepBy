@@ -66,7 +66,10 @@ const browserOsmMatcher = window.StepByOsmMatcher
 let recordUploadQueue = null;
 let lastNetworkPrefetchAt = 0;
 let lastMapDataDownloadCenter = null;
+let lastOsmDisplayDownloadCenter = null;
 const MAP_DATA_REFRESH_DISTANCE_METERS = 650;
+const OSM_DISPLAY_RADIUS_KM = 10;
+const OSM_DISPLAY_REFRESH_DISTANCE_METERS = 8000;
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -1105,7 +1108,6 @@ function buildMapReturnCachePayload() {
       : null,
     zoom: Number.isFinite(zoom) ? zoom : null,
     visibleSessionPaths: cloneSerializable(cachedVisibleSessionPaths) || [],
-    osmFeatures: cloneSerializable(cachedOsmFeatures) || [],
     visibleRoadInfoPoints: cloneSerializable(cachedVisibleRoadInfoPoints) || [],
   };
   return payload;
@@ -1166,18 +1168,14 @@ function restoreMapReturnCache() {
     cachedVisibleSessionPaths = Array.isArray(cached.visibleSessionPaths)
       ? cloneSerializable(cached.visibleSessionPaths) || []
       : [];
-    cachedOsmFeatures = Array.isArray(cached.osmFeatures)
-      ? cloneSerializable(cached.osmFeatures) || []
-      : [];
+    // 表示専用OSM点字ブロックはブラウザストレージへ保存せず、画面ごとに読み直す。
+    cachedOsmFeatures = [];
     cachedVisibleRoadInfoPoints = Array.isArray(cached.visibleRoadInfoPoints)
       ? cloneSerializable(cached.visibleRoadInfoPoints) || []
       : [];
 
     if (shouldShowAppTactile() && cachedVisibleSessionPaths.length > 0) {
       showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
-    }
-    if (shouldShowOsmTactile() && cachedOsmFeatures.length > 0) {
-      showOsmTactileWaysOnMap(cachedOsmFeatures);
     }
     if (shouldShowRoadInfo() && cachedVisibleRoadInfoPoints.length > 0) {
       showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
@@ -2835,8 +2833,15 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   if (movedFromMapDataCenter) {
     lastMapDataDownloadCenter = currentPoint;
     if (shouldShowAppTactile()) loadAndShowAllRecords(currentPoint);
-    if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(currentPoint);
     if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints(currentPoint);
+  }
+  const movedFromOsmDisplayCenter = !lastOsmDisplayDownloadCenter || (
+    window.StepByOsmMatcher &&
+    window.StepByOsmMatcher.distanceMeters(lastOsmDisplayDownloadCenter, currentPoint) >= OSM_DISPLAY_REFRESH_DISTANCE_METERS
+  );
+  if (movedFromOsmDisplayCenter && shouldShowOsmTactile()) {
+    lastOsmDisplayDownloadCenter = currentPoint;
+    loadAndShowOsmTactileWays(currentPoint);
   }
 }
 
@@ -2987,7 +2992,7 @@ function loadAndShowAllRecords(centerOverride = null) {
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "1",
+    radiusKm: String(OSM_DISPLAY_RADIUS_KM),
   });
   if (shouldShowOnlyMyTactile()) {
     params.set("mine", "1");
