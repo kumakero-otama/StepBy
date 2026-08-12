@@ -1900,7 +1900,12 @@ function normalizeTactileTags(rawTags) {
       if (!id || !code || !label) {
         return null;
       }
-      return { id, code, label };
+      return {
+        id, code, label,
+        osmExportable: Boolean(tag.osmExportable ?? tag.osm_exportable),
+        displayColor: String(tag.displayColor ?? tag.display_color ?? "red"),
+        systemDefined: Boolean(tag.systemDefined ?? tag.system_defined),
+      };
     })
     .filter(Boolean);
 }
@@ -1941,6 +1946,17 @@ async function loadCurrentUserProStatus() {
   } catch {
     isCurrentUserPro = false;
   }
+  document.documentElement.classList.toggle("is-pro-mode", isCurrentUserPro);
+  const badge = document.getElementById("map-pro-badge");
+  if (badge) badge.hidden = !isCurrentUserPro;
+}
+
+function getSelectedTraceTags() {
+  return traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
+}
+
+function isCurrentRecordingOsmEligible() {
+  return !isCurrentUserPro || getSelectedTraceTags().some((tag) => tag.osmExportable);
 }
 
 function setTraceTagError(message) {
@@ -1986,7 +2002,7 @@ function renderTraceTagList() {
     return;
   }
   traceTagListEl.innerHTML = visibleTags
-    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)}</button>`)
+    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)} <small>${tag.osmExportable ? "OSM対象" : "StepByのみ"}</small></button>`)
     .join("");
 }
 
@@ -2360,9 +2376,10 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
           return;
         }
         setTraceTagError("");
-        const oauthPopup = osmPreview && shouldOpenOsmConnection(osmConnectionState)
+        const osmEligible = isCurrentRecordingOsmEligible();
+        const oauthPopup = osmPreview && osmEligible && shouldOpenOsmConnection(osmConnectionState)
           ? preopenOsmConnectionPopup() : null;
-        cleanupAndResolve({ action: "ok", osmConnectionState, oauthPopup });
+        cleanupAndResolve({ action: "ok", osmConnectionState, oauthPopup, osmEligible });
       };
       const onCancel = () => cleanupAndResolve({ action: "cancel" });
 
@@ -2437,7 +2454,11 @@ async function processQueuedRecording(payload, context) {
     await runStage("memo_saved", () => saveSessionMemo(payload.sessionIds, payload.memo || ""));
     await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
   }
-  await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+  if (payload.osmEligible) {
+    await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+  } else {
+    await runStage("osm_draft_skipped_stepby_only", async () => {});
+  }
 }
 
 function initRecordUploadQueue() {
@@ -2524,6 +2545,7 @@ async function handleRecordStopWithConfirmation() {
       isPro: Boolean(isCurrentUserPro),
       memo: traceMemoInputEl ? traceMemoInputEl.value : "",
       tagIds: Array.from(selectedTraceTagIds),
+      osmEligible: Boolean(decision.osmEligible),
     };
     try {
       await recordUploadQueue.enqueue(payload);
@@ -2534,7 +2556,7 @@ async function handleRecordStopWithConfirmation() {
       return;
     }
     displayTraceLine(previewCoords);
-    if (shouldOpenOsmConnection(decision.osmConnectionState)) {
+    if (decision.osmEligible && shouldOpenOsmConnection(decision.osmConnectionState)) {
       startMapOsmConnection(decision.oauthPopup).catch((error) => {
         if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
         console.error("[OSM OAuth] automatic connection failed", error);
@@ -3019,14 +3041,15 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       return;
     }
 
+    const recordColor = path.record_class === "pro_private" ? "#d92d20" : "#00b050";
     const polyline = L.polyline(coordinates, {
-      color: "#00b050",
+      color: recordColor,
       weight: 4,
       opacity: 0.85,
       interactive: false,
     }).addTo(map);
     const hitPolyline = L.polyline(coordinates, {
-      color: "#00b050",
+      color: recordColor,
       weight: 12,
       opacity: 0,
       bubblingMouseEvents: false,
@@ -3154,8 +3177,9 @@ function showOsmTactileWaysOnMap(features) {
         return;
       }
 
+      const osmColor = feature.properties && feature.properties.stepby_recorded ? "#00b050" : "#0066ff";
       const polyline = L.polyline(coordinates, {
-        color: "#0066ff",
+        color: osmColor,
         weight: 4,
         opacity: 0.9,
       }).addTo(map);
@@ -3171,10 +3195,11 @@ function showOsmTactileWaysOnMap(features) {
         return;
       }
 
+      const osmColor = feature.properties && feature.properties.stepby_recorded ? "#00b050" : "#0066ff";
       const point = L.circleMarker([lat, lng], {
         radius: 4,
-        color: "#0066ff",
-        fillColor: "#0066ff",
+        color: osmColor,
+        fillColor: osmColor,
         fillOpacity: 0.95,
         weight: 1,
       }).addTo(map);

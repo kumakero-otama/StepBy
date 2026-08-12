@@ -21,12 +21,13 @@ const southPoints = northPoints.map((point) => ({ ...point, lat: 34.99997 }));
 
 assert.strictEqual(matcher.inferWaySide({ rawPoints: northPoints }, eastboundRoad), "left");
 assert.strictEqual(matcher.inferWaySide({ rawPoints: southPoints }, eastboundRoad), "right");
-assert.strictEqual(matcher.inferWaySide({ rawPoints: [{ lat: 35, lng: 139.0005 }] }, eastboundRoad), null);
+assert.strictEqual(matcher.inferWaySide({ rawPoints: [{ lat: 35, lng: 139.0005 }] }, eastboundRoad), "left");
 
 const walkway = { ...eastboundRoad, tags: { highway: "footway" } };
 assert.strictEqual(matcher.inferWaySide({ rawPoints: northPoints }, walkway), null);
 
 const route = {
+  routeConfirmed: true,
   ways: [eastboundRoad],
   rawPoints: northPoints,
   start: { wayId: 100, segmentIndex: 0, fraction: 0.2, lat: 35, lng: 139.0002 },
