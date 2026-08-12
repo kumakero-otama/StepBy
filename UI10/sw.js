@@ -17,6 +17,7 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/map/map.css`,
   `${APP_BASE_PATH}/map/map.js`,
   `${APP_BASE_PATH}/map/osm-browser-matcher.js`,
+  `${APP_BASE_PATH}/map/record-flow-policy.js`,
   `${APP_BASE_PATH}/map/async-record-queue.js`,
   `${APP_BASE_PATH}/road-info-queue.js`,
   `${APP_BASE_PATH}/manifest.webmanifest`,
