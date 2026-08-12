@@ -1,7 +1,7 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
 const CACHE_VERSION = "1.27.4-osm-read-fallback";
 const APP_BASE_PATH = "/StepBy/UI10";
-const API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net/dev-api";
+const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;
 // 画像（プロフィール画像など）はバージョンが変わっても保持し続けるための専用キャッシュ。
 // CACHE_NAMEと違いタイムスタンプを含めず、activateハンドラの古いキャッシュ削除フィルタにも引っかからない名前にする。
