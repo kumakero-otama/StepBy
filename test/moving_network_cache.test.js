@@ -10,15 +10,19 @@ require("../UI10/map/osm-browser-matcher.js");
     { success: true, ways: [{ id: 10, version: 1, nodes: [1, 2], coordinates: [[0, 0], [0.001, 0]], tags: {}, priority: "pedestrian" }] },
     { success: true, ways: [{ id: 11, version: 1, nodes: [2, 3], coordinates: [[0.001, 0], [0.007, 0]], tags: {}, priority: "pedestrian" }] },
   ];
+  const requestedUrls = [];
   const matcher = new StepByOsmMatcher.BrowserMatcher({
     radiusMeters: 1000,
-    fetcher: async () => ({ ok: true, json: async () => responses[requests++] }),
+    fetcher: async (url) => { requestedUrls.push(url); return { ok: true, json: async () => responses[requests++] }; },
   });
   await matcher.prefetchForLocation(0, 0);
-  await matcher.prefetchForLocation(0, 0.007);
+  await matcher.prefetchForLocation(0, 0.005);
+  assert.strictEqual(requests, 1, "moving less than 650m must reuse the current region");
+  await matcher.prefetchForLocation(0, 0.006);
   assert.strictEqual(requests, 2, "moving outside coverage must fetch another region");
+  assert(requestedUrls.every((url) => new URL(url, "https://example.test").searchParams.get("radiusMeters") === "1000"));
   assert.deepStrictEqual(matcher.network.map((way) => way.id).sort(), [10, 11], "old and new regions must be merged");
-  await matcher.prefetchForLocation(0, 0.0071);
+  await matcher.prefetchForLocation(0, 0.0061);
   assert.strictEqual(requests, 2, "nearby location must reuse fetched region");
   const route = StepByOsmMatcher.finalizeTrace([
     { lat: 0, lng: 0.0002, accuracy: 5 },

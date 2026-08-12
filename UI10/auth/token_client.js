@@ -189,6 +189,9 @@
     if (/\/api\/(config|pro-status)/.test(path)) {
       return 15000;
     }
+    if (/\/auth\/profile/.test(path)) {
+      return 30000;
+    }
     if (/\/auth\//.test(path)) {
       return 12000;
     }
