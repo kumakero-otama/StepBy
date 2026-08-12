@@ -183,7 +183,10 @@
       return explicitTimeoutMs;
     }
     const path = typeof target === "string" ? target : "";
-    if (/\/api\/(match|trace|osm-tactile-ways)/.test(path)) {
+    if (/\/api\/osm-tactile-ways/.test(path)) {
+      return 40000;
+    }
+    if (/\/api\/(match|trace)/.test(path)) {
       return 25000;
     }
     if (/\/api\/(config|pro-status)/.test(path)) {
