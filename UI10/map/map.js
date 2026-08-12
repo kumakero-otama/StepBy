@@ -65,6 +65,8 @@ const browserOsmMatcher = window.StepByOsmMatcher
   : null;
 let recordUploadQueue = null;
 let lastNetworkPrefetchAt = 0;
+let lastMapDataDownloadCenter = null;
+const MAP_DATA_REFRESH_DISTANCE_METERS = 650;
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -2825,6 +2827,17 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
       console.warn("[BrowserMatcher] moving network prefetch deferred:", error && error.message ? error.message : error);
     });
   }
+  const currentPoint = { lat: latitude, lng: longitude };
+  const movedFromMapDataCenter = !lastMapDataDownloadCenter || (
+    window.StepByOsmMatcher &&
+    window.StepByOsmMatcher.distanceMeters(lastMapDataDownloadCenter, currentPoint) >= MAP_DATA_REFRESH_DISTANCE_METERS
+  );
+  if (movedFromMapDataCenter) {
+    lastMapDataDownloadCenter = currentPoint;
+    if (shouldShowAppTactile()) loadAndShowAllRecords(currentPoint);
+    if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(currentPoint);
+    if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints(currentPoint);
+  }
 }
 
 function pollAndSendLocation() {
@@ -2965,16 +2978,16 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
 
 // session_pathsを取得して表示
 // 地図上に重ねる各種データレイヤーの取得と再描画を担当する。
-function loadAndShowAllRecords() {
+function loadAndShowAllRecords(centerOverride = null) {
   refreshMapDisplaySettings();
   const requestSeq = ++recordsLoadRequestSeq;
   setRecordsLoadingVisible(true);
   console.log("[loadAndShowAllRecords] Fetching all session paths...");
-  const center = map.getCenter();
+  const center = centerOverride || map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "10",
+    radiusKm: "1",
   });
   if (shouldShowOnlyMyTactile()) {
     params.set("mine", "1");
@@ -3113,16 +3126,16 @@ function setRecordsLoadingVisible(visible) {
   recordsLoadingOverlayEl.classList.add("hidden");
 }
 
-function loadAndShowOsmTactileWays() {
+function loadAndShowOsmTactileWays(centerOverride = null) {
   // トグルONの最新リクエストだけを有効にするための採番。
   const requestSeq = ++osmTactileLoadRequestSeq;
   setOsmLoadingVisible(true);
   console.log("[loadAndShowOsmTactileWays] Fetching tactile ways from OSM...");
-  const center = map.getCenter();
+  const center = centerOverride || map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "10",
+    radiusKm: "1",
   });
   authFetch(`/api/osm-tactile-ways?${params.toString()}`)
     .then((res) => {
@@ -3230,16 +3243,16 @@ function setOsmLoadingVisible(visible) {
   osmLoadingOverlayEl.classList.add("hidden");
 }
 
-function loadAndShowRoadInfoPoints() {
+function loadAndShowRoadInfoPoints(centerOverride = null) {
   refreshMapDisplaySettings();
   const requestSeq = ++roadInfoLoadRequestSeq;
-  // 地図中心から10kmの道情報ポイントを取得する。
+  // 地図中心から1kmの道情報ポイントを取得する。
   console.log("[loadAndShowRoadInfoPoints] Fetching road info points...");
-  const center = map.getCenter();
+  const center = centerOverride || map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "10",
+    radiusKm: "1",
   });
   if (shouldShowOnlyMyRoadInfo()) {
     params.set("mine", "1");
