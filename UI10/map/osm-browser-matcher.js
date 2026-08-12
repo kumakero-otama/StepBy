@@ -445,6 +445,26 @@
       return result;
     }
 
+    async ensureTraceCoverage(points, spacingMeters = 450) {
+      await this.ready;
+      const validPoints = (Array.isArray(points) ? points : [])
+        .map((point) => ({ lat: Number(point && point.lat), lng: Number(point && point.lng) }))
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+      if (validPoints.length === 0) return this.network;
+      const coveragePoints = [validPoints[0]];
+      let lastCoveragePoint = validPoints[0];
+      for (let index = 1; index < validPoints.length - 1; index += 1) {
+        if (distanceMeters(lastCoveragePoint, validPoints[index]) >= spacingMeters) {
+          coveragePoints.push(validPoints[index]);
+          lastCoveragePoint = validPoints[index];
+        }
+      }
+      const finalPoint = validPoints[validPoints.length - 1];
+      if (distanceMeters(coveragePoints[coveragePoints.length - 1], finalPoint) > 1) coveragePoints.push(finalPoint);
+      for (const point of coveragePoints) await this.ensureNetwork(point.lat, point.lng);
+      return this.network;
+    }
+
     prefetchForLocation(lat, lng) {
       const point = { lat, lng };
       return this.ready.then(() => {

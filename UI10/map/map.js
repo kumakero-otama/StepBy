@@ -2483,12 +2483,11 @@ async function handleRecordStopWithConfirmation() {
 
   let osmPreview = null;
   if (browserOsmMatcher) {
-    const lastTracePoint = allTracePoints[allTracePoints.length - 1];
     try {
-      // 移動直後に保存されても、最新位置を含む道路網の取得完了を待ってから経路を確定する。
-      await browserOsmMatcher.ensureNetwork(lastTracePoint.lat, lastTracePoint.lng);
+      // 軌跡の開始・途中・終了をすべて道路網で覆ってから経路を確定する。
+      await browserOsmMatcher.ensureTraceCoverage(allTracePoints);
     } catch (error) {
-      console.warn("[BrowserMatcher] final network refresh failed; cached network will be used", error);
+      console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
     }
     const browserRoute = browserOsmMatcher.finalize(allTracePoints);
     if (browserRoute) {
@@ -3134,7 +3133,6 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   // クラウドIPがOverpassの混雑制限を受ける場合に備え、APIプロキシと端末からの
   // 読取専用リクエストを並行し、最初に成功した結果を採用する。
   const hosts = [
-    "https://ethiopia.overpass.openplaceguide.org/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
     "https://overpass-api.de/api/interpreter",
@@ -3161,7 +3159,18 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
     }),
   ];
   try {
-    return await Promise.any(attempts);
+    const nonEmptyAttempts = attempts.map((attempt) => attempt.then((result) => {
+      if (!result || !Array.isArray(result.features) || result.features.length === 0) throw new Error("empty_osm_tactile_result");
+      return result;
+    }));
+    try {
+      return await Promise.any(nonEmptyAttempts);
+    } catch {
+      const settled = await Promise.allSettled(attempts);
+      const emptySuccess = settled.find((result) => result.status === "fulfilled" && result.value && Array.isArray(result.value.features));
+      if (emptySuccess) return emptySuccess.value;
+      throw new Error("all_osm_tactile_reads_failed");
+    }
   } catch (error) {
     console.warn("[OSM tactile display] all read endpoints failed", error && error.message);
     throw new Error("all_overpass_hosts_failed");
