@@ -393,8 +393,9 @@
     async restoreCachedRegions() {
       const now = Date.now();
       const cached = await readCaches().catch(() => []);
-      this.regions = cached.filter((region) => region && region.center && Array.isArray(region.ways) &&
-        now - Number(region.savedAt || 0) <= CACHE_MAX_AGE_MS);
+      // 古いキャッシュも非常時の読取専用フォールバックとして残す。
+      // hasFreshCoverageでは期限内だけを通常利用するため、更新取得は従来どおり行われる。
+      this.regions = cached.filter((region) => region && region.center && Array.isArray(region.ways));
       this.network = mergeWays(this.regions);
       return this.network;
     }
@@ -411,6 +412,7 @@
       if (!options.force && this.hasFreshCoverage(point)) return this.network;
       if (this.loading) return this.loading;
       const params = new URLSearchParams({ centerLat: String(lat), centerLng: String(lng), radiusMeters: String(this.radiusMeters) });
+      const previousNetwork = this.network;
       this.loading = this.fetcher(`/api/osm-walkable-network?${params}`)
         .then((response) => {
           if (!response.ok) throw new Error(`osm network failed with status ${response.status}`);
@@ -427,6 +429,10 @@
           this.network = mergeWays(this.regions);
           await writeCache(region).catch(() => {});
           return this.network;
+        })
+        .catch((error) => {
+          if (Array.isArray(previousNetwork) && previousNetwork.length > 0) return previousNetwork;
+          throw error;
         })
         .finally(() => { this.loading = null; });
       return this.loading;

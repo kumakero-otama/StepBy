@@ -1156,10 +1156,9 @@ function restoreMapReturnCache() {
 
   // 地図位置とズームは地図情報表示の状態に関わらず常に復元し、
   // 他画面から戻ったときに表示位置がリセットされないようにする。
-  if (cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
+  if (!isCenterCurrentEnabled() && cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
     const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
     map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
-    // 復帰時の保存位置を表示したので、ユーザーが地図に触れるまで自動中央追従を止める。
     suppressAutoCenterAfterReturn = true;
   }
 
@@ -1237,26 +1236,10 @@ function applyCachedLocation(cached) {
     marker.setLatLng([cached.lat, cached.lng]);
   }
   if (isCenterCurrentEnabled()) {
-    // 直近のセッション内に保存された地図表示位置（mapReturnCache）があれば、
-    // 現在地ではなくそちらに即座にsetViewして、復帰時に一瞬現在地中央が見えるチラつきを防ぐ。
-    // mapReturnCacheが無い／期限切れの場合は従来どおり現在地（last known）を中央に表示する。
-    const returnCache = loadMapReturnCache();
-    if (
-      returnCache
-      && returnCache.center
-      && Number.isFinite(returnCache.center.lat)
-      && Number.isFinite(returnCache.center.lng)
-    ) {
-      const nextZoom = Number.isFinite(Number(returnCache.zoom))
-        ? Number(returnCache.zoom)
-        : map.getZoom();
-      map.setView([returnCache.center.lat, returnCache.center.lng], nextZoom, { animate: false });
-      // 復帰時の保存位置を表示したので、ユーザーが地図に触れるまで自動中央追従を止める。
-      suppressAutoCenterAfterReturn = true;
-    } else {
-      const currentZoom = map.getZoom();
-      map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
-    }
+    // 追従ONでは保存済みの地図中心より現在地を必ず優先する。
+    suppressAutoCenterAfterReturn = false;
+    const currentZoom = map.getZoom();
+    map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
   }
   return true;
 }
@@ -2500,6 +2483,13 @@ async function handleRecordStopWithConfirmation() {
 
   let osmPreview = null;
   if (browserOsmMatcher) {
+    const lastTracePoint = allTracePoints[allTracePoints.length - 1];
+    try {
+      // 移動直後に保存されても、最新位置を含む道路網の取得完了を待ってから経路を確定する。
+      await browserOsmMatcher.ensureNetwork(lastTracePoint.lat, lastTracePoint.lng);
+    } catch (error) {
+      console.warn("[BrowserMatcher] final network refresh failed; cached network will be used", error);
+    }
     const browserRoute = browserOsmMatcher.finalize(allTracePoints);
     if (browserRoute) {
       osmPreview = window.StepByOsmMatcher.buildOsmChangePreview(browserRoute);
@@ -3086,12 +3076,6 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
     radiusKm: "1",
   });
   fetchOsmTactileDisplay(center.lat, center.lng, OSM_DISPLAY_RADIUS_KM)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(`osm tactile fetch failed: ${res.status}`);
-      }
-      return res.json();
-    })
     .then((data) => {
       if (requestSeq !== osmTactileLoadRequestSeq || !shouldShowOsmTactile()) {
         return;
@@ -3147,7 +3131,16 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
     .map((value) => value.toFixed(7)).join(",");
   const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
-  const hosts = ["https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
+  // まず同一オリジンの開発APIを使い、CORSや端末ネットワーク差の影響を避ける。
+  // API側にも複数Overpassホストのフォールバックがある。
+  try {
+    const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
+    const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(95000) });
+    if (apiResponse.ok) return apiResponse.json();
+  } catch (error) {
+    console.warn("[OSM tactile display] API proxy failed; trying direct endpoints", error && error.message);
+  }
+  const hosts = ["https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
   let lastError = null;
   for (const endpoint of hosts) {
     try {
