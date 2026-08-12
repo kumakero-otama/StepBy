@@ -1,5 +1,5 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.23.3-whole-route-smoothing";
+const CACHE_VERSION = "1.24.0-moving-cache-background-queue";
 const APP_BASE_PATH = "/StepBy/UI10";
 const API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net/dev-api";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;
@@ -17,6 +17,8 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/map/map.css`,
   `${APP_BASE_PATH}/map/map.js`,
   `${APP_BASE_PATH}/map/osm-browser-matcher.js`,
+  `${APP_BASE_PATH}/map/async-record-queue.js`,
+  `${APP_BASE_PATH}/road-info-queue.js`,
   `${APP_BASE_PATH}/manifest.webmanifest`,
   `${APP_BASE_PATH}/assets/icon.svg`,
   `${APP_BASE_PATH}/assets/otamap_logo.png`,

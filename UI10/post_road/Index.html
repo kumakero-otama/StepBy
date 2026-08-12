@@ -684,6 +684,8 @@
     </main>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
+    <script src="../map/async-record-queue.js?v=1.24.0"></script>
+    <script src="../road-info-queue.js?v=1.24.0"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // 投稿画面の状態管理・画像処理・送信を扱うメインスクリプト。
@@ -1013,6 +1015,13 @@
               renderSelectedImages();
               window.history.back();
             };
+
+            if (window.StepByRoadInfoQueue) {
+              const submissionId = "road:" + (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+              await window.StepByRoadInfoQueue.enqueue(body, submissionId);
+              clearInputsAndGoBack();
+              return;
+            }
 
             if (bodySize <= KEEPALIVE_BODY_LIMIT) {
               // 小さいリクエストは keepalive でバックグラウンド送信し、即座にマップ画面へ戻る。

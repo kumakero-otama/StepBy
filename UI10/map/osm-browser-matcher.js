@@ -5,6 +5,8 @@
   const LOW_ACCURACY_METERS = 25;
   const CACHE_DB = "stepby-ui10-osm-network-v1";
   const CACHE_STORE = "networks";
+  const CACHE_MAX_AGE_MS = 30 * 60 * 1000;
+  const PREFETCH_DISTANCE_METERS = 650;
 
   function distanceMeters(a, b) {
     const meanLat = ((a.lat + b.lat) / 2) * Math.PI / 180;
@@ -328,19 +330,61 @@
     db.close();
   }
 
+  async function readCaches() {
+    const db = await openCache();
+    if (!db) return [];
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(CACHE_STORE, "readonly");
+        const request = tx.objectStore(CACHE_STORE).getAll();
+        request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+        request.onerror = () => reject(request.error || tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  }
+
+  function mergeWays(regions) {
+    const byId = new Map();
+    regions.forEach((region) => (region.ways || []).forEach((way) => {
+      const current = byId.get(way.id);
+      if (!current || Number(way.version || 0) >= Number(current.version || 0)) byId.set(way.id, way);
+    }));
+    return Array.from(byId.values());
+  }
+
   class BrowserMatcher {
     constructor(options) {
       this.fetcher = options.fetcher;
       this.radiusMeters = options.radiusMeters || 1000;
       this.network = null;
       this.center = null;
+      this.regions = [];
       this.previousWayId = null;
       this.loading = null;
+      this.ready = this.restoreCachedRegions();
     }
 
-    async ensureNetwork(lat, lng) {
+    async restoreCachedRegions() {
+      const now = Date.now();
+      const cached = await readCaches().catch(() => []);
+      this.regions = cached.filter((region) => region && region.center && Array.isArray(region.ways) &&
+        now - Number(region.savedAt || 0) <= CACHE_MAX_AGE_MS);
+      this.network = mergeWays(this.regions);
+      return this.network;
+    }
+
+    hasFreshCoverage(point, distance = PREFETCH_DISTANCE_METERS) {
+      const now = Date.now();
+      return this.regions.some((region) => now - Number(region.savedAt || 0) <= CACHE_MAX_AGE_MS &&
+        distanceMeters(point, region.center) < distance);
+    }
+
+    async ensureNetwork(lat, lng, options = {}) {
       const point = { lat, lng };
-      if (this.network && this.center && distanceMeters(point, this.center) < 400) return this.network;
+      await this.ready;
+      if (!options.force && this.hasFreshCoverage(point)) return this.network;
       if (this.loading) return this.loading;
       const params = new URLSearchParams({ centerLat: String(lat), centerLng: String(lng), radiusMeters: String(this.radiusMeters) });
       this.loading = this.fetcher(`/api/osm-walkable-network?${params}`)
@@ -350,10 +394,14 @@
         })
         .then(async (data) => {
           if (!data.success || !Array.isArray(data.ways)) throw new Error("invalid osm network response");
-          this.network = data.ways;
           this.center = point;
           const key = `${lat.toFixed(3)}:${lng.toFixed(3)}:${this.radiusMeters}`;
-          await writeCache({ key, savedAt: Date.now(), center: point, ways: data.ways }).catch(() => {});
+          const region = { key, savedAt: Date.now(), center: point, radiusMeters: this.radiusMeters, ways: data.ways };
+          const existingIndex = this.regions.findIndex((item) => item.key === key);
+          if (existingIndex >= 0) this.regions.splice(existingIndex, 1, region);
+          else this.regions.push(region);
+          this.network = mergeWays(this.regions);
+          await writeCache(region).catch(() => {});
           return this.network;
         })
         .finally(() => { this.loading = null; });
@@ -365,6 +413,14 @@
       const result = chooseBestMatch({ lat, lng }, ways, this.previousWayId);
       if (result) this.previousWayId = result.wayId;
       return result;
+    }
+
+    prefetchForLocation(lat, lng) {
+      const point = { lat, lng };
+      return this.ready.then(() => {
+        if (this.hasFreshCoverage(point)) return this.network;
+        return this.ensureNetwork(lat, lng, { force: true });
+      });
     }
 
     finalize(points) {
@@ -382,6 +438,7 @@
     inferWaySide,
     isIndependentWalkway,
     buildWayGraph,
+    mergeWays,
     findConnectedWayPath,
     finalizeTrace,
     buildOsmChangePreview,
