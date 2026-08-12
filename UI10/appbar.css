@@ -48,6 +48,11 @@
   font-family: inherit;
 }
 
+/* author CSS の display がHTML標準の hidden 表示を上書きしないようにする。 */
+.pro-badge[hidden] {
+  display: none;
+}
+
 .app-bar-actions {
   display: inline-flex;
   align-items: center;
