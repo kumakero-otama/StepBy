@@ -554,7 +554,7 @@ function hideTactileSessionCard() {
   tactileSessionCardLatLng = null;
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
-      color: "#00b050",
+      color: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
       weight: 4,
       opacity: 0.85,
     });
@@ -579,7 +579,7 @@ function setActiveTactileSessionPolyline(polyline) {
 
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
-      color: "#00b050",
+      color: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
       weight: 4,
       opacity: 0.85,
     });
@@ -3008,6 +3008,7 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       opacity: 0.85,
       interactive: false,
     }).addTo(map);
+    polyline.options.stepByBaseColor = recordColor;
     const hitPolyline = L.polyline(coordinates, {
       color: recordColor,
       weight: 12,
@@ -3084,7 +3085,7 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
     centerLng: center.lng.toString(),
     radiusKm: "1",
   });
-  authFetch(`/api/osm-tactile-ways?${params.toString()}`)
+  fetchOsmTactileDisplay(center.lat, center.lng, OSM_DISPLAY_RADIUS_KM)
     .then((res) => {
       if (!res.ok) {
         throw new Error(`osm tactile fetch failed: ${res.status}`);
@@ -3108,7 +3109,7 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
         return;
       }
       console.error("[loadAndShowOsmTactileWays] Error:", err);
-      alert("OSM点字ブロックデータの取得に失敗しました。");
+      alert("OSM点字ブロックデータの取得に失敗しました。しばらく待ってから再度お試しください。");
       clearOsmTactileWaysFromMap();
     })
     .finally(() => {
@@ -3116,6 +3117,57 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
         setOsmLoadingVisible(false);
       }
     });
+}
+
+function overpassTactileFeature(element) {
+  const tags = element && element.tags && typeof element.tags === "object" ? element.tags : {};
+  const stepbyRecorded = Object.entries(tags).some(([key, value]) => /stepby/i.test(`${key}:${value}`));
+  const properties = {
+    osm_type: element.type,
+    matched_tag_key: "tactile_paving",
+    matched_tag_value: tags.tactile_paving || "",
+    osm_changeset_id: element.changeset == null ? null : Number(element.changeset),
+    stepby_recorded: stepbyRecorded,
+  };
+  if (element.type === "way" && Array.isArray(element.geometry)) {
+    const coordinates = element.geometry.map((point) => [Number(point.lon), Number(point.lat)])
+      .filter(([lng, lat]) => Number.isFinite(lng) && Number.isFinite(lat));
+    return coordinates.length >= 2 ? { type: "Feature", properties: { ...properties, osm_way_id: element.id }, geometry: { type: "LineString", coordinates } } : null;
+  }
+  if (element.type === "node" && Number.isFinite(Number(element.lat)) && Number.isFinite(Number(element.lon))) {
+    return { type: "Feature", properties: { ...properties, osm_node_id: element.id }, geometry: { type: "Point", coordinates: [Number(element.lon), Number(element.lat)] } };
+  }
+  return null;
+}
+
+async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
+  const radiusMeters = radiusKm * 1000;
+  const latDelta = radiusMeters / 111320;
+  const lngDelta = radiusMeters / (111320 * Math.max(0.2, Math.cos(centerLat * Math.PI / 180)));
+  const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
+    .map((value) => value.toFixed(7)).join(",");
+  const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
+  const hosts = ["https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
+  let lastError = null;
+  for (const endpoint of hosts) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(35000),
+      });
+      if (!response.ok) throw new Error(`overpass_status_${response.status}`);
+      const payload = await response.json();
+      const features = (Array.isArray(payload.elements) ? payload.elements : [])
+        .map(overpassTactileFeature).filter(Boolean);
+      return { success: true, features, count: features.length, source: "browser_overpass" };
+    } catch (error) {
+      lastError = error;
+      console.warn("[OSM tactile display] endpoint failed", endpoint, error && error.message);
+    }
+  }
+  throw lastError || new Error("all_overpass_hosts_failed");
 }
 
 function showOsmTactileWaysOnMap(features) {
