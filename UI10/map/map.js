@@ -3133,9 +3133,9 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   // クラウドIPがOverpassの混雑制限を受ける場合に備え、APIプロキシと端末からの
   // 読取専用リクエストを並行し、最初に成功した結果を採用する。
   const hosts = [
+    "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
-    "https://overpass-api.de/api/interpreter",
   ];
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
   const attempts = [
