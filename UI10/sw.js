@@ -1,5 +1,5 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.26.0-split-osm-display-fitting";
+const CACHE_VERSION = "1.27.0-browser-fitting-general-ui";
 const APP_BASE_PATH = "/StepBy/UI10";
 const API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net/dev-api";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;

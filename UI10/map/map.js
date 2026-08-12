@@ -2620,33 +2620,19 @@ async function saveFittingComparison(payload) {
   }
 }
 
-// 通常利用ではブラウザ版だけを使う。Valhallaは明示的な比較試験のときだけ呼び出す。
-function requestSnappedLocation(latitude, longitude, accuracy = null, { compareValhalla = false } = {}) {
+// 一般利用の現在地フィッティングはブラウザ版だけで完結する。
+function requestSnappedLocation(latitude, longitude, accuracy = null) {
   if (!currentUserId) {
     setComparisonStatus("ログイン待ち", "waiting");
     return;
   }
-  const params = new URLSearchParams({
-    lat: latitude.toString(),
-    lng: longitude.toString(),
-    userId: String(currentUserId),
-  });
-  if (Number.isFinite(accuracy)) params.set("accuracy", String(accuracy));
-  
-  if (lastSent) {
-    params.set("prevLat", lastSent.latitude.toString());
-    params.set("prevLng", lastSent.longitude.toString());
-  }
-
-  console.log(`[requestSnappedLocation] Requesting comparison: lat=${latitude}, lng=${longitude}`);
-  setComparisonStatus("計算中…", "loading");
-  if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "—";
+  console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
   const browserStartedAt = performance.now();
   const browserPromise = browserOsmMatcher
     ? browserOsmMatcher.match(latitude, longitude).then((match) => ({ match, duration: Math.round(performance.now() - browserStartedAt), error: null })).catch((error) => ({ match: null, duration: Math.round(performance.now() - browserStartedAt), error }))
     : Promise.resolve({ match: null, duration: 0, error: new Error("browser matcher unavailable") });
-  if (!compareValhalla) {
-    return browserPromise.then((browserResult) => {
+  return browserPromise
+    .then((browserResult) => {
       const browser = browserResult.match;
       if (browser) {
         updateDisplay(latitude, longitude, browser.lat, browser.lng);
@@ -2654,56 +2640,12 @@ function requestSnappedLocation(latitude, longitude, accuracy = null, { compareV
       } else {
         updateDisplay(latitude, longitude, latitude, longitude, true);
       }
-      renderFittingComparison({ lat: latitude, lng: longitude }, null, browser, { valhalla: "—", browser: browserResult.duration });
-      setComparisonStatus(browser ? "ブラウザ版で計算" : "ブラウザ版の計算失敗", browser ? "success" : "error");
-      if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "通常記録（Valhalla未使用）";
       return browser;
-    });
-  }
-  const valhallaStartedAt = performance.now();
-
-  return authFetch(`/api/match?${params.toString()}`)
-    .then((res) => {
-      console.log(`[requestSnappedLocation] Response status: ${res.status}`);
-      if (res.status === 204) {
-        console.log('[requestSnappedLocation] Received 204 No Content - no update');
-        // 変化がなくても現在値を表示更新（時刻などは変わる）
-        updateDisplay(latitude, longitude, latitude, longitude, true);
-        return { data: null, duration: Math.round(performance.now() - valhallaStartedAt) };
-      }
-      if (!res.ok) {
-        throw new Error(`match failed with status ${res.status}`);
-      }
-      return res.json().then((data) => ({ data, duration: Math.round(performance.now() - valhallaStartedAt) }));
-    })
-    .then(async ({ data, duration: valhallaDuration }) => {
-      console.log('[requestSnappedLocation] Response data:', data);
-      const valhalla = data && typeof data.lat === "number" && typeof data.lng === "number" ? data : null;
-      if (valhalla) {
-        console.log(`[requestSnappedLocation] Valid snapped coordinates: lat=${data.lat}, lng=${data.lng}`);
-        updateDisplay(latitude, longitude, data.lat, data.lng);
-        lastSent = { latitude: data.lat, longitude: data.lng };
-      } else {
-        updateDisplay(latitude, longitude, latitude, longitude, true);
-      }
-      const browserResult = await browserPromise;
-      const browser = browserResult.match;
-      const resultDistance = renderFittingComparison({ lat: latitude, lng: longitude }, valhalla, browser, { valhalla: valhallaDuration, browser: browserResult.duration });
-      void saveFittingComparison({
-        sessionId: currentSessionId, userId: String(currentUserId), observedAt: new Date().toISOString(), rawLat: latitude, rawLng: longitude,
-        valhallaLat: valhalla && valhalla.lat, valhallaLng: valhalla && valhalla.lng, valhallaWayId: valhalla && valhalla.wayId,
-        valhallaDistanceMeters: valhalla && valhalla.distanceMeters, browserLat: browser && browser.lat, browserLng: browser && browser.lng,
-        browserWayId: browser && browser.wayId, browserWayVersion: browser && browser.wayVersion, browserDistanceMeters: browser && browser.distance,
-        browserPriority: browser && browser.priority, resultDistanceMeters: resultDistance,
-        wayMatch: Boolean(valhalla && browser && valhalla.wayId && browser.wayId && Number(valhalla.wayId) === Number(browser.wayId)),
-        browserConnected: browser && browser.connectedToPrevious, valhallaDurationMs: valhallaDuration, browserDurationMs: browserResult.duration,
-        status: valhalla && browser ? "compared" : "partial", errorMessage: browserResult.error && browserResult.error.message,
-        clientVersion: "UI10", metadata: { source: comparisonTestButtonEl && comparisonTestButtonEl.disabled ? "fixed_test" : "gps" },
-      });
     })
     .catch((error) => {
-      console.error('[requestSnappedLocation] Error:', error);
-      setComparisonStatus("比較失敗", "error");
+      console.error('[requestSnappedLocation] Browser fitting error:', error);
+      updateDisplay(latitude, longitude, latitude, longitude, true);
+      return null;
     });
 }
 
