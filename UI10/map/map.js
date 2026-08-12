@@ -2155,8 +2155,9 @@ async function prepareTraceTagModal() {
 
 async function saveSessionTags(sessionIds, fixedTagIds = null) {
   const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
-  const tagIds = Array.isArray(fixedTagIds) ? new Set(fixedTagIds.map(Number)) : selectedTraceTagIds;
-  const selectedTags = traceTagOptions.filter((tag) => tagIds.has(Number(tag.id)));
+  const selectedTags = Array.isArray(fixedTagIds)
+    ? [...new Set(fixedTagIds.map(Number).filter(Number.isFinite))].map((id) => ({ id }))
+    : traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
   for (const sessionId of uniqueSessionIds) {
     for (const tag of selectedTags) {
       const res = await authFetch("/api/session-tags", {
