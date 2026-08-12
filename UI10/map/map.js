@@ -2267,6 +2267,11 @@ async function loadMapOsmConnectionState() {
   }
 }
 
+function shouldOpenOsmConnection(state) {
+  return Boolean(window.StepByRecordFlowPolicy &&
+    window.StepByRecordFlowPolicy.shouldOpenOsmConnection(state));
+}
+
 function preopenOsmConnectionPopup() {
   const popup = window.open("about:blank", "stepby-osm-oauth", "popup=yes,width=520,height=720,resizable=yes,scrollbars=yes");
   if (popup) {
@@ -2379,7 +2384,7 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
           return;
         }
         setTraceTagError("");
-        const oauthPopup = osmPreview && osmConnectionState.configured && !osmConnectionState.connected
+        const oauthPopup = osmPreview && shouldOpenOsmConnection(osmConnectionState)
           ? preopenOsmConnectionPopup() : null;
         cleanupAndResolve({ action: "ok", osmConnectionState, oauthPopup });
       };
@@ -2553,7 +2558,7 @@ async function handleRecordStopWithConfirmation() {
       return;
     }
     displayTraceLine(previewCoords);
-    if (!decision.osmConnectionState.connected && decision.osmConnectionState.configured) {
+    if (shouldOpenOsmConnection(decision.osmConnectionState)) {
       startMapOsmConnection(decision.oauthPopup).catch((error) => {
         if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
         console.error("[OSM OAuth] automatic connection failed", error);
