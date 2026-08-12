@@ -176,6 +176,8 @@
         matches = smoothed; routeSmoothed = true;
       }
     }
+    const observedWayIds = matches.reduce((ids, match) => ids[ids.length - 1] === match.wayId ? ids : [...ids, match.wayId], []);
+    if (matches.length / sampled.length < 0.8) return null;
     const connectedWayIds = [matches[0].wayId];
     for (let index = 1; index < matches.length; index += 1) {
       const fromWayId = connectedWayIds[connectedWayIds.length - 1];
@@ -190,6 +192,9 @@
       end: matches[matches.length - 1],
       matches,
       wayIds: connectedWayIds,
+      observedWayIds,
+      connectorWayIds: connectedWayIds.filter((id) => !observedWayIds.includes(id)),
+      routeConfirmed: true,
       routeSmoothed,
       ways: connectedWayIds.map((id) => ways.find((way) => way.id === id)).filter(Boolean),
       rawPoints: points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng), accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null })),
@@ -254,7 +259,7 @@
   }
 
   function buildOsmChangePreview(route) {
-    if (!route || !route.ways || !route.ways.length) return null;
+    if (!route || route.routeConfirmed !== true || !route.ways || !route.ways.length) return null;
     const connectors = [];
     for (let i = 0; i < route.ways.length - 1; i += 1) {
       const leftIndex = sharedNodeIndex(route.ways[i], route.ways[i + 1]);
@@ -297,6 +302,7 @@
       start: { lat: route.start.lat, lng: route.start.lng, wayId: route.start.wayId },
       end: { lat: route.end.lat, lng: route.end.lng, wayId: route.end.wayId },
       connected: true,
+      routeConfirmed: true,
     };
   }
 
