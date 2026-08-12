@@ -3131,36 +3131,36 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
     .map((value) => value.toFixed(7)).join(",");
   const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
-  // まず同一オリジンの開発APIを使い、CORSや端末ネットワーク差の影響を避ける。
-  // API側にも複数Overpassホストのフォールバックがある。
-  try {
-    const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
-    const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(95000) });
-    if (apiResponse.ok) return apiResponse.json();
-  } catch (error) {
-    console.warn("[OSM tactile display] API proxy failed; trying direct endpoints", error && error.message);
-  }
+  // クラウドIPがOverpassの混雑制限を受ける場合に備え、APIプロキシと端末からの
+  // 読取専用リクエストを並行し、最初に成功した結果を採用する。
   const hosts = ["https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
-  let lastError = null;
-  for (const endpoint of hosts) {
-    try {
+  const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
+  const attempts = [
+    (async () => {
+      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(30000) });
+      if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
+      return apiResponse.json();
+    })(),
+    ...hosts.map(async (endpoint) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout(35000),
+        signal: AbortSignal.timeout(30000),
       });
       if (!response.ok) throw new Error(`overpass_status_${response.status}`);
       const payload = await response.json();
       const features = (Array.isArray(payload.elements) ? payload.elements : [])
         .map(overpassTactileFeature).filter(Boolean);
       return { success: true, features, count: features.length, source: "browser_overpass" };
-    } catch (error) {
-      lastError = error;
-      console.warn("[OSM tactile display] endpoint failed", endpoint, error && error.message);
-    }
+    }),
+  ];
+  try {
+    return await Promise.any(attempts);
+  } catch (error) {
+    console.warn("[OSM tactile display] all read endpoints failed", error && error.message);
+    throw new Error("all_overpass_hosts_failed");
   }
-  throw lastError || new Error("all_overpass_hosts_failed");
 }
 
 function showOsmTactileWaysOnMap(features) {
