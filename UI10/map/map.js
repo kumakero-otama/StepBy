@@ -3140,7 +3140,9 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
   const attempts = [
     (async () => {
-      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(30000) });
+      // 10km検索はOverpass混雑時に複数の読取先を順番に試すため、API側の
+      // フォールバックが完了する時間を確保する。個々のブラウザ直読は30秒で打ち切る。
+      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(100000) });
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
     })(),
