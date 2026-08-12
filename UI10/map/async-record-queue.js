@@ -5,6 +5,7 @@
   const STORE_NAME = "jobs";
   const BASE_RETRY_MS = 2000;
   const MAX_RETRY_MS = 5 * 60 * 1000;
+  const COMPLETED_TOMBSTONE_MS = 30 * 24 * 60 * 60 * 1000;
 
   function retryDelay(attempts) {
     return Math.min(MAX_RETRY_MS, BASE_RETRY_MS * (2 ** Math.max(0, Number(attempts || 1) - 1)));
@@ -84,6 +85,12 @@
       return (await this.storage.getAll()).filter((job) => job.status !== "completed");
     }
 
+    async pruneCompleted() {
+      const expired = (await this.storage.getAll()).filter((job) => job.status === "completed" &&
+        this.now() - Number(job.updatedAt || 0) > COMPLETED_TOMBSTONE_MS);
+      await Promise.all(expired.map((job) => this.storage.delete(job.id)));
+    }
+
     async flush() {
       if (this.running || !this.handler || !this.online()) return;
       this.running = true;
@@ -92,6 +99,7 @@
         this.timer = null;
       }
       try {
+        await this.pruneCompleted();
         const jobs = (await this.pending()).sort((a, b) => a.createdAt - b.createdAt);
         for (const job of jobs) {
           if (!this.online()) break;
