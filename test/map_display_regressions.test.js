@@ -9,4 +9,8 @@ for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
 }
 assert.match(mapSource, /stepByBaseColor\s*=\s*recordColor/);
 assert.match(mapSource, /activeTactileSessionPolyline\.options\.stepByBaseColor/);
-console.log("PRO badge class and selected-line base color are preserved");
+assert.doesNotMatch(mapSource, /fetchOsmTactileDisplay\([\s\S]{0,200}?\.then\(\(res\)[\s\S]{0,120}?res\.ok/,
+  "display helper already returns parsed data and must not be treated as a Response");
+assert.match(mapSource, /if \(!isCenterCurrentEnabled\(\) && cached\.center/);
+assert.match(mapSource, /suppressAutoCenterAfterReturn = false;[\s\S]{0,180}?map\.setView\(\[cached\.lat, cached\.lng\]/);
+console.log("map display fetch, initial location follow, PRO badge, and selected-line color regressions are covered");
