@@ -508,6 +508,28 @@ body {
   position: relative;
 }
 
+.is-pro-mode .map-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 5px solid #d92d20;
+  pointer-events: none;
+  z-index: 1500;
+  box-sizing: border-box;
+}
+
+.map-pro-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: #d92d20;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trace-tag-option small { opacity: .7; margin-left: .35em; }
+
 .record-actions {
   display: flex;
   align-items: center;
