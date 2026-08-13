@@ -82,7 +82,7 @@
     }
 
     async pending() {
-      return (await this.storage.getAll()).filter((job) => job.status !== "completed");
+      return (await this.storage.getAll()).filter((job) => !["completed", "blocked"].includes(job.status));
     }
 
     async pruneCompleted() {
@@ -121,6 +121,14 @@
             await this.storage.put(job);
             this.onChange({ type: "completed", job });
           } catch (error) {
+            if (error && error.retryable === false) {
+              job.status = "blocked";
+              job.lastError = String(error && error.message ? error.message : error);
+              job.updatedAt = this.now();
+              await this.storage.put(job);
+              this.onChange({ type: "blocked", job, error });
+              continue;
+            }
             job.status = "retry";
             job.attempts += 1;
             job.lastError = String(error && error.message ? error.message : error);
