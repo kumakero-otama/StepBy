@@ -2402,7 +2402,12 @@ async function processQueuedRecording(payload, context) {
   }
   if (payload.osmEligible) {
     await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
-    await runStage("osm_published", () => publishOsmRecord(payload.sessionId));
+    await runStage("osm_published", async () => {
+      const publication = await publishOsmRecord(payload.sessionId);
+      if (publication && publication.skipped && publication.reason === "tactile_tag_already_present") {
+        payload.osmAlreadyPresent = true;
+      }
+    });
   } else {
     await runStage("osm_draft_skipped_stepby_only", async () => {});
   }
@@ -2416,9 +2421,12 @@ function initRecordUploadQueue() {
       if (event.type === "queued" || event.type === "sending") {
         showMapToast("記録を端末に保存しました。送信はバックグラウンドで続けています。", 3200);
       } else if (event.type === "completed") {
-        showMapToast(event.job && event.job.payload && event.job.payload.osmEligible
-          ? "記録を保存し、OSMへの公開が完了しました。"
-          : "記録の保存が完了しました。", 3200);
+        const completedPayload = event.job && event.job.payload;
+        showMapToast(completedPayload && completedPayload.osmAlreadyPresent
+          ? "記録を保存しました。OSMには同じ点字ブロック情報が既にあります。"
+          : completedPayload && completedPayload.osmEligible
+            ? "記録を保存し、OSMへの公開が完了しました。"
+            : "記録の保存が完了しました。", 3200);
       } else if (event.type === "retry") {
         showMapToast("サーバーへの送信を完了できないため端末に保管しています。自動で再送します。", 5200);
       }
