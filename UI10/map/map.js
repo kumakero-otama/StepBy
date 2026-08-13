@@ -58,6 +58,7 @@ const browserOsmMatcher = window.StepByOsmMatcher
   ? new window.StepByOsmMatcher.BrowserMatcher({ fetcher: authFetch, radiusMeters: 1000 })
   : null;
 let recordUploadQueue = null;
+let osmRevertQueue = null;
 let lastNetworkPrefetchAt = 0;
 let lastMapDataDownloadCenter = null;
 let lastOsmDisplayDownloadCenter = null;
@@ -2254,13 +2255,28 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
         to: segment.to,
       })),
       recordId,
-      clientContext: { ui: "UI10", previewOnly: true, osmWriteRequested: false, automaticDraft: true },
+      clientContext: { ui: "UI10", previewOnly: false, osmWriteRequested: true, authorization: "record_save", automaticDraft: true },
     }),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(result.error || `HTTP ${response.status}`);
     error.code = result.error || `HTTP_${response.status}`;
+    error.status = response.status;
+    throw error;
+  }
+  return result;
+}
+
+async function publishOsmRecord(recordId) {
+  const response = await authFetch(`/api/osm/records/${encodeURIComponent(recordId)}/publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ authorization: "record_save" }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || `osm_publish_failed:${response.status}`);
     error.status = response.status;
     throw error;
   }
@@ -2386,6 +2402,7 @@ async function processQueuedRecording(payload, context) {
   }
   if (payload.osmEligible) {
     await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+    await runStage("osm_published", () => publishOsmRecord(payload.sessionId));
   } else {
     await runStage("osm_draft_skipped_stepby_only", async () => {});
   }
@@ -2399,7 +2416,9 @@ function initRecordUploadQueue() {
       if (event.type === "queued" || event.type === "sending") {
         showMapToast("記録を端末に保存しました。送信はバックグラウンドで続けています。", 3200);
       } else if (event.type === "completed") {
-        showMapToast("記録の保存が完了しました（OSM未送信）。", 3200);
+        showMapToast(event.job && event.job.payload && event.job.payload.osmEligible
+          ? "記録を保存し、OSMへの公開が完了しました。"
+          : "記録の保存が完了しました。", 3200);
       } else if (event.type === "retry") {
         showMapToast("サーバーへの送信を完了できないため端末に保管しています。自動で再送します。", 5200);
       }
@@ -2408,6 +2427,38 @@ function initRecordUploadQueue() {
   window.addEventListener("online", () => void recordUploadQueue.flush());
   window.addEventListener("pageshow", () => void recordUploadQueue.flush());
   void recordUploadQueue.flush();
+}
+
+async function processQueuedOsmRevert(payload) {
+  const response = await authFetch(`/api/osm/records/${encodeURIComponent(payload.recordId)}/revert`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ authorization: "owned_green_line_delete" }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `osm_revert_failed:${response.status}`);
+  return result;
+}
+
+function initOsmRevertQueue() {
+  if (!window.StepByRecordQueue) return;
+  osmRevertQueue = new window.StepByRecordQueue.RecordQueue({
+    storage: window.StepByRecordQueue.createIndexedDbStorage("stepby-ui10-osm-revert-queue-v1", "jobs"),
+    handler: processQueuedOsmRevert,
+    onChange(event) {
+      if (event.type === "queued" || event.type === "sending") {
+        showMapToast("削除を受け付けました。処理はバックグラウンドで続けています。", 3600);
+      } else if (event.type === "completed") {
+        showMapToast("OSM上の記録を取り消しました。", 3200);
+        if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
+      } else if (event.type === "retry") {
+        showMapToast("削除処理を完了できないため端末に保管しています。自動で再試行します。", 5200);
+      }
+    },
+  });
+  window.addEventListener("online", () => void osmRevertQueue.flush());
+  window.addEventListener("pageshow", () => void osmRevertQueue.flush());
+  void osmRevertQueue.flush();
 }
 
 async function handleRecordStopWithConfirmation() {
@@ -3126,6 +3177,40 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   }
 }
 
+function bindOwnedOsmRevertPopup(layer, feature) {
+  const properties = feature && feature.properties || {};
+  const recordId = String(properties.stepby_owned_record_id || "");
+  if (!properties.stepby_can_revert || !recordId) return;
+  const panel = document.createElement("div");
+  const message = document.createElement("p");
+  message.textContent = "StepByで記録した点字ブロックです。";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "osm-owned-record-delete-button";
+  button.textContent = "この記録を削除";
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!window.confirm("この点字ブロック記録をOSMから取り消しますか？")) return;
+    if (!osmRevertQueue) {
+      showMapToast("削除処理を開始できませんでした。ページを再読み込みしてください。", 4200);
+      return;
+    }
+    button.disabled = true;
+    button.textContent = "削除を受け付けました";
+    try {
+      await osmRevertQueue.enqueue({ id: `osm-revert:${recordId}`, recordId });
+      layer.closePopup();
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = "この記録を削除";
+      showMapToast("削除要求を端末に保存できませんでした。", 4200);
+    }
+  });
+  panel.append(message, button);
+  layer.bindPopup(panel);
+}
+
 function showOsmTactileWaysOnMap(features) {
   clearOsmTactileWaysFromMap();
 
@@ -3151,6 +3236,7 @@ function showOsmTactileWaysOnMap(features) {
         weight: 4,
         opacity: 0.9,
       }).addTo(map);
+      bindOwnedOsmRevertPopup(polyline, feature);
       osmTactileMarkers.push(polyline);
       return;
     }
@@ -3171,6 +3257,7 @@ function showOsmTactileWaysOnMap(features) {
         fillOpacity: 0.95,
         weight: 1,
       }).addTo(map);
+      bindOwnedOsmRevertPopup(point, feature);
       osmTactileMarkers.push(point);
     }
   });
@@ -3356,6 +3443,7 @@ function loadConfig() {
 initTraceTagUiEvents();
 initSafetyConfirmModal();
 initRecordUploadQueue();
+initOsmRevertQueue();
 
 if ("geolocation" in navigator) {
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };

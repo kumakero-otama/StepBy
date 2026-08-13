@@ -1454,6 +1454,23 @@ body {
 .fitting-detail-table-wrap th { background: #edf3f7; }
 .fitting-detail-osm-status { margin: 14px 0; padding: 12px 14px; border: 1px solid #9eb7ca; border-radius: 10px; background: #edf5fa; line-height: 1.65; overflow-wrap: anywhere; }
 .fitting-detail-osm-status[data-status="merged"] { border-color: #62a984; background: #edf9f2; }
+
+.osm-owned-record-delete-button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #b42318;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osm-owned-record-delete-button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
 .fitting-detail-osm-status[data-status="reverted"] { border-color: #9aa5ae; background: #f3f5f6; }
 .fitting-detail-osm-status[data-status="failed"],.fitting-detail-osm-status[data-status="conflict"] { border-color: #d78278; background: #fff1ef; }
 .fitting-detail-revert-button { display: block; margin-top: 10px; padding: 9px 13px; border: 0; border-radius: 8px; background: #8a4b28; color: white; font-weight: 700; }

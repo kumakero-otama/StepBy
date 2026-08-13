@@ -21,4 +21,14 @@ assert.doesNotMatch(mapSource, /分割予定：開始|osmPreviewWayIdsEl|renderO
   "general-user confirmation must render only the recorded route");
 assert.doesNotMatch(mapSource, /通信できないため端末に保管しています/,
   "queue failures must not be mislabeled as loss of internet connectivity");
+assert.match(mapSource, /\/api\/osm\/records\/\$\{encodeURIComponent\(recordId\)\}\/publish/,
+  "saving an OSM-eligible record must enqueue its publication");
+assert.match(mapSource, /authorization:\s*"record_save"/,
+  "the Save action must be carried to the record-scoped publication endpoint");
+assert.match(mapSource, /stepby_owned_record_id/,
+  "only server-identified owned StepBy features may expose deletion");
+assert.match(mapSource, /authorization:\s*"owned_green_line_delete"/,
+  "confirmed green-line deletion must call the record-scoped revert endpoint");
+assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
+  "OSM reverts must survive page/network interruptions in their own persistent queue");
 console.log("map display fetch, initial location follow, PRO badge, and selected-line color regressions are covered");
