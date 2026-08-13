@@ -1,5 +1,5 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.27.9-route-coverage-osm-display-fix";
+const CACHE_VERSION = "1.28.0-record-queue-google-popup-fix";
 const APP_BASE_PATH = "/StepBy/UI10";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;

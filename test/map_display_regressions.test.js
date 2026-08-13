@@ -13,4 +13,8 @@ assert.doesNotMatch(mapSource, /fetchOsmTactileDisplay\([\s\S]{0,200}?\.then\(\(
   "display helper already returns parsed data and must not be treated as a Response");
 assert.match(mapSource, /if \(!isCenterCurrentEnabled\(\) && cached\.center/);
 assert.match(mapSource, /suppressAutoCenterAfterReturn = false;[\s\S]{0,180}?map\.setView\(\[cached\.lat, cached\.lng\]/);
+assert.match(mapSource, /osm_draft_needs_review_duplicate_way/,
+  "a valid loop recording must not retry forever when its OSM draft needs review");
+assert.doesNotMatch(mapSource, /通信できないため端末に保管しています/,
+  "queue failures must not be mislabeled as loss of internet connectivity");
 console.log("map display fetch, initial location follow, PRO badge, and selected-line color regressions are covered");
