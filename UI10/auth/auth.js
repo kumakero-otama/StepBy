@@ -1010,15 +1010,26 @@ function initGoogleSignIn() {
     return;
   }
 
+  let attempts = 0;
+  let initialized = false;
   const initialize = () => {
+    if (initialized) return;
     if (!(window.google && window.google.accounts && window.google.accounts.id)) {
-      setGoogleStatus("Googleログインの読み込みに失敗しました。");
+      attempts += 1;
+      if (attempts < 20) window.setTimeout(initialize, 250);
+      else setGoogleStatus("Googleログインを読み込めませんでした。ページを再読み込みしてください。");
       return;
     }
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: handleGoogleCredential,
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: false,
+      itp_support: true,
     });
+    initialized = true;
+    buttonContainer.replaceChildren();
     window.google.accounts.id.renderButton(buttonContainer, {
       theme: "outline",
       size: "large",
@@ -1033,6 +1044,7 @@ function initGoogleSignIn() {
     return;
   }
   window.addEventListener("load", initialize, { once: true });
+  window.setTimeout(initialize, 0);
 }
 
 function initGuestLogin() {
