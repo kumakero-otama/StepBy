@@ -29,8 +29,12 @@ assert.match(mapSource, /stepby_owned_record_id/,
   "only server-identified owned StepBy features may expose deletion");
 assert.match(mapSource, /isOwnedStepByRecord[\s\S]{0,700}?weight:\s*48[\s\S]{0,150}?opacity:\s*0/,
   "owned green OSM lines need a four-times-wider invisible tap target");
-assert.match(mapSource, /const hitPolyline = L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
+assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
   "saved StepBy paths need a wider invisible detail tap target");
+assert.match(mapSource, /path\.osm_status === "merged" \|\| path\.osm_status === "revert_draft"/,
+  "OSM-managed records must not retain a second, offset StepBy hit target");
+assert.match(mapSource, /loadAndShowAllRecords\(map\.getCenter\(\)\)/,
+  "a completed OSM revert must refresh the StepBy record layer");
 assert.match(mapSource, /authorization:\s*"owned_green_line_delete"/,
   "confirmed green-line deletion must call the record-scoped revert endpoint");
 assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
