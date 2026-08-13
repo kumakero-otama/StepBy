@@ -2998,7 +2998,8 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
     polyline.options.stepByBaseColor = recordColor;
     const hitPolyline = L.polyline(coordinates, {
       color: recordColor,
-      weight: 12,
+      // 見た目は4pxのまま、タップ判定だけ約4倍の16pxに広げる。
+      weight: 16,
       opacity: 0,
       bubblingMouseEvents: false,
     }).addTo(map);
@@ -3231,13 +3232,28 @@ function showOsmTactileWaysOnMap(features) {
       }
 
       const osmColor = feature.properties && feature.properties.stepby_recorded ? "#00b050" : "#0066ff";
+      const isOwnedStepByRecord = Boolean(feature.properties &&
+        feature.properties.stepby_recorded && feature.properties.stepby_can_revert &&
+        feature.properties.stepby_owned_record_id);
       const polyline = L.polyline(coordinates, {
         color: osmColor,
         weight: 4,
         opacity: 0.9,
+        // 本人の緑線は透明な専用レイヤーでタップを受ける。
+        interactive: !isOwnedStepByRecord,
       }).addTo(map);
-      bindOwnedOsmRevertPopup(polyline, feature);
       osmTactileMarkers.push(polyline);
+      if (isOwnedStepByRecord) {
+        const hitPolyline = L.polyline(coordinates, {
+          color: osmColor,
+          // 見た目を変えず、4pxの線に対して約4倍の当たり判定を確保する。
+          weight: 16,
+          opacity: 0,
+          bubblingMouseEvents: false,
+        }).addTo(map);
+        bindOwnedOsmRevertPopup(hitPolyline, feature);
+        osmTactileMarkers.push(hitPolyline);
+      }
       return;
     }
 
