@@ -2998,8 +2998,8 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
     polyline.options.stepByBaseColor = recordColor;
     const hitPolyline = L.polyline(coordinates, {
       color: recordColor,
-      // 見た目は4pxのまま、タップ判定だけ約4倍の16pxに広げる。
-      weight: 16,
+      // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
+      weight: 48,
       opacity: 0,
       bubblingMouseEvents: false,
     }).addTo(map);
@@ -3246,8 +3246,8 @@ function showOsmTactileWaysOnMap(features) {
       if (isOwnedStepByRecord) {
         const hitPolyline = L.polyline(coordinates, {
           color: osmColor,
-          // 見た目を変えず、4pxの線に対して約4倍の当たり判定を確保する。
-          weight: 16,
+          // 保存記録と同じ48pxの透明判定にし、短い緑線も選びやすくする。
+          weight: 48,
           opacity: 0,
           bubblingMouseEvents: false,
         }).addTo(map);
