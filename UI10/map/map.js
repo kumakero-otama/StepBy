@@ -2443,16 +2443,7 @@ async function processQueuedRecording(payload, context) {
     await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
   }
   if (payload.osmEligible) {
-    try {
-      await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
-    } catch (error) {
-      if (error && error.code === "duplicate_way_in_route") {
-        payload.draftWarning = "duplicate_way_in_route";
-        await runStage("osm_draft_needs_review_duplicate_way", async () => {});
-      } else {
-        throw error;
-      }
-    }
+    await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
   } else {
     await runStage("osm_draft_skipped_stepby_only", async () => {});
   }
@@ -2466,11 +2457,7 @@ function initRecordUploadQueue() {
       if (event.type === "queued" || event.type === "sending") {
         showMapToast("記録を端末に保存しました。送信はバックグラウンドで続けています。", 3200);
       } else if (event.type === "completed") {
-        if (event.job && event.job.payload && event.job.payload.draftWarning === "duplicate_way_in_route") {
-          showMapToast("記録は保存されました。周回経路のOSM変更案は要確認です（OSM未送信）。", 5200);
-        } else {
-          showMapToast("記録と変更案の保存が完了しました（OSM未送信）。", 3200);
-        }
+        showMapToast("記録の保存が完了しました（OSM未送信）。", 3200);
       } else if (event.type === "retry") {
         showMapToast("サーバーへの送信を完了できないため端末に保管しています。自動で再送します。", 5200);
       }
