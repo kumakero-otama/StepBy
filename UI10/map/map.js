@@ -2278,6 +2278,7 @@ async function publishOsmRecord(recordId) {
   if (!response.ok) {
     const error = new Error(result.error || `osm_publish_failed:${response.status}`);
     error.status = response.status;
+    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
     throw error;
   }
   return result;
@@ -2429,6 +2430,8 @@ function initRecordUploadQueue() {
             : "記録の保存が完了しました。", 3200);
       } else if (event.type === "retry") {
         showMapToast("サーバーへの送信を完了できないため端末に保管しています。自動で再送します。", 5200);
+      } else if (event.type === "blocked") {
+        showMapToast("記録は端末に保管しました。OSM連携または記録状態を確認してください。", 5200);
       }
     },
   });
@@ -2444,7 +2447,11 @@ async function processQueuedOsmRevert(payload) {
     body: JSON.stringify({ authorization: "owned_green_line_delete" }),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || `osm_revert_failed:${response.status}`);
+  if (!response.ok) {
+    const error = new Error(result.error || `osm_revert_failed:${response.status}`);
+    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+    throw error;
+  }
   return result;
 }
 
@@ -2462,6 +2469,8 @@ function initOsmRevertQueue() {
         if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
       } else if (event.type === "retry") {
         showMapToast("削除処理を完了できないため端末に保管しています。自動で再試行します。", 5200);
+      } else if (event.type === "blocked") {
+        showMapToast("削除処理を安全に続けられません。OSM連携または競合状態を確認してください。", 5200);
       }
     },
   });

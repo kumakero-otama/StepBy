@@ -39,5 +39,26 @@ class MemoryStorage {
   await queue.enqueue({ id: "record:two" });
   while (queue.running) await new Promise((resolve) => setTimeout(resolve, 1));
   assert.strictEqual(calls.filter((item) => item === "trace:record:two").length, 1, "same id must not duplicate");
+
+  const blockedStorage = new MemoryStorage();
+  let blockedCalls = 0;
+  const blockedQueue = new StepByRecordQueue.RecordQueue({
+    storage: blockedStorage,
+    now: () => now,
+    handler: async () => {
+      blockedCalls++;
+      const error = new Error("oauth_not_linked");
+      error.retryable = false;
+      throw error;
+    },
+  });
+  await blockedQueue.enqueue({ id: "record:blocked" });
+  while (blockedQueue.running) await new Promise((resolve) => setTimeout(resolve, 1));
+  assert.strictEqual((await blockedQueue.pending()).length, 0, "non-retryable job must not retry forever");
+  const [blockedJob] = await blockedStorage.getAll();
+  assert.strictEqual(blockedJob.status, "blocked", "non-retryable job must remain inspectable as blocked");
+  now += StepByRecordQueue.retryDelay(3);
+  await blockedQueue.flush();
+  assert.strictEqual(blockedCalls, 1, "blocked job must not create duplicate requests");
   console.log(JSON.stringify({ result: "passed", calls }));
 })().catch((error) => { console.error(error); process.exit(1); });
