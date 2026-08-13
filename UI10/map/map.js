@@ -2242,7 +2242,7 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      summary: "UI10 点字ブロックWay分割案（OSM未送信）",
+      summary: "StepByによる点字ブロック記録",
       segments: osmPreview.segments.map((segment) => ({
         wayId: segment.wayId,
         wayVersion: segment.wayVersion,
