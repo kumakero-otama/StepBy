@@ -2450,6 +2450,7 @@ function initOsmRevertQueue() {
         showMapToast("削除を受け付けました。処理はバックグラウンドで続けています。", 3600);
       } else if (event.type === "completed") {
         showMapToast("OSM上の記録を取り消しました。", 3200);
+        loadAndShowAllRecords(map.getCenter());
         if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
       } else if (event.type === "retry") {
         showMapToast("削除処理を完了できないため端末に保管しています。自動で再試行します。", 5200);
@@ -2996,7 +2997,10 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       interactive: false,
     }).addTo(map);
     polyline.options.stepByBaseColor = recordColor;
-    const hitPolyline = L.polyline(coordinates, {
+    // OSM送信済みの記録はOSM表示レイヤーだけでクリックを受け、保存経路との
+    // 二重判定（わずかな位置差）を避ける。
+    const osmManaged = path.osm_status === "merged" || path.osm_status === "revert_draft";
+    const hitPolyline = osmManaged ? null : L.polyline(coordinates, {
       color: recordColor,
       // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
       weight: 48,
@@ -3004,7 +3008,7 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       bubblingMouseEvents: false,
     }).addTo(map);
     const sessionId = typeof path.session_id === "string" ? path.session_id : "";
-    if (sessionId) {
+    if (sessionId && hitPolyline) {
       hitPolyline.on("click", (event) => {
         L.DomEvent.stop(event);
         setActiveTactileSessionPolyline(polyline);
@@ -3034,7 +3038,7 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       });
     }
     allRecordsMarkers.push(polyline);
-    allRecordsMarkers.push(hitPolyline);
+    if (hitPolyline) allRecordsMarkers.push(hitPolyline);
   });
 
   console.log(`[showAllSessionPathsOnMap] Displayed ${allRecordsMarkers.length} polylines`);

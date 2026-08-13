@@ -1,5 +1,5 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.28.6-wide-green-hit-target-48px";
+const CACHE_VERSION = "1.28.7-revert-display-cleanup";
 const APP_BASE_PATH = "/StepBy/UI10";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;
