@@ -1441,21 +1441,6 @@ body {
   overflow: hidden;
 }
 
-.osm-change-preview { margin: 12px 0; padding: 14px; border: 2px solid #1b9b68; border-radius: 12px; background: #f2fbf7; color: #18352a; }
-.osm-change-preview.hidden { display: none; }
-.osm-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.osm-preview-heading h3 { margin: 0; font-size: 1rem; }
-.osm-preview-heading span { padding: 3px 9px; border-radius: 999px; background: #4b5563; color: white; font-weight: 700; font-size: .78rem; }
-.osm-change-preview p { margin: 8px 0; font-size: .88rem; line-height: 1.5; }
-.osm-change-preview dl { margin: 0; }
-.osm-change-preview dl div { display: grid; grid-template-columns: 90px 1fr; gap: 8px; padding: 4px 0; }
-.osm-change-preview dt { font-weight: 700; }
-.osm-change-preview dd { margin: 0; overflow-wrap: anywhere; }
-.osm-preview-tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
-.osm-preview-tag-row select { max-width: 100%; padding: 6px 8px; border: 1px solid #7b8d84; border-radius: 7px; background: white; }
-.osm-preview-tag-row code { padding: 2px 5px; border-radius: 5px; background: #e3f2ea; font-size: .78rem; }
-#osm-preview-save-status { margin-top: 7px; font-size: .82rem; font-weight: 700; }
-.osm-preview-test-button { margin-top: 8px; background: #176b4a; }
 .fitting-detail-button { margin-top: 8px; background: #2f5f8f; }
 .fitting-detail-modal { position: fixed; inset: 0; z-index: 5000; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.58); }
 .fitting-detail-modal.hidden { display: none; }

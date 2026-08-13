@@ -36,12 +36,6 @@ const traceTagListEl = document.getElementById("trace-tag-list");
 const traceTagErrorEl = document.getElementById("trace-tag-error");
 const traceMemoPanelEl = document.getElementById("trace-memo-panel");
 const traceMemoInputEl = document.getElementById("trace-memo-input");
-const osmChangePreviewEl = document.getElementById("osm-change-preview");
-const osmPreviewWayIdsEl = document.getElementById("osm-preview-way-ids");
-const osmPreviewStartEl = document.getElementById("osm-preview-start");
-const osmPreviewEndEl = document.getElementById("osm-preview-end");
-const osmPreviewTagStrategiesEl = document.getElementById("osm-preview-tag-strategies");
-const osmPreviewSaveStatusEl = document.getElementById("osm-preview-save-status");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
@@ -2208,34 +2202,6 @@ function isIndependentOsmWalkway(segment) {
     String(tags.footway || "").toLowerCase() === "sidewalk";
 }
 
-function updateOsmPreviewTagStrategy(segment) {
-  segment.tagStrategy = isIndependentOsmWalkway(segment)
-    ? "tactile_paving=yes"
-    : `sidewalk:${segment.side}:tactile_paving=yes`;
-}
-
-function renderOsmPreviewTagStrategies(osmPreview) {
-  if (!osmPreviewTagStrategiesEl) return;
-  osmPreviewTagStrategiesEl.innerHTML = "";
-  osmPreview.segments.forEach((segment, index) => {
-    updateOsmPreviewTagStrategy(segment);
-    const row = document.createElement("div");
-    row.className = "osm-preview-tag-row";
-    const label = document.createElement("span");
-    label.textContent = `Way ${segment.wayId}：`;
-    row.appendChild(label);
-    const code = document.createElement("code");
-    code.textContent = segment.tagStrategy;
-    row.appendChild(code);
-    if (!isIndependentOsmWalkway(segment)) {
-      const confidence = document.createElement("small");
-      confidence.textContent = `（アプリ自動判定・信頼度 ${Math.round(Number(segment.sideConfidence || 0) * 100)}%）`;
-      row.appendChild(confidence);
-    }
-    osmPreviewTagStrategiesEl.appendChild(row);
-  });
-}
-
 async function loadMapOsmConnectionState() {
   try {
     const response = await authFetch("/auth/osm/status", { cache: "no-store" });
@@ -2325,30 +2291,6 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         weight: 4,
         opacity: 0.65,
       }).addTo(traceConfirmMap);
-      if (osmChangePreviewEl) osmChangePreviewEl.classList.toggle("hidden", !osmPreview);
-      if (osmPreview && window.StepByOsmMatcher) {
-        osmPreview.segments.forEach((segment) => {
-          L.polyline(segment.coordinates.map(([lng, lat]) => [lat, lng]), {
-            color: "#16a060", weight: 7, opacity: 0.92,
-          }).addTo(traceConfirmMap);
-        });
-        L.circleMarker([osmPreview.start.lat, osmPreview.start.lng], {
-          radius: 8, color: "#fff", weight: 2, fillColor: "#f0a500", fillOpacity: 1,
-        }).bindTooltip("分割予定：開始").addTo(traceConfirmMap);
-        L.circleMarker([osmPreview.end.lat, osmPreview.end.lng], {
-          radius: 8, color: "#fff", weight: 2, fillColor: "#d84b43", fillOpacity: 1,
-        }).bindTooltip("分割予定：終了").addTo(traceConfirmMap);
-        if (osmPreviewWayIdsEl) osmPreviewWayIdsEl.textContent = osmPreview.segments.map((s) => s.wayId).join(" → ");
-        if (osmPreviewStartEl) osmPreviewStartEl.textContent = `Way ${osmPreview.start.wayId} / ${osmPreview.start.lat.toFixed(6)}, ${osmPreview.start.lng.toFixed(6)}`;
-        if (osmPreviewEndEl) osmPreviewEndEl.textContent = `Way ${osmPreview.end.wayId} / ${osmPreview.end.lat.toFixed(6)}, ${osmPreview.end.lng.toFixed(6)}`;
-        renderOsmPreviewTagStrategies(osmPreview);
-        if (osmPreviewSaveStatusEl) {
-          const connectionText = osmConnectionState.connected
-            ? "OSM連携済み"
-            : osmConnectionState.configured ? "保存後に初回OSM連携を開きます" : "OSM連携設定を確認できません";
-          osmPreviewSaveStatusEl.textContent = `記録確定後、変更案を自動保存します。${connectionText}。OSMには送信しません。`;
-        }
-      }
       traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
 
       const cleanupAndResolve = (result) => {
