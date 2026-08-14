@@ -10,6 +10,8 @@ for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
     "general-user save confirmation must not expose the OSM change preview");
 }
 assert.match(mapSource, /stepByBaseColor\s*=\s*recordColor/);
+assert.match(mapSource, /"OSM公開対象"/, "PRO tag picker must clearly say the tag is publicly exported to OSM");
+assert.doesNotMatch(mapSource, /"OSM対象"/, "ambiguous old PRO tag label must not return");
 assert.match(mapSource, /activeTactileSessionPolyline\.options\.stepByBaseColor/);
 assert.doesNotMatch(mapSource, /fetchOsmTactileDisplay\([\s\S]{0,200}?\.then\(\(res\)[\s\S]{0,120}?res\.ok/,
   "display helper already returns parsed data and must not be treated as a Response");
