@@ -1,8 +1,10 @@
 // UI10開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.28.7-revert-display-cleanup";
+const CACHE_VERSION = "1.28.8-centered-hit-and-auth-navigation";
 const APP_BASE_PATH = "/StepBy/UI10";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
-const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10-${Date.now()}`;
+// 時刻を含めるとService Worker再起動のたびに別名になり、既存キャッシュを
+// 見失って画面遷移が白くなるため、バージョンだけで一意にする。
+const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui10`;
 // 画像（プロフィール画像など）はバージョンが変わっても保持し続けるための専用キャッシュ。
 // CACHE_NAMEと違いタイムスタンプを含めず、activateハンドラの古いキャッシュ削除フィルタにも引っかからない名前にする。
 const IMAGE_CACHE_NAME = "barrierfree-map-images-ui10-v1";
@@ -135,7 +137,19 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(async () => {
+          const cached = await caches.match(request, { ignoreSearch: true });
+          if (cached) return cached;
+          const fallbackPath = url.pathname.includes("/auth/")
+            ? `${APP_BASE_PATH}/auth/login.html`
+            : `${APP_BASE_PATH}/map/Index.html`;
+          const fallback = await caches.match(fallbackPath, { ignoreSearch: true });
+          if (fallback) return fallback;
+          return new Response(
+            "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>StepBy</title><p>画面を読み込めませんでした。通信を確認して再読み込みしてください。</p>",
+            { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
+        })
     );
     return;
   }

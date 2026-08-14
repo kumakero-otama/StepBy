@@ -3233,6 +3233,37 @@ function bindOwnedOsmRevertPopup(layer, feature) {
   layer.bindPopup(panel);
 }
 
+// Leaflet/SVGでは完全透明な短い線の端が端末によって判定されにくいことがある。
+// 太い線に加え、線上の各頂点と区間中央へ円形判定を置くことで、見える線を
+// 中心とした同じ幅のタップ領域を確実に作る。
+function createCenteredPolylineHitTarget(coordinates, color) {
+  const hitLayers = [L.polyline(coordinates, {
+    color,
+    weight: 48,
+    opacity: 0.001,
+    lineCap: "round",
+    lineJoin: "round",
+    bubblingMouseEvents: false,
+  })];
+  const points = [];
+  coordinates.forEach((point, index) => {
+    points.push(point);
+    if (index === 0) return;
+    const previous = coordinates[index - 1];
+    points.push([(previous[0] + point[0]) / 2, (previous[1] + point[1]) / 2]);
+  });
+  points.forEach((point) => {
+    hitLayers.push(L.circleMarker(point, {
+      radius: 24,
+      stroke: false,
+      fillColor: color,
+      fillOpacity: 0.001,
+      bubblingMouseEvents: false,
+    }));
+  });
+  return L.featureGroup(hitLayers).addTo(map);
+}
+
 function showOsmTactileWaysOnMap(features) {
   clearOsmTactileWaysFromMap();
 
@@ -3265,15 +3296,9 @@ function showOsmTactileWaysOnMap(features) {
       }).addTo(map);
       osmTactileMarkers.push(polyline);
       if (isOwnedStepByRecord) {
-        const hitPolyline = L.polyline(coordinates, {
-          color: osmColor,
-          // 保存記録と同じ48pxの透明判定にし、短い緑線も選びやすくする。
-          weight: 48,
-          opacity: 0,
-          bubblingMouseEvents: false,
-        }).addTo(map);
-        bindOwnedOsmRevertPopup(hitPolyline, feature);
-        osmTactileMarkers.push(hitPolyline);
+        const hitTarget = createCenteredPolylineHitTarget(coordinates, osmColor);
+        bindOwnedOsmRevertPopup(hitTarget, feature);
+        osmTactileMarkers.push(hitTarget);
       }
       return;
     }

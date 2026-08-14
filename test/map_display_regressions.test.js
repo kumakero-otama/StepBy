@@ -27,8 +27,8 @@ assert.match(mapSource, /authorization:\s*"record_save"/,
   "the Save action must be carried to the record-scoped publication endpoint");
 assert.match(mapSource, /stepby_owned_record_id/,
   "only server-identified owned StepBy features may expose deletion");
-assert.match(mapSource, /isOwnedStepByRecord[\s\S]{0,700}?weight:\s*48[\s\S]{0,150}?opacity:\s*0/,
-  "owned green OSM lines need a four-times-wider invisible tap target");
+assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
+  "owned green OSM lines need centered line and circular tap targets");
 assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
   "saved StepBy paths need a wider invisible detail tap target");
 assert.match(mapSource, /path\.osm_status === "merged" \|\| path\.osm_status === "revert_draft"/,
