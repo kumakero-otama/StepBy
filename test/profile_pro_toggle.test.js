@@ -4,6 +4,9 @@ const path = require("path");
 
 const editSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.js"), "utf8");
 const editCss = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.css"), "utf8");
+const profileHtmlFiles = ["Index.html", "Index_en.html", "Index_hi.html"].map((name) => (
+  fs.readFileSync(path.join(__dirname, "../UI10/profile", name), "utf8")
+));
 const loadStatusMatch = editSource.match(
   /async function loadCurrentProStatus\(user\) \{([\s\S]*?)\n\}/,
 );
@@ -19,6 +22,14 @@ assert.match(
   /proToggleInputEl\.disabled\s*=\s*true/,
   "最新状態の確認中は誤操作を防ぐこと",
 );
+
+for (const profileHtml of profileHtmlFiles) {
+  assert.doesNotMatch(
+    profileHtml,
+    /osm-connection-note|Map uploads remain locked|地図への送信機能はロック/,
+    "OSM連携状態の下へ古い重複説明を表示しないこと",
+  );
+}
 assert.match(
   loadStatusMatch[1],
   /typeof isPro === "boolean"[\s\S]*proToggleInputEl\.checked = isPro/,
