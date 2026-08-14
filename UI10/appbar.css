@@ -60,6 +60,7 @@
 }
 
 .app-bar-icon-link {
+  box-sizing: content-box;
   width: 36px;
   height: 36px;
   border-radius: 9px;
@@ -105,6 +106,7 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  background: #11171b !important;
   --stepby-page-bg: #11171b;
   --stepby-surface: #20282d;
   --stepby-surface-soft: #182025;
@@ -133,11 +135,20 @@
   .stats-row, .stat-card, .osm-connection-card, .profile-wide-btn,
   .profile-edit-btn, .profile-edit-card, .form-card, .choice-btn,
   .pro-help-panel, .map-controls-panel, .map-controls-content,
-  .record-toggle-card, .safety-confirm-panel, .trace-confirm-panel,
-  .trace-tag-panel, .trace-memo-panel, .tag-panel, .tag-list,
+  .record-actions, .record-toggle-card, .tactile-session-card,
+  .tactile-session-card-edit-action, .safety-confirm-panel,
+  .trace-confirm-panel, .trace-confirm-actions, .trace-tag-panel,
+  .trace-tag-list, .trace-tag-option, .trace-memo-panel,
+  .fitting-comparison-panel, .comparison-values > div, .fitting-detail-panel,
+  .tag-panel, .tag-list,
   .tag-item, .tag-option, .photo-upload-area, .preview-card,
-  .detail-loading-card, .section-card, .posts-list, .comment-window,
-  .comment-result-panel, .comment-tag-panel, .leaflet-popup-content-wrapper,
+  .detail-loading-card, .detail-main, .detail-content, .section-card,
+  .tags-block, .posts-head, .posts-list, .comment-window,
+  .comment-window-body, .comment-window-foot, .comment-result-panel,
+  .comment-tag-panel, .comment-tag-list, .comment-tag-option,
+  .comment-complete-tag-btn, .comment-upload-buttons .btn,
+  .comment-image-preview, .footer-btn-light,
+  .leaflet-popup-content-wrapper,
   .leaflet-popup-tip
 ) {
   background: var(--stepby-surface) !important;
@@ -178,7 +189,8 @@
   .help-link-description, .faq-answer, .help-list, .record-label,
   .profile-wide-btn-description, .stat-label, .version-footer,
   #app-version, .trace-memo-note, .tag-selected-empty,
-  .photo-upload-copy, .post-count
+  .photo-upload-copy, .post-count, .comparison-legend,
+  .comparison-values dt, .trace-tag-list-empty
 ) {
   color: var(--stepby-muted) !important;
 }
@@ -230,7 +242,8 @@
 :root[data-font-size] :where(
   .accordion-trigger, .help-link-label, .profile-wide-btn-label,
   .choice-btn, .footer-btn, .osm-connect-btn, .osm-disconnect-btn,
-  .btn, .comment-close-btn, .photo-btn
+  .btn, .comment-close-btn, .photo-btn, .record-action-btn,
+  .map-controls-handle, .trace-confirm-ok-btn, .trace-confirm-cancel-btn
 ) { font-size: 0.9375rem !important; }
 :root[data-font-size] :where(
   .tag-search, .detail-input, .form-input, .trace-tag-search,
