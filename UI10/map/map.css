@@ -456,11 +456,6 @@ body {
 }
 
 @media (max-width: 520px) {
-  .map-app-bar {
-    padding-right: 8px;
-    padding-left: 12px;
-  }
-
   .map-app-bar-copy {
     margin-left: 8px;
   }
@@ -473,10 +468,6 @@ body {
   .map-app-bar-tagline {
     font-size: 7px;
     letter-spacing: 1.6px;
-  }
-
-  .map-app-bar-actions {
-    gap: 6px;
   }
 
   .map-app-bar-action {
