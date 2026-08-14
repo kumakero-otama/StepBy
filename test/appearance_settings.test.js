@@ -3,6 +3,8 @@ const fs = require("fs");
 const path = require("path");
 
 const css = fs.readFileSync(path.join(__dirname, "../UI10/appbar.css"), "utf8");
+const profileSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/profile.js"), "utf8");
+const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
 
 assert.match(css, /:root\[data-font-size="medium"\][\s\S]*?font-size:\s*115%/,
   "medium must increase the root rem size");
@@ -16,5 +18,14 @@ assert.match(css, /data-theme="dark"[\s\S]*?input\[type="text"\][\s\S]*?textarea
   "dark mode must cover text inputs and textareas");
 assert.match(css, /data-theme="dark"[\s\S]*?\.osm-disconnect-btn[\s\S]*?\.trace-confirm-cancel-btn/,
   "dark mode must cover secondary buttons");
+
+for (const popupSource of [profileSource, mapSource]) {
+  assert.match(popupSource, /fontSize:\s*`\$\{Math\.max\(20, sourceRootSize \* 1\.125\)\}px`/,
+    "StepBy OAuth preparation text must be at least 20px and follow the selected font size");
+  assert.match(popupSource, /background:\s*dark \? "#11171b" : "#f5f7fa"/,
+    "StepBy OAuth preparation window must follow the selected theme");
+  assert.doesNotMatch(popupSource, /body\.textContent\s*=\s*"OpenStreetMapの認証画面を準備しています/,
+    "the old unstyled OAuth preparation text must not return");
+}
 
 console.log("appearance settings cover scalable text and dark interactive surfaces");
