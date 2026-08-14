@@ -1980,7 +1980,7 @@ function renderTraceTagList() {
     return;
   }
   traceTagListEl.innerHTML = visibleTags
-    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)} <small>${tag.osmExportable ? "OSM対象" : "StepByのみ"}</small></button>`)
+    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)} <small>${tag.osmExportable ? "OSM公開対象" : "StepByのみ"}</small></button>`)
     .join("");
 }
 
