@@ -214,7 +214,6 @@ body {
 .osm-connection-status { margin: 0; font-weight: 700; color: #355066; }
 .osm-connection-status.is-connected { color: #18735f; }
 .osm-connection-status.is-error { color: #a33d31; }
-.osm-connection-note { margin: 8px 0 14px; color: #607180; font-size: .88rem; line-height: 1.65; }
 
 .osm-connect-btn,
 .osm-disconnect-btn {
