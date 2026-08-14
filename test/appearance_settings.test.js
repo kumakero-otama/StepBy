@@ -18,6 +18,12 @@ assert.match(css, /data-theme="dark"[\s\S]*?input\[type="text"\][\s\S]*?textarea
   "dark mode must cover text inputs and textareas");
 assert.match(css, /data-theme="dark"[\s\S]*?\.osm-disconnect-btn[\s\S]*?\.trace-confirm-cancel-btn/,
   "dark mode must cover secondary buttons");
+assert.match(css, /data-theme="dark"[\s\S]*?background:\s*#11171b !important/,
+  "dark mode must color the root canvas below short pages");
+assert.match(css, /data-theme="dark"[\s\S]*?\.record-actions[\s\S]*?\.tactile-session-card[\s\S]*?\.fitting-detail-panel/,
+  "dark mode must cover map action and detail cards");
+assert.match(css, /\.record-action-btn[\s\S]*?font-size:\s*0\.9375rem !important/,
+  "record and pause labels must follow the selected root font size");
 
 for (const popupSource of [profileSource, mapSource]) {
   assert.match(popupSource, /fontSize:\s*`\$\{Math\.max\(20, sourceRootSize \* 1\.125\)\}px`/,
