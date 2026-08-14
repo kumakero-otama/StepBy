@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const editSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.js"), "utf8");
+const editCss = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.css"), "utf8");
 const loadStatusMatch = editSource.match(
   /async function loadCurrentProStatus\(user\) \{([\s\S]*?)\n\}/,
 );
@@ -25,3 +26,14 @@ assert.match(
 );
 
 console.log("profile PRO toggle keeps its cached state while the API status is loading");
+
+assert.match(
+  editCss,
+  /\.pro-help-modal\s*\{[\s\S]*?min-height:\s*100dvh;[\s\S]*?safe-area-inset-top[\s\S]*?overflow-y:\s*auto;/,
+  "PRO説明モーダルは動的画面高とセーフエリア内でスクロールできること",
+);
+assert.match(
+  editCss,
+  /\.pro-help-panel\s*\{[\s\S]*?max-height:\s*calc\(100dvh[\s\S]*?overflow-y:\s*auto;/,
+  "PRO説明パネルが画面高を超えて見切れないこと",
+);
