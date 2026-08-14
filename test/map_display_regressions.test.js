@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
+const mapCss = fs.readFileSync(path.join(__dirname, "../UI10/map/map.css"), "utf8");
 for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const html = fs.readFileSync(path.join(__dirname, "../UI10/map", name), "utf8");
   assert.match(html, /class="pro-badge map-pro-badge"/);
@@ -49,4 +50,13 @@ assert.doesNotMatch(mapSource, /bindOwnedOsmRevertPopup|StepByで記録した点
   "the old delete-only OSM popup must not remain");
 assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
   "OSM reverts must survive page/network interruptions in their own persistent queue");
+const mobileAppBarCss = mapCss.slice(
+  mapCss.indexOf("@media (max-width: 520px)"),
+  mapCss.indexOf(".map-layout"),
+);
+assert.ok(mobileAppBarCss, "mobile map app-bar styles must exist");
+assert.doesNotMatch(mobileAppBarCss, /\.map-app-bar\s*\{[\s\S]*?padding-(?:left|right):/,
+  "mobile map app-bar must keep the shared 14px horizontal padding");
+assert.doesNotMatch(mobileAppBarCss, /\.map-app-bar-actions\s*\{[\s\S]*?gap:/,
+  "mobile map buttons must keep the shared 8px gap");
 console.log("map display fetch, initial location follow, PRO badge, and selected-line color regressions are covered");
