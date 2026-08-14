@@ -331,6 +331,44 @@ function setOsmStatus(message, state) {
   osmStatusEl.classList.toggle("is-error", state === "error");
 }
 
+function renderOsmPreparingPopup(popup) {
+  if (!popup || popup.closed) return;
+  const language = getCurrentLanguage();
+  const messages = {
+    ja: "OpenStreetMapの認証画面を準備しています…",
+    en: "Preparing the OpenStreetMap authorization screen…",
+    hi: "OpenStreetMap प्राधिकरण स्क्रीन तैयार की जा रही है…",
+  };
+  const sourceRootSize = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+  const dark = document.documentElement.dataset.theme === "dark";
+  const popupDocument = popup.document;
+  popupDocument.title = language === "ja" ? "OpenStreetMap連携" : "OpenStreetMap connection";
+  popupDocument.documentElement.lang = language;
+  popupDocument.body.replaceChildren();
+  Object.assign(popupDocument.body.style, {
+    margin: "0",
+    minHeight: "100vh",
+    display: "grid",
+    placeItems: "center",
+    padding: "32px",
+    boxSizing: "border-box",
+    background: dark ? "#11171b" : "#f5f7fa",
+    color: dark ? "#edf2f5" : "#1f2d3a",
+    fontFamily: 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif',
+  });
+  const message = popupDocument.createElement("p");
+  message.textContent = messages[language] || messages.ja;
+  Object.assign(message.style, {
+    margin: "0",
+    maxWidth: "420px",
+    fontSize: `${Math.max(20, sourceRootSize * 1.125)}px`,
+    fontWeight: "700",
+    lineHeight: "1.7",
+    textAlign: "center",
+  });
+  popupDocument.body.appendChild(message);
+}
+
 async function loadOsmConnection() {
   if (!osmStatusEl || !osmConnectBtnEl || !osmDisconnectBtnEl) return;
   const text = getProfileText();
@@ -367,8 +405,7 @@ async function startOsmConnection() {
   const popup = window.open("about:blank", "stepby-osm-oauth", popupFeatures);
   const mode = popup ? "popup" : "redirect";
   if (popup) {
-    popup.document.title = "OpenStreetMap連携";
-    popup.document.body.textContent = "OpenStreetMapの認証画面を準備しています…";
+    renderOsmPreparingPopup(popup);
   }
   try {
     const returnUrl = window.location.origin + AppPath.toApp("/profile/Index.html");
