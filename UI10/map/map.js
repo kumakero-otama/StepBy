@@ -275,6 +275,11 @@ const TACTILE_SESSION_TEXT = {
     memoSaveFailed: "ひとことメモの保存に失敗しました。",
     selfLabel: "あなた",
     delete: "削除",
+    stepByOnly: "StepBy内のみ",
+    osmPublished: "OSM公開済み",
+    deleteStepBy: "StepByから削除",
+    deleteOsm: "OSM公開を取り消して削除",
+    deleteOsmConfirm: "この点字ブロックのOSM公開を取り消し、StepByからも削除しますか？",
     deleteConfirm: "本当にこの点字ブロックを削除してよろしいですか？",
     deleteFailed: "点字ブロックの削除に失敗しました。",
     noTags: "タグなし",
@@ -294,6 +299,11 @@ const TACTILE_SESSION_TEXT = {
     memoSaveFailed: "Failed to save the short memo.",
     selfLabel: "You",
     delete: "Delete",
+    stepByOnly: "StepBy only",
+    osmPublished: "Published to OSM",
+    deleteStepBy: "Delete from StepBy",
+    deleteOsm: "Revert OSM publication and delete",
+    deleteOsmConfirm: "Revert this tactile block from OSM and delete it from StepBy?",
     deleteConfirm: "Are you sure you want to delete this tactile block?",
     deleteFailed: "Failed to delete the tactile block.",
     noTags: "No tags",
@@ -313,6 +323,11 @@ const TACTILE_SESSION_TEXT = {
     memoSaveFailed: "छोटा मेमो सहेजने में विफल रहा।",
     selfLabel: "आप",
     delete: "हटाएं",
+    stepByOnly: "केवल StepBy",
+    osmPublished: "OSM पर प्रकाशित",
+    deleteStepBy: "StepBy से हटाएं",
+    deleteOsm: "OSM प्रकाशन वापस लेकर हटाएं",
+    deleteOsmConfirm: "क्या इस टैक्टाइल ब्लॉक का OSM प्रकाशन वापस लेकर इसे StepBy से भी हटाना है?",
     deleteConfirm: "क्या आप वाकई इस टैक्टाइल ब्लॉक को हटाना चाहते हैं?",
     deleteFailed: "टैक्टाइल ब्लॉक हटाने में विफल रहा।",
     noTags: "कोई टैग नहीं",
@@ -440,7 +455,13 @@ function buildTactileSessionCardShell(innerHtml) {
     </div>`;
 }
 
-function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, error = "", ownerUserId = null } = {}) {
+function buildTactileSessionCardHtml(sessionId, sessionInfo, {
+  loading = false,
+  error = "",
+  ownerUserId = null,
+  osmPublished = false,
+  osmRecordId = "",
+} = {}) {
   const text = getTactileSessionText();
   if (loading) {
     return buildTactileSessionCardShell(`
@@ -471,6 +492,7 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const deleteIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/delete.png"));
   const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
   const canEditOwnSession = isOwnTactileSession(ownerUserId);
+  const publicationBadge = `<div class="tactile-session-publication-status ${osmPublished ? "is-osm" : "is-stepby"}">${escapeHtml(osmPublished ? text.osmPublished : text.stepByOnly)}</div>`;
   const memoHtml = memoValue
     ? `
     <div class="tactile-session-card-memo">
@@ -491,9 +513,11 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
         <img src="${memoEditIconUrl}" alt="">
         <span>${escapeHtml(text.memoEdit)}</span>
       </button>
-      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">
+      <button class="tactile-session-card-delete" type="button" ${osmPublished
+        ? `data-revert-osm-record="${escapeHtml(osmRecordId || sessionId)}"`
+        : `data-deactivate-tactile-session="${escapeHtml(sessionId)}"`}>
         <img src="${deleteIconUrl}" alt="">
-        <span>${escapeHtml(text.delete)}</span>
+        <span>${escapeHtml(osmPublished ? text.deleteOsm : text.deleteStepBy)}</span>
       </button>
     </div>`
     : "";
@@ -509,6 +533,7 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
         <img src="${closeIconUrl}" alt="">
       </button>
     </div>
+    ${publicationBadge}
     <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
     ${memoHtml}
     ${actionButtons}`;
@@ -641,6 +666,19 @@ function renderTactileSessionCard(contentHtml, latlng) {
         return;
       }
       void deactivateTactileSession(targetSessionId, target);
+    });
+  }
+  const osmRevertBtn = card.querySelector("[data-revert-osm-record]");
+  if (osmRevertBtn) {
+    osmRevertBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.currentTarget;
+      const recordId = target instanceof HTMLElement
+        ? String(target.getAttribute("data-revert-osm-record") || "").trim()
+        : "";
+      if (!recordId) return;
+      void requestOwnedOsmRevert(recordId, target);
     });
   }
   const memoEditBtn = card.querySelector("[data-edit-tactile-memo]");
@@ -3199,38 +3237,56 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   }
 }
 
-function bindOwnedOsmRevertPopup(layer, feature) {
+async function requestOwnedOsmRevert(recordId, button) {
+  const text = getTactileSessionText();
+  if (!window.confirm(text.deleteOsmConfirm)) return;
+  if (!osmRevertQueue) {
+    showMapToast("削除処理を開始できませんでした。ページを再読み込みしてください。", 4200);
+    return;
+  }
+  if (button instanceof HTMLButtonElement) button.disabled = true;
+  try {
+    await osmRevertQueue.enqueue({ id: `osm-revert:${recordId}`, recordId });
+    hideTactileSessionCard();
+  } catch (error) {
+    if (button instanceof HTMLButtonElement) button.disabled = false;
+    showMapToast("削除要求を端末に保存できませんでした。", 4200);
+  }
+}
+
+function bindOwnedOsmRecordCard(layer, feature, displayPolyline) {
   const properties = feature && feature.properties || {};
   const recordId = String(properties.stepby_owned_record_id || "");
   if (!properties.stepby_can_revert || !recordId) return;
-  const panel = document.createElement("div");
-  const message = document.createElement("p");
-  message.textContent = "StepByで記録した点字ブロックです。";
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "osm-owned-record-delete-button";
-  button.textContent = "この記録を削除";
-  button.addEventListener("click", async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!window.confirm("この点字ブロック記録をOSMから取り消しますか？")) return;
-    if (!osmRevertQueue) {
-      showMapToast("削除処理を開始できませんでした。ページを再読み込みしてください。", 4200);
-      return;
-    }
-    button.disabled = true;
-    button.textContent = "削除を受け付けました";
-    try {
-      await osmRevertQueue.enqueue({ id: `osm-revert:${recordId}`, recordId });
-      layer.closePopup();
-    } catch (error) {
-      button.disabled = false;
-      button.textContent = "この記録を削除";
-      showMapToast("削除要求を端末に保存できませんでした。", 4200);
-    }
+  layer.on("click", (event) => {
+    if (event.originalEvent) L.DomEvent.stop(event.originalEvent);
+    setActiveTactileSessionPolyline(displayPolyline);
+    renderTactileSessionCard(
+      buildTactileSessionCardHtml(recordId, null, { loading: true, ownerUserId: currentUserId }),
+      event.latlng
+    );
+    fetchTactileSessionInfo(recordId)
+      .then((sessionInfo) => {
+        renderTactileSessionCard(
+          buildTactileSessionCardHtml(recordId, sessionInfo, {
+            ownerUserId: currentUserId,
+            osmPublished: true,
+            osmRecordId: recordId,
+          }),
+          event.latlng
+        );
+      })
+      .catch((error) => {
+        const text = getTactileSessionText();
+        renderTactileSessionCard(
+          buildTactileSessionCardHtml(recordId, null, {
+            error: error && error.message === "session_not_found" ? text.notFound : text.fetchFailed,
+            ownerUserId: currentUserId,
+          }),
+          event.latlng
+        );
+      });
   });
-  panel.append(message, button);
-  layer.bindPopup(panel);
 }
 
 // Leaflet/SVGでは完全透明な短い線の端が端末によって判定されにくいことがある。
@@ -3294,10 +3350,11 @@ function showOsmTactileWaysOnMap(features) {
         // 本人の緑線は透明な専用レイヤーでタップを受ける。
         interactive: !isOwnedStepByRecord,
       }).addTo(map);
+      polyline.options.stepByBaseColor = osmColor;
       osmTactileMarkers.push(polyline);
       if (isOwnedStepByRecord) {
         const hitTarget = createCenteredPolylineHitTarget(coordinates, osmColor);
-        bindOwnedOsmRevertPopup(hitTarget, feature);
+        bindOwnedOsmRecordCard(hitTarget, feature, polyline);
         osmTactileMarkers.push(hitTarget);
       }
       return;
@@ -3319,7 +3376,7 @@ function showOsmTactileWaysOnMap(features) {
         fillOpacity: 0.95,
         weight: 1,
       }).addTo(map);
-      bindOwnedOsmRevertPopup(point, feature);
+      bindOwnedOsmRecordCard(point, feature, point);
       osmTactileMarkers.push(point);
     }
   });
