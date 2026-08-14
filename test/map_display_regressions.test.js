@@ -39,6 +39,14 @@ assert.match(mapSource, /loadAndShowAllRecords\(map\.getCenter\(\)\)/,
   "a completed OSM revert must refresh the StepBy record layer");
 assert.match(mapSource, /authorization:\s*"owned_green_line_delete"/,
   "confirmed green-line deletion must call the record-scoped revert endpoint");
+assert.match(mapSource, /osmPublished:\s*true[\s\S]{0,200}?osmRecordId:\s*recordId/,
+  "owned OSM lines must use the same detailed record card with published state");
+assert.match(mapSource, /data-revert-osm-record/,
+  "the unified card must keep a distinct OSM revert action");
+assert.match(mapSource, /OSM公開済み/,
+  "the unified card must clearly show the OSM publication state");
+assert.doesNotMatch(mapSource, /bindOwnedOsmRevertPopup|StepByで記録した点字ブロックです。/,
+  "the old delete-only OSM popup must not remain");
 assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
   "OSM reverts must survive page/network interruptions in their own persistent queue");
 console.log("map display fetch, initial location follow, PRO badge, and selected-line color regressions are covered");
