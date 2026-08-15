@@ -692,16 +692,6 @@
       const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
         ? window.AuthToken.authFetch
         : fetch;
-      const fallbackTags = [
-        { id: "step", label: "सीढ़ी" },
-        { id: "construction", label: "निर्माण कार्य" },
-        { id: "tactile", label: "स्पर्श मार्ग" },
-        { id: "slope", label: "ढलान उपलब्ध" },
-        { id: "caution", label: "सावधानी" },
-        { id: "rough_surface", label: "खराब सतह" },
-        { id: "crowded", label: "भीड़" },
-        { id: "dark_at_night", label: "रात में अंधेरा" }
-      ];
       const tagSearchEl = document.getElementById("tag-search");
       const tagSelectedEl = document.getElementById("tag-selected");
       const tagListEl = document.getElementById("tag-list");
@@ -859,12 +849,13 @@
         })
         .then((payload) => {
           const tags = normalizeTags(Array.isArray(payload && payload.tags) ? payload.tags : []);
-          allTags = tags.length > 0 ? tags : fallbackTags;
+          allTags = tags;
           renderTagUi();
         })
         .catch(() => {
-          allTags = fallbackTags;
-          renderTagUi();
+          allTags = [];
+          if (tagSelectedEl) tagSelectedEl.innerHTML = '<div class="tag-selected-empty">कोई चयन नहीं</div>';
+          if (tagListEl) tagListEl.innerHTML = '<div class="tag-list-empty">डेटाबेस से टैग लोड नहीं किए जा सके</div>';
         });
 
       if (tagSearchEl) {
