@@ -692,16 +692,6 @@
       const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
         ? window.AuthToken.authFetch
         : fetch;
-      const fallbackTags = [
-        { id: "step", label: "段差" },
-        { id: "construction", label: "工事中" },
-        { id: "tactile", label: "点字ブロック" },
-        { id: "slope", label: "スロープあり" },
-        { id: "caution", label: "通行注意" },
-        { id: "rough_surface", label: "路面が悪い" },
-        { id: "crowded", label: "混雑" },
-        { id: "dark_at_night", label: "夜間暗い" }
-      ];
       const tagSearchEl = document.getElementById("tag-search");
       const tagSelectedEl = document.getElementById("tag-selected");
       const tagListEl = document.getElementById("tag-list");
@@ -859,12 +849,13 @@
         })
         .then((payload) => {
           const tags = normalizeTags(Array.isArray(payload && payload.tags) ? payload.tags : []);
-          allTags = tags.length > 0 ? tags : fallbackTags;
+          allTags = tags;
           renderTagUi();
         })
         .catch(() => {
-          allTags = fallbackTags;
-          renderTagUi();
+          allTags = [];
+          if (tagSelectedEl) tagSelectedEl.innerHTML = '<div class="tag-selected-empty">未選択</div>';
+          if (tagListEl) tagListEl.innerHTML = '<div class="tag-list-empty">タグをデータベースから読み込めませんでした</div>';
         });
 
       if (tagSearchEl) {
