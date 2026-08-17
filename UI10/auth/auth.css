@@ -14,9 +14,10 @@ body {
 }
 
 body.login-page {
-  height: var(--login-visible-height);
+  height: auto;
   min-height: var(--login-visible-height);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .auth-shell {
@@ -142,20 +143,21 @@ body.login-page {
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 24%),
     linear-gradient(160deg, #0d3535 0%, #1a5c5c 30%, #2e9e8f 66%, #4bdbb4 100%);
-  height: var(--login-visible-height);
+  height: auto;
   min-height: var(--login-visible-height);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .login-shell {
-  height: var(--login-visible-height);
+  height: auto;
   min-height: var(--login-visible-height);
   max-width: 480px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   background: transparent;
 }
@@ -309,8 +311,8 @@ body.login-page {
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  max-height: calc(var(--login-visible-height) - 120px - var(--login-system-ui-bottom));
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .login-card-hint {
@@ -630,6 +632,48 @@ body.login-page {
 
   .signup-profile-card {
     padding: 28px 22px;
+  }
+}
+
+@media (max-height: 720px) {
+  .login-hero {
+    flex: 0 0 auto;
+    padding-top: 18px;
+    padding-bottom: 10px;
+  }
+
+  .login-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+  }
+
+  .login-logo img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .login-subtitle {
+    margin-bottom: 10px;
+  }
+
+  .login-features {
+    margin-bottom: 10px;
+  }
+
+  .login-card {
+    padding-top: 20px;
+  }
+}
+
+@media (max-height: 580px) {
+  .login-features {
+    display: none;
+  }
+
+  .login-card-hint {
+    margin-bottom: 12px;
   }
 }
 
