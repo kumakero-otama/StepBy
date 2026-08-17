@@ -427,6 +427,7 @@
       if (!options.force && this.hasFreshCoverage(point)) return this.network;
       if (this.loading) return this.loading;
       const params = new URLSearchParams({ centerLat: String(lat), centerLng: String(lng), radiusMeters: String(this.radiusMeters) });
+      if (options.force) params.set("forceRefresh", "1");
       const previousNetwork = this.network;
       this.loading = this.fetcher(`/api/osm-walkable-network?${params}`)
         .then((response) => {
@@ -460,7 +461,7 @@
       return result;
     }
 
-    async ensureTraceCoverage(points, spacingMeters = 450) {
+    async ensureTraceCoverage(points, spacingMeters = 450, options = {}) {
       await this.ready;
       const validPoints = (Array.isArray(points) ? points : [])
         .map((point) => ({ lat: Number(point && point.lat), lng: Number(point && point.lng) }))
@@ -476,7 +477,9 @@
       }
       const finalPoint = validPoints[validPoints.length - 1];
       if (distanceMeters(coveragePoints[coveragePoints.length - 1], finalPoint) > 1) coveragePoints.push(finalPoint);
-      for (const point of coveragePoints) await this.ensureNetwork(point.lat, point.lng);
+      for (const point of coveragePoints) {
+        await this.ensureNetwork(point.lat, point.lng, { force: Boolean(options.force) });
+      }
       return this.network;
     }
 

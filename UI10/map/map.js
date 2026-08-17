@@ -2630,7 +2630,9 @@ async function handleRecordStopWithConfirmation() {
   if (browserOsmMatcher) {
     try {
       // 軌跡の開始・途中・終了をすべて道路網で覆ってから経路を確定する。
-      await browserOsmMatcher.ensureTraceCoverage(allTracePoints);
+      // 保存直前はブラウザ・サーバー双方のキャッシュを使わず、最新のOSM Wayで確定する。
+      // 別端末や管理処理による直前のOSM変更を、古いWayとして送信しないため。
+      await browserOsmMatcher.ensureTraceCoverage(allTracePoints, 450, { force: true });
     } catch (error) {
       console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
     }
