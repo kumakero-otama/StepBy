@@ -6,6 +6,9 @@ for (const name of ["login.html", "login_en.html", "login_hi.html"]) {
   const html = fs.readFileSync(path.join(__dirname, `../UI10/auth/${name}`), "utf8");
   assert.match(html, /id="google-signin-button"/);
   assert.match(html, /id="guest-login-button"/);
+  assert.match(html, /data-document="terms"/);
+  assert.match(html, /data-document="privacy"/);
+  assert.match(html, /id="user-agreement-modal"/);
   assert.match(html, /ui10-login-scroll-20260817/);
 }
 const css = fs.readFileSync(path.join(__dirname, "../UI10/auth/auth.css"), "utf8");

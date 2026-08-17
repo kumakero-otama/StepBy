@@ -46,12 +46,14 @@
         <div class="login-guest-wrap">
           <button id="guest-login-button" class="login-guest-button" type="button">अतिथि के रूप में उपयोग करें</button>
         </div>
+        <p class="login-policy-note">अतिथि के रूप में जारी रखने पर आप <button type="button" class="agreement-link open-policy-document" data-document="terms">सेवा की शर्तों</button> और <button type="button" class="agreement-link open-policy-document" data-document="privacy">गोपनीयता नीति</button> से सहमत होते हैं।</p>
         <p id="google-auth-status" class="helper-text login-status"></p>
       </section>
+      <section id="user-agreement-modal" class="agreement-modal hidden" role="dialog" aria-modal="true" aria-labelledby="user-agreement-title"><div class="agreement-panel"><div class="agreement-header"><h2 id="user-agreement-title">सेवा की शर्तें</h2><button id="close-user-agreement" type="button" class="agreement-close-btn" aria-label="बंद करें"><img src="../assets/buttons/close.png" alt="" /></button></div><div id="user-agreement-content" class="agreement-content">लोड हो रहा है...</div></div></section>
     </main>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
-    <script src="auth.js?v=ui10-login-navigation-20260814"></script>
+    <script src="auth.js?v=ui10-guest-policy-pwa-20260817"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>
