@@ -3,6 +3,9 @@ const fs = require("fs");
 const path = require("path");
 
 const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
+const matcherSource = fs.readFileSync(path.join(__dirname, "../UI10/map/osm-browser-matcher.js"), "utf8");
+const mapCss = fs.readFileSync(path.join(__dirname, "../UI10/map/map.css"), "utf8");
+const appBarCss = fs.readFileSync(path.join(__dirname, "../UI10/appbar.css"), "utf8");
 for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const html = fs.readFileSync(path.join(__dirname, "../UI10/map", name), "utf8");
   assert.match(html, /class="pro-badge map-pro-badge"/);
@@ -64,4 +67,27 @@ assert.doesNotMatch(mapSource, /bindOwnedOsmRevertPopup|StepByで記録した点
   "the old delete-only OSM popup must not remain");
 assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
   "OSM reverts must survive page/network interruptions in their own persistent queue");
+assert.match(mapSource, /runStage\("osm_network_refreshed"/,
+  "a successful publish must refresh the browser OSM network before the queue completes");
+assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refreshAfterOsmChange/,
+  "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
+assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,
+  "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
+const mobileAppBarCss = mapCss.slice(
+  mapCss.indexOf("@media (max-width: 520px)"),
+  mapCss.indexOf(".map-layout"),
+);
+assert.ok(mobileAppBarCss, "mobile map app-bar styles must exist");
+assert.doesNotMatch(mobileAppBarCss, /\.map-app-bar\s*\{[\s\S]*?padding-(?:left|right):/,
+  "mobile map app-bar must keep the shared 14px horizontal padding");
+assert.doesNotMatch(mobileAppBarCss, /\.map-app-bar-actions\s*\{[\s\S]*?gap:/,
+  "mobile map buttons must keep the shared 8px gap");
+assert.match(mapCss, /\.map-app-bar\s*\{[\s\S]*?overflow:\s*hidden;[\s\S]*?box-shadow:\s*0 10px 28px rgba\(30, 122, 109, 0\.26\)/,
+  "map app-bar must use the same visible bounds and shadow as other screens");
+assert.match(mapCss, /\.map-app-bar-action\s*\{[\s\S]*?background:\s*rgba\(255, 255, 255, 0\.16\)[\s\S]*?border:\s*1px solid rgba\(255, 255, 255, 0\.22\)/,
+  "map app-bar buttons must use the shared button appearance");
+assert.match(mapCss, /\.map-app-bar-wave\s*\{\s*display:\s*none;/,
+  "the map-only wave must not make the app-bar appear taller than other screens");
+assert.match(appBarCss, /\.app-bar-icon-link\s*\{[\s\S]*?box-sizing:\s*content-box;/,
+  "app-bar buttons must keep the same outer 38px size even on pages with global border-box sizing");
 console.log("map display fetch, initial location follow, PRO badge, and selected-line color regressions are covered");

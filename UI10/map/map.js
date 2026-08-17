@@ -2506,8 +2506,20 @@ async function processQueuedRecording(payload, context) {
         payload.osmAlreadyPresent = true;
       }
     });
+    await runStage("osm_network_refreshed", async () => {
+      if (browserOsmMatcher && typeof browserOsmMatcher.refreshAfterOsmChange === "function") {
+        await browserOsmMatcher.refreshAfterOsmChange(payload.rawPoints || []);
+      }
+    });
   } else {
     await runStage("osm_draft_skipped_stepby_only", async () => {});
+  }
+}
+
+function refreshVisibleMapDataAfterOsmChange() {
+  loadAndShowAllRecords(map.getCenter());
+  if (shouldShowOsmTactile()) {
+    loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
   }
 }
 
@@ -2520,6 +2532,9 @@ function initRecordUploadQueue() {
         showMapToast("記録を保存しています…", 2400);
       } else if (event.type === "completed") {
         showMapToast("記録しました。", 2800);
+        if ((event.job && event.job.completedStages || []).includes("osm_published")) {
+          refreshVisibleMapDataAfterOsmChange();
+        }
       } else if (event.type === "retry") {
         showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
       } else if (event.type === "blocked") {
@@ -2532,19 +2547,26 @@ function initRecordUploadQueue() {
   void recordUploadQueue.flush();
 }
 
-async function processQueuedOsmRevert(payload) {
-  const response = await authFetch(`/api/osm/records/${encodeURIComponent(payload.recordId)}/revert`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ authorization: "owned_green_line_delete" }),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(result.error || `osm_revert_failed:${response.status}`);
-    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
-    throw error;
+async function processQueuedOsmRevert(payload, context) {
+  const completed = new Set(context.job.completedStages || []);
+  if (!completed.has("osm_reverted")) {
+    const response = await authFetch(`/api/osm/records/${encodeURIComponent(payload.recordId)}/revert`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ authorization: "owned_green_line_delete" }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(result.error || `osm_revert_failed:${response.status}`);
+      error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+      throw error;
+    }
+    await context.checkpoint("osm_reverted");
   }
-  return result;
+  if (!completed.has("osm_network_refreshed") && browserOsmMatcher && typeof browserOsmMatcher.refreshAfterOsmChange === "function") {
+    await browserOsmMatcher.refreshAfterOsmChange([]);
+    await context.checkpoint("osm_network_refreshed");
+  }
 }
 
 function initOsmRevertQueue() {
@@ -2557,8 +2579,7 @@ function initOsmRevertQueue() {
         showMapToast("削除しています…", 2400);
       } else if (event.type === "completed") {
         showMapToast("削除しました。", 2800);
-        loadAndShowAllRecords(map.getCenter());
-        if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
+        refreshVisibleMapDataAfterOsmChange();
       } else if (event.type === "retry") {
         showMapToast("通信が不安定です。削除はあとで自動的に続けます。", 4400);
       } else if (event.type === "blocked") {
