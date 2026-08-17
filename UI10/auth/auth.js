@@ -32,6 +32,8 @@ const AUTH_TEXT = {
     signupSaveNetworkError: "ネットワークエラーで保存に失敗しました。",
     processingTitle: "ログイン中です…",
     processingMessage: "Google認証の完了を確認しています。このままお待ちください。",
+    osmPreparing: "OpenStreetMapの登録・認証画面を準備しています…",
+    osmRetryLater: "OpenStreetMap連携を開始できませんでした。次回のGoogleログイン時にもう一度試します。",
   },
   en: {
     guestChecking: "Checking guest login...",
@@ -48,6 +50,8 @@ const AUTH_TEXT = {
     signupSaveNetworkError: "Saving failed due to a network error.",
     processingTitle: "Signing you in...",
     processingMessage: "We are confirming your Google sign-in. Please wait on this screen.",
+    osmPreparing: "Preparing OpenStreetMap registration and authorization…",
+    osmRetryLater: "OpenStreetMap connection could not be started. We will try again at your next Google sign-in.",
   },
   hi: {
     guestChecking: "गेस्ट लॉगिन की पुष्टि की जा रही है...",
@@ -64,6 +68,8 @@ const AUTH_TEXT = {
     signupSaveNetworkError: "नेटवर्क त्रुटि के कारण सहेजना विफल हुआ।",
     processingTitle: "लॉग इन किया जा रहा है...",
     processingMessage: "Google साइन-इन की पुष्टि की जा रही है। कृपया इसी स्क्रीन पर प्रतीक्षा करें।",
+    osmPreparing: "OpenStreetMap पंजीकरण और अनुमति स्क्रीन तैयार की जा रही है…",
+    osmRetryLater: "OpenStreetMap कनेक्शन शुरू नहीं हो सका। अगले Google लॉगिन पर फिर प्रयास किया जाएगा।",
   },
 };
 
@@ -442,8 +448,7 @@ async function redirectIfAlreadyAuthenticated() {
         status: 200,
         message: "Authenticated session found on login page",
       });
-      markNavigation("authenticated_session_redirect", AppPath.toApp("/map/Index.html"));
-      window.location.replace(AppPath.toApp("/map/Index.html"));
+      await continueAfterGoogleAuth(payload.user || null, null, "authenticated_session_redirect");
       return true;
     }
     return false;
@@ -452,6 +457,110 @@ async function redirectIfAlreadyAuthenticated() {
       setGoogleStatus(getAuthText().sessionCheckDeferred);
     }
     return false;
+  }
+}
+
+function renderAuthOsmPreparingPopup(popup) {
+  if (!popup || popup.closed) return;
+  try {
+    const popupDocument = popup.document;
+    popupDocument.title = "StepBy - OpenStreetMap";
+    popupDocument.body.replaceChildren();
+    Object.assign(popupDocument.body.style, {
+      margin: "0",
+      minHeight: "100vh",
+      display: "grid",
+      placeItems: "center",
+      padding: "32px",
+      boxSizing: "border-box",
+      fontFamily: 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif',
+      background: "#f5f7fa",
+      color: "#1f2d3a",
+    });
+    const message = popupDocument.createElement("p");
+    message.textContent = getAuthText().osmPreparing;
+    Object.assign(message.style, {
+      margin: "0",
+      maxWidth: "420px",
+      fontSize: "20px",
+      fontWeight: "700",
+      lineHeight: "1.7",
+      textAlign: "center",
+    });
+    popupDocument.body.appendChild(message);
+  } catch {
+    // The popup will shortly navigate to OSM, so rendering failure is harmless.
+  }
+}
+
+function preopenAuthOsmPopup() {
+  const popup = window.open(
+    "about:blank",
+    "stepby-osm-oauth",
+    "popup=yes,width=520,height=720,resizable=yes,scrollbars=yes"
+  );
+  if (popup) renderAuthOsmPreparingPopup(popup);
+  return popup;
+}
+
+function closeAuthOsmPopup(popup) {
+  try {
+    if (popup && !popup.closed) popup.close();
+  } catch {
+    // Ignore popup access errors.
+  }
+}
+
+async function continueAfterGoogleAuth(user, popup, navigationReason) {
+  const mapUrl = AppPath.toApp("/map/Index.html");
+  if (user && Boolean(user.isGuest || user.is_guest)) {
+    closeAuthOsmPopup(popup);
+    markNavigation(navigationReason, mapUrl);
+    window.location.href = mapUrl;
+    return;
+  }
+  try {
+    setGoogleStatus(getAuthText().osmPreparing);
+    const statusResponse = await authFetch("/auth/osm/status", { cache: "no-store" });
+    const status = await statusResponse.json().catch(() => ({}));
+    if (!statusResponse.ok || !status.configured || status.connected) {
+      closeAuthOsmPopup(popup);
+      markNavigation(navigationReason, mapUrl);
+      window.location.href = mapUrl;
+      return;
+    }
+
+    const mode = popup ? "popup" : "redirect";
+    const returnUrl = window.location.origin + mapUrl;
+    const startResponse = await authFetch(
+      `/auth/osm/start?mode=${mode}&return_url=${encodeURIComponent(returnUrl)}`,
+      { method: "POST" }
+    );
+    const start = await startResponse.json().catch(() => ({}));
+    if (!startResponse.ok || !start.authorizationUrl) {
+      throw new Error(start.error || "osm_start_failed");
+    }
+    if (popup) {
+      popup.location.replace(start.authorizationUrl);
+      markNavigation(`${navigationReason}_osm_popup`, mapUrl);
+      window.location.href = mapUrl;
+    } else {
+      markNavigation(`${navigationReason}_osm_redirect`, start.authorizationUrl);
+      window.location.assign(start.authorizationUrl);
+    }
+  } catch (error) {
+    closeAuthOsmPopup(popup);
+    logAuthEvent("auth_osm_onboarding_failed", {
+      level: "warn",
+      path: "/auth/osm/start",
+      method: "POST",
+      message: error && error.message ? String(error.message) : "osm_onboarding_failed",
+    });
+    setGoogleStatus(getAuthText().osmRetryLater);
+    window.setTimeout(() => {
+      markNavigation(`${navigationReason}_osm_deferred`, mapUrl);
+      window.location.href = mapUrl;
+    }, 900);
   }
 }
 
@@ -478,7 +587,7 @@ function cacheProfileUser(user) {
   }
 }
 
-async function loginWithGoogle(idToken) {
+async function loginWithGoogle(idToken, osmPopup = null) {
   const text = getAuthText();
   const requestId = clientLogApi && typeof clientLogApi.getCurrentRequestId === "function"
     ? (clientLogApi.getCurrentRequestId() || clientLogApi.createRequestId("req"))
@@ -502,6 +611,7 @@ async function loginWithGoogle(idToken) {
 
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) {
+      closeAuthOsmPopup(osmPopup);
       const errorMessage = payload.error || "google_auth_failed";
       logAuthEvent("auth_google_post_failed", {
         level: "warn",
@@ -512,6 +622,7 @@ async function loginWithGoogle(idToken) {
         message: errorMessage,
       });
       if (errorMessage === "account_not_found") {
+        closeAuthOsmPopup(osmPopup);
         setPendingSignupIdToken(idToken);
         setGoogleStatus("未登録のGoogleアカウントです。サインアップ画面へ移動します...");
         markNavigation("google_account_not_found", AppPath.toApp("/auth/signup_profile.html"));
@@ -553,17 +664,17 @@ async function loginWithGoogle(idToken) {
       cacheProfileUser(payload.user);
     }
     if (!username || !String(username).trim()) {
+      closeAuthOsmPopup(osmPopup);
       setGoogleStatus("ログイン成功。サインアップ画面へ移動します...");
       markNavigation("google_login_signup_redirect", AppPath.toApp("/auth/signup_profile.html"));
       window.location.href = AppPath.toApp("/auth/signup_profile.html");
       return true;
     }
 
-    setGoogleStatus("ログイン成功。地図画面へ移動します...");
-    markNavigation("google_login_success", AppPath.toApp("/map/Index.html"));
-    window.location.href = AppPath.toApp("/map/Index.html");
+    await continueAfterGoogleAuth(payload.user || null, osmPopup, "google_login_success");
     return true;
   } catch (err) {
+    closeAuthOsmPopup(osmPopup);
     logAuthEvent("auth_google_post_failed", {
       level: "error",
       path: "/auth/google",
@@ -868,6 +979,8 @@ async function initSignupProfilePage() {
       return;
     }
 
+    const osmPopup = preopenAuthOsmPopup();
+
     try {
       setGoogleStatus("保存中です...");
       const iconDataUrl = iconFile
@@ -902,26 +1015,32 @@ async function initSignupProfilePage() {
         const payload = await res.json().catch(() => ({}));
         const errorMessage = payload.error || "profile_update_failed";
         if (errorMessage === "missing_username") {
+          closeAuthOsmPopup(osmPopup);
           setGoogleStatus("アカウント名を入力してください。");
           return;
         }
         if (errorMessage === "username_too_long") {
+          closeAuthOsmPopup(osmPopup);
           setGoogleStatus("アカウント名は50文字以内で入力してください。");
           return;
         }
         if (errorMessage === "invalid_icon_image") {
+          closeAuthOsmPopup(osmPopup);
           setGoogleStatus("画像の形式が合いませんでした。別の画像で再試行してください。");
           return;
         }
         if (errorMessage === "missing_icon_image") {
+          closeAuthOsmPopup(osmPopup);
           setGoogleStatus("アイコン画像を選択してください。");
           return;
         }
         if (errorMessage === "consent_required" || errorMessage === "invalid_consent_version") {
+          closeAuthOsmPopup(osmPopup);
           setGoogleStatus("利用規約とプライバシーポリシーを確認し、同意してください。");
           return;
         }
         if (errorMessage === "account_not_found") {
+          closeAuthOsmPopup(osmPopup);
           clearPendingSignupIdToken();
           setGoogleStatus("登録状態の確認に失敗しました。ログイン画面からやり直してください。");
           markNavigation("signup_account_not_found", AppPath.toApp("/auth/login.html"));
@@ -929,6 +1048,7 @@ async function initSignupProfilePage() {
           return;
         }
         if (errorMessage === "invalid_token") {
+          closeAuthOsmPopup(osmPopup);
           clearPendingSignupIdToken();
           clearAccessToken();
           setGoogleStatus("Google認証の有効期限が切れました。ログイン画面から再度お試しください。");
@@ -936,26 +1056,27 @@ async function initSignupProfilePage() {
           window.location.replace(AppPath.toApp("/auth/login.html"));
           return;
         }
+        closeAuthOsmPopup(osmPopup);
         setGoogleStatus(`保存に失敗しました: ${errorMessage}`);
         return;
       }
 
+      let savedPayload = {};
       try {
-        const payload = await res.json().catch(() => ({}));
-        if (payload && payload.access_token) {
-          setAccessToken(payload.access_token);
+        savedPayload = await res.json().catch(() => ({}));
+        if (savedPayload && savedPayload.access_token) {
+          setAccessToken(savedPayload.access_token);
         }
-        if (payload && payload.user) {
-          cacheProfileUser(payload.user);
+        if (savedPayload && savedPayload.user) {
+          cacheProfileUser(savedPayload.user);
         }
       } catch {
         // Ignore parse/cache failure.
       }
       clearPendingSignupIdToken();
-      setGoogleStatus("保存しました。地図画面へ移動します...");
-      markNavigation("signup_profile_saved", AppPath.toApp("/map/Index.html"));
-      window.location.href = AppPath.toApp("/map/Index.html");
+      await continueAfterGoogleAuth(savedPayload.user || user || null, osmPopup, "signup_profile_saved");
     } catch (error) {
+      closeAuthOsmPopup(osmPopup);
       logAuthEvent("auth_signup_save_failed", {
         level: "error",
         path: deferredSignupMode ? "/auth/google/signup" : "/auth/profile",
@@ -997,7 +1118,8 @@ async function handleGoogleCredential(response) {
     window.location.href = AppPath.toApp("/auth/signup_profile.html");
     return;
   }
-  await loginWithGoogle(idToken);
+  const osmPopup = preopenAuthOsmPopup();
+  await loginWithGoogle(idToken, osmPopup);
 }
 
 // ここから先で、Google ログインとゲストログインの初期化を起動する。
