@@ -3250,15 +3250,21 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
     "https://overpass.private.coffee/api/interpreter",
   ];
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
-  const attempts = [
-    (async () => {
+  const apiAttempt = (async () => {
       // 10km検索はOverpass混雑時に複数の読取先を順番に試すため、API側の
       // フォールバックが完了する時間を確保する。個々のブラウザ直読は30秒で打ち切る。
       const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(100000) });
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
-    })(),
-    ...hosts.map(async (endpoint) => {
+    })();
+  try {
+    // StepBy記録ID・投稿者・本人だけの削除権限を付与できるサーバー応答を優先する。
+    const apiResult = await apiAttempt;
+    if (apiResult && Array.isArray(apiResult.features)) return apiResult;
+  } catch (error) {
+    console.warn("[OSM tactile display] StepBy API unavailable; using read-only Overpass fallback", error && error.message);
+  }
+  const attempts = hosts.map(async (endpoint) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
@@ -3270,8 +3276,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
       const features = (Array.isArray(payload.elements) ? payload.elements : [])
         .map(overpassTactileFeature).filter(Boolean);
       return { success: true, features, count: features.length, source: "browser_overpass" };
-    }),
-  ];
+    });
   try {
     const nonEmptyAttempts = attempts.map((attempt) => attempt.then((result) => {
       if (!result || !Array.isArray(result.features) || result.features.length === 0) throw new Error("empty_osm_tactile_result");
@@ -3308,24 +3313,25 @@ async function requestOwnedOsmRevert(recordId, button) {
   }
 }
 
-function bindOwnedOsmRecordCard(layer, feature, displayPolyline) {
+function bindStepByOsmRecordCard(layer, feature, displayPolyline) {
   const properties = feature && feature.properties || {};
-  const recordId = String(properties.stepby_owned_record_id || "");
-  if (!properties.stepby_can_revert || !recordId) return;
+  const recordId = String(properties.stepby_record_id || properties.stepby_owned_record_id || "");
+  const ownerUserId = Number(properties.stepby_owner_user_id);
+  if (!properties.stepby_recorded || !recordId) return;
   layer.on("click", (event) => {
     if (event.originalEvent) L.DomEvent.stop(event.originalEvent);
     setActiveTactileSessionPolyline(displayPolyline);
     renderTactileSessionCard(
-      buildTactileSessionCardHtml(recordId, null, { loading: true, ownerUserId: currentUserId }),
+      buildTactileSessionCardHtml(recordId, null, { loading: true, ownerUserId }),
       event.latlng
     );
     fetchTactileSessionInfo(recordId)
       .then((sessionInfo) => {
         renderTactileSessionCard(
           buildTactileSessionCardHtml(recordId, sessionInfo, {
-            ownerUserId: currentUserId,
+            ownerUserId: Number.isFinite(ownerUserId) ? ownerUserId : sessionInfo.ownerUserId,
             osmPublished: true,
-            osmRecordId: recordId,
+            osmRecordId: properties.stepby_can_revert ? recordId : "",
           }),
           event.latlng
         );
@@ -3335,7 +3341,7 @@ function bindOwnedOsmRecordCard(layer, feature, displayPolyline) {
         renderTactileSessionCard(
           buildTactileSessionCardHtml(recordId, null, {
             error: error && error.message === "session_not_found" ? text.notFound : text.fetchFailed,
-            ownerUserId: currentUserId,
+            ownerUserId,
           }),
           event.latlng
         );
@@ -3394,21 +3400,21 @@ function showOsmTactileWaysOnMap(features) {
       }
 
       const osmColor = feature.properties && feature.properties.stepby_recorded ? "#00b050" : "#0066ff";
-      const isOwnedStepByRecord = Boolean(feature.properties &&
-        feature.properties.stepby_recorded && feature.properties.stepby_can_revert &&
-        feature.properties.stepby_owned_record_id);
+      const isStepByRecord = Boolean(feature.properties &&
+        feature.properties.stepby_recorded &&
+        (feature.properties.stepby_record_id || feature.properties.stepby_owned_record_id));
       const polyline = L.polyline(coordinates, {
         color: osmColor,
         weight: 4,
         opacity: 0.9,
-        // 本人の緑線は透明な専用レイヤーでタップを受ける。
-        interactive: !isOwnedStepByRecord,
+        // StepByの緑線は投稿者に関係なく、透明な専用レイヤーで詳細を開く。
+        interactive: !isStepByRecord,
       }).addTo(map);
       polyline.options.stepByBaseColor = osmColor;
       osmTactileMarkers.push(polyline);
-      if (isOwnedStepByRecord) {
+      if (isStepByRecord) {
         const hitTarget = createCenteredPolylineHitTarget(coordinates, osmColor);
-        bindOwnedOsmRecordCard(hitTarget, feature, polyline);
+        bindStepByOsmRecordCard(hitTarget, feature, polyline);
         osmTactileMarkers.push(hitTarget);
       }
       return;
@@ -3430,7 +3436,7 @@ function showOsmTactileWaysOnMap(features) {
         fillOpacity: 0.95,
         weight: 1,
       }).addTo(map);
-      bindOwnedOsmRecordCard(point, feature, point);
+      bindStepByOsmRecordCard(point, feature, point);
       osmTactileMarkers.push(point);
     }
   });
