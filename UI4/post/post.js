@@ -54,6 +54,12 @@
 
   var pin = L.marker(cfg.MAP_DEFAULT_CENTER, { draggable: true, keyboard: true })
     .addTo(map);
+
+  /* The pin starts somewhere, and wherever it is showing is what a submit
+     posts. Leaving this null until geolocation answered meant a pin plainly
+     on the map and "we could not find your location" when it never did —
+     which reads as a dead button. */
+  state.latlng = { lat: cfg.MAP_DEFAULT_CENTER[0], lng: cfg.MAP_DEFAULT_CENTER[1] };
   pin.on('dragend', function () {
     var p = pin.getLatLng();
     state.latlng = { lat: p.lat, lng: p.lng };
@@ -209,7 +215,9 @@
       ui.toast(t('post.success'), 'success');
       var id = (res && (res.pointId || res.id)) || editingId;
       setTimeout(function () {
-        location.replace(id ? auth.toApp('/detail/') + '?id=' + encodeURIComponent(id) : auth.toApp('/feed/'));
+        /* The map, not the reports list: that list has no way back into the
+           app, and the post was made from the map in the first place. */
+        location.replace(id ? auth.toApp('/detail/') + '?id=' + encodeURIComponent(id) : auth.toApp('/map/'));
       }, 700);
     } catch (err) {
       ui.toastError(err);
@@ -226,12 +234,20 @@
     submitBtn.querySelector('span:last-child').setAttribute('data-i18n', 'post.submitEdit');
 
     try {
-      var res = await api.getReport(editingId);
-      var point = (res && (res.point || res)) || {};
+      var point = await api.getReport(editingId);
+      if (!point) return;
       if (isFinite(point.lat) && isFinite(point.lng)) setLocation(point.lat, point.lng);
-      notesEl.value = point.detail || '';
+      /* getReport hands back a normalised report, whose note lives in
+         `notes`; `detail` is the field name going the other way. */
+      notesEl.value = point.notes || '';
       (point.tags || []).forEach(function (tag) {
-        state.selected.add(String(tag.tagId || tag.id || tag.code || tag));
+        /* `code` first. The chip list comes from /api/post-tags, which puts
+           the code in `id`; a point's own tags come from /api/road-info,
+           where `id` is the database row and `code` is the same slug. Taking
+           `id` there matched no chip, so an edit showed none of its tags —
+           and then posted the row number as a tag name, which the server
+           happily creates as a brand new tag. */
+        state.selected.add(String(tag.code || tag.tagId || tag.id || tag));
       });
       renderTags();
       i18n.applyTo(d);
