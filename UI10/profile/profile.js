@@ -330,6 +330,29 @@ function setOsmStatus(message, state) {
   osmStatusEl.classList.toggle("is-error", state === "error");
 }
 
+function setOsmPublicationNotice(state = "connected") {
+  if (!osmStatusEl) return;
+  const language = getCurrentLanguage();
+  const before = language === "en"
+    ? "Recorded tactile paving information is merged into "
+    : language === "hi"
+      ? "रिकॉर्ड की गई स्पर्शनीय फ़र्श जानकारी "
+      : "記録した点字ブロック情報は";
+  const after = language === "en"
+    ? "."
+    : language === "hi"
+      ? " में मर्ज की जाती है।"
+      : "にマージされます。";
+  const link = document.createElement("a");
+  link.href = "https://www.openstreetmap.org/";
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "OpenStreetMap";
+  osmStatusEl.replaceChildren(document.createTextNode(before), link, document.createTextNode(after));
+  osmStatusEl.classList.toggle("is-connected", state === "connected");
+  osmStatusEl.classList.remove("is-error");
+}
+
 function renderOsmPreparingPopup(popup) {
   if (!popup || popup.closed) return;
   const language = getCurrentLanguage();
@@ -379,15 +402,8 @@ async function loadOsmConnection() {
     if (!response.ok) throw new Error("osm_status_failed");
     const payload = await response.json();
     if (payload.editorMode === "stepby_service_account") {
-      const managedName = payload.connection?.displayName || "StepBy";
-      const managedMessages = {
-        ja: `OSMへの公開はStepBy統合アカウント「${managedName}」で管理されています。個人OSMアカウントとの連携は使用しません。`,
-        en: `Publishing to OSM is managed by the StepBy account “${managedName}”. Personal OSM connections are not used.`,
-        hi: `OSM पर प्रकाशन StepBy खाते “${managedName}” द्वारा प्रबंधित है। व्यक्तिगत OSM कनेक्शन का उपयोग नहीं होता।`,
-      };
-      setOsmStatus(payload.configured
-        ? managedMessages[getCurrentLanguage()] || managedMessages.ja
-        : "OSM公開機能は現在準備中です。", payload.configured ? "connected" : "idle");
+      if (payload.configured) setOsmPublicationNotice();
+      else setOsmStatus("OSM公開機能は現在準備中です。", "idle");
       return;
     }
     if (!payload.configured) {
