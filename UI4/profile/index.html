@@ -67,20 +67,28 @@
   .stat__value small { font-size: var(--fs-sm); font-weight: 700; margin-inline-start: 2px; }
   .stat__label { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-muted); overflow-wrap: anywhere; }
 
+  /* The frame lives on the group, and separators are drawn between visible
+     rows only. Rows are hidden for guests, and `+` still counts a
+     display:none sibling — which left the first visible row with no line
+     above it. `~` asks "is there a visible row before me?", which is the
+     question that actually matters. */
+  .menu-group {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-raised);
+  }
   .menu-row {
     display: flex; align-items: center; gap: var(--sp-3);
     width: 100%;
     min-height: 60px;
     padding: var(--sp-3) var(--sp-4);
     background: var(--bg-raised);
-    border: 1px solid var(--border);
     color: inherit;
     text-decoration: none;
     text-align: start;
   }
-  .menu-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
-  .menu-row:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); }
-  .menu-row + .menu-row { border-top: none; }
+  .menu-row:not(.hidden) ~ .menu-row:not(.hidden) { border-top: 1px solid var(--border); }
   .menu-row:active { background: var(--bg-sunken); }
   .menu-row__icon {
     width: 36px; height: 36px; flex-shrink: 0;
@@ -137,7 +145,7 @@
     </div>
 
     <!-- Same six rows as UI1, in the same order -->
-    <nav aria-label="Profile menu">
+    <nav class="menu-group" aria-label="Profile menu">
       <a class="menu-row" href="../profile-edit/" id="row-edit">
         <span class="menu-row__icon teal"><span class="icon" data-icon="pen"></span></span>
         <span class="menu-row__text">
