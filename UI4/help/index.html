@@ -29,7 +29,8 @@
     display: grid; place-items: center;
     background: rgba(255, 255, 255, 0.18);
     border: 1px solid rgba(255, 255, 255, 0.25);
-    font-size: 26px;
+    /* The glyph is 1em, so this is the mark's size inside the circle. */
+    font-size: 34px;
   }
   .help-hero h1 { color: #fff; font-size: var(--fs-lg); }
   .help-hero p { margin-top: var(--sp-2); font-size: var(--fs-sm); color: rgba(255, 255, 255, 0.85); }
@@ -80,7 +81,7 @@
   <main class="app-main" id="main">
 
     <section class="help-hero">
-      <p class="help-hero__icon" aria-hidden="true"><span class="icon" data-icon="circle-question"></span></p>
+      <div class="help-hero__icon" aria-hidden="true"><span class="icon" data-icon="circle-question"></span></div>
       <h1 data-i18n="help.heroTitle">Help centre</h1>
       <p data-i18n="help.heroLead">How to use StepBy</p>
     </section>
