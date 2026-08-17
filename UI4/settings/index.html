@@ -242,13 +242,6 @@
       <span class="icon acc__chevron" data-icon="chevron-right"></span>
     </a>
 
-    <p style="margin-top:16px">
-      <button type="button" class="btn btn--secondary btn--block" id="clear-cache">
-        <span class="icon" data-icon="arrows-rotate"></span>
-        <span data-i18n="settings.clearCache">Clear offline data</span>
-      </button>
-    </p>
-
     <footer class="version-footer">
       <span id="version-label" data-i18n="settings.version" data-i18n-v="0.0.0">Version 0.0.0</span>
       <p class="credits">
@@ -342,23 +335,6 @@
   }
   refreshVersionLabel();
   d.addEventListener('stepby:langchange', refreshVersionLabel);
-
-  d.getElementById('clear-cache').addEventListener('click', async function () {
-    try {
-      if (w.caches) {
-        var keys = await caches.keys();
-        await Promise.all(keys.map(function (k) { return caches.delete(k); }));
-      }
-      if (navigator.serviceWorker) {
-        var regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(function (r) { return r.unregister(); }));
-      }
-      ui.toast(t('settings.cacheCleared'), 'success');
-      setTimeout(function () { location.reload(); }, 900);
-    } catch (err) {
-      ui.toast(t('error.generic'), 'error');
-    }
-  });
 
   /* ---- Deep links -------------------------------------------------------
      The header menu links to #language and #appearance; open that section

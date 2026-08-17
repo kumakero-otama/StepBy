@@ -245,8 +245,6 @@
     'settings.textSize.xl': 'Extra large',
     'settings.textSizePreview': 'The quick brown fox jumps over the lazy dog.',
     'settings.version': 'Version {v}',
-    'settings.clearCache': 'Clear offline data',
-    'settings.cacheCleared': 'Offline data cleared.',
 
     /* ---- errors ---- */
     'error.generic': 'Something went wrong. Please try again.',
@@ -497,8 +495,6 @@
     'settings.textSize.xl': 'बहुत बड़ा',
     'settings.textSizePreview': 'यह नमूना पाठ है जिससे अक्षरों का आकार देखा जा सकता है।',
     'settings.version': 'संस्करण {v}',
-    'settings.clearCache': 'ऑफ़लाइन डेटा मिटाएँ',
-    'settings.cacheCleared': 'ऑफ़लाइन डेटा मिटा दिया गया।',
 
     'error.generic': 'कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।',
     'error.network': 'कनेक्शन नहीं है। नेटवर्क जाँचकर फिर कोशिश करें।',
@@ -746,8 +742,6 @@
     'settings.textSize.xl': '特大',
     'settings.textSizePreview': 'この文章で文字の大きさを確認できます。',
     'settings.version': 'バージョン {v}',
-    'settings.clearCache': 'オフラインデータを削除',
-    'settings.cacheCleared': 'オフラインデータを削除しました。',
 
     'error.generic': 'エラーが発生しました。もう一度お試しください。',
     'error.network': '接続できません。通信環境を確認してもう一度お試しください。',
