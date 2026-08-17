@@ -17,7 +17,18 @@
 <style>
   .gallery { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   .gallery img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-  .author { display: flex; align-items: center; gap: var(--sp-3); }
+  /* Poster's picture, name and date — the same row UI2's detail screen
+     puts at the top of a post. */
+  .author { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+  .author__icon {
+    width: 38px; height: 38px; flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary-bg);
+    background: var(--bg-sunken);
+  }
+  .author__name { font-size: var(--fs-sm); font-weight: 700; color: var(--text-strong); overflow-wrap: anywhere; }
+  .author__date { margin-inline-start: auto; font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
 </style>
 </head>
 <body data-nav="feed">

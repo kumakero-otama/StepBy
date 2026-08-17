@@ -285,6 +285,15 @@
   /* Pin popup — tag pills carrying their own mark, a photo and the note,
      the way UI1's popup was built. */
   .pin { min-width: 170px; max-width: 240px; }
+  .pin__author { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+  .pin__avatar {
+    width: 24px; height: 24px; flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-sunken);
+  }
+  .pin__name { font-size: 12px; font-weight: 700; color: var(--text-strong); overflow-wrap: anywhere; }
+  .pin__when { margin-inline-start: auto; font-size: 10px; color: var(--text-muted); white-space: nowrap; }
   .pin__tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
   .pin__tag {
     display: inline-flex; align-items: center; gap: 5px;

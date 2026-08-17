@@ -280,12 +280,29 @@
       return '<div class="pin"><p class="pin__muted">' + ui.esc(t('common.loading')) + '</p>' + open + '</div>';
     }
 
+    /* alt is empty on purpose: the name sits right beside the picture, so
+       announcing it twice helps nobody. A broken icon URL falls back to the
+       same placeholder the rest of the app uses. */
+    var fallbackIcon = ui.avatarUrl();
+    var iconSrc = item.author && item.author.iconUrl
+      ? auth.toAsset(item.author.iconUrl)
+      : fallbackIcon;
+    var author = '<div class="pin__author">' +
+      '<img class="pin__avatar" alt="" src="' + ui.esc(iconSrc) + '"' +
+        ' onerror="this.onerror=null;this.src=&quot;' + ui.esc(fallbackIcon) + '&quot;">' +
+      '<span class="pin__name">' +
+        ui.esc((item.author && item.author.name) || t('profile.guest')) + '</span>' +
+      (item.createdAt
+        ? '<span class="pin__when">' + ui.esc(i18n.formatRelative(item.createdAt)) + '</span>'
+        : '') +
+      '</div>';
+
     var chips = tagChips(item.tags);
     var photo = (item.images && item.images[0])
       ? '<img class="pin__photo" src="' + ui.esc(auth.toAsset(item.images[0])) + '" alt="">'
       : '';
 
-    return '<div class="pin">' +
+    return '<div class="pin">' + author +
       (chips
         ? '<div class="pin__tags">' + chips + '</div>'
         : '<p class="pin__muted">' + ui.esc(t('feed.noTags')) + '</p>') +

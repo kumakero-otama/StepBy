@@ -36,12 +36,16 @@
     content.innerHTML =
       '<section class="card">' +
         '<div class="chip-set">' + tags + '</div>' +
-        '<p class="card__meta">' +
-          (point.author && point.author.name
-            ? '<span>' + ui.esc(t('detail.postedBy', { name: point.author.name })) + '</span>'
+        '<div class="author">' +
+          /* alt is empty on purpose: the name is right beside it, so a screen
+             reader announcing the picture as well would say it twice. */
+          '<img class="author__icon" id="author-icon" src="' + ui.esc(ui.avatarUrl()) + '" alt="">' +
+          '<span class="author__name">' +
+            ui.esc((point.author && point.author.name) || t('profile.guest')) + '</span>' +
+          (point.createdAt
+            ? '<span class="author__date">' + ui.esc(i18n.formatRelative(point.createdAt)) + '</span>'
             : '') +
-          (point.createdAt ? '<span>' + ui.esc(i18n.formatRelative(point.createdAt)) + '</span>' : '') +
-        '</p>' +
+        '</div>' +
       '</section>' +
 
       '<section class="card" style="margin-top:12px">' +
@@ -74,6 +78,10 @@
               w.StepByIcons.svg('trash-can') + '<span>' + ui.esc(t('common.delete')) + '</span></button>' +
           '</p>'
         : '');
+
+    /* After the markup is in place: setAvatar also handles a broken URL,
+       which a plain src cannot. */
+    ui.setAvatar(d.getElementById('author-icon'), point.author && point.author.iconUrl);
 
     var del = d.getElementById('delete-btn');
     if (del) del.addEventListener('click', remove);
