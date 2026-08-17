@@ -23,7 +23,8 @@ const mapGate = mapSource.slice(
 assert.match(mapGate, /Individual users authenticate to StepBy with Google only/);
 assert.doesNotMatch(mapGate, /auth\/osm\/status|osm_required=1/);
 assert.match(profileSource, /editorMode === "stepby_service_account"/);
-assert.match(profileSource, /OSMへの公開はStepBy統合アカウント/);
+assert.match(profileSource, /記録した点字ブロック情報は/);
+assert.match(profileSource, /https:\/\/www\.openstreetmap\.org\//);
 for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const html = fs.readFileSync(path.join(__dirname, `../UI10/profile/${name}`), "utf8");
   assert.doesNotMatch(html, /id="osm-disconnect-btn"/,
