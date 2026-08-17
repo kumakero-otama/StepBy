@@ -45,6 +45,7 @@ const SHELL = [
   p('js/i18n.js'),
   p('js/auth.js'),
   p('js/geo.js'),
+  p('js/mapprefs.js'),
   p('js/api.js'),
   p('js/ui.js'),
   p('i18n/dict.js'),

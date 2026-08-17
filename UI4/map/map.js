@@ -19,6 +19,7 @@
   var auth = w.StepByAuth;
   var ui = w.StepByUI;
   var i18n = w.StepByI18n;
+  var mapPrefs = w.StepByMapPrefs;
   var t = w.t;
 
   /* Leaflet prefixes these with its own auto-detected imagePath, so a relative
@@ -216,9 +217,9 @@
 
     var at = { lat: Number(centre.lat), lng: Number(centre.lng) };
     if (!mapInfoInput.checked) return;
-    loadReports(at);
-    loadTactile(at);
-    loadRecords(at);
+    if (mapPrefs.showRoadInfo()) loadReports(at);
+    if (mapPrefs.showOsm()) loadTactile(at);
+    if (mapPrefs.showTactile()) loadRecords(at);
   }
 
   async function loadReports(centre) {
@@ -226,7 +227,7 @@
     state.fetching.reports = new AbortController();
     try {
       state.reports = await api.listReports(
-        { lat: centre.lat, lng: centre.lng, radiusKm: 5 },
+        { lat: centre.lat, lng: centre.lng, radiusKm: 5, mine: mapPrefs.onlyMyRoadInfo() ? 1 : 0 },
         { signal: state.fetching.reports.signal }
       );
       drawReports();
@@ -374,7 +375,15 @@
    * Without PRO you only see routes recorded as plain tactile paving; the
    * detailed categories a professional records are theirs. Same rule as UI2.
    */
+  function mineOnly(path) {
+    if (!mapPrefs.onlyMyTactile()) return true;
+    var me = auth.tokenPayload();
+    var owner = path.user_id !== undefined ? path.user_id : path.userId;
+    return !!(me && me.sub != null && owner != null && String(me.sub) === String(owner));
+  }
+
   function visibleToCurrentUser(path) {
+    if (!mineOnly(path)) return false;
     if (state.isPro) return true;
     var tags = Array.isArray(path && path.tags) ? path.tags : [];
     if (tags.length !== 1) return false;
@@ -557,17 +566,15 @@
   var followInput = d.getElementById('layer-follow');
 
   function applyMapInfo() {
-    var on = mapInfoInput.checked;
-    Object.keys(layers).forEach(function (name) {
-      if (on) layers[name].addTo(map);
-      else map.removeLayer(layers[name]);
-    });
-    if (!on) return;
-    var centre = state.position || map.getCenter();
-    var at = { lat: Number(centre.lat), lng: Number(centre.lng) };
-    loadReports(at);
-    loadTactile(at);
-    loadRecords(at);
+    if (!mapInfoInput.checked) {
+      Object.keys(layers).forEach(function (name) {
+        layers[name].clearLayers();
+        map.removeLayer(layers[name]);
+      });
+      return;
+    }
+    /* On: which of the three actually appear is the settings screen's call. */
+    applyDisplayPrefs();
   }
 
   mapInfoInput.addEventListener('change', applyMapInfo);
@@ -906,6 +913,31 @@
       location.assign(url);
     }, 350);
   });
+
+  /* ---- Display settings --------------------------------------------------
+     Changed on the settings screen; this page may still be alive behind it
+     (back button, or another tab), so re-read on return rather than assuming
+     a fresh load. */
+  function applyDisplayPrefs() {
+    mapPrefs.refresh();
+    state.loadedFor = null;
+
+    if (!mapInfoInput.checked) return;
+    var centre = state.position || map.getCenter();
+    var at = { lat: Number(centre.lat), lng: Number(centre.lng) };
+
+    if (mapPrefs.showRoadInfo()) { layers.reports.addTo(map); loadReports(at); }
+    else { layers.reports.clearLayers(); map.removeLayer(layers.reports); }
+
+    if (mapPrefs.showOsm()) { layers.tactile.addTo(map); loadTactile(at); }
+    else { layers.tactile.clearLayers(); map.removeLayer(layers.tactile); }
+
+    if (mapPrefs.showTactile()) { layers.records.addTo(map); loadRecords(at); }
+    else { layers.records.clearLayers(); map.removeLayer(layers.records); }
+  }
+
+  d.addEventListener('stepby:mapprefschange', applyDisplayPrefs);
+  w.addEventListener('pageshow', applyDisplayPrefs);
 
   /* ---- Language ---------------------------------------------------------- */
   d.addEventListener('stepby:langchange', function () {

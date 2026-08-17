@@ -49,6 +49,7 @@ export default [
         StepByApi: 'readonly',
         StepByUI: 'readonly',
         StepByGeo: 'readonly',
+        StepByMapPrefs: 'readonly',
         StepByIcons: 'readonly',
         STEPBY_DICT: 'writable',
         t: 'readonly'
