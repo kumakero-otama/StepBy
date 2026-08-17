@@ -53,6 +53,14 @@ assert.strictEqual((mapSource.match(/data-edit-tactile-memo=/g) || []).length, 1
   "memo editing must use one consistent button whether the memo is empty or populated");
 assert.doesNotMatch(mapSource, /tactile-session-card-memo-edit/,
   "the duplicate inline pencil button must not remain");
+assert.match(mapSource, /ownerUserId:\s*currentUserId/,
+  "queued recordings must retain the StepBy account that created them");
+assert.match(mapSource, /record_owner_not_loaded[\s\S]{0,180}?retryable = true/,
+  "queued recordings must wait until the current account is known");
+assert.match(mapSource, /record_owner_changed[\s\S]{0,180}?retryable = false/,
+  "a recording queued by another account must never be submitted under the current account");
+assert.match(mapSource, /session_tag_save_failed:\$\{res\.status\}[\s\S]{0,180}?res\.status >= 500/,
+  "a PRO authorization rejection must not retry forever");
 assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("const attempts = hosts.map"),
   "the enriched StepBy API response must be preferred over anonymous Overpass data");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
