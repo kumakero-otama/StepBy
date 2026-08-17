@@ -378,6 +378,12 @@ async function loadOsmConnection() {
     if (response.status === 401) return redirectToLogin();
     if (!response.ok) throw new Error("osm_status_failed");
     const payload = await response.json();
+    if (payload.editorMode === "stepby_service_account") {
+      setOsmStatus(payload.configured
+        ? "OSMへの公開はStepBy運営アカウントで管理されます。"
+        : "OSM公開機能は現在準備中です。", payload.configured ? "connected" : "idle");
+      return;
+    }
     if (!payload.configured) {
       setOsmStatus(text.osmNotConfigured, "error");
       return;
