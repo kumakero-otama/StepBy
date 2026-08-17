@@ -539,54 +539,9 @@ async function waitForRequiredOsmConnection(popup) {
 
 async function continueAfterGoogleAuth(user, popup, navigationReason) {
   const mapUrl = AppPath.toApp("/map/Index.html");
-  try {
-    setGoogleStatus(getAuthText().osmPreparing);
-    setLoginProcessingState(true, {
-      title: getAuthText().osmPreparing,
-      message: getAuthText().osmPreparing,
-    });
-    const status = await loadAuthOsmStatus();
-    if (status.connected) {
-      closeAuthOsmPopup(popup);
-      markNavigation(navigationReason, mapUrl);
-      window.location.href = mapUrl;
-      return;
-    }
-    if (!status.configured) {
-      throw new Error("osm_oauth_app_not_configured");
-    }
-
-    const mode = popup ? "popup" : "redirect";
-    const returnUrl = window.location.origin + AppPath.toApp("/auth/login.html?osm_required=1");
-    const startResponse = await authFetch(
-      `/auth/osm/start?mode=${mode}&return_url=${encodeURIComponent(returnUrl)}`,
-      { method: "POST" }
-    );
-    const start = await startResponse.json().catch(() => ({}));
-    if (!startResponse.ok || !start.authorizationUrl) {
-      throw new Error(start.error || "osm_start_failed");
-    }
-    if (popup) {
-      popup.location.replace(start.authorizationUrl);
-      const connected = await waitForRequiredOsmConnection(popup);
-      if (!connected) throw new Error("osm_connection_not_completed");
-      markNavigation(`${navigationReason}_osm_completed`, mapUrl);
-      window.location.href = mapUrl;
-    } else {
-      markNavigation(`${navigationReason}_osm_redirect`, start.authorizationUrl);
-      window.location.assign(start.authorizationUrl);
-    }
-  } catch (error) {
-    closeAuthOsmPopup(popup);
-    logAuthEvent("auth_osm_onboarding_failed", {
-      level: "warn",
-      path: "/auth/osm/start",
-      method: "POST",
-      message: error && error.message ? String(error.message) : "osm_onboarding_failed",
-    });
-    setGoogleStatus(getAuthText().osmRetryLater);
-    setLoginProcessingState(false);
-  }
+  closeAuthOsmPopup(popup);
+  markNavigation(navigationReason, mapUrl);
+  window.location.href = mapUrl;
 }
 
 function cacheProfileUser(user) {
@@ -1004,7 +959,7 @@ async function initSignupProfilePage() {
       return;
     }
 
-    const osmPopup = preopenAuthOsmPopup();
+    const osmPopup = null;
 
     try {
       setGoogleStatus("保存中です...");
@@ -1143,7 +1098,7 @@ async function handleGoogleCredential(response) {
     window.location.href = AppPath.toApp("/auth/signup_profile.html");
     return;
   }
-  const osmPopup = preopenAuthOsmPopup();
+  const osmPopup = null;
   await loginWithGoogle(idToken, osmPopup);
 }
 

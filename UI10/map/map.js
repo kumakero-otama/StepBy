@@ -1596,21 +1596,9 @@ async function loadCurrentUserId() {
 }
 
 async function requireOsmConnectionBeforeMapUse() {
-  try {
-    const response = await authFetch("/auth/osm/status", { cache: "no-store" });
-    const payload = await response.json().catch(() => ({}));
-    if (response.ok && payload.configured && payload.connected) return;
-  } catch (error) {
-    logMapEvent("map_osm_auth_check_failed", {
-      category: "auth",
-      level: "warn",
-      path: "/auth/osm/status",
-      method: "GET",
-      message: error && error.message ? String(error.message) : "osm_status_failed",
-    });
-  }
-  window.location.replace(AppPath.toApp("/auth/login.html?osm_required=1"));
-  throw new Error("osm_required");
+  // OSM edits use the StepBy-managed account on the server.
+  // Individual users authenticate to StepBy with Google only.
+  return true;
 }
 
 function updateRecordButton() {
