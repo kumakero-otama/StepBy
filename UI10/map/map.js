@@ -1595,6 +1595,24 @@ async function loadCurrentUserId() {
   }
 }
 
+async function requireOsmConnectionBeforeMapUse() {
+  try {
+    const response = await authFetch("/auth/osm/status", { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok && payload.configured && payload.connected) return;
+  } catch (error) {
+    logMapEvent("map_osm_auth_check_failed", {
+      category: "auth",
+      level: "warn",
+      path: "/auth/osm/status",
+      method: "GET",
+      message: error && error.message ? String(error.message) : "osm_status_failed",
+    });
+  }
+  window.location.replace(AppPath.toApp("/auth/login.html?osm_required=1"));
+  throw new Error("osm_required");
+}
+
 function updateRecordButton() {
   if (recordActionBtn) {
     recordActionBtn.setAttribute("aria-pressed", recordEnabled ? "true" : "false");
@@ -3663,6 +3681,7 @@ if ("geolocation" in navigator) {
     });
     try {
       await loadCurrentUserId();
+      await requireOsmConnectionBeforeMapUse();
       await loadCurrentUserProStatus();
     } catch (error) {
       logMapEvent("map_gps_bootstrap_partial", {
@@ -3670,7 +3689,7 @@ if ("geolocation" in navigator) {
         level: "warn",
         message: error && error.message ? String(error.message) : "map bootstrap failed before gps start",
       });
-      if (error && (error.message === "unauthorized" || error.message === "invalid_user")) {
+      if (error && (error.message === "unauthorized" || error.message === "invalid_user" || error.message === "osm_required")) {
         return;
       }
     }

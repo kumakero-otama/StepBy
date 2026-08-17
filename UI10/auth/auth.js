@@ -539,12 +539,6 @@ async function waitForRequiredOsmConnection(popup) {
 
 async function continueAfterGoogleAuth(user, popup, navigationReason) {
   const mapUrl = AppPath.toApp("/map/Index.html");
-  if (user && Boolean(user.isGuest || user.is_guest)) {
-    closeAuthOsmPopup(popup);
-    markNavigation(navigationReason, mapUrl);
-    window.location.href = mapUrl;
-    return;
-  }
   try {
     setGoogleStatus(getAuthText().osmPreparing);
     setLoginProcessingState(true, {
