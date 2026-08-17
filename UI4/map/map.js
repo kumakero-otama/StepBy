@@ -784,7 +784,7 @@
     }
   }
 
-  async function discardSession(session) {
+  async function discardSession(session, message, tone) {
     try {
       await api.cancelSession({ sessionId: session.sessionId, sessionUuid: session.sessionUuid });
     } catch (err) {
@@ -794,7 +794,7 @@
     state.session = null;
     pending = [];
     renderRecordControls();
-    ui.toast(t('map.recordDiscarded'));
+    ui.toast(message || t('map.recordDiscarded'), tone || '');
   }
 
   async function stopRecording() {
@@ -802,14 +802,12 @@
     if (!session) return;
 
     if (session.points.length < 2) {
-      var confirmed = await ui.confirmDialog({
-        title: t('map.discardTitle'),
-        body: t('map.discardBody'),
-        confirmLabel: t('common.delete'),
-        danger: true
-      });
-      if (!confirmed) return;
-      await discardSession(session);
+      /* Two points are the minimum a route can be built from, so there is
+         nothing here to keep and nothing to decide. UI2 says why and ends the
+         session itself; the confirm dialog this replaces asked a question
+         whose "cancel" answer left the session still recording, after the
+         stop button had already been pressed. */
+      await discardSession(session, t('map.tooFewPoints'), 'error');
       return;
     }
 

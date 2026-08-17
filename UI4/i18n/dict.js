@@ -106,8 +106,7 @@
     'map.overlayUnavailable': 'Some map data could not be loaded just now.',
     'map.recordSaved': 'Route saved.',
     'map.recordDiscarded': 'Recording discarded.',
-    'map.discardTitle': 'Discard this recording?',
-    'map.discardBody': 'The points recorded in this session will be deleted. This cannot be undone.',
+    'map.tooFewPoints': 'Too few points were recorded — a route needs at least two.',
     'map.openReport': 'Open report',
 
     /* ---- feed ---- */
@@ -367,8 +366,7 @@
     'map.overlayUnavailable': 'नक्शे का कुछ डेटा अभी लोड नहीं हो सका।',
     'map.recordSaved': 'रास्ता सहेजा गया।',
     'map.recordDiscarded': 'रिकॉर्डिंग हटा दी गई।',
-    'map.discardTitle': 'यह रिकॉर्डिंग हटाएँ?',
-    'map.discardBody': 'इस सत्र में दर्ज सभी बिंदु मिट जाएँगे। इसे वापस नहीं लाया जा सकता।',
+    'map.tooFewPoints': 'बहुत कम बिंदु दर्ज हुए — रास्ते के लिए कम से कम दो चाहिए।',
     'map.openReport': 'रिपोर्ट खोलें',
 
     'feed.title': 'रिपोर्ट',
@@ -617,8 +615,7 @@
     'map.overlayUnavailable': '地図データの一部を読み込めませんでした。',
     'map.recordSaved': '道を保存しました。',
     'map.recordDiscarded': '記録を破棄しました。',
-    'map.discardTitle': 'この記録を破棄しますか？',
-    'map.discardBody': 'この記録に含まれる地点はすべて削除されます。元に戻すことはできません。',
+    'map.tooFewPoints': '記録された地点が少なすぎます（最低2地点必要です）。',
     'map.openReport': '投稿を開く',
 
     'feed.title': '投稿',
