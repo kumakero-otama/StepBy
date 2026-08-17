@@ -133,7 +133,6 @@
 
     /* ---- create / edit report ---- */
     'post.titleNew': 'Add a report',
-    'post.titleEdit': 'Edit report',
     'post.location': 'Location',
     'post.locationHint': 'Drag the pin to the exact spot.',
     'post.useCurrent': 'Use my current location',
@@ -147,7 +146,6 @@
     'post.removePhoto': 'Remove photo',
     'post.photoLimit': 'You can attach up to {n} photos.',
     'post.submit': 'Publish report',
-    'post.submitEdit': 'Save changes',
     'post.success': 'Your report is live. Thank you!',
     'post.deleteTitle': 'Delete this report?',
     'post.deleteBody': 'It will be removed from the map for everyone.',
@@ -390,7 +388,6 @@
     'detail.notFound': 'यह रिपोर्ट अब उपलब्ध नहीं है।',
 
     'post.titleNew': 'रिपोर्ट जोड़ें',
-    'post.titleEdit': 'रिपोर्ट बदलें',
     'post.location': 'जगह',
     'post.locationHint': 'पिन को सही जगह पर खिसकाएँ।',
     'post.useCurrent': 'मेरी मौजूदा जगह इस्तेमाल करें',
@@ -404,7 +401,6 @@
     'post.removePhoto': 'तस्वीर हटाएँ',
     'post.photoLimit': 'आप ज़्यादा से ज़्यादा {n} तस्वीरें जोड़ सकते हैं।',
     'post.submit': 'रिपोर्ट प्रकाशित करें',
-    'post.submitEdit': 'बदलाव सहेजें',
     'post.success': 'आपकी रिपोर्ट प्रकाशित हो गई। धन्यवाद!',
     'post.deleteTitle': 'यह रिपोर्ट हटाएँ?',
     'post.deleteBody': 'यह सबके नक्शे से हट जाएगी।',
@@ -639,7 +635,6 @@
     'detail.notFound': 'この投稿は表示できません。',
 
     'post.titleNew': '投稿する',
-    'post.titleEdit': '投稿を編集',
     'post.location': '場所',
     'post.locationHint': 'ピンを正確な位置までドラッグしてください。',
     'post.useCurrent': '現在地を使う',
@@ -653,7 +648,6 @@
     'post.removePhoto': '写真を削除',
     'post.photoLimit': '写真は{n}枚まで追加できます。',
     'post.submit': '投稿する',
-    'post.submitEdit': '変更を保存',
     'post.success': '投稿を公開しました。ありがとうございます！',
     'post.deleteTitle': 'この投稿を削除しますか？',
     'post.deleteBody': 'すべての人のマップから削除されます。',

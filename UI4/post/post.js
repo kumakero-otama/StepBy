@@ -1,8 +1,10 @@
 /* ===========================================================
    StepBy UI1 — Create / edit a road report
 
-   One screen for both, keyed off ?id=. The old build had post_road/ and
-   edit_post/ as separate 20 KB copies that had already diverged.
+   Creating only. Editing was dropped: /api/road-info appends a post rather
+   than replacing one, so an edit screen can add a note, a tag or a photo but
+   can never take one away — a button marked "edit" would keep promising what
+   the API cannot do.
    =========================================================== */
 (function (w, d) {
   'use strict';
@@ -16,7 +18,6 @@
 
   var MAX_PHOTOS = 4;
   var params = new URLSearchParams(location.search);
-  var editingId = params.get('id');
 
   var form = d.getElementById('report-form');
   var tagSet = d.getElementById('tag-set');
@@ -208,12 +209,11 @@
       tagIds: Array.from(state.selected),
       images: state.photos
     };
-    if (editingId) payload.pointId = editingId;
 
     try {
       var res = await api.createReport(payload);
       ui.toast(t('post.success'), 'success');
-      var id = (res && (res.pointId || res.id)) || editingId;
+      var id = res && (res.pointId || res.id);
       setTimeout(function () {
         /* The map, not the reports list: that list has no way back into the
            app, and the post was made from the map in the first place. */
@@ -226,37 +226,6 @@
     }
   });
 
-  /* ---- Edit mode --------------------------------------------------------- */
-  async function loadExisting() {
-    var bar = d.querySelector('[data-component="app-bar"]');
-    bar.setAttribute('data-title-key', 'post.titleEdit');
-    d.querySelector('title').setAttribute('data-i18n', 'post.titleEdit');
-    submitBtn.querySelector('span:last-child').setAttribute('data-i18n', 'post.submitEdit');
-
-    try {
-      var point = await api.getReport(editingId);
-      if (!point) return;
-      if (isFinite(point.lat) && isFinite(point.lng)) setLocation(point.lat, point.lng);
-      /* getReport hands back a normalised report, whose note lives in
-         `notes`; `detail` is the field name going the other way. */
-      notesEl.value = point.notes || '';
-      (point.tags || []).forEach(function (tag) {
-        /* `code` first. The chip list comes from /api/post-tags, which puts
-           the code in `id`; a point's own tags come from /api/road-info,
-           where `id` is the database row and `code` is the same slug. Taking
-           `id` there matched no chip, so an edit showed none of its tags —
-           and then posted the row number as a tag name, which the server
-           happily creates as a brand new tag. */
-        state.selected.add(String(tag.code || tag.tagId || tag.id || tag));
-      });
-      renderTags();
-      i18n.applyTo(d);
-      ui.applyDocumentTitle();
-    } catch (err) {
-      ui.toastError(err);
-    }
-  }
-
   /* ---- Language ---------------------------------------------------------- */
   d.addEventListener('stepby:langchange', function () {
     renderTags();
@@ -265,9 +234,7 @@
 
   /* ---- Go ---------------------------------------------------------------- */
   renderPhotos();
-  loadTags().then(function () {
-    if (editingId) loadExisting();
-  });
+  loadTags();
 
   /* Coming from a tap on the map: that point is the location, not wherever
      the device happens to be. */
@@ -278,7 +245,7 @@
 
   /* Otherwise start at the user's position, so the pin is not sitting in a
      default city they have never been to. */
-  if (!editingId && !cameFromMap && navigator.geolocation) {
+  if (!cameFromMap && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function (pos) { setLocation(pos.coords.latitude, pos.coords.longitude); },
       function () { /* the picker still works; the user can pan */ },
