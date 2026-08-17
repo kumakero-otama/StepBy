@@ -15,56 +15,134 @@
 <script src="../js/prefs.js"></script>
 <script src="../i18n/dict.js"></script>
 <style>
+  .help-hero {
+    margin: calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4)) var(--sp-5);
+    padding: var(--sp-6) var(--sp-5);
+    background: var(--header-grad);
+    color: #fff;
+    text-align: center;
+  }
+  .help-hero__icon {
+    width: 58px; height: 58px;
+    margin: 0 auto var(--sp-3);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-size: 26px;
+  }
+  .help-hero h1 { color: #fff; font-size: var(--fs-lg); }
+  .help-hero p { margin-top: var(--sp-2); font-size: var(--fs-sm); color: rgba(255, 255, 255, 0.85); }
+
   .faq { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-raised); }
-  .faq + .faq { margin-top: var(--sp-3); }
+  .faq + .faq { margin-top: var(--sp-2); }
   .faq summary {
     display: flex; align-items: center; gap: var(--sp-3);
     min-height: var(--tap-min);
     padding: var(--sp-3) var(--sp-4);
     font-weight: 700; color: var(--text-strong);
-    cursor: pointer;
-    list-style: none;
+    cursor: pointer; list-style: none;
   }
   .faq summary::-webkit-details-marker { display: none; }
-  .faq summary .icon { margin-inline-start: auto; transition: rotate var(--dur-base); color: var(--text-muted); }
-  .faq[open] summary .icon { rotate: 90deg; }
+  .faq summary .icon { margin-inline-start: auto; color: var(--text-muted); }
+  .faq summary .icon--open { display: none; }
+  .faq[open] summary .icon--closed { display: none; }
+  .faq[open] summary .icon--open { display: inline-block; }
   .faq p { padding: 0 var(--sp-4) var(--sp-4); color: var(--text); }
+
+  .help-block {
+    padding: var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    font-size: var(--fs-sm);
+  }
+  .help-block video {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    background: #000;
+    margin: var(--sp-3) 0;
+  }
+  .help-block__label { font-weight: 700; color: var(--text-strong); }
+  .help-block a { overflow-wrap: anywhere; display: inline-block; margin-top: var(--sp-1); }
+  .help-link + .help-link { margin-top: var(--sp-4); }
+  .help-section + .help-section { margin-top: var(--sp-5); }
 </style>
 </head>
-<body data-nav="">
+<body>
 
 <a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
 
 <div class="app-shell">
   <header class="app-bar" data-component="app-bar"
-          data-title-key="help.title" data-back="true"></header>
+          data-title-key="help.title" data-actions="map,settings,profile"></header>
 
   <main class="app-main" id="main">
 
-    <details class="faq" open>
-      <summary><span data-i18n="help.q1">What is StepBy?</span><span class="icon" data-icon="chevron-right"></span></summary>
-      <p data-i18n="help.a1">StepBy is a community map of tactile paving, kerb ramps, audible signals and other things that make a route walkable. Everything on it was added by someone walking the route.</p>
-    </details>
+    <section class="help-hero">
+      <p class="help-hero__icon" aria-hidden="true"><span class="icon" data-icon="circle-question"></span></p>
+      <h1 data-i18n="help.heroTitle">Help centre</h1>
+      <p data-i18n="help.heroLead">How to use StepBy</p>
+    </section>
 
-    <details class="faq">
-      <summary><span data-i18n="help.q2">How do I record a route?</span><span class="icon" data-icon="chevron-right"></span></summary>
-      <p data-i18n="help.a2">Open the map, allow location access, then press Start recording. Walk your route and press Stop when you are done. Your path is saved so others can see which streets have been surveyed.</p>
-    </details>
+    <!-- FAQ: the same two questions UI1 answers -->
+    <section class="help-section" aria-labelledby="faq-heading">
+      <h2 class="section-title" id="faq-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="circle-question"></span></span>
+        <span data-i18n="help.faq">FAQ</span>
+      </h2>
 
-    <details class="faq">
-      <summary><span data-i18n="help.q3">What should I report?</span><span class="icon" data-icon="chevron-right"></span></summary>
-      <p data-i18n="help.a3">Anything a person would want to know before walking somewhere: tactile paving, ramps, handrails, lifts, audible crossings, and also obstacles or places to take care.</p>
-    </details>
+      <details class="faq">
+        <summary>
+          <span data-i18n="help.q1">Q1. What is StepBy?</span>
+          <span class="icon icon--closed" data-icon="chevron-down"></span>
+          <span class="icon icon--open" data-icon="chevron-up"></span>
+        </summary>
+        <p data-i18n="help.a1">A1. StepBy is an app for checking and posting tactile paving and road information on a map.</p>
+      </details>
 
-    <details class="faq">
-      <summary><span data-i18n="help.q4">Who can see what I add?</span><span class="icon" data-icon="chevron-right"></span></summary>
-      <p data-i18n="help.a4">Reports and recorded routes are public. Your display name is shown next to them. Your exact location is never shared outside the points you choose to publish.</p>
-    </details>
+      <details class="faq">
+        <summary>
+          <span data-i18n="help.q2">Q2. Where can I change settings?</span>
+          <span class="icon icon--closed" data-icon="chevron-down"></span>
+          <span class="icon icon--open" data-icon="chevron-up"></span>
+        </summary>
+        <p data-i18n="help.a2">A2. Open the settings menu (the gear icon at the top right of the screen) and change them there.</p>
+      </details>
+    </section>
 
-    <details class="faq">
-      <summary><span data-i18n="help.q5">Can I use it without an account?</span><span class="icon" data-icon="chevron-right"></span></summary>
-      <p data-i18n="help.a5">Yes. Guest mode lets you browse the map and read reports. Signing in is only needed to add something.</p>
-    </details>
+    <section class="help-section" aria-labelledby="howto-heading">
+      <h2 class="section-title" id="howto-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="circle-info"></span></span>
+        <span data-i18n="help.howTo">How to use the app</span>
+      </h2>
+      <div class="help-block">
+        <p class="help-block__label" data-i18n="help.video">Introduction video</p>
+        <!-- Shared with UI1 rather than duplicated: the file is 89 MB and both
+             builds are served from the same site. -->
+        <video controls playsinline preload="none"
+               src="../../UI1/assets/videos/StepBy_CPJ2026.mp4"></video>
+        <p class="help-block__label" data-i18n="help.moreInfo">Detailed introduction page</p>
+        <a href="https://protopedia.net/prototype/8070" target="_blank" rel="noopener noreferrer">https://protopedia.net/prototype/8070</a>
+      </div>
+    </section>
+
+    <section class="help-section" aria-labelledby="forms-heading">
+      <h2 class="section-title" id="forms-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="list-ul"></span></span>
+        <span data-i18n="help.forms">Forms</span>
+      </h2>
+      <div class="help-block">
+        <div class="help-link">
+          <p class="help-block__label" data-i18n="help.survey">StepBy user survey</p>
+          <a href="https://forms.gle/hUGfTrXDmqXiUkSB6" target="_blank" rel="noopener noreferrer">https://forms.gle/hUGfTrXDmqXiUkSB6</a>
+        </div>
+        <div class="help-link">
+          <p class="help-block__label" data-i18n="help.bugReport">StepBy bug report form</p>
+          <a href="https://forms.gle/iaj2DDPDCq8CabJLA" target="_blank" rel="noopener noreferrer">https://forms.gle/iaj2DDPDCq8CabJLA</a>
+        </div>
+      </div>
+    </section>
 
   </main>
 </div>

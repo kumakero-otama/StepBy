@@ -16,6 +16,8 @@
 <script src="../i18n/dict.js"></script>
 <style>
   .settings-section + .settings-section { margin-top: var(--sp-6); }
+  /* Anchored sections must clear the sticky app bar when jumped to. */
+  .settings-section { scroll-margin-top: 76px; }
   .preview {
     margin-top: var(--sp-3);
     padding: var(--sp-4);
@@ -42,7 +44,7 @@
   <main class="app-main" id="main">
 
     <!-- Language ------------------------------------------------------- -->
-    <section class="settings-section" aria-labelledby="lang-heading">
+    <section class="settings-section" id="language" aria-labelledby="lang-heading">
       <h2 class="section-title" id="lang-heading">
         <span class="section-title__icon"><span class="icon" data-icon="language"></span></span>
         <span data-i18n="settings.language">Language</span>
@@ -52,7 +54,7 @@
     </section>
 
     <!-- Appearance ----------------------------------------------------- -->
-    <section class="settings-section" aria-labelledby="theme-heading">
+    <section class="settings-section" id="appearance" aria-labelledby="theme-heading">
       <h2 class="section-title" id="theme-heading">
         <span class="section-title__icon"><span class="icon" data-icon="palette"></span></span>
         <span data-i18n="settings.theme">Theme</span>

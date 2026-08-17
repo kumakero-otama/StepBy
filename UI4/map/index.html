@@ -16,8 +16,11 @@
 <script src="../js/prefs.js"></script>
 <script src="../i18n/dict.js"></script>
 <style>
-  /* The map screen owns the whole viewport: header, map, drawer, no scroll. */
-  .app-shell { height: 100dvh; overflow: hidden; }
+  /* The map screen owns the whole viewport: header, map, drawer, no scroll.
+     The clipping lives on the map box, not the shell — with it on the shell,
+     the header's settings dropdown was cut off at the header's edge. */
+  .app-shell { height: 100dvh; }
+  .map-container { overflow: hidden; }
   /* Keep toasts above the drawer rather than on top of the layer cards. */
   body { --toast-offset: 300px; }
 
@@ -62,7 +65,10 @@
   }
 
   /* ---- Map -------------------------------------------------------------- */
-  .map-container { flex: 1; min-height: 0; position: relative; }
+  /* z-index makes this a stacking context, so Leaflet's own panes (400+) stay
+     inside it instead of painting over the header and its dropdown. The
+     original UI1 had this; dropping it is what cut the settings menu off. */
+  .map-container { flex: 1; min-height: 0; position: relative; z-index: 1; }
   #map { width: 100%; height: 100%; background: var(--bg-sunken); }
   .leaflet-container { font-family: var(--font-sans); }
   .leaflet-control-zoom a {

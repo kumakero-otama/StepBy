@@ -24,8 +24,9 @@
     APP_BASE_PATH: detectBasePath(),
     /* Backend origin. All /api/* and /auth/* calls are prefixed with this. */
     API_BASE_URL: 'https://barrierfree-map.tail5de5e1.ts.net',
-    /* Google Identity Services client id. Empty disables the Google button. */
-    GOOGLE_CLIENT_ID: '',
+    /* Google Identity Services client id — the same one UI0/UI1 use, so the
+       github.io origin is already in the Authorized JavaScript origins list. */
+    GOOGLE_CLIENT_ID: '808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com',
     /* Bumped on every release; also used as the service worker cache key. */
     VERSION: '2.0.0',
     /* Supported UI languages, in menu order. Adding a third language means

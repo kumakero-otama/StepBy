@@ -39,9 +39,11 @@
     help: { href: '/help/', icon: 'circle-question', key: 'common.help' }
   };
 
+  /* UI1 had a page each for appearance and language; they are one screen here,
+     so these jump to the right section instead of both landing at the top. */
   var MENU_ITEMS = [
-    { href: '/settings/', icon: 'palette', key: 'settings.appearance' },
-    { href: '/settings/#lang-heading', icon: 'language', key: 'settings.language' },
+    { href: '/settings/#appearance', icon: 'palette', key: 'settings.appearance' },
+    { href: '/settings/#language', icon: 'language', key: 'settings.language' },
     { href: '/help/', icon: 'circle-question', key: 'common.help' }
   ];
 
