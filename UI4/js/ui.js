@@ -42,8 +42,8 @@
   /* UI1 had a page each for appearance and language; they are one screen here,
      so these jump to the right section instead of both landing at the top. */
   var MENU_ITEMS = [
-    { href: '/settings/#appearance', icon: 'palette', key: 'settings.appearance' },
     { href: '/settings/#language', icon: 'language', key: 'settings.language' },
+    { href: '/settings/#appearance', icon: 'palette', key: 'settings.appearance' },
     { href: '/help/', icon: 'circle-question', key: 'common.help' }
   ];
 
@@ -272,6 +272,33 @@
     });
   }
 
+  /* ---- PRO status ----------------------------------------------------------
+     Read once per page and cached on the user record, so the profile chip and
+     the map's save flow agree without each fetching it again. */
+  function readIsPro(payload) {
+    if (!payload || typeof payload !== 'object') return null;
+    if (typeof payload.isPro === 'boolean') return payload.isPro;
+    if (typeof payload.is_pro === 'boolean') return payload.is_pro;
+    if (payload.data && typeof payload.data === 'object') {
+      if (typeof payload.data.isPro === 'boolean') return payload.data.isPro;
+      if (typeof payload.data.is_pro === 'boolean') return payload.data.is_pro;
+    }
+    return null;
+  }
+
+  function fetchIsPro() {
+    if (!auth.isSignedIn()) return Promise.resolve(false);
+    return w.StepByApi.getProStatus()
+      .then(function (res) {
+        var value = readIsPro(res);
+        if (typeof value !== 'boolean') return false;
+        var user = auth.getCachedUser();
+        if (user) auth.setCachedUser(Object.assign({}, user, { isPro: value }));
+        return value;
+      })
+      .catch(function () { return false; });
+  }
+
   /* ---- Service worker ----------------------------------------------------- */
   function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
@@ -313,6 +340,8 @@
     resizeImage: resizeImage,
     setAvatar: setAvatar,
     avatarUrl: avatarUrl,
+    readIsPro: readIsPro,
+    fetchIsPro: fetchIsPro,
     renderAppBar: renderAppBar,
     version: cfg.VERSION
   };

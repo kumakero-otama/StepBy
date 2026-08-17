@@ -131,22 +131,13 @@
         <div class="stat__label" data-i18n="profile.stat.tactile">Tactile paving recorded</div>
       </div>
       <div class="stat">
-        <div class="stat__value"><span id="stat-posts">0</span></div>
+        <div class="stat__value" id="stat-posts" data-i18n="profile.stat.postsValue" data-i18n-n="0">0</div>
         <div class="stat__label" data-i18n="profile.stat.roadPosts">Road reports posted</div>
       </div>
     </div>
 
     <!-- Same six rows as UI1, in the same order -->
     <nav aria-label="Profile menu">
-      <a class="menu-row" href="../mine/">
-        <span class="menu-row__icon purple"><span class="icon" data-icon="list-ul"></span></span>
-        <span class="menu-row__text">
-          <span class="menu-row__title" data-i18n="profile.myPosts">My posts</span>
-          <span class="menu-row__desc" data-i18n="profile.myPostsDesc">Review and delete what you have posted</span>
-        </span>
-        <span class="icon menu-row__arrow" data-icon="chevron-right"></span>
-      </a>
-
       <a class="menu-row" href="../profile-edit/" id="row-edit">
         <span class="menu-row__icon teal"><span class="icon" data-icon="pen"></span></span>
         <span class="menu-row__text">
@@ -190,12 +181,6 @@
         </span>
       </button>
 
-      <p class="hidden" id="signin-wrap" style="margin-top:16px">
-        <a class="btn btn--primary btn--block" href="../login/">
-          <span class="icon" data-icon="right-to-bracket"></span>
-          <span data-i18n="profile.signIn">Sign in</span>
-        </a>
-      </p>
     </nav>
 
   </main>
@@ -227,16 +212,13 @@
     ui.setAvatar(avatarEl, user && user.iconUrl);
 
     /* PRO and distance pills, as on UI1's profile hero. */
-    var badges = [];
-    if (user && (user.isPro || user.pro)) {
-      badges.push('<span class="badge">' + ui.esc(t('profile.pro')) + '</span>');
-    }
-    badgesEl.innerHTML = badges.join('');
+    badgesEl.innerHTML = (user && user.isPro)
+      ? '<span class="badge">' + ui.esc(t('profile.pro')) + '</span>'
+      : '';
 
     d.getElementById('guest-banner').classList.toggle('hidden', !isGuest);
     d.getElementById('hero-edit').classList.toggle('hidden', isGuest);
     d.getElementById('row-edit').classList.toggle('hidden', isGuest);
-    d.getElementById('signin-wrap').classList.toggle('hidden', !isGuest);
     d.getElementById('signout-btn').classList.toggle('hidden', !auth.isSignedIn());
 
     paintStats();
@@ -250,8 +232,10 @@
     d.getElementById('stat-distance').innerHTML =
       ui.esc(km.toLocaleString(i18n.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
       '<small>km</small>';
-    d.getElementById('stat-posts').textContent =
-      i18n.formatNumber(Number((user && user.totalRoadPosts) || 0));
+    var posts = Number((user && user.totalRoadPosts) || 0);
+    var postsEl = d.getElementById('stat-posts');
+    postsEl.setAttribute('data-i18n-n', String(posts));
+    postsEl.textContent = t('profile.stat.postsValue', { n: i18n.formatNumber(posts) });
   }
 
   async function load() {
@@ -263,6 +247,10 @@
     } catch (err) {
       if (err.status === 401) { location.replace(auth.toApp('/login/')); return; }
     }
+    paint();
+
+    /* PRO lives on its own endpoint; refresh the chip once we know. */
+    user = Object.assign({}, user || {}, { isPro: await ui.fetchIsPro() });
     paint();
   }
 

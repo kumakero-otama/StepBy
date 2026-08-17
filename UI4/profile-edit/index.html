@@ -16,6 +16,25 @@
 <script src="../i18n/dict.js"></script>
 <style>
   .avatar-picker { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-6); }
+
+  /* PRO row, as on UI2's edit screen: label + help button, OFF/switch/ON. */
+  .pro-row {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-4) 0;
+    border-top: 1px solid var(--border);
+  }
+  .pro-row__copy { flex: 1; min-width: 0; }
+  .pro-row__title { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; color: var(--text-strong); }
+  .pro-help-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--bg-sunken);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .pro-toggle { display: flex; align-items: center; gap: var(--sp-2); }
+  .pro-toggle__label { font-size: var(--fs-xs); font-weight: 700; color: var(--text-muted); }
 </style>
 </head>
 <body data-nav="profile">
@@ -52,6 +71,25 @@
         <p class="field__error hidden" id="name-error" data-i18n="onboarding.nameRequired">Please enter a display name.</p>
       </div>
 
+      <div class="pro-row">
+        <div class="pro-row__copy">
+          <p class="pro-row__title">
+            <span data-i18n="pro.title">PRO account</span>
+            <button type="button" class="pro-help-btn" id="pro-help-btn"
+                    aria-label="About the PRO account" data-i18n-attr="aria-label:pro.help">
+              <span class="icon" data-icon="circle-question"></span>
+            </button>
+          </p>
+          <p class="field__hint hidden" id="pro-guest-note" data-i18n="pro.guestLocked">Guest accounts cannot turn this on. Sign in with Google first.</p>
+        </div>
+        <div class="pro-toggle">
+          <span class="pro-toggle__label" data-i18n="pro.off">OFF</span>
+          <input type="checkbox" class="switch" id="pro-toggle"
+                 aria-label="PRO account" data-i18n-attr="aria-label:pro.title">
+          <span class="pro-toggle__label" data-i18n="pro.on">ON</span>
+        </div>
+      </div>
+
       <button type="submit" class="btn btn--primary btn--block" id="submit">
         <span class="icon" data-icon="check"></span>
         <span data-i18n="common.save">Save</span>
@@ -59,6 +97,14 @@
     </form>
   </main>
 </div>
+
+<dialog class="sheet" id="pro-help" aria-labelledby="pro-help-title">
+  <h2 id="pro-help-title" data-i18n="pro.title">PRO account</h2>
+  <p data-i18n="pro.explain">A mode for professionals who support people with visual impairments, letting them record detail such as the type of tactile paving. It is not a paid plan.</p>
+  <div class="sheet__actions">
+    <button type="button" class="btn btn--secondary btn--block" id="pro-help-close" data-i18n="common.close">Close</button>
+  </div>
+</dialog>
 
 <script src="../js/icons.js"></script>
 <script src="../js/i18n.js"></script>
@@ -83,6 +129,8 @@
   var fileInput = d.getElementById('photo-input');
   var submitBtn = d.getElementById('submit');
   var iconDataUrl = null;
+  var proToggle = d.getElementById('pro-toggle');
+  var proWasOn = false;
 
   var user = auth.getCachedUser();
   if (user) {
@@ -90,9 +138,31 @@
     ui.setAvatar(preview, user.iconUrl);
     if (user.isGuest) {
       d.getElementById('guest-lock').classList.remove('hidden');
+      d.getElementById('pro-guest-note').classList.remove('hidden');
       form.querySelectorAll('input, button').forEach(function (el) { el.disabled = true; });
     }
   }
+
+  /* PRO state is its own endpoint, not part of /auth/me's profile payload. */
+  (async function loadPro() {
+    if (!auth.isSignedIn() || (user && user.isGuest)) return;
+    proToggle.disabled = true;
+    try {
+      var value = ui.readIsPro(await api.getProStatus());
+      if (typeof value === 'boolean') {
+        proToggle.checked = value;
+        proWasOn = value;
+      }
+    } catch (err) {
+      /* leave it off; saving is what matters */
+    } finally {
+      proToggle.disabled = !!(user && user.isGuest);
+    }
+  })();
+
+  var proHelp = d.getElementById('pro-help');
+  d.getElementById('pro-help-btn').addEventListener('click', function () { proHelp.showModal(); });
+  d.getElementById('pro-help-close').addEventListener('click', function () { proHelp.close(); });
 
   d.getElementById('pick-photo').addEventListener('click', function () { fileInput.click(); });
 
@@ -127,6 +197,21 @@
     try {
       var res = await api.updateProfile(name, iconDataUrl);
       if (res && res.user) auth.setCachedUser(res.user);
+
+      /* Saved separately from the profile, and a failure here must not read
+         as "nothing saved" — the name and photo did go through. */
+      if (proToggle.checked !== proWasOn) {
+        try {
+          await api.setProStatus(proToggle.checked);
+          proWasOn = proToggle.checked;
+          var cached = auth.getCachedUser();
+          if (cached) auth.setCachedUser(Object.assign({}, cached, { isPro: proWasOn }));
+        } catch (err) {
+          proToggle.checked = proWasOn;
+          ui.toast(t(err.status === 403 ? 'pro.guestLocked' : 'pro.saveFailed'), 'error');
+        }
+      }
+
       ui.toast(t('profileEdit.saved'), 'success');
       setTimeout(function () { location.replace(auth.toApp('/profile/')); }, 700);
     } catch (err) {

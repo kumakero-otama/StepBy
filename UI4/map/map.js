@@ -58,6 +58,7 @@
   };
 
   var state = {
+    isPro: false,
     position: null,
     follow: false,
     watchId: null,
@@ -66,19 +67,6 @@
     session: null,
     fetching: {}
   };
-
-  /* ---- Notice banner ----------------------------------------------------- */
-  var NOTICE_KEY = 'stepby.noticeSeen.v2';
-  var notice = d.getElementById('notice');
-  try {
-    if (localStorage.getItem(NOTICE_KEY) !== '1') notice.classList.remove('hidden');
-  } catch (e) { notice.classList.remove('hidden'); }
-
-  d.getElementById('notice-close').addEventListener('click', function () {
-    notice.classList.add('hidden');
-    try { localStorage.setItem(NOTICE_KEY, '1'); } catch (e) { /* private mode */ }
-    map.invalidateSize();
-  });
 
   /* ---- Drawer ------------------------------------------------------------ */
   var drawer = d.getElementById('drawer');
@@ -310,11 +298,24 @@
         { signal: state.fetching.records.signal }
       );
       layers.records.clearLayers();
-      paths.forEach(drawRecord);
+      paths.filter(visibleToCurrentUser).forEach(drawRecord);
     } catch (err) {
       if (api.isAbort(err)) return;
       ui.toastError(err);
     }
+  }
+
+  /**
+   * Without PRO you only see routes recorded as plain tactile paving; the
+   * detailed categories a professional records are theirs. Same rule as UI2.
+   */
+  function visibleToCurrentUser(path) {
+    if (state.isPro) return true;
+    var tags = Array.isArray(path && path.tags) ? path.tags : [];
+    if (tags.length !== 1) return false;
+    var only = tags[0];
+    var label = (only && (only.labelJa || only.label || only.name)) || only;
+    return String(label || '').trim() === '点字ブロック';
   }
 
   /**
@@ -612,6 +613,86 @@
     }
   }
 
+  /* ---- PRO: tags and note on save ----------------------------------------
+     Non-PRO recordings are saved as they are. A PRO recording asks what was
+     recorded (at least one tag, as UI2 requires) and an optional note. */
+  var proSave = d.getElementById('pro-save');
+  var proSaveTags = d.getElementById('pro-save-tags');
+  var proSaveMemo = d.getElementById('pro-save-memo');
+  var proSaveError = d.getElementById('pro-save-tags-error');
+  var tactileTags = null;
+
+  async function askProDetails() {
+    proSaveError.classList.add('hidden');
+    proSaveMemo.value = '';
+
+    if (!tactileTags) {
+      proSaveTags.innerHTML = '<span class="chip chip--muted">' + ui.esc(t('common.loading')) + '</span>';
+      try {
+        var res = await api.listTactileTags();
+        tactileTags = (res && res.tags) || [];
+      } catch (err) {
+        tactileTags = [];
+      }
+    }
+    proSaveTags.innerHTML = tactileTags.length
+      ? tactileTags.map(function (tag) {
+          var id = tag.id || tag.tagId;
+          return '<label class="chip chip--select">' +
+            '<input type="checkbox" value="' + ui.esc(id) + '">' +
+            '<span>' + ui.esc(i18n.tagLabel(tag)) + '</span></label>';
+        }).join('')
+      : '<span class="chip chip--muted">' + ui.esc(t('feed.noTags')) + '</span>';
+
+    return new Promise(function (resolve) {
+      function pick() {
+        return Array.prototype.slice
+          .call(proSaveTags.querySelectorAll('input:checked'))
+          .map(function (i) { return i.value; });
+      }
+      function onOk() {
+        if (!pick().length) { proSaveError.classList.remove('hidden'); return; }
+        cleanup();
+        resolve({ tagIds: pick(), memo: proSaveMemo.value.trim() });
+      }
+      function onCancel() { cleanup(); resolve(null); }
+      function cleanup() {
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        proSave.close();
+      }
+      var okBtn = d.getElementById('pro-save-ok');
+      var cancelBtn = d.getElementById('pro-save-cancel');
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+      proSave.addEventListener('cancel', function (e) { e.preventDefault(); onCancel(); }, { once: true });
+      proSave.showModal();
+    });
+  }
+
+  async function saveProDetails(session, details) {
+    if (!details) return;
+    if (details.memo) {
+      try {
+        await api.setSessionMemo({ sessionId: session.sessionId, sessionUuid: session.sessionUuid, memo: details.memo });
+      } catch (err) {
+        ui.toast(t('pro.memoSaveFailed'), 'error');
+      }
+    }
+    for (var i = 0; i < details.tagIds.length; i++) {
+      try {
+        await api.addSessionTag({
+          sessionId: session.sessionId,
+          sessionUuid: session.sessionUuid,
+          tagId: details.tagIds[i]
+        });
+      } catch (err) {
+        ui.toast(t('pro.tagSaveFailed'), 'error');
+        break;
+      }
+    }
+  }
+
   async function stopRecording() {
     var session = state.session;
     if (!session) return;
@@ -634,6 +715,13 @@
       return;
     }
 
+    /* Ask before ending the session, so cancelling leaves it recording. */
+    var proDetails = null;
+    if (state.isPro) {
+      proDetails = await askProDetails();
+      if (!proDetails) return;
+    }
+
     recordBtn.setAttribute('aria-busy', 'true');
     try {
       await api.endSession({
@@ -641,6 +729,7 @@
         sessionUuid: session.sessionUuid,
         endedAt: new Date().toISOString()
       });
+      await saveProDetails(session, proDetails);
       ui.toast(t('map.recordSaved'), 'success');
       /* Once saved it is one of "everyone's routes", so it takes that colour. */
       session.line.setStyle({ color: COLOR.records, opacity: 0.85 });
@@ -688,6 +777,17 @@
   renderRecordControls();
   applyMapInfo();
   startWatching();
+
+  /* Which routes are visible, and whether saving asks for tags, both depend
+     on this — refresh the layer once it is known. */
+  ui.fetchIsPro().then(function (isPro) {
+    if (isPro === state.isPro) return;
+    state.isPro = isPro;
+    if (mapInfoInput.checked) {
+      var centre = state.position || map.getCenter();
+      loadRecords({ lat: Number(centre.lat), lng: Number(centre.lng) });
+    }
+  });
 
   d.addEventListener('visibilitychange', function () {
     /* Keep the watch alive while recording, drop it otherwise to save battery. */

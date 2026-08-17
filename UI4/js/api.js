@@ -283,7 +283,6 @@
 
     /* ---- tags ---- */
     listPostTags: function (opts) { return request('/api/post-tags', opts); },
-    listTactileTags: function (opts) { return request('/api/tactile-tags' + query({ activeOnly: 1 }), opts); },
 
     /* ---- recorded routes ----
        Same bounding-circle requirement as /api/road-info. */
@@ -314,6 +313,20 @@
     sessionInfo: function (sessionId, opts) {
       return request('/api/tactile-session-info' + query({ sessionId: sessionId }),
         Object.assign({ auth: false }, opts || {}));
+    },
+
+    /* ---- PRO account ----
+       Not a paid tier: a mode for professionals supporting people with visual
+       impairments, who record finer detail. Guests get 403 guest_pro_locked. */
+    getProStatus: function (opts) { return request('/api/pro-status', opts); },
+    setProStatus: function (isPro) {
+      return request('/api/pro-status', { method: 'PUT', body: { isPro: !!isPro } });
+    },
+    listTactileTags: function (opts) {
+      return request('/api/tactile-tags' + query({ activeOnly: 1 }), opts);
+    },
+    addSessionTag: function (body) {
+      return request('/api/session-tags', { method: 'POST', body: body });
     },
 
     /* ---- OSM overlay ---- */
