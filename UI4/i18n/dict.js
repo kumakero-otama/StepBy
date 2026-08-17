@@ -48,8 +48,8 @@
     'safety.title': 'Please check your surroundings',
     'safety.body': 'Stay aware of traffic and people around you while using this app.',
     'safety.emphasis': 'Never use it while walking.',
-    'safety.accept': 'I understand',
-    'safety.decline': 'Not now',
+    'safety.accept': 'Yes',
+    'safety.decline': 'No',
     'safety.declinedTitle': 'Come back when it is safe',
     'safety.declinedBody': 'Please close the app and open it again once you are somewhere safe.',
 
@@ -311,8 +311,8 @@
     'safety.title': 'कृपया अपने आसपास ध्यान दें',
     'safety.body': 'इस ऐप का उपयोग करते समय ट्रैफ़िक और आसपास के लोगों का ध्यान रखें।',
     'safety.emphasis': 'चलते समय इसका उपयोग कभी न करें।',
-    'safety.accept': 'मैं समझ गया',
-    'safety.decline': 'अभी नहीं',
+    'safety.accept': 'हाँ',
+    'safety.decline': 'नहीं',
     'safety.declinedTitle': 'सुरक्षित होने पर वापस आएँ',
     'safety.declinedBody': 'कृपया ऐप बंद करें और सुरक्षित जगह पर पहुँचने के बाद इसे दोबारा खोलें।',
 
@@ -560,8 +560,8 @@
     'safety.title': 'ご利用の前に安全確認をお願いします',
     'safety.body': 'このアプリを使うときは、車や周囲の人に十分ご注意ください。',
     'safety.emphasis': '歩きスマホは絶対にしないでください。',
-    'safety.accept': '理解しました',
-    'safety.decline': 'あとで',
+    'safety.accept': 'はい',
+    'safety.decline': 'いいえ',
     'safety.declinedTitle': '安全な場所でご利用ください',
     'safety.declinedBody': '一度アプリを閉じて、安全な場所に着いてからもう一度開いてください。',
 
