@@ -59,6 +59,10 @@ assert.match(mapSource, /record_owner_not_loaded[\s\S]{0,180}?retryable = true/,
   "queued recordings must wait until the current account is known");
 assert.match(mapSource, /record_owner_changed[\s\S]{0,180}?retryable = false/,
   "a recording queued by another account must never be submitted under the current account");
+assert.match(mapSource, /privateScope:\s*"本人のみ表示"/,
+  "private PRO tags must describe their actual owner-only visibility");
+assert.doesNotMatch(mapSource, /tag\.osmExportable \? "OSM公開対象" : "StepByのみ"/,
+  "the obsolete StepBy-only tag scope label must not remain");
 assert.match(mapSource, /session_tag_save_failed:\$\{res\.status\}[\s\S]{0,180}?res\.status >= 500/,
   "a PRO authorization rejection must not retry forever");
 assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("const attempts = hosts.map"),
