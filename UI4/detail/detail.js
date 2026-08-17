@@ -69,12 +69,10 @@
       '</p>' +
 
       (ownedByMe()
-        ? '<div style="display:flex;gap:8px;margin-top:8px">' +
-            '<a class="btn btn--secondary grow" href="' + ui.esc(auth.toApp('/post/') + '?id=' + encodeURIComponent(pointId)) + '">' +
-              w.StepByIcons.svg('pen') + '<span>' + ui.esc(t('common.edit')) + '</span></a>' +
-            '<button type="button" class="btn btn--danger grow" id="delete-btn">' +
+        ? '<p style="margin-top:8px">' +
+            '<button type="button" class="btn btn--danger btn--block" id="delete-btn">' +
               w.StepByIcons.svg('trash-can') + '<span>' + ui.esc(t('common.delete')) + '</span></button>' +
-          '</div>'
+          '</p>'
         : '');
 
     var del = d.getElementById('delete-btn');
