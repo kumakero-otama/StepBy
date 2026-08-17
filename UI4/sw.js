@@ -19,7 +19,7 @@
         response would leak between accounts.
    =========================================================== */
 
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 const SHELL_CACHE = `stepby-ui4-shell-${VERSION}`;
 const ASSET_CACHE = `stepby-ui4-assets-${VERSION}`;
 
@@ -99,6 +99,10 @@ self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
 });
 
+/* Audio and video: too large for the cache quota, and better served by the
+   browser's media loader. See the fetch handler. */
+const MEDIA = /\.(?:mp4|m4v|mov|webm|ogv|ogg|mp3|m4a|wav|aac)$/i;
+
 function isApiRequest(url) {
   return url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/');
 }
@@ -107,7 +111,9 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    /* 200 only: a 206 is a fragment, and storing one would answer a later
+       whole-file request with part of a file. */
+    if (response.status === 200) cache.put(request, response.clone());
     return response;
   } catch (err) {
     const cached = await cache.match(request, { ignoreSearch: true });
@@ -126,7 +132,7 @@ async function staleWhileRevalidate(request, cacheName) {
   const cached = await cache.match(request, { ignoreSearch: true });
   const network = fetch(request)
     .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
+      if (response.status === 200) cache.put(request, response.clone());
       return response;
     })
     .catch(() => null);
@@ -142,6 +148,17 @@ self.addEventListener('fetch', (event) => {
   /* Backend traffic is never cached: stale accessibility data is worse than
      no data, and cached authenticated responses leak between accounts. */
   if (isApiRequest(url) || url.origin !== self.location.origin) return;
+
+  /* Media never goes through this worker.
+
+     A playing <video> asks for the file a range at a time. Answering those
+     from here means every chunk is streamed through the worker and cloned so
+     a copy can be cached — and the clone buffers the whole chunk, while the
+     cache then refuses it, because a 206 cannot be stored. The result is a
+     continuous hitch for the whole video. Returning without respondWith hands
+     the request back to the browser's own media loader, which does range
+     requests, buffering and seeking properly. */
+  if (request.headers.has('range') || MEDIA.test(url.pathname)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, SHELL_CACHE, p('offline.html')));

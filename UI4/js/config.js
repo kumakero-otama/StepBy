@@ -28,7 +28,7 @@
        github.io origin is already in the Authorized JavaScript origins list. */
     GOOGLE_CLIENT_ID: '808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com',
     /* Bumped on every release; also used as the service worker cache key. */
-    VERSION: '2.0.0',
+    VERSION: '2.0.1',
     /* Supported UI languages, in menu order. Adding a third language means
        adding a dictionary in i18n/dict.js and one entry here. */
     LANGS: [
