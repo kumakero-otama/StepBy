@@ -147,18 +147,24 @@ const TRACE_TAG_TEXT = {
     noMatch: "一致するタグがありません",
     addTagFailed: "タグの追加に失敗しました。時間をおいて再度お試しください。",
     requiredForPro: "タグを追加してください",
+    publicScope: "OSM公開対象",
+    privateScope: "本人のみ表示",
   },
   en: {
     noSelection: "None selected",
     noMatch: "No matching tags",
     addTagFailed: "Failed to add tag. Please try again later.",
     requiredForPro: "Please add at least one tag.",
+    publicScope: "Published to OSM",
+    privateScope: "Visible only to you",
   },
   hi: {
     noSelection: "कोई चयन नहीं",
     noMatch: "कोई मिलते-जुलते टैग नहीं",
     addTagFailed: "टैग जोड़ने में विफल। कृपया बाद में फिर प्रयास करें।",
     requiredForPro: "タグを追加してください",
+    publicScope: "OSM पर प्रकाशित",
+    privateScope: "केवल आपको दिखाई देगा",
   },
 };
 
@@ -2020,7 +2026,7 @@ function renderTraceTagList() {
     return;
   }
   traceTagListEl.innerHTML = visibleTags
-    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)} <small>${tag.osmExportable ? "OSM公開対象" : "StepByのみ"}</small></button>`)
+    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)} <small>${escapeHtml(tag.osmExportable ? text.publicScope : text.privateScope)}</small></button>`)
     .join("");
 }
 
