@@ -225,6 +225,7 @@
     /* ---- settings ---- */
     'settings.title': 'Settings',
     'settings.mapDisplay': 'Map display',
+    'settings.mapDisplayDesc': 'What the map shows',
     'settings.map.myTactile': 'Tactile paving I recorded',
     'settings.map.appTactile': 'Tactile paving from the app',
     'settings.map.osmTactile': 'Tactile paving from OpenStreetMap',
@@ -475,6 +476,7 @@
 
     'settings.title': 'सेटिंग्स',
     'settings.mapDisplay': 'नक्शे का प्रदर्शन',
+    'settings.mapDisplayDesc': 'नक्शे पर क्या दिखे',
     'settings.map.myTactile': 'मेरी दर्ज की टैक्टाइल पेविंग',
     'settings.map.appTactile': 'ऐप से जोड़ी गई टैक्टाइल पेविंग',
     'settings.map.osmTactile': 'OpenStreetMap की टैक्टाइल पेविंग',
@@ -722,6 +724,7 @@
 
     'settings.title': '設定',
     'settings.mapDisplay': '地図の表示',
+    'settings.mapDisplayDesc': '点字ブロック・道情報の表示',
     'settings.map.myTactile': '自分で投稿した点字ブロック',
     'settings.map.appTactile': 'アプリで投稿された点字ブロック',
     'settings.map.osmTactile': 'OSMで投稿された点字ブロック',

@@ -54,18 +54,35 @@
     text-decoration: none;
   }
 
+  /* Two figures, each with UI1's coloured cap and matching numerals: teal
+     for the distance, amber for the reports. */
   .stats { display: flex; gap: var(--sp-3); margin: var(--sp-4) 0; }
   .stat {
     flex: 1;
-    padding: var(--sp-4) var(--sp-2);
+    padding: var(--sp-6) var(--sp-2) var(--sp-5);
     text-align: center;
     border-radius: var(--radius-md);
     background: var(--bg-raised);
     border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
   }
-  .stat__value { font-size: var(--fs-xl); font-weight: 800; color: var(--primary-dark); }
+  .stat::before {
+    content: ''; position: absolute;
+    top: 0; inset-inline: 0; height: 4px;
+    /* Follows the card corners; a square cap on a rounded card reads as a
+       rendering fault. */
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  .stat--tactile::before { background: linear-gradient(90deg, #2E9E8F, #4DBFB0); }
+  .stat--posts::before   { background: linear-gradient(90deg, #FFB847, #FFD700); }
+  .stat__value { font-size: 26px; font-weight: 800; line-height: 1.15; }
+  .stat--tactile .stat__value { color: var(--primary-dark); }
+  .stat--posts .stat__value   { color: #C8860A; }
   .stat__value small { font-size: var(--fs-sm); font-weight: 700; margin-inline-start: 2px; }
-  .stat__label { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-muted); overflow-wrap: anywhere; }
+  .stat__label { margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--text-muted); overflow-wrap: anywhere; }
+  /* Amber on a dark surface needs to be lighter to stay legible. */
+  [data-theme="dark"] .stat--posts .stat__value { color: #F0B33C; }
 
   /* The frame lives on the group, and separators are drawn between visible
      rows only. Rows are hidden for guests, and `+` still counts a
@@ -134,44 +151,19 @@
     </p>
 
     <div class="stats">
-      <div class="stat">
+      <div class="stat stat--tactile">
         <div class="stat__value" id="stat-distance">0.00<small>km</small></div>
         <div class="stat__label" data-i18n="profile.stat.tactile">Tactile paving recorded</div>
       </div>
-      <div class="stat">
+      <div class="stat stat--posts">
         <div class="stat__value" id="stat-posts" data-i18n="profile.stat.postsValue" data-i18n-n="0">0</div>
         <div class="stat__label" data-i18n="profile.stat.roadPosts">Road reports posted</div>
       </div>
     </div>
 
-    <!-- Same six rows as UI1, in the same order -->
+    <!-- Help and sign out. Language and appearance moved to the settings
+         screen, which the header's gear reaches from anywhere. -->
     <nav class="menu-group" aria-label="Profile menu">
-      <a class="menu-row" href="../profile-edit/" id="row-edit">
-        <span class="menu-row__icon teal"><span class="icon" data-icon="pen"></span></span>
-        <span class="menu-row__text">
-          <span class="menu-row__title" data-i18n="profile.editProfile">Edit profile</span>
-          <span class="menu-row__desc" data-i18n="profile.editProfileDesc">Change your name and photo</span>
-        </span>
-        <span class="icon menu-row__arrow" data-icon="chevron-right"></span>
-      </a>
-
-      <a class="menu-row" href="../settings/#language">
-        <span class="menu-row__icon blue"><span class="icon" data-icon="language"></span></span>
-        <span class="menu-row__text">
-          <span class="menu-row__title" data-i18n="settings.language">Language</span>
-        </span>
-        <span class="icon menu-row__arrow" data-icon="chevron-right"></span>
-      </a>
-
-      <a class="menu-row" href="../settings/#appearance">
-        <span class="menu-row__icon orange"><span class="icon" data-icon="palette"></span></span>
-        <span class="menu-row__text">
-          <span class="menu-row__title" data-i18n="settings.appearance">Appearance</span>
-          <span class="menu-row__desc" data-i18n="profile.appearanceDesc">Theme and text size</span>
-        </span>
-        <span class="icon menu-row__arrow" data-icon="chevron-right"></span>
-      </a>
-
       <a class="menu-row" href="../help/">
         <span class="menu-row__icon teal"><span class="icon" data-icon="circle-question"></span></span>
         <span class="menu-row__text">
@@ -226,7 +218,6 @@
 
     d.getElementById('guest-banner').classList.toggle('hidden', !isGuest);
     d.getElementById('hero-edit').classList.toggle('hidden', isGuest);
-    d.getElementById('row-edit').classList.toggle('hidden', isGuest);
     d.getElementById('signout-btn').classList.toggle('hidden', !auth.isSignedIn());
 
     paintStats();
