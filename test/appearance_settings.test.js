@@ -25,13 +25,11 @@ assert.match(css, /data-theme="dark"[\s\S]*?\.record-actions[\s\S]*?\.tactile-se
 assert.match(css, /\.record-action-btn[\s\S]*?font-size:\s*0\.9375rem !important/,
   "record and pause labels must follow the selected root font size");
 
-for (const popupSource of [profileSource, mapSource]) {
-  assert.match(popupSource, /fontSize:\s*`\$\{Math\.max\(20, sourceRootSize \* 1\.125\)\}px`/,
-    "StepBy OAuth preparation text must be at least 20px and follow the selected font size");
-  assert.match(popupSource, /background:\s*dark \? "#11171b" : "#f5f7fa"/,
-    "StepBy OAuth preparation window must follow the selected theme");
-  assert.doesNotMatch(popupSource, /body\.textContent\s*=\s*"OpenStreetMapの認証画面を準備しています/,
-    "the old unstyled OAuth preparation text must not return");
+for (const source of [profileSource, mapSource]) {
+  assert.doesNotMatch(source, /OpenStreetMapの認証画面を準備しています|OSM認証画面を準備しています/,
+    "retired individual OSM OAuth preparation UI must not return");
+  assert.doesNotMatch(source, /\/auth\/osm\/start/,
+    "profile and map screens must not start retired individual OSM OAuth");
 }
 
 console.log("appearance settings cover scalable text and dark interactive surfaces");
