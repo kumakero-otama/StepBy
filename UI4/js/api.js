@@ -147,9 +147,18 @@
   }
 
   function normalizeReport(point) {
-    var posts = point.posts || [];
-    /* The newest post is the current description; older ones are history. */
-    var lead = posts[posts.length - 1] || null;
+    /* Saving over an existing point appends a post rather than replacing one,
+       so a point that has been revised carries several. The newest is the
+       current description; the rest are history.
+
+       Sorted rather than indexed: this used to take posts[length - 1], and
+       the API returns them newest first, so every revised point showed its
+       oldest text, author and date as though they were current — an edit
+       looked like it had not saved. */
+    var posts = (point.posts || []).slice().sort(function (a, b) {
+      return Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0);
+    });
+    var lead = posts[0] || null;
     var images = [];
     posts.forEach(function (post) {
       (post.media || []).forEach(function (item) {
