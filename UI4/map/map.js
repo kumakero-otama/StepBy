@@ -96,7 +96,11 @@
   try { drawerOpen = localStorage.getItem(DRAWER_KEY) !== '0'; } catch (e) { /* ignore */ }
   setDrawer(drawerOpen);
 
-  /* ---- Status notice ----------------------------------------------------- */
+  /* ---- Status notice -----------------------------------------------------
+     One line on the map, not a toast. Overlay loads re-run every time you move
+     far enough, so a toast per failure buried the screen in "something went
+     wrong" while panning — especially with /api/osm-tactile-ways currently
+     answering 502. */
   var noticeEl = d.getElementById('map-notice');
   var noticeKey = null;
 
@@ -105,6 +109,21 @@
     if (!key) { noticeEl.classList.add('hidden'); noticeEl.textContent = ''; return; }
     noticeEl.textContent = t(key);
     noticeEl.classList.remove('hidden');
+  }
+
+  /* Overlay problems are reported once and then kept quiet until they clear. */
+  var overlayFailed = {};
+
+  function anyOverlayFailed() {
+    return Object.keys(overlayFailed).some(function (k) { return overlayFailed[k]; });
+  }
+
+  function overlayProblem(name, failed) {
+    overlayFailed[name] = failed;
+    /* A location problem is the more useful message, so it wins while it is
+       showing; otherwise reflect the overlay state. */
+    if (noticeKey && noticeKey !== 'map.overlayUnavailable') return;
+    showNotice(anyOverlayFailed() ? 'map.overlayUnavailable' : null);
   }
 
   /* ---- Coordinate strip -------------------------------------------------- */
@@ -142,7 +161,7 @@
   }
 
   function onPosition(pos) {
-    showNotice(null);
+    showNotice(anyOverlayFailed() ? 'map.overlayUnavailable' : null);
     state.position = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
@@ -211,10 +230,11 @@
         { signal: state.fetching.reports.signal }
       );
       drawReports();
+      overlayProblem('reports', false);
     } catch (err) {
       if (api.isAbort(err)) return;
       /* An overlay that cannot load must not take the whole map down. */
-      ui.toastError(err);
+      overlayProblem('reports', true);
     }
   }
 
@@ -244,6 +264,7 @@
          first time a pin is actually opened rather than firing one request
          per pin on every pan. */
       marker.on('popupopen', async function () {
+        suppressTapUntil = Date.now() + 1000;
         if (item.hydrated) return;
         try {
           var full = await api.getReport(item.id);
@@ -259,17 +280,59 @@
     });
   }
 
+  /**
+   * Tactile paving straight from Overpass, the way UI1 does it. Used when the
+   * backend proxy is unavailable — it has been answering 502 — so the layer
+   * still works instead of just failing.
+   */
+  async function overpassTactile(centre, signal) {
+    var d1 = 0.018; /* ~2 km */
+    var bbox = [
+      (centre.lat - d1).toFixed(6), (centre.lng - d1).toFixed(6),
+      (centre.lat + d1).toFixed(6), (centre.lng + d1).toFixed(6)
+    ].join(',');
+    var query = '[out:json][timeout:25];(way["tactile_paving"](' + bbox +
+      ');node["tactile_paving"](' + bbox + '););out geom;';
+
+    var res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query),
+      signal: signal
+    });
+    if (!res.ok) throw new Error('overpass ' + res.status);
+    var data = await res.json();
+
+    return (data && data.elements || []).map(function (el) {
+      if (el.type === 'way' && Array.isArray(el.geometry) && el.geometry.length >= 2) {
+        return { geometry: { type: 'LineString', coordinates: el.geometry.map(function (p) { return [p.lon, p.lat]; }) } };
+      }
+      if (el.type === 'node' && typeof el.lat === 'number') {
+        return { geometry: { type: 'Point', coordinates: [el.lon, el.lat] } };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
   async function loadTactile(centre) {
     if (state.fetching.tactile) state.fetching.tactile.abort();
     state.fetching.tactile = new AbortController();
+    var signal = state.fetching.tactile.signal;
     try {
-      var res = await api.osmTactileWays({
-        centerLat: Number(centre.lat).toFixed(6),
-        centerLng: Number(centre.lng).toFixed(6),
-        radiusKm: 2
-      }, { signal: state.fetching.tactile.signal });
+      var features;
+      try {
+        var res = await api.osmTactileWays({
+          centerLat: Number(centre.lat).toFixed(6),
+          centerLng: Number(centre.lng).toFixed(6),
+          radiusKm: 2
+        }, { signal: signal });
+        features = (res && res.features) || [];
+      } catch (err) {
+        if (api.isAbort(err)) return;
+        features = await overpassTactile(centre, signal);
+      }
       layers.tactile.clearLayers();
-      (res && res.features || []).forEach(function (feature) {
+      features.forEach(function (feature) {
         var geom = feature.geometry || feature;
         if (!geom) return;
         if (geom.type === 'LineString') {
@@ -283,9 +346,10 @@
           }).addTo(layers.tactile);
         }
       });
+      overlayProblem('tactile', false);
     } catch (err) {
-      if (api.isAbort(err)) return;
-      ui.toastError(err);
+      if (api.isAbort(err) || (err && err.name === 'AbortError')) return;
+      overlayProblem('tactile', true);
     }
   }
 
@@ -299,9 +363,10 @@
       );
       layers.records.clearLayers();
       paths.filter(visibleToCurrentUser).forEach(drawRecord);
+      overlayProblem('records', false);
     } catch (err) {
       if (api.isAbort(err)) return;
-      ui.toastError(err);
+      overlayProblem('records', true);
     }
   }
 
@@ -338,7 +403,7 @@
     var coords = recordCoords(path);
     if (coords.length < 2) return;
 
-    function open() { openRecordSheet(path); }
+    function open() { suppressTapUntil = Date.now() + 1000; openRecordSheet(path); }
 
     L.polyline(coords, { color: COLOR.records, weight: 4, opacity: 0.85, interactive: true })
       .on('click', open).addTo(layers.records);
@@ -760,8 +825,52 @@
     event.returnValue = '';
   });
 
+  /* Panning fires moveend repeatedly; wait until it settles before asking
+     the server for anything. */
+  var moveTimer = null;
   map.on('moveend', function () {
-    if (!state.position) maybeLoadOverlays();
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(function () {
+      if (!state.position) maybeLoadOverlays();
+    }, 600);
+  });
+
+  /* ---- Tap the map to add a report ----------------------------------------
+     The primary way to post in UI1 and UI2. Taps that land on something
+     interactive — a report pin, a recorded route, a popup — belong to that
+     thing, and iOS fires the map's click alongside the layer's, so those are
+     filtered out here. */
+  var suppressTapUntil = 0;
+  var tapTimer = null;
+
+  function tapIsOnFeature(event) {
+    var oe = event && event.originalEvent;
+    var el = oe && oe.target;
+    if (!el) return false;
+    if (el.closest && el.closest('.leaflet-interactive, .leaflet-popup, .leaflet-marker-icon, .leaflet-control')) return true;
+    var tag = (el.tagName || '').toLowerCase();
+    return tag === 'path' || tag === 'polyline' || tag === 'circle';
+  }
+
+  map.on('dblclick', function () { clearTimeout(tapTimer); });
+
+  map.on('click', function (event) {
+    if (state.session) return;                 /* recording: do not navigate away */
+    if (Date.now() < suppressTapUntil) return;
+    if (tapIsOnFeature(event)) return;
+
+    clearTimeout(tapTimer);
+    /* Long enough to let a double-tap zoom cancel it, as UI1 does. */
+    tapTimer = setTimeout(function () {
+      if (Date.now() < suppressTapUntil) return;
+      var lat = Number(event.latlng && event.latlng.lat);
+      var lng = Number(event.latlng && event.latlng.lng);
+      var url = auth.toApp('/post/');
+      if (isFinite(lat) && isFinite(lng)) {
+        url += '?lat=' + encodeURIComponent(lat.toFixed(6)) + '&lng=' + encodeURIComponent(lng.toFixed(6));
+      }
+      location.assign(url);
+    }, 350);
   });
 
   /* ---- Language ---------------------------------------------------------- */

@@ -240,9 +240,16 @@
     if (editingId) loadExisting();
   });
 
-  /* Start at the user's position for a new report so the pin is not sitting
-     in a default city they have never been to. */
-  if (!editingId && navigator.geolocation) {
+  /* Coming from a tap on the map: that point is the location, not wherever
+     the device happens to be. */
+  var tappedLat = Number(params.get('lat'));
+  var tappedLng = Number(params.get('lng'));
+  var cameFromMap = isFinite(tappedLat) && isFinite(tappedLng) && params.has('lat');
+  if (cameFromMap) setLocation(tappedLat, tappedLng);
+
+  /* Otherwise start at the user's position, so the pin is not sitting in a
+     default city they have never been to. */
+  if (!editingId && !cameFromMap && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function (pos) { setLocation(pos.coords.latitude, pos.coords.longitude); },
       function () { /* the picker still works; the user can pan */ },
