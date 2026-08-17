@@ -19,7 +19,7 @@
         response would leak between accounts.
    =========================================================== */
 
-const VERSION = '2.0.1';
+const VERSION = '2.0.2';
 const SHELL_CACHE = `stepby-ui4-shell-${VERSION}`;
 const ASSET_CACHE = `stepby-ui4-assets-${VERSION}`;
 
@@ -51,9 +51,7 @@ const SHELL = [
   p('i18n/dict.js'),
   p('assets/icon-192.png'),
   p('assets/avatar-placeholder.svg'),
-  p('assets/fonts/noto-sans-latin-400.woff2'),
-  p('assets/fonts/noto-sans-latin-500.woff2'),
-  p('assets/fonts/noto-sans-latin-700.woff2'),
+  p('assets/fonts/noto-sans-latin.woff2'),
   p('detail/'),
   p('ranking/'),
   p('onboarding/'),

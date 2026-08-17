@@ -34,6 +34,23 @@
     guest_pro_locked: 'pro.guestLocked'
   };
 
+  /* An expired session used to leave every screen but the profile stuck:
+     the token was cleared here, and then each caller showed its own
+     "something went wrong" over a page that could never recover. Sending
+     people to sign in again is what UI2 does, and it is the only answer that
+     ends the loop. Once per page, however many requests fail at once. */
+  var goingToLogin = false;
+
+  function toLogin() {
+    if (goingToLogin) return;
+    var here = w.location.pathname.replace(/\/+$/, '');
+    /* Not from the screens that exist to get a session in the first place,
+       and not from the entry gate, which decides where to go by itself. */
+    if (/\/(login|onboarding)$/.test(here) || here === auth.toApp('').replace(/\/+$/, '')) return;
+    goingToLogin = true;
+    w.location.replace(auth.toApp('/login/'));
+  }
+
   function keyForStatus(status) {
     if (status === 401 || status === 403) return 'error.unauthorized';
     if (status === 404) return 'error.notFound';
@@ -99,7 +116,10 @@
     }
 
     if (!response.ok) {
-      if (response.status === 401) auth.clearSession();
+      if (response.status === 401 && options.auth !== false) {
+        auth.clearSession();
+        toLogin();
+      }
       var code = (payload && (payload.error && payload.error.code || payload.error)) || String(response.status);
       throw ApiError(code, CODE_KEYS[code] || keyForStatus(response.status), response.status, payload);
     }
