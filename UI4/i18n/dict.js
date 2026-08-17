@@ -165,7 +165,7 @@
     /* ---- profile ---- */
     'profile.title': 'Profile',
     'profile.guest': 'Guest',
-    'profile.guestNotice': 'You are using StepBy as a guest. You can post as normal; signing in with Google lets you reach your posts from another device.',
+    'profile.guestNotice': 'You are using StepBy as a guest. Signing in with Google lets you reach your posts from another device.',
     'pro.title': 'PRO account',
     'pro.help': 'About the PRO account',
     'pro.explain': 'A mode for professionals who support people with visual impairments, letting them record detail such as the type of tactile paving. It is not a paid plan.',
@@ -419,7 +419,7 @@
 
     'profile.title': 'प्रोफ़ाइल',
     'profile.guest': 'अतिथि',
-    'profile.guestNotice': 'आप StepBy मेहमान के रूप में चला रहे हैं। आप सामान्य रूप से जानकारी भेज सकते हैं; Google से साइन इन करने पर अपनी भेजी जानकारी दूसरे डिवाइस से भी देख पाएंगे।',
+    'profile.guestNotice': 'आप StepBy मेहमान के रूप में चला रहे हैं। Google से साइन इन करने पर अपनी भेजी जानकारी दूसरे डिवाइस से भी देख पाएंगे।',
     'pro.title': 'PRO खाता',
     'pro.help': 'PRO खाते के बारे में',
     'pro.explain': 'यह उन पेशेवरों के लिए मोड है जो दृष्टिबाधित लोगों की सहायता करते हैं — इससे टैक्टाइल पेविंग के प्रकार जैसी बारीक जानकारी दर्ज की जा सकती है। यह कोई सशुल्क प्लान नहीं है।',
@@ -667,7 +667,7 @@
 
     'profile.title': 'プロフィール',
     'profile.guest': 'ゲスト',
-    'profile.guestNotice': 'ゲストとして利用中です。投稿はふつうにできます。Googleでログインすると、別の端末からも自分の投稿を見られるようになります。',
+    'profile.guestNotice': 'ゲストとして利用中です。Googleでログインすると、別の端末からも自分の投稿を見られるようになります。',
     'pro.title': 'PROアカウント',
     'pro.help': 'PROアカウントの説明',
     'pro.explain': '視覚障害者を支援するプロの仕事をしている方が、点字ブロックの種類など詳細な情報を記録できるモードです。有料プランというわけではありません。',
