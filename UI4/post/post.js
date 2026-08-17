@@ -31,7 +31,7 @@
     latlng: null,
     tags: [],          // catalogue from the API
     selected: new Set(),
-    photos: []         // data URLs
+    photos: []         // { name, dataUrl } — the shape /api/road-info wants
   };
 
   if (!auth.isSignedIn()) {
@@ -121,9 +121,9 @@
 
   /* ---- Photos ------------------------------------------------------------ */
   function renderPhotos() {
-    var items = state.photos.map(function (src, index) {
+    var items = state.photos.map(function (photo, index) {
       return '<div class="photo-item">' +
-        '<img src="' + ui.esc(src) + '" alt="">' +
+        '<img src="' + ui.esc(photo.dataUrl) + '" alt="">' +
         '<button type="button" data-remove="' + index + '" aria-label="' + ui.esc(t('post.removePhoto')) + '">' +
         w.StepByIcons.svg('xmark') + '</button>' +
         '</div>';
@@ -156,7 +156,12 @@
       try {
         /* Downscale in the browser: full-size phone photos routinely blow
            past the server's per-image limit and time the upload out. */
-        state.photos.push(await ui.resizeImage(files[i], 1280, 0.72));
+        /* An array of bare data URLs is what this used to send, and the
+           server answers invalid_image_data — it wants an object per file. */
+        state.photos.push({
+          name: files[i].name || 'photo.jpg',
+          dataUrl: await ui.resizeImage(files[i], 1280, 0.72)
+        });
       } catch (err) {
         ui.toast(t('error.generic'), 'error');
       }

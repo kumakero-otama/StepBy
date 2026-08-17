@@ -25,6 +25,15 @@
     return err;
   }
 
+  /* A 400 says nothing useful on its own. These are the codes the backend
+     actually returns for a road-info post, mapped to something a person can
+     act on. Anything unlisted still falls back to the generic message. */
+  var CODE_KEYS = {
+    invalid_image_data: 'error.imageData',
+    invalid_coordinates: 'error.coordinates',
+    guest_pro_locked: 'pro.guestLocked'
+  };
+
   function keyForStatus(status) {
     if (status === 401 || status === 403) return 'error.unauthorized';
     if (status === 404) return 'error.notFound';
@@ -92,7 +101,7 @@
     if (!response.ok) {
       if (response.status === 401) auth.clearSession();
       var code = (payload && (payload.error && payload.error.code || payload.error)) || String(response.status);
-      throw ApiError(code, keyForStatus(response.status), response.status, payload);
+      throw ApiError(code, CODE_KEYS[code] || keyForStatus(response.status), response.status, payload);
     }
 
     return payload;
