@@ -1158,6 +1158,47 @@ function initGuestLogin() {
   });
 }
 
+function initLoginPolicyDocuments() {
+  if (signupPage || signupProfilePage) return;
+  const modal = document.getElementById("user-agreement-modal");
+  const content = document.getElementById("user-agreement-content");
+  const title = document.getElementById("user-agreement-title");
+  const closeButton = document.getElementById("close-user-agreement");
+  const buttons = Array.from(document.querySelectorAll(".open-policy-document"));
+  if (!modal || !content || !title || !closeButton || buttons.length !== 2) return;
+  const loaded = new Map();
+  const language = String(document.documentElement.lang || "ja").toLowerCase();
+  const labels = language.startsWith("en")
+    ? { terms: "Terms of Service", privacy: "Privacy Policy", loading: "Loading...", failed: "Could not load this document." }
+    : language.startsWith("hi")
+      ? { terms: "सेवा की शर्तें", privacy: "गोपनीयता नीति", loading: "लोड हो रहा है...", failed: "दस्तावेज़ लोड नहीं हो सका।" }
+      : { terms: "利用規約", privacy: "プライバシーポリシー", loading: "読み込み中...", failed: "文書の読み込みに失敗しました。" };
+  const close = () => modal.classList.add("hidden");
+  const open = async (type) => {
+    const isPrivacy = type === "privacy";
+    title.textContent = isPrivacy ? labels.privacy : labels.terms;
+    modal.classList.remove("hidden");
+    if (loaded.has(type)) {
+      content.innerHTML = loaded.get(type);
+      return;
+    }
+    content.textContent = labels.loading;
+    try {
+      const response = await fetch(AppPath.toApp(isPrivacy ? "/assets/privacy_policy.md" : "/assets/terms.md"), { cache: "no-store" });
+      if (!response.ok) throw new Error("policy_load_failed");
+      const rendered = renderMarkdownToHtml(await response.text());
+      loaded.set(type, rendered);
+      content.innerHTML = rendered;
+    } catch {
+      content.textContent = labels.failed;
+    }
+  };
+  buttons.forEach((button) => button.addEventListener("click", () => void open(button.dataset.document)));
+  closeButton.addEventListener("click", close);
+  modal.addEventListener("click", (event) => { if (event.target === modal) close(); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
+}
+
 (async () => {
   logAuthEvent("auth_page_init", {
     path: window.location.pathname,
@@ -1165,6 +1206,7 @@ function initGuestLogin() {
     message: "Auth page initialized",
   });
   initLoginViewportMetrics();
+  initLoginPolicyDocuments();
   if (signupProfilePage) {
     initSignupProfilePage();
     return;
