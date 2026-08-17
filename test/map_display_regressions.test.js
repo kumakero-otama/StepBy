@@ -40,6 +40,14 @@ assert.match(mapSource, /authorization:\s*"record_save"/,
   "the Save action must be carried to the record-scoped publication endpoint");
 assert.match(mapSource, /stepby_owned_record_id/,
   "only server-identified owned StepBy features may expose deletion");
+assert.match(mapSource, /function bindStepByOsmRecordCard/,
+  "all StepBy records must open the unified detail card regardless of owner");
+assert.match(mapSource, /properties\.stepby_record_id \|\| properties\.stepby_owned_record_id/,
+  "non-owner StepBy records must retain a public detail identifier");
+assert.match(mapSource, /osmRecordId: properties\.stepby_can_revert \? recordId : ""/,
+  "only the owner-authorized feature may expose OSM deletion");
+assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("const attempts = hosts.map"),
+  "the enriched StepBy API response must be preferred over anonymous Overpass data");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
   "owned green OSM lines need centered line and circular tap targets");
 assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
@@ -50,7 +58,7 @@ assert.match(mapSource, /loadAndShowAllRecords\(map\.getCenter\(\)\)/,
   "a completed OSM revert must refresh the StepBy record layer");
 assert.match(mapSource, /authorization:\s*"owned_green_line_delete"/,
   "confirmed green-line deletion must call the record-scoped revert endpoint");
-assert.match(mapSource, /osmPublished:\s*true[\s\S]{0,200}?osmRecordId:\s*recordId/,
+assert.match(mapSource, /osmPublished:\s*true[\s\S]{0,200}?osmRecordId:\s*properties\.stepby_can_revert \? recordId : ""/,
   "owned OSM lines must use the same detailed record card with published state");
 assert.match(mapSource, /data-revert-osm-record/,
   "the unified card must keep a distinct OSM revert action");
