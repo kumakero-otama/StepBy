@@ -498,10 +498,6 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, {
     <div class="tactile-session-card-memo">
       <div class="tactile-session-card-memo-head">
         <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
-        ${canEditOwnSession ? `
-        <button class="tactile-session-card-memo-edit" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}" aria-label="${escapeHtml(text.memoEdit)}">
-          <img src="${memoEditIconUrl}" alt="">
-        </button>` : ""}
       </div>
       <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
     </div>`

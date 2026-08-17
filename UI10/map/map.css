@@ -786,7 +786,6 @@ body {
   color: #2e9e8f;
 }
 
-.tactile-session-card-memo-edit,
 .tactile-session-card-edit-action {
   min-height: 54px;
   padding: 0 16px;
@@ -804,16 +803,6 @@ body {
   gap: 8px;
 }
 
-.tactile-session-card-memo-edit {
-  width: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-}
-
-.tactile-session-card-memo-edit img,
 .tactile-session-card-edit-action img,
 .tactile-session-card-delete img {
   display: block;
@@ -822,7 +811,6 @@ body {
   object-fit: contain;
 }
 
-.tactile-session-card-memo-edit:disabled,
 .tactile-session-card-edit-action:disabled {
   opacity: 0.6;
   cursor: default;
