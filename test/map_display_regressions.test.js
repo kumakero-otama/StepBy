@@ -25,6 +25,15 @@ assert.doesNotMatch(mapSource, /分割予定：開始|osmPreviewWayIdsEl|renderO
   "general-user confirmation must render only the recorded route");
 assert.doesNotMatch(mapSource, /通信できないため端末に保管しています/,
   "queue failures must not be mislabeled as loss of internet connectivity");
+assert.doesNotMatch(mapSource, /サーバーへの送信を完了できないため端末に保管しています/,
+  "normal users must not see internal server-delivery wording");
+assert.match(mapSource, /showMapToast\("記録しました。"/,
+  "record completion must use a short general-user message");
+assert.match(mapSource, /non_walkway_way_not_eligible/);
+assert.match(mapSource, /osm_draft_skipped_safely/,
+  "a safely ineligible OSM Way must complete StepBy storage instead of retrying forever");
+assert.match(mapSource, /showMapToast\("削除しました。"/,
+  "delete completion must use a short general-user message");
 assert.match(mapSource, /\/api\/osm\/records\/\$\{encodeURIComponent\(recordId\)\}\/publish/,
   "saving an OSM-eligible record must enqueue its publication");
 assert.match(mapSource, /authorization:\s*"record_save"/,

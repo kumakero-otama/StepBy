@@ -2344,6 +2344,7 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
     const error = new Error(result.error || `HTTP ${response.status}`);
     error.code = result.error || `HTTP_${response.status}`;
     error.status = response.status;
+    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
     throw error;
   }
   return result;
@@ -2483,7 +2484,22 @@ async function processQueuedRecording(payload, context) {
     await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
   }
   if (payload.osmEligible) {
-    await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+    try {
+      await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+    } catch (error) {
+      const safeSkipReasons = new Set([
+        "non_walkway_way_not_eligible",
+        "tactile_no_to_yes_required",
+        "tactile_tag_already_present",
+        "record_is_stepby_only",
+      ]);
+      if (!safeSkipReasons.has(String(error && (error.code || error.message)))) throw error;
+      payload.osmPublicationSkipped = true;
+      payload.osmPublicationSkipReason = String(error.code || error.message);
+      completed.add("osm_draft_skipped_safely");
+      await context.checkpoint("osm_draft_skipped_safely");
+      return;
+    }
     await runStage("osm_published", async () => {
       const publication = await publishOsmRecord(payload.sessionId);
       if (publication && publication.skipped && publication.reason === "tactile_tag_already_present") {
@@ -2501,18 +2517,13 @@ function initRecordUploadQueue() {
     handler: processQueuedRecording,
     onChange(event) {
       if (event.type === "queued" || event.type === "sending") {
-        showMapToast("記録を端末に保存しました。送信はバックグラウンドで続けています。", 3200);
+        showMapToast("記録を保存しています…", 2400);
       } else if (event.type === "completed") {
-        const completedPayload = event.job && event.job.payload;
-        showMapToast(completedPayload && completedPayload.osmAlreadyPresent
-          ? "記録を保存しました。OSMには同じ点字ブロック情報が既にあります。"
-          : completedPayload && completedPayload.osmEligible
-            ? "記録を保存し、OSMへの公開が完了しました。"
-            : "記録の保存が完了しました。", 3200);
+        showMapToast("記録しました。", 2800);
       } else if (event.type === "retry") {
-        showMapToast("サーバーへの送信を完了できないため端末に保管しています。自動で再送します。", 5200);
+        showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
       } else if (event.type === "blocked") {
-        showMapToast("記録は端末に保管しました。OSM連携または記録状態を確認してください。", 5200);
+        showMapToast("記録は端末に保存されています。", 4000);
       }
     },
   });
@@ -2543,15 +2554,15 @@ function initOsmRevertQueue() {
     handler: processQueuedOsmRevert,
     onChange(event) {
       if (event.type === "queued" || event.type === "sending") {
-        showMapToast("削除を受け付けました。処理はバックグラウンドで続けています。", 3600);
+        showMapToast("削除しています…", 2400);
       } else if (event.type === "completed") {
-        showMapToast("OSM上の記録を取り消しました。", 3200);
+        showMapToast("削除しました。", 2800);
         loadAndShowAllRecords(map.getCenter());
         if (shouldShowOsmTactile()) loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
       } else if (event.type === "retry") {
-        showMapToast("削除処理を完了できないため端末に保管しています。自動で再試行します。", 5200);
+        showMapToast("通信が不安定です。削除はあとで自動的に続けます。", 4400);
       } else if (event.type === "blocked") {
-        showMapToast("削除処理を安全に続けられません。OSM連携または競合状態を確認してください。", 5200);
+        showMapToast("削除できませんでした。もう一度お試しください。", 4000);
       }
     },
   });
