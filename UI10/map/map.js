@@ -2200,7 +2200,9 @@ async function saveSessionTags(sessionIds, fixedTagIds = null) {
         body: JSON.stringify({ sessionId, tagId: tag.id }),
       });
       if (!res.ok) {
-        throw new Error(`session_tag_save_failed:${res.status}`);
+        const error = new Error(`session_tag_save_failed:${res.status}`);
+        error.retryable = res.status >= 500 || res.status === 408 || res.status === 429;
+        throw error;
       }
     }
   }
@@ -2451,6 +2453,18 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
 }
 
 async function processQueuedRecording(payload, context) {
+  if (Number.isFinite(Number(payload.ownerUserId))) {
+    if (!Number.isFinite(Number(currentUserId))) {
+      const error = new Error("record_owner_not_loaded");
+      error.retryable = true;
+      throw error;
+    }
+    if (Number(payload.ownerUserId) !== Number(currentUserId)) {
+      const error = new Error("record_owner_changed");
+      error.retryable = false;
+      throw error;
+    }
+  }
   const completed = new Set(context.job.completedStages || []);
   const runStage = async (name, operation) => {
     if (completed.has(name)) return;
@@ -2655,6 +2669,7 @@ async function handleRecordStopWithConfirmation() {
       startedAt: currentSessionStartedAt || new Date().toISOString(),
       endedAt: new Date().toISOString(),
       rawPoints: allTracePoints.map((point) => ({ lat: point.lat, lng: point.lng, accuracy: point.accuracy == null ? null : point.accuracy })),
+      ownerUserId: currentUserId,
       osmPreview,
       isPro: Boolean(isCurrentUserPro),
       memo: traceMemoInputEl ? traceMemoInputEl.value : "",
