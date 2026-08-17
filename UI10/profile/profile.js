@@ -369,18 +369,24 @@ function renderOsmPreparingPopup(popup) {
 }
 
 async function loadOsmConnection() {
-  if (!osmStatusEl || !osmDisconnectBtnEl) return;
+  if (!osmStatusEl) return;
   const text = getProfileText();
   setOsmStatus(text.osmChecking, "checking");
-  osmDisconnectBtnEl.classList.add("hidden");
+  if (osmDisconnectBtnEl) osmDisconnectBtnEl.classList.add("hidden");
   try {
     const response = await authFetch("/auth/osm/status", { cache: "no-store" });
     if (response.status === 401) return redirectToLogin();
     if (!response.ok) throw new Error("osm_status_failed");
     const payload = await response.json();
     if (payload.editorMode === "stepby_service_account") {
+      const managedName = payload.connection?.displayName || "StepBy";
+      const managedMessages = {
+        ja: `OSMへの公開はStepBy統合アカウント「${managedName}」で管理されています。個人OSMアカウントとの連携は使用しません。`,
+        en: `Publishing to OSM is managed by the StepBy account “${managedName}”. Personal OSM connections are not used.`,
+        hi: `OSM पर प्रकाशन StepBy खाते “${managedName}” द्वारा प्रबंधित है। व्यक्तिगत OSM कनेक्शन का उपयोग नहीं होता।`,
+      };
       setOsmStatus(payload.configured
-        ? "OSMへの公開はStepBy運営アカウントで管理されます。"
+        ? managedMessages[getCurrentLanguage()] || managedMessages.ja
         : "OSM公開機能は現在準備中です。", payload.configured ? "connected" : "idle");
       return;
     }
