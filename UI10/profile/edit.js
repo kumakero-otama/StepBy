@@ -101,6 +101,18 @@ function isTemporaryAuthError(error) {
 
 let selectedIconDataUrl = null;
 let saving = false;
+let currentProfileIsGuest = false;
+
+function applyGuestFieldRestrictions(isGuest) {
+  currentProfileIsGuest = Boolean(isGuest);
+  if (usernameInputEl) usernameInputEl.disabled = currentProfileIsGuest;
+  if (cameraInputEl) cameraInputEl.disabled = currentProfileIsGuest;
+  if (uploadInputEl) uploadInputEl.disabled = currentProfileIsGuest;
+  const usernameGroup = usernameInputEl && usernameInputEl.closest(".form-group");
+  const iconCard = iconPreviewEl && iconPreviewEl.closest(".form-card");
+  if (usernameGroup) usernameGroup.classList.toggle("is-guest-locked", currentProfileIsGuest);
+  if (iconCard) iconCard.classList.toggle("is-guest-locked", currentProfileIsGuest);
+}
 
 function setProHelpModalOpen(open) {
   if (!proHelpModalEl) {
@@ -173,6 +185,7 @@ function applyCachedProfileUser(user) {
   if (!user) {
     return;
   }
+  applyGuestFieldRestrictions(Boolean(user.isGuest || user.is_guest));
   const username = user.username || "";
   const iconUrl = user.iconUrl == null
     ? AppPath.toApp("/assets/account_default.png")
@@ -239,11 +252,7 @@ async function loadCurrentProfile() {
       redirectToLogin();
       return;
     }
-    if (user.isGuest === true || user.is_guest === true) {
-      window.alert(getProfileEditText().guestEditLocked);
-      window.location.replace(AppPath.toApp("/profile/Index.html"));
-      return;
-    }
+    applyGuestFieldRestrictions(user.isGuest === true || user.is_guest === true);
     const username = user.username || "";
     const iconUrl = user.iconUrl == null
       ? AppPath.toApp("/assets/account_default.png")
@@ -361,32 +370,38 @@ async function saveProfile() {
     if (saveBtnEl) {
       saveBtnEl.disabled = true;
     }
-    const res = await authFetch("/auth/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      let reason = `status_${res.status}`;
-      try {
-        const payload = await res.json();
-        if (payload && payload.error) {
-          reason = payload.error;
-        }
-      } catch {
-        // ignore json parse error
-      }
-      throw new Error(reason);
-    }
-    const payload = await res.json().catch(() => ({}));
-    if (payload && payload.user) {
-      saveCachedProfileUser({
-        ...payload.user,
-        isPro: proToggleInputEl ? Boolean(proToggleInputEl.checked) : null,
+    if (!currentProfileIsGuest) {
+      const res = await authFetch("/auth/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
+      if (!res.ok) {
+        let reason = `status_${res.status}`;
+        try {
+          const payload = await res.json();
+          if (payload && payload.error) {
+            reason = payload.error;
+          }
+        } catch {
+          // ignore json parse error
+        }
+        throw new Error(reason);
+      }
+      const payload = await res.json().catch(() => ({}));
+      if (payload && payload.user) {
+        saveCachedProfileUser({
+          ...payload.user,
+          isPro: proToggleInputEl ? Boolean(proToggleInputEl.checked) : null,
+        });
+      }
     }
     if (proToggleInputEl) {
       await saveProStatus();
+    }
+    if (currentProfileIsGuest) {
+      const cached = loadCachedProfileUser();
+      if (cached) saveCachedProfileUser({ ...cached, isPro: Boolean(proToggleInputEl && proToggleInputEl.checked) });
     }
     showSaveToast();
     window.setTimeout(() => {
