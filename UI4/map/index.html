@@ -282,19 +282,19 @@
   }
   .layer-card:has(input:checked) .layer-card__bar { width: 60%; }
 
-  .layer-card--green {
-    --card-accent: #2E9E5F; --card-bg: #E4F5EB;
-    --card-chip: #CDEBDA; --card-edge: rgba(46,158,95,0.30); --card-glow: rgba(46,158,95,0.35);
+  .layer-card--blue {
+    --card-accent: #3A7BD5; --card-bg: #E8F0FC;
+    --card-chip: #D6E5F9; --card-edge: rgba(58,123,213,0.30); --card-glow: rgba(58,123,213,0.35);
   }
   .layer-card--teal {
     --card-accent: #2E9E8F; --card-bg: #E2F4F2;
     --card-chip: #C6E9E4; --card-edge: rgba(46,158,143,0.30); --card-glow: rgba(46,158,143,0.35);
   }
 
-  :root[data-theme="dark"] .layer-card--green { --card-bg: #14301F; --card-chip: #1E4630; }
+  :root[data-theme="dark"] .layer-card--blue { --card-bg: #17263F; --card-chip: #22375C; }
   :root[data-theme="dark"] .layer-card--teal  { --card-bg: #123330; --card-chip: #1B4A45; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .layer-card--green { --card-bg: #14301F; --card-chip: #1E4630; }
+    :root:not([data-theme="light"]) .layer-card--blue { --card-bg: #17263F; --card-chip: #22375C; }
     :root:not([data-theme="light"]) .layer-card--teal  { --card-bg: #123330; --card-chip: #1B4A45; }
   }
 </style>
@@ -353,7 +353,7 @@
     <div class="drawer__content" id="drawer-content">
       <div class="card-grid" role="group" aria-label="Map layers" data-i18n-attr="aria-label:map.layers">
 
-        <label class="layer-card layer-card--green">
+        <label class="layer-card layer-card--blue">
           <input type="checkbox" id="layer-map-info" checked>
           <span class="layer-card__icon" aria-hidden="true"><span class="icon" data-icon="globe"></span></span>
           <span class="layer-card__title" data-i18n="map.card.mapInfo">Map information</span>
