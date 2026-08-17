@@ -308,19 +308,14 @@ function applyProfileUser(user) {
   applyProfileEditAvailability(Boolean(user.isGuest || user.is_guest));
 }
 
-function applyProfileEditAvailability(isGuest) {
+function applyProfileEditAvailability() {
   if (!editBtnEl) {
     return;
   }
-  editBtnEl.disabled = isGuest;
-  editBtnEl.classList.toggle("is-disabled", isGuest);
-  if (isGuest) {
-    editBtnEl.setAttribute("aria-disabled", "true");
-    editBtnEl.title = getProfileText().guestEditLocked;
-  } else {
-    editBtnEl.removeAttribute("aria-disabled");
-    editBtnEl.removeAttribute("title");
-  }
+  editBtnEl.disabled = false;
+  editBtnEl.classList.remove("is-disabled");
+  editBtnEl.removeAttribute("aria-disabled");
+  editBtnEl.removeAttribute("title");
 }
 
 function setOsmStatus(message, state) {
@@ -497,10 +492,6 @@ if (logoutBtnEl) {
 
 if (editBtnEl) {
   editBtnEl.addEventListener("click", () => {
-    if (editBtnEl.disabled) {
-      window.alert(getProfileText().guestEditLocked);
-      return;
-    }
     window.location.href = AppPath.toApp("/profile/edit.html");
   });
 }

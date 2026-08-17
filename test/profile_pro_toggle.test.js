@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const editSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.js"), "utf8");
+const profileSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/profile.js"), "utf8");
 const editCss = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.css"), "utf8");
 const profileHtmlFiles = ["Index.html", "Index_en.html", "Index_hi.html"].map((name) => (
   fs.readFileSync(path.join(__dirname, "../UI10/profile", name), "utf8")
@@ -48,3 +49,18 @@ assert.match(
   /\.pro-help-panel\s*\{[\s\S]*?max-height:\s*calc\(100dvh[\s\S]*?overflow-y:\s*auto;/,
   "PRO説明パネルが画面高を超えて見切れないこと",
 );
+
+assert.doesNotMatch(profileSource, /editBtnEl\.disabled\s*=\s*isGuest/,
+  "ゲストもプロフィール編集画面へ進めること");
+assert.match(editSource, /function applyGuestFieldRestrictions\(isGuest\)/,
+  "ゲスト用の入力制限が存在すること");
+assert.match(editSource, /usernameInputEl\.disabled = currentProfileIsGuest/,
+  "ゲストの名前入力を無効化すること");
+assert.match(editSource, /cameraInputEl\.disabled = currentProfileIsGuest[\s\S]*uploadInputEl\.disabled = currentProfileIsGuest/,
+  "ゲストのアイコン選択を無効化すること");
+assert.match(editSource, /if \(!currentProfileIsGuest\) \{[\s\S]*?authFetch\("\/auth\/profile"/,
+  "ゲスト保存時に名前やアイコンの更新APIを呼ばないこと");
+assert.match(editSource, /if \(proToggleInputEl\) \{[\s\S]*?await saveProStatus\(\)/,
+  "ゲストを含めPROスイッチは保存できること");
+assert.match(editCss, /\.is-guest-locked\s*\{[\s\S]*?opacity:/,
+  "ゲストが編集できない項目をグレー表示すること");

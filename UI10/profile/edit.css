@@ -134,6 +134,16 @@ body {
   box-shadow: 0 0 0 3px rgba(52, 143, 130, 0.12);
 }
 
+.is-guest-locked {
+  opacity: 0.48;
+}
+
+.is-guest-locked .form-input,
+.is-guest-locked .choice-btn {
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
 .icon-upload {
   display: flex;
   flex-direction: column;
