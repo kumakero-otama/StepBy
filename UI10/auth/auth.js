@@ -33,7 +33,7 @@ const AUTH_TEXT = {
     processingTitle: "ログイン中です…",
     processingMessage: "Google認証の完了を確認しています。このままお待ちください。",
     osmPreparing: "OpenStreetMapの登録・認証画面を準備しています…",
-    osmRetryLater: "OpenStreetMap連携を開始できませんでした。次回のGoogleログイン時にもう一度試します。",
+    osmRetryLater: "OpenStreetMapの登録・認証が完了していません。完了するまでStepByの地図は利用できません。Googleログインからもう一度お試しください。",
   },
   en: {
     guestChecking: "Checking guest login...",
@@ -51,7 +51,7 @@ const AUTH_TEXT = {
     processingTitle: "Signing you in...",
     processingMessage: "We are confirming your Google sign-in. Please wait on this screen.",
     osmPreparing: "Preparing OpenStreetMap registration and authorization…",
-    osmRetryLater: "OpenStreetMap connection could not be started. We will try again at your next Google sign-in.",
+    osmRetryLater: "OpenStreetMap registration and authorization are not complete. The StepBy map remains unavailable until they are complete. Please try Google sign-in again.",
   },
   hi: {
     guestChecking: "गेस्ट लॉगिन की पुष्टि की जा रही है...",
@@ -69,7 +69,7 @@ const AUTH_TEXT = {
     processingTitle: "लॉग इन किया जा रहा है...",
     processingMessage: "Google साइन-इन की पुष्टि की जा रही है। कृपया इसी स्क्रीन पर प्रतीक्षा करें।",
     osmPreparing: "OpenStreetMap पंजीकरण और अनुमति स्क्रीन तैयार की जा रही है…",
-    osmRetryLater: "OpenStreetMap कनेक्शन शुरू नहीं हो सका। अगले Google लॉगिन पर फिर प्रयास किया जाएगा।",
+    osmRetryLater: "OpenStreetMap पंजीकरण और अनुमति पूरी नहीं हुई है। इनके पूरा होने तक StepBy मानचित्र उपलब्ध नहीं होगा। कृपया Google लॉगिन से फिर प्रयास करें।",
   },
 };
 
@@ -511,6 +511,32 @@ function closeAuthOsmPopup(popup) {
   }
 }
 
+async function loadAuthOsmStatus() {
+  const response = await authFetch("/auth/osm/status", { cache: "no-store" });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "osm_status_failed");
+  }
+  return payload;
+}
+
+async function waitForRequiredOsmConnection(popup) {
+  const startedAt = Date.now();
+  const timeoutMs = 20 * 60 * 1000;
+  while (Date.now() - startedAt < timeoutMs) {
+    const status = await loadAuthOsmStatus();
+    if (status.connected) return true;
+    if (popup && popup.closed) {
+      // OAuth callback and DB write may finish immediately after the popup closes.
+      await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      const finalStatus = await loadAuthOsmStatus();
+      return Boolean(finalStatus.connected);
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+  }
+  return false;
+}
+
 async function continueAfterGoogleAuth(user, popup, navigationReason) {
   const mapUrl = AppPath.toApp("/map/Index.html");
   if (user && Boolean(user.isGuest || user.is_guest)) {
@@ -521,17 +547,23 @@ async function continueAfterGoogleAuth(user, popup, navigationReason) {
   }
   try {
     setGoogleStatus(getAuthText().osmPreparing);
-    const statusResponse = await authFetch("/auth/osm/status", { cache: "no-store" });
-    const status = await statusResponse.json().catch(() => ({}));
-    if (!statusResponse.ok || !status.configured || status.connected) {
+    setLoginProcessingState(true, {
+      title: getAuthText().osmPreparing,
+      message: getAuthText().osmPreparing,
+    });
+    const status = await loadAuthOsmStatus();
+    if (status.connected) {
       closeAuthOsmPopup(popup);
       markNavigation(navigationReason, mapUrl);
       window.location.href = mapUrl;
       return;
     }
+    if (!status.configured) {
+      throw new Error("osm_oauth_app_not_configured");
+    }
 
     const mode = popup ? "popup" : "redirect";
-    const returnUrl = window.location.origin + mapUrl;
+    const returnUrl = window.location.origin + AppPath.toApp("/auth/login.html?osm_required=1");
     const startResponse = await authFetch(
       `/auth/osm/start?mode=${mode}&return_url=${encodeURIComponent(returnUrl)}`,
       { method: "POST" }
@@ -542,7 +574,9 @@ async function continueAfterGoogleAuth(user, popup, navigationReason) {
     }
     if (popup) {
       popup.location.replace(start.authorizationUrl);
-      markNavigation(`${navigationReason}_osm_popup`, mapUrl);
+      const connected = await waitForRequiredOsmConnection(popup);
+      if (!connected) throw new Error("osm_connection_not_completed");
+      markNavigation(`${navigationReason}_osm_completed`, mapUrl);
       window.location.href = mapUrl;
     } else {
       markNavigation(`${navigationReason}_osm_redirect`, start.authorizationUrl);
@@ -557,10 +591,7 @@ async function continueAfterGoogleAuth(user, popup, navigationReason) {
       message: error && error.message ? String(error.message) : "osm_onboarding_failed",
     });
     setGoogleStatus(getAuthText().osmRetryLater);
-    window.setTimeout(() => {
-      markNavigation(`${navigationReason}_osm_deferred`, mapUrl);
-      window.location.href = mapUrl;
-    }, 900);
+    setLoginProcessingState(false);
   }
 }
 
