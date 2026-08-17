@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
+const matcherSource = fs.readFileSync(path.join(__dirname, "../UI10/map/osm-browser-matcher.js"), "utf8");
 const mapCss = fs.readFileSync(path.join(__dirname, "../UI10/map/map.css"), "utf8");
 const appBarCss = fs.readFileSync(path.join(__dirname, "../UI10/appbar.css"), "utf8");
 for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
@@ -68,6 +69,12 @@ assert.doesNotMatch(mapSource, /bindOwnedOsmRevertPopup|StepByで記録した点
   "the old delete-only OSM popup must not remain");
 assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
   "OSM reverts must survive page/network interruptions in their own persistent queue");
+assert.match(mapSource, /runStage\("osm_network_refreshed"/,
+  "a successful publish must refresh the browser OSM network before the queue completes");
+assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refreshAfterOsmChange/,
+  "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
+assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,
+  "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
 const mobileAppBarCss = mapCss.slice(
   mapCss.indexOf("@media (max-width: 520px)"),
   mapCss.indexOf(".map-layout"),

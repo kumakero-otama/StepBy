@@ -369,6 +369,21 @@
     }
   }
 
+  async function clearCaches() {
+    const db = await openCache();
+    if (!db) return;
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(CACHE_STORE, "readwrite");
+        const request = tx.objectStore(CACHE_STORE).clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error || tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  }
+
   function mergeWays(regions) {
     const byId = new Map();
     regions.forEach((region) => (region.ways || []).forEach((way) => {
@@ -471,6 +486,34 @@
         if (this.hasFreshCoverage(point)) return this.network;
         return this.ensureNetwork(lat, lng, { force: true });
       });
+    }
+
+    async refreshAfterOsmChange(points) {
+      await this.ready;
+      const validPoints = (Array.isArray(points) ? points : [])
+        .map((point) => ({ lat: Number(point && point.lat), lng: Number(point && (point.lng ?? point.lon)) }))
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+      const fallback = this.center && Number.isFinite(this.center.lat) && Number.isFinite(this.center.lng)
+        ? [this.center] : [];
+      const refreshPoints = validPoints.length ? validPoints : fallback;
+      this.regions = [];
+      this.network = null;
+      this.center = null;
+      this.previousWayId = null;
+      await clearCaches();
+      if (!refreshPoints.length) return this.network;
+      const coveragePoints = [refreshPoints[0]];
+      let lastPoint = refreshPoints[0];
+      for (let index = 1; index < refreshPoints.length - 1; index += 1) {
+        if (distanceMeters(lastPoint, refreshPoints[index]) >= 450) {
+          coveragePoints.push(refreshPoints[index]);
+          lastPoint = refreshPoints[index];
+        }
+      }
+      const finalPoint = refreshPoints[refreshPoints.length - 1];
+      if (distanceMeters(coveragePoints[coveragePoints.length - 1], finalPoint) > 1) coveragePoints.push(finalPoint);
+      for (const point of coveragePoints) await this.ensureNetwork(point.lat, point.lng, { force: true });
+      return this.network;
     }
 
     finalize(points) {
