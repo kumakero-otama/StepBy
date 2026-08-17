@@ -7,7 +7,6 @@ const totalRoadPostsEl = document.getElementById("total-road-posts");
 const logoutBtnEl = document.getElementById("profile-logout-btn");
 const editBtnEl = document.getElementById("profile-edit-btn");
 const osmStatusEl = document.getElementById("osm-connection-status");
-const osmDisconnectBtnEl = document.getElementById("osm-disconnect-btn");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const PROFILE_ICON_CACHE_KEY = "cachedProfileIcon.v1";
 
@@ -50,33 +49,18 @@ const authTokenApi = window.AuthToken || null;
 const PROFILE_TEXT = {
   ja: {
     guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
-    osmChecking: "連携状態を確認しています…",
-    osmConnected: (name) => `OSMアカウント「${name}」と連携済みです。`,
-    osmNotConnected: "OSMアカウントは未連携です。次回のGoogleログイン時に登録・連携を完了するまで地図へ進めません。",
-    osmNotConfigured: "OSM連携は現在準備中です。",
-    osmFailed: "OSM連携状態を確認できませんでした。",
-    osmDisconnectConfirm: "OSMアカウントとの連携を解除しますか？",
-    osmDisconnectFailed: "OSM連携を解除できませんでした。",
+    osmChecking: "OpenStreetMapへの公開状態を確認しています…",
+    osmFailed: "OpenStreetMapへの公開状態を確認できませんでした。",
   },
   en: {
     guestEditLocked: "Profile editing is not available for guest accounts.",
-    osmChecking: "Checking connection…",
-    osmConnected: (name) => `Connected to OSM account “${name}”.`,
-    osmNotConnected: "No OSM account is connected. At your next Google sign-in, the map remains locked until registration and connection are complete.",
-    osmNotConfigured: "OpenStreetMap connection is currently being prepared.",
-    osmFailed: "Could not check the OSM connection.",
-    osmDisconnectConfirm: "Disconnect your OSM account?",
-    osmDisconnectFailed: "Could not disconnect the OSM account.",
+    osmChecking: "Checking OpenStreetMap publishing status…",
+    osmFailed: "Could not check OpenStreetMap publishing status.",
   },
   hi: {
     guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
-    osmChecking: "कनेक्शन की जांच हो रही है…",
-    osmConnected: (name) => `OSM खाता “${name}” जुड़ा हुआ है।`,
-    osmNotConnected: "कोई OSM खाता जुड़ा नहीं है। अगले Google लॉगिन पर पंजीकरण और कनेक्शन पूरा होने तक मानचित्र नहीं खुलेगा।",
-    osmNotConfigured: "OpenStreetMap कनेक्शन अभी तैयार किया जा रहा है।",
-    osmFailed: "OSM कनेक्शन की जांच नहीं हो सकी।",
-    osmDisconnectConfirm: "OSM खाता कनेक्शन हटाएं?",
-    osmDisconnectFailed: "OSM कनेक्शन हटाया नहीं जा सका।",
+    osmChecking: "OpenStreetMap प्रकाशन स्थिति की जांच हो रही है…",
+    osmFailed: "OpenStreetMap प्रकाशन स्थिति की जांच नहीं हो सकी।",
   },
 };
 
@@ -348,86 +332,20 @@ function setOsmPublicationNotice(state = "connected") {
   osmStatusEl.classList.remove("is-error");
 }
 
-function renderOsmPreparingPopup(popup) {
-  if (!popup || popup.closed) return;
-  const language = getCurrentLanguage();
-  const messages = {
-    ja: "OpenStreetMapの認証画面を準備しています…",
-    en: "Preparing the OpenStreetMap authorization screen…",
-    hi: "OpenStreetMap प्राधिकरण स्क्रीन तैयार की जा रही है…",
-  };
-  const sourceRootSize = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-  const dark = document.documentElement.dataset.theme === "dark";
-  const popupDocument = popup.document;
-  popupDocument.title = language === "ja" ? "OpenStreetMap連携" : "OpenStreetMap connection";
-  popupDocument.documentElement.lang = language;
-  popupDocument.body.replaceChildren();
-  Object.assign(popupDocument.body.style, {
-    margin: "0",
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    padding: "32px",
-    boxSizing: "border-box",
-    background: dark ? "#11171b" : "#f5f7fa",
-    color: dark ? "#edf2f5" : "#1f2d3a",
-    fontFamily: 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif',
-  });
-  const message = popupDocument.createElement("p");
-  message.textContent = messages[language] || messages.ja;
-  Object.assign(message.style, {
-    margin: "0",
-    maxWidth: "420px",
-    fontSize: `${Math.max(20, sourceRootSize * 1.125)}px`,
-    fontWeight: "700",
-    lineHeight: "1.7",
-    textAlign: "center",
-  });
-  popupDocument.body.appendChild(message);
-}
-
 async function loadOsmConnection() {
   if (!osmStatusEl) return;
   const text = getProfileText();
   setOsmStatus(text.osmChecking, "checking");
-  if (osmDisconnectBtnEl) osmDisconnectBtnEl.classList.add("hidden");
   try {
     const response = await authFetch("/auth/osm/status", { cache: "no-store" });
     if (response.status === 401) return redirectToLogin();
     if (!response.ok) throw new Error("osm_status_failed");
     const payload = await response.json();
-    if (payload.editorMode === "stepby_service_account") {
-      if (payload.configured) setOsmPublicationNotice();
-      else setOsmStatus("OSM公開機能は現在準備中です。", "idle");
-      return;
-    }
-    if (!payload.configured) {
-      setOsmStatus(text.osmNotConfigured, "error");
-      return;
-    }
-    if (payload.connected && payload.connection) {
-      setOsmStatus(text.osmConnected(payload.connection.displayName || "OSM"), "connected");
-      osmDisconnectBtnEl.classList.remove("hidden");
-      return;
-    }
-    setOsmStatus(text.osmNotConnected, "idle");
+    if (payload.editorMode !== "stepby_service_account") throw new Error("unexpected_osm_editor_mode");
+    if (payload.configured) setOsmPublicationNotice();
+    else setOsmStatus("OSM公開機能は現在準備中です。", "idle");
   } catch {
     setOsmStatus(text.osmFailed, "error");
-  }
-}
-
-async function disconnectOsmConnection() {
-  const text = getProfileText();
-  if (!window.confirm(text.osmDisconnectConfirm)) return;
-  if (osmDisconnectBtnEl) osmDisconnectBtnEl.disabled = true;
-  try {
-    const response = await authFetch("/auth/osm/disconnect", { method: "POST" });
-    if (!response.ok) throw new Error("osm_disconnect_failed");
-    await loadOsmConnection();
-  } catch {
-    window.alert(text.osmDisconnectFailed);
-  } finally {
-    if (osmDisconnectBtnEl) osmDisconnectBtnEl.disabled = false;
   }
 }
 
@@ -495,14 +413,6 @@ if (editBtnEl) {
     window.location.href = AppPath.toApp("/profile/edit.html");
   });
 }
-
-if (osmDisconnectBtnEl) osmDisconnectBtnEl.addEventListener("click", disconnectOsmConnection);
-window.addEventListener("message", (event) => {
-  let apiOrigin = "";
-  try { apiOrigin = new URL((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "").origin; } catch {}
-  if (!apiOrigin || event.origin !== apiOrigin || !event.data || event.data.type !== "stepby-osm-oauth-result") return;
-  void loadOsmConnection();
-});
 
 loadProfile();
 void syncProfileProChip();

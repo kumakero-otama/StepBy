@@ -2251,77 +2251,6 @@ function isIndependentOsmWalkway(segment) {
     String(tags.footway || "").toLowerCase() === "sidewalk";
 }
 
-async function loadMapOsmConnectionState() {
-  try {
-    const response = await authFetch("/auth/osm/status", { cache: "no-store" });
-    const payload = await response.json().catch(() => ({}));
-    return { configured: Boolean(payload.configured), connected: Boolean(response.ok && payload.connected) };
-  } catch {
-    return { configured: false, connected: false };
-  }
-}
-
-function shouldOpenOsmConnection(state) {
-  return Boolean(window.StepByRecordFlowPolicy &&
-    window.StepByRecordFlowPolicy.shouldOpenOsmConnection(state));
-}
-
-function renderMapOsmPreparingPopup(popup) {
-  if (!popup || popup.closed) return;
-  const language = getCurrentLanguage();
-  const messages = {
-    ja: "OpenStreetMapの認証画面を準備しています…",
-    en: "Preparing the OpenStreetMap authorization screen…",
-    hi: "OpenStreetMap प्राधिकरण स्क्रीन तैयार की जा रही है…",
-  };
-  const sourceRootSize = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-  const dark = document.documentElement.dataset.theme === "dark";
-  const popupDocument = popup.document;
-  popupDocument.title = language === "ja" ? "OpenStreetMap連携" : "OpenStreetMap connection";
-  popupDocument.documentElement.lang = language;
-  popupDocument.body.replaceChildren();
-  Object.assign(popupDocument.body.style, {
-    margin: "0",
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    padding: "32px",
-    boxSizing: "border-box",
-    background: dark ? "#11171b" : "#f5f7fa",
-    color: dark ? "#edf2f5" : "#1f2d3a",
-    fontFamily: 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif',
-  });
-  const message = popupDocument.createElement("p");
-  message.textContent = messages[language] || messages.ja;
-  Object.assign(message.style, {
-    margin: "0",
-    maxWidth: "420px",
-    fontSize: `${Math.max(20, sourceRootSize * 1.125)}px`,
-    fontWeight: "700",
-    lineHeight: "1.7",
-    textAlign: "center",
-  });
-  popupDocument.body.appendChild(message);
-}
-
-function preopenOsmConnectionPopup() {
-  const popup = window.open("about:blank", "stepby-osm-oauth", "popup=yes,width=520,height=720,resizable=yes,scrollbars=yes");
-  if (popup) {
-    renderMapOsmPreparingPopup(popup);
-  }
-  return popup;
-}
-
-async function startMapOsmConnection(popup) {
-  const mode = popup ? "popup" : "redirect";
-  const returnUrl = window.location.origin + window.location.pathname;
-  const response = await authFetch(`/auth/osm/start?mode=${mode}&return_url=${encodeURIComponent(returnUrl)}`, { method: "POST" });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload.authorizationUrl) throw new Error(payload.error || "osm_start_failed");
-  if (popup) popup.location.replace(payload.authorizationUrl);
-  else window.location.assign(payload.authorizationUrl);
-}
-
 async function saveOsmSplitDraft(osmPreview, recordId) {
   const response = await authFetch("/api/osm/split-plan", {
     method: "POST",
@@ -2377,10 +2306,8 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       return;
     }
 
-    let osmConnectionState = { configured: false, connected: false };
     const setupAndBind = async () => {
       await prepareTraceTagModal();
-      if (osmPreview) osmConnectionState = await loadMapOsmConnectionState();
 
       traceConfirmModalEl.classList.remove("hidden");
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
@@ -2410,9 +2337,7 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         }
         setTraceTagError("");
         const osmEligible = isCurrentRecordingOsmEligible();
-        const oauthPopup = osmPreview && osmEligible && shouldOpenOsmConnection(osmConnectionState)
-          ? preopenOsmConnectionPopup() : null;
-        cleanupAndResolve({ action: "ok", osmConnectionState, oauthPopup, osmEligible });
+        cleanupAndResolve({ action: "ok", osmEligible });
       };
       const onCancel = () => cleanupAndResolve({ action: "cancel" });
 
@@ -2689,17 +2614,9 @@ async function handleRecordStopWithConfirmation() {
     } catch (error) {
       console.error("[RecordQueue] enqueue failed", error);
       alert("端末に記録を保管できませんでした。空き容量を確認して、もう一度確定してください。");
-      if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
       return;
     }
     displayTraceLine(previewCoords);
-    if (decision.osmEligible && shouldOpenOsmConnection(decision.osmConnectionState)) {
-      startMapOsmConnection(decision.oauthPopup).catch((error) => {
-        if (decision.oauthPopup && !decision.oauthPopup.closed) decision.oauthPopup.close();
-        console.error("[OSM OAuth] automatic connection failed", error);
-        showMapToast("記録は端末に保存しました。OSM連携はプロフィールから再試行できます。", 4200);
-      });
-    }
     return;
   }
 
@@ -2833,10 +2750,10 @@ if (osmPreviewTestButtonEl) {
       await openTraceConfirmModal(previewCoordinates, preview);
     } catch (error) {
       if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = `プレビュー失敗：${error.message}`;
-      alert(`OSM未送信プレビューを生成できませんでした: ${error.message}`);
+      alert(`OSM dry-runプレビューを生成できませんでした: ${error.message}`);
     } finally {
       osmPreviewTestButtonEl.disabled = false;
-      osmPreviewTestButtonEl.textContent = "東京駅付近でOSM未送信プレビュー";
+      osmPreviewTestButtonEl.textContent = "東京駅付近でOSM dry-runプレビュー";
     }
   });
 }
@@ -2852,7 +2769,7 @@ async function openLatestFittingDetails() {
     const osm = result.osm || { status: "not_created" };
     const statusLabels = {
       not_created: "変更案なし",
-      draft: "変更案あり（OSM未送信）",
+      draft: "dry-run変更案あり",
       merged: "OSM送信済み",
       revert_draft: "取消変更案あり（未送信）",
       reverted: "取消済み",
