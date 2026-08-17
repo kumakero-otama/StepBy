@@ -47,6 +47,8 @@ assert.match(mapSource, /properties\.stepby_record_id \|\| properties\.stepby_ow
   "non-owner StepBy records must retain a public detail identifier");
 assert.match(mapSource, /osmRecordId: properties\.stepby_can_revert \? recordId : ""/,
   "only the owner-authorized feature may expose OSM deletion");
+assert.match(mapSource, /const canEditOwnSession = isOwnTactileSession\(ownerUserId\);[\s\S]{0,220}?const memoHtml = memoValue/,
+  "the detail card must keep owner-aware memo handling even though the API is the primary privacy boundary");
 assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("const attempts = hosts.map"),
   "the enriched StepBy API response must be preferred over anonymous Overpass data");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
