@@ -239,14 +239,60 @@
     }
   }
 
+  /* A mark per kind of tag, as UI1's popup had. Keyed on the backend's
+     code, not the label: UI1 keyed on the Japanese wording, so a renamed or
+     translated tag fell through to the generic mark. */
+  var TAG_ICONS = {
+    audible_signal: 'volume-high',
+    non_audible_signal: 'traffic-light',
+    push_button_signal: 'traffic-light',
+    crosswalk: 'road',
+    misplaced_tactile_paving: 'braille',
+    deteriorated_tactile_paving: 'braille',
+    obstructed_tactile_paving: 'braille',
+    footbridge_stairs_entry: 'stairs',
+    footbridge_elevator_entry: 'elevator',
+    footbridge_ramp_entry: 'wheelchair'
+  };
+
+  function tagIcon(tag) {
+    var code = (tag && (tag.code || tag.id)) || tag;
+    return TAG_ICONS[code] || 'bookmark';
+  }
+
+  function tagChips(tags) {
+    return (tags || []).map(function (tag) {
+      var label = i18n.tagLabel(tag);
+      if (!label) return '';
+      return '<span class="pin__tag">' + w.StepByIcons.svg(tagIcon(tag)) +
+        '<span>' + ui.esc(label) + '</span></span>';
+    }).filter(Boolean).join('');
+  }
+
   function popupHtml(item) {
-    var label = item.hydrated
-      ? item.tags.map(function (tag) { return i18n.tagLabel(tag); }).filter(Boolean).join(', ')
-      : '';
     var href = auth.toApp('/detail/') + '?id=' + encodeURIComponent(item.id);
-    return '<strong>' + ui.esc(label || t('detail.title')) + '</strong>' +
-      (item.notes ? '<br>' + ui.esc(item.notes) : '') +
-      '<br><a href="' + ui.esc(href) + '">' + ui.esc(t('map.openReport')) + '</a>';
+    var open = '<a class="pin__link" href="' + ui.esc(href) + '">' +
+      w.StepByIcons.svg('chevron-right') + '<span>' + ui.esc(t('map.openReport')) + '</span></a>';
+
+    /* The list endpoint carries neither tags nor photos, so until the detail
+       arrives say so rather than showing an empty card. */
+    if (!item.hydrated) {
+      return '<div class="pin"><p class="pin__muted">' + ui.esc(t('common.loading')) + '</p>' + open + '</div>';
+    }
+
+    var chips = tagChips(item.tags);
+    var photo = (item.images && item.images[0])
+      ? '<img class="pin__photo" src="' + ui.esc(auth.toAsset(item.images[0])) + '" alt="">'
+      : '';
+
+    return '<div class="pin">' +
+      (chips
+        ? '<div class="pin__tags">' + chips + '</div>'
+        : '<p class="pin__muted">' + ui.esc(t('feed.noTags')) + '</p>') +
+      photo +
+      (item.notes ? '<p class="pin__note">' + ui.esc(item.notes) + '</p>' : '') +
+      open +
+      '</div>';
   }
 
   function drawReports() {
@@ -259,7 +305,15 @@
            nothing but "link". */
         alt: t('detail.title'),
         keyboard: true
-      }).bindPopup(popupHtml(item)).addTo(layers.reports);
+      }).bindPopup(popupHtml(item), {
+        maxWidth: 260,
+        /* Leaflet transforms its map pane, which makes a stacking context, so
+           the popup cannot paint above the notice strip however high the
+           popup pane's z-index is. Padding the auto-pan keeps the popup clear
+           of the strip and of the map's bottom edge instead. */
+        autoPanPaddingTopLeft: [12, 58],
+        autoPanPaddingBottomRight: [12, 16]
+      }).addTo(layers.reports);
 
       /* The list endpoint carries no tags or notes, so fetch the detail the
          first time a pin is actually opened rather than firing one request

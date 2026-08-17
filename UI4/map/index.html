@@ -282,6 +282,43 @@
   }
   .layer-card:has(input:checked) .layer-card__bar { width: 60%; }
 
+  /* Pin popup — tag pills carrying their own mark, a photo and the note,
+     the way UI1's popup was built. */
+  .pin { min-width: 170px; max-width: 240px; }
+  .pin__tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .pin__tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px;
+    border-radius: var(--radius-pill);
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+    font-size: 11px; font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .pin__tag .icon { width: 11px; height: 11px; flex-shrink: 0; }
+  .pin__photo {
+    width: 100%; max-height: 130px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block; margin-bottom: 7px;
+    background: var(--bg-sunken);
+  }
+  .pin__note {
+    margin-bottom: 8px;
+    font-size: 12px; line-height: 1.45; color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .pin__muted { margin-bottom: 8px; font-size: 11px; color: var(--text-muted); }
+  .pin__link {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--header-grad);
+    color: #fff; font-size: 12px; font-weight: 700; text-decoration: none;
+  }
+  .pin__link .icon { width: 11px; height: 11px; }
+
   .layer-card--blue {
     --card-accent: #3A7BD5; --card-bg: #E8F0FC;
     --card-chip: #D6E5F9; --card-edge: rgba(58,123,213,0.30); --card-glow: rgba(58,123,213,0.35);
