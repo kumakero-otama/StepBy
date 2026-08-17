@@ -588,6 +588,9 @@
   var pending = [];
   var flushing = false;
 
+  var stateEl = d.getElementById('record-state');
+  var stateTextEl = d.getElementById('record-state-text');
+
   function renderRecordControls() {
     var recording = !!state.session;
     var paused = recording && state.session.paused;
@@ -598,8 +601,15 @@
     recordBtn.classList.toggle('is-paused', paused);
 
     pauseBtn.disabled = !recording;
+    pauseBtn.classList.toggle('is-paused', paused);
     pauseBtn.innerHTML = w.StepByIcons.svg(paused ? 'play' : 'pause') +
       '<span>' + ui.esc(t(paused ? 'map.recordResume' : 'map.recordPause')) + '</span>';
+
+    /* Said in words as well as colour: "is it paused?" was not answerable
+       from the buttons alone. */
+    stateEl.classList.toggle('hidden', !recording);
+    stateEl.classList.toggle('is-paused', paused);
+    stateTextEl.textContent = recording ? t(paused ? 'map.paused' : 'map.recording') : '';
   }
 
   function haversine(a, b) {
@@ -687,11 +697,16 @@
   var proSaveError = d.getElementById('pro-save-tags-error');
   var tactileTags = null;
 
-  async function askProDetails() {
+  async function askSaveDetails() {
     proSaveError.classList.add('hidden');
     proSaveMemo.value = '';
 
-    if (!tactileTags) {
+    /* Tags and note are the PRO part; the save/discard choice is everyone's,
+       exactly as UI2 presents it. */
+    d.getElementById('pro-only-fields').classList.toggle('hidden', !state.isPro);
+    d.getElementById('pro-only-memo').classList.toggle('hidden', !state.isPro);
+
+    if (state.isPro && !tactileTags) {
       proSaveTags.innerHTML = '<span class="chip chip--muted">' + ui.esc(t('common.loading')) + '</span>';
       try {
         var res = await api.listTactileTags();
@@ -700,7 +715,7 @@
         tactileTags = [];
       }
     }
-    proSaveTags.innerHTML = tactileTags.length
+    proSaveTags.innerHTML = (tactileTags || []).length
       ? tactileTags.map(function (tag) {
           var id = tag.id || tag.tagId;
           return '<label class="chip chip--select">' +
@@ -716,7 +731,11 @@
           .map(function (i) { return i.value; });
       }
       function onOk() {
-        if (!pick().length) { proSaveError.classList.remove('hidden'); return; }
+        if (state.isPro && !pick().length) {
+          proSaveError.classList.remove('hidden');
+          ui.toast(t('pro.saveTagsRequired'), 'error');
+          return;
+        }
         cleanup();
         resolve({ tagIds: pick(), memo: proSaveMemo.value.trim() });
       }
@@ -758,33 +777,42 @@
     }
   }
 
+  async function discardSession(session) {
+    try {
+      await api.cancelSession({ sessionId: session.sessionId, sessionUuid: session.sessionUuid });
+    } catch (err) {
+      /* Nothing worth keeping either way. */
+    }
+    map.removeLayer(session.line);
+    state.session = null;
+    pending = [];
+    renderRecordControls();
+    ui.toast(t('map.recordDiscarded'));
+  }
+
   async function stopRecording() {
     var session = state.session;
     if (!session) return;
 
     if (session.points.length < 2) {
-      var discard = await ui.confirmDialog({
+      var confirmed = await ui.confirmDialog({
         title: t('map.discardTitle'),
         body: t('map.discardBody'),
         confirmLabel: t('common.delete'),
         danger: true
       });
-      if (!discard) return;
-      try { await api.cancelSession({ sessionId: session.sessionId, sessionUuid: session.sessionUuid }); }
-      catch (err) { /* the session is worthless either way */ }
-      map.removeLayer(session.line);
-      state.session = null;
-      pending = [];
-      renderRecordControls();
-      ui.toast(t('map.recordDiscarded'));
+      if (!confirmed) return;
+      await discardSession(session);
       return;
     }
 
-    /* Ask before ending the session, so cancelling leaves it recording. */
-    var proDetails = null;
-    if (state.isPro) {
-      proDetails = await askProDetails();
-      if (!proDetails) return;
+    /* Cancelling here discards the recording and ends it — the same choice
+       UI2 offers. Leaving it running was wrong: the button had already been
+       pressed to stop. */
+    var details = await askSaveDetails();
+    if (!details) {
+      await discardSession(session);
+      return;
     }
 
     recordBtn.setAttribute('aria-busy', 'true');
@@ -794,12 +822,18 @@
         sessionUuid: session.sessionUuid,
         endedAt: new Date().toISOString()
       });
-      await saveProDetails(session, proDetails);
+      if (state.isPro) await saveProDetails(session, details);
       ui.toast(t('map.recordSaved'), 'success');
-      /* Once saved it is one of "everyone's routes", so it takes that colour. */
-      session.line.setStyle({ color: COLOR.records, opacity: 0.85 });
       state.session = null;
       renderRecordControls();
+
+      /* Drop the drawing we made while recording and reload the layer, so the
+         route you just saved becomes a real record — tappable, with its own
+         hit target and detail sheet. Recolouring the temporary line left it
+         looking saved while doing nothing when tapped. */
+      map.removeLayer(session.line);
+      var at = state.position || map.getCenter();
+      loadRecords({ lat: Number(at.lat), lng: Number(at.lng) });
     } catch (err) {
       ui.toastError(err);
     } finally {

@@ -92,7 +92,10 @@
     try {
       await api.deleteReport(pointId);
       ui.toast(t('post.deleted'), 'success');
-      setTimeout(function () { location.replace(auth.toApp('/feed/')); }, 700);
+      /* Back to the map, which is where the report was opened from. Sending
+         people to the reports list dropped them on a screen with no way back
+         into the app. */
+      setTimeout(function () { location.replace(auth.toApp('/map/')); }, 700);
     } catch (err) {
       ui.toastError(err);
     }

@@ -103,6 +103,22 @@
   /* ---- Bottom drawer ---------------------------------------------------- */
   .drawer { flex-shrink: 0; position: relative; z-index: 100; }
 
+  .record-state {
+    display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4) 0;
+    background: var(--bg-surface);
+    font-size: var(--fs-xs); font-weight: 700;
+    color: var(--danger);
+  }
+  .record-state__dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: currentColor;
+    animation: recPulse 1.6s ease-in-out infinite;
+  }
+  .record-state.is-paused { color: var(--accent-fg); }
+  .record-state.is-paused .record-state__dot { animation: none; }
+  @keyframes recPulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.25 } }
+
   .drawer__cta {
     display: flex;
     gap: 10px;
@@ -148,6 +164,13 @@
   .btn-record.is-paused {
     background: linear-gradient(135deg, var(--accent), #F5A623);
     color: #4A3400;
+  }
+  /* The pause button changes too, so "paused" is unmistakable wherever you
+     are looking. */
+  .btn-record--secondary.is-paused {
+    background: var(--accent-bg);
+    color: var(--accent-fg);
+    border-color: var(--accent);
   }
 
   .drawer__handle {
@@ -306,6 +329,11 @@
 
   <!-- Bottom drawer: record actions above a collapsible row of layer cards -->
   <div class="drawer" id="drawer" data-open="true">
+    <p class="record-state hidden" id="record-state" role="status" aria-live="polite">
+      <span class="record-state__dot" aria-hidden="true"></span>
+      <span id="record-state-text"></span>
+    </p>
+
     <div class="drawer__cta">
       <button type="button" class="btn-record" id="btn-record">
         <span class="icon" data-icon="play"></span>
@@ -348,14 +376,15 @@
 <!-- PRO only: tags and a note captured when a recording is saved -->
 <dialog class="sheet" id="pro-save" aria-labelledby="pro-save-title">
   <h2 id="pro-save-title" data-i18n="pro.saveTitle">Save this recording</h2>
+  <p class="text-sm text-muted" data-i18n="pro.saveLead">Cancelling discards this recording.</p>
 
-  <div class="record-sheet__section">
+  <div class="record-sheet__section" id="pro-only-fields">
     <h3 data-i18n="pro.saveTags">What did you record?</h3>
     <div class="chip-set" id="pro-save-tags"></div>
     <p class="field__error hidden" id="pro-save-tags-error" data-i18n="pro.saveTagsRequired">Please choose at least one tag.</p>
   </div>
 
-  <div class="record-sheet__section">
+  <div class="record-sheet__section" id="pro-only-memo">
     <label class="field__label" for="pro-save-memo" data-i18n="pro.saveMemo">Note</label>
     <textarea class="textarea" id="pro-save-memo" maxlength="300"
               placeholder="Anything worth remembering about this route…"
@@ -363,7 +392,7 @@
   </div>
 
   <div class="sheet__actions">
-    <button type="button" class="btn btn--secondary" id="pro-save-cancel" data-i18n="common.cancel">Cancel</button>
+    <button type="button" class="btn btn--danger" id="pro-save-cancel" data-i18n="pro.saveDiscard">Discard</button>
     <button type="button" class="btn btn--primary" id="pro-save-ok" data-i18n="pro.saveSubmit">Save</button>
   </div>
 </dialog>
