@@ -22,6 +22,11 @@
     border: 1px solid var(--border);
     overflow: hidden;
   }
+  /* Focusable so validation can move focus to the field that needs it; the
+     checkbox inside is visually hidden and is not a useful focus target. */
+  #tag-set .chip--select { scroll-margin-top: 80px; }
+  #tag-set .chip--select:focus { outline: 3px solid var(--primary); outline-offset: 2px; }
+
   .photo-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -82,7 +87,8 @@
       <!-- Tags ---------------------------------------------------------- -->
       <section class="field" aria-labelledby="tags-heading">
         <h2 class="field__label" id="tags-heading" data-i18n="post.tags">What is here?</h2>
-        <div class="chip-set" id="tag-set" role="group" aria-labelledby="tags-heading"></div>
+        <div class="chip-set" id="tag-set" role="group" aria-labelledby="tags-heading"
+             aria-describedby="tags-error"></div>
         <p class="field__hint" data-i18n="post.tagsHint">Pick everything that applies.</p>
         <p class="field__error hidden" id="tags-error" data-i18n="post.tagsRequired">Please choose at least one tag.</p>
       </section>

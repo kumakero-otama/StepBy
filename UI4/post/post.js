@@ -93,7 +93,7 @@
     tagSet.innerHTML = state.tags.map(function (tag) {
       var id = tag.tagId || tag.id || tag.code;
       var checked = state.selected.has(String(id)) ? ' checked' : '';
-      return '<label class="chip chip--select">' +
+      return '<label class="chip chip--select" tabindex="-1">' +
         '<input type="checkbox" value="' + ui.esc(id) + '"' + checked + '>' +
         '<span>' + ui.esc(i18n.tagLabel(tag)) + '</span>' +
         '</label>';
@@ -170,8 +170,16 @@
 
     if (!state.selected.size) {
       tagsError.classList.remove('hidden');
+      /* A toast as well as the inline message: the tag list is far above the
+         button on a phone, and the inline error alone read as "the button
+         does nothing". */
+      ui.toast(t('post.tagsRequired'), 'error');
+      /* preventScroll, then scroll deliberately — focusing the visually
+         hidden checkbox used to jerk the page somewhere that left the error
+         off-screen entirely. */
+      var firstTag = tagSet.querySelector('.chip--select');
+      if (firstTag) firstTag.focus({ preventScroll: true });
       tagsError.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      tagSet.querySelector('input') && tagSet.querySelector('input').focus();
       return;
     }
     if (!state.latlng) {
