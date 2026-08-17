@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="profile.title">Profile</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .profile-head {
+    display: flex; align-items: center; gap: var(--sp-4);
+    padding: var(--sp-5) var(--sp-4);
+    background: var(--header-grad);
+    color: #fff;
+  }
+  .profile-head h2 { color: #fff; font-size: var(--fs-lg); overflow-wrap: anywhere; }
+  .profile-head .avatar { border: 2px solid rgba(255,255,255,0.6); }
+  .stats { display: flex; gap: var(--sp-2); padding: var(--sp-4); }
+  .stat {
+    flex: 1; text-align: center;
+    padding: var(--sp-3) var(--sp-2);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+  }
+  .stat strong { display: block; font-size: var(--fs-lg); color: var(--primary-dark); }
+  .stat span { font-size: var(--fs-xs); color: var(--text-muted); overflow-wrap: anywhere; }
+</style>
+</head>
+<body data-nav="profile">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar"
+          data-title-key="profile.title" data-actions="settings"></header>
+
+  <main class="app-main flush" id="main">
+    <div class="profile-head">
+      <img class="avatar avatar--lg" id="avatar" src="../assets/avatar-placeholder.svg" alt="">
+      <div>
+        <h2 id="username">…</h2>
+        <p class="text-sm" id="email" style="color:rgba(255,255,255,0.8)"></p>
+      </div>
+    </div>
+
+    <p class="banner banner--info hidden" id="guest-banner" style="margin:16px">
+      <span class="icon" data-icon="circle-info"></span>
+      <span data-i18n="profile.guestNotice">You are browsing as a guest. Sign in to keep your contributions.</span>
+    </p>
+
+    <div class="stats">
+      <div class="stat">
+        <strong id="stat-reports">–</strong>
+        <span data-i18n="profile.stat.reports">Reports</span>
+      </div>
+      <div class="stat">
+        <strong id="stat-routes">–</strong>
+        <span data-i18n="profile.stat.routes">Routes</span>
+      </div>
+    </div>
+
+    <div style="padding:0 16px 24px">
+      <!-- With no bottom navigation bar (the original design has none), this
+           list is the hub: everything that is not the map or settings is
+           reached from here. -->
+      <div class="option-group">
+        <a class="list-row" href="../post/">
+          <span class="list-row__icon"><span class="icon" data-icon="circle-plus"></span></span>
+          <span class="list-row__label" data-i18n="profile.addReport">Add a report</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+        <a class="list-row" href="../feed/">
+          <span class="list-row__icon"><span class="icon" data-icon="list-ul"></span></span>
+          <span class="list-row__label" data-i18n="profile.allReports">All reports</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+        <a class="list-row" href="../mine/">
+          <span class="list-row__icon"><span class="icon" data-icon="bookmark"></span></span>
+          <span class="list-row__label" data-i18n="profile.myContributions">My contributions</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+        <a class="list-row" href="../ranking/">
+          <span class="list-row__icon"><span class="icon" data-icon="ranking-star"></span></span>
+          <span class="list-row__label" data-i18n="profile.ranking">Leaderboard</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+        <a class="list-row" href="../profile-edit/" id="edit-link">
+          <span class="list-row__icon"><span class="icon" data-icon="pen"></span></span>
+          <span class="list-row__label" data-i18n="profile.editProfile">Edit profile</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+        <a class="list-row" href="../settings/">
+          <span class="list-row__icon"><span class="icon" data-icon="gear"></span></span>
+          <span class="list-row__label" data-i18n="common.settings">Settings</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+        <a class="list-row" href="../help/">
+          <span class="list-row__icon"><span class="icon" data-icon="circle-question"></span></span>
+          <span class="list-row__label" data-i18n="common.help">Help</span>
+          <span class="icon" data-icon="chevron-right"></span>
+        </a>
+      </div>
+
+      <p style="margin-top:16px">
+        <button type="button" class="btn btn--secondary btn--block" id="signout-btn">
+          <span class="icon" data-icon="right-from-bracket"></span>
+          <span data-i18n="profile.signOut">Sign out</span>
+        </button>
+      </p>
+      <p style="margin-top:8px" class="hidden" id="signin-wrap">
+        <a class="btn btn--primary btn--block" href="../login/">
+          <span class="icon" data-icon="right-to-bracket"></span>
+          <span data-i18n="profile.signIn">Sign in</span>
+        </a>
+      </p>
+    </div>
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+(function (w, d) {
+  'use strict';
+  var api = w.StepByApi;
+  var auth = w.StepByAuth;
+  var ui = w.StepByUI;
+  var i18n = w.StepByI18n;
+  var t = w.t;
+
+  var nameEl = d.getElementById('username');
+  var emailEl = d.getElementById('email');
+  var avatarEl = d.getElementById('avatar');
+  var user = auth.getCachedUser();
+
+  function paint() {
+    var isGuest = !user || user.isGuest;
+    nameEl.textContent = (user && user.username) || t('profile.guest');
+    emailEl.textContent = (user && user.email) || '';
+    ui.setAvatar(avatarEl, user && user.iconUrl);
+
+    d.getElementById('guest-banner').classList.toggle('hidden', !isGuest);
+    d.getElementById('edit-link').classList.toggle('hidden', isGuest);
+    d.getElementById('signin-wrap').classList.toggle('hidden', !isGuest);
+    d.getElementById('signout-btn').classList.toggle('hidden', !auth.isSignedIn());
+  }
+
+  async function load() {
+    if (!auth.isSignedIn()) { paint(); return; }
+    try {
+      var res = await api.me();
+      user = (res && res.user) || null;
+      auth.setCachedUser(user);
+      paint();
+    } catch (err) {
+      if (err.status === 401) { location.replace(auth.toApp('/login/')); return; }
+      paint();
+    }
+
+    /* Counts use the same list endpoints as the other screens, scoped with
+       mine=1. Both require a bounding circle, so they are counted around
+       wherever the user is (or the configured default centre). */
+    var centre = await w.StepByGeo.centre();
+
+    try {
+      var reports = await api.listReports(
+        { lat: centre.lat, lng: centre.lng, radiusKm: centre.radiusKm, mine: 1 });
+      d.getElementById('stat-reports').textContent = i18n.formatNumber(reports.length);
+    } catch (e) { d.getElementById('stat-reports').textContent = '–'; }
+
+    try {
+      var routes = await api.listRecords(
+        { lat: centre.lat, lng: centre.lng, radiusKm: centre.radiusKm, mine: 1 });
+      d.getElementById('stat-routes').textContent = i18n.formatNumber(routes.length);
+    } catch (e) { d.getElementById('stat-routes').textContent = '–'; }
+  }
+
+  d.getElementById('signout-btn').addEventListener('click', async function () {
+    var ok = await ui.confirmDialog({
+      title: t('profile.signOutTitle'),
+      body: t('profile.signOutBody'),
+      confirmLabel: t('profile.signOut')
+    });
+    if (!ok) return;
+    try { await api.signOut(); } catch (e) { /* clear locally regardless */ }
+    auth.clearSession();
+    location.replace(auth.toApp('/login/'));
+  });
+
+  d.addEventListener('stepby:langchange', paint);
+  paint();
+  load();
+})(window, document);
+</script>
+</body>
+</html>

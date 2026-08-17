@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="feed.title">Reports</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .toolbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar .select { flex: 1; min-height: 40px; }
+  .count-bar {
+    padding: var(--sp-2) var(--sp-4);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    background: var(--bg-sunken);
+  }
+  .report-card__thumb {
+    width: 100%; aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--sp-3);
+    background: var(--bg-sunken);
+  }
+</style>
+</head>
+<body data-nav="feed">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar"
+          data-title-key="feed.title" data-brand="true" data-actions="settings,profile"></header>
+
+  <div class="toolbar">
+    <label class="sr-only" for="sort" data-i18n="feed.sortLabel">Sort reports by</label>
+    <select class="select" id="sort">
+      <option value="recent" data-i18n="feed.sort.recent">Recent</option>
+      <option value="nearby" data-i18n="feed.sort.nearby">Nearby</option>
+      <option value="popular" data-i18n="feed.sort.popular">Popular</option>
+    </select>
+    <button type="button" class="icon-btn icon-btn--plain" id="locate"
+            aria-label="Use my location" data-i18n-attr="aria-label:feed.useMyLocation">
+      <span class="icon" data-icon="location-crosshairs"></span>
+    </button>
+  </div>
+
+  <p class="count-bar" id="count-bar" role="status" aria-live="polite"></p>
+
+  <main class="app-main" id="main">
+    <div id="list"></div>
+  </main>
+
+  <a class="fab" href="../post/" aria-label="Add a report" data-i18n-attr="aria-label:post.titleNew">
+    <span class="icon" data-icon="plus"></span>
+  </a>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+<script src="./feed.js"></script>
+</body>
+</html>

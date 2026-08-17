@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="help.title">Help</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .faq { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-raised); }
+  .faq + .faq { margin-top: var(--sp-3); }
+  .faq summary {
+    display: flex; align-items: center; gap: var(--sp-3);
+    min-height: var(--tap-min);
+    padding: var(--sp-3) var(--sp-4);
+    font-weight: 700; color: var(--text-strong);
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary .icon { margin-inline-start: auto; transition: rotate var(--dur-base); color: var(--text-muted); }
+  .faq[open] summary .icon { rotate: 90deg; }
+  .faq p { padding: 0 var(--sp-4) var(--sp-4); color: var(--text); }
+</style>
+</head>
+<body data-nav="">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar"
+          data-title-key="help.title" data-back="true"></header>
+
+  <main class="app-main" id="main">
+
+    <details class="faq" open>
+      <summary><span data-i18n="help.q1">What is StepBy?</span><span class="icon" data-icon="chevron-right"></span></summary>
+      <p data-i18n="help.a1">StepBy is a community map of tactile paving, kerb ramps, audible signals and other things that make a route walkable. Everything on it was added by someone walking the route.</p>
+    </details>
+
+    <details class="faq">
+      <summary><span data-i18n="help.q2">How do I record a route?</span><span class="icon" data-icon="chevron-right"></span></summary>
+      <p data-i18n="help.a2">Open the map, allow location access, then press Start recording. Walk your route and press Stop when you are done. Your path is saved so others can see which streets have been surveyed.</p>
+    </details>
+
+    <details class="faq">
+      <summary><span data-i18n="help.q3">What should I report?</span><span class="icon" data-icon="chevron-right"></span></summary>
+      <p data-i18n="help.a3">Anything a person would want to know before walking somewhere: tactile paving, ramps, handrails, lifts, audible crossings, and also obstacles or places to take care.</p>
+    </details>
+
+    <details class="faq">
+      <summary><span data-i18n="help.q4">Who can see what I add?</span><span class="icon" data-icon="chevron-right"></span></summary>
+      <p data-i18n="help.a4">Reports and recorded routes are public. Your display name is shown next to them. Your exact location is never shared outside the points you choose to publish.</p>
+    </details>
+
+    <details class="faq">
+      <summary><span data-i18n="help.q5">Can I use it without an account?</span><span class="icon" data-icon="chevron-right"></span></summary>
+      <p data-i18n="help.a5">Yes. Guest mode lets you browse the map and read reports. Signing in is only needed to add something.</p>
+    </details>
+
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="error.offlineTitle">You are offline</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="stylesheet" href="./css/fonts.css">
+<link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/base.css">
+<link rel="stylesheet" href="./css/components.css">
+<script src="./js/config.js"></script>
+<script src="./js/prefs.js"></script>
+<script src="./i18n/dict.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <main class="app-main" id="main">
+    <div class="empty-state" style="padding-top:25vh">
+      <span class="icon" data-icon="globe" style="font-size:40px"></span>
+      <h2 data-i18n="error.offlineTitle">You are offline</h2>
+      <p data-i18n="error.offlineBody">StepBy needs a connection for this screen. Recorded routes are kept until you reconnect.</p>
+      <p style="margin-top:16px">
+        <button type="button" class="btn btn--secondary" onclick="location.reload()" data-i18n="common.retry">Try again</button>
+      </p>
+    </div>
+  </main>
+</div>
+<script src="./js/icons.js"></script>
+<script src="./js/i18n.js"></script>
+</body>
+</html>

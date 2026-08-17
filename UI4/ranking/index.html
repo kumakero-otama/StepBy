@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="ranking.title">Leaderboard</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .rank-row { display: flex; align-items: center; gap: var(--sp-3); }
+  .rank-badge {
+    width: 34px; height: 34px; flex-shrink: 0;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--bg-sunken); color: var(--text-muted);
+    font-weight: 700; font-size: var(--fs-sm);
+  }
+  .rank-row--1 .rank-badge { background: #F6C452; color: #4A3400; }
+  .rank-row--2 .rank-badge { background: #D7DEE4; color: #3B454E; }
+  .rank-row--3 .rank-badge { background: #E3B486; color: #4A2E12; }
+  .rank-name { flex: 1; min-width: 0; font-weight: 600; color: var(--text-strong); overflow-wrap: anywhere; }
+  .rank-you { font-size: var(--fs-xs); color: var(--primary-dark); font-weight: 700; }
+</style>
+</head>
+<body data-nav="profile">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar"
+          data-title-key="ranking.title" data-back="true"></header>
+
+  <main class="app-main" id="main">
+    <p class="text-muted text-sm" style="margin-bottom:16px" data-i18n="ranking.lead">Contributors who added the most this month.</p>
+    <p class="banner banner--info hidden" id="rank-note"></p>
+    <div id="list"></div>
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+(function (w, d) {
+  'use strict';
+  var api = w.StepByApi;
+  var auth = w.StepByAuth;
+  var ui = w.StepByUI;
+  var i18n = w.StepByI18n;
+  var t = w.t;
+
+  var listEl = d.getElementById('list');
+  var note = d.getElementById('rank-note');
+  var rows = [];
+
+  /* No /api/ranking endpoint exists yet, so the board is derived client-side
+     from the report list. That costs one detail request per report, so the
+     sample is capped - and the cap is shown to the reader rather than
+     silently presenting a partial board as the whole picture. */
+  var RANK_SAMPLE = 50;
+
+  /* Group by contributor, count, sort. When the backend grows a real
+     /api/ranking, this function is the only thing that changes. */
+  function buildFromReports(items) {
+    var byUser = new Map();
+    var monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    items.forEach(function (item) {
+      var name = item.author && item.author.name;
+      if (!name) return;
+      if (item.createdAt && new Date(item.createdAt).getTime() < monthAgo) return;
+      var key = String(item.createdBy || name);
+      var entry = byUser.get(key) || { userId: item.createdBy, name: name, count: 0 };
+      entry.count += 1;
+      byUser.set(key, entry);
+    });
+    return Array.from(byUser.values())
+      .sort(function (a, b) { return b.count - a.count; })
+      .slice(0, 50);
+  }
+
+  function render() {
+    if (!rows.length) {
+      ui.emptyState(listEl, { icon: 'ranking-star', title: t('ranking.empty') });
+      return;
+    }
+    var me = auth.getCachedUser();
+    var myId = me && String(me.userId || me.id);
+
+    listEl.removeAttribute('aria-busy');
+    listEl.innerHTML = '<ol role="list" style="list-style:none">' + rows.map(function (row, index) {
+      var isMe = myId && String(row.userId) === myId;
+      return '<li class="card rank-row rank-row--' + (index + 1) + '" style="margin-top:8px">' +
+        '<span class="rank-badge">' + ui.esc(i18n.formatNumber(index + 1)) + '</span>' +
+        '<span class="rank-name">' + ui.esc(row.name) +
+        (isMe ? ' <span class="rank-you">(' + ui.esc(t('ranking.you')) + ')</span>' : '') + '</span>' +
+        '<span class="text-xs text-muted">' + ui.esc(t('ranking.contributions', { n: i18n.formatNumber(row.count) })) + '</span>' +
+        '</li>';
+    }).join('') + '</ol>';
+  }
+
+  async function load() {
+    ui.skeletonList(listEl, 5);
+    try {
+      var centre = await w.StepByGeo.centre();
+      var items = await api.listReportsDetailed(
+        { lat: centre.lat, lng: centre.lng, radiusKm: centre.radiusKm },
+        { limit: RANK_SAMPLE }
+      );
+      if (items.length > RANK_SAMPLE) {
+        note.textContent = t('ranking.partial', { n: RANK_SAMPLE });
+        note.classList.remove('hidden');
+      }
+      rows = buildFromReports(items.slice(0, RANK_SAMPLE));
+      render();
+    } catch (err) {
+      ui.errorState(listEl, err, load);
+    }
+  }
+
+  d.addEventListener('stepby:langchange', render);
+  load();
+})(window, document);
+</script>
+</body>
+</html>

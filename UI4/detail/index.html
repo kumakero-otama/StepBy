@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="detail.title">Report</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .gallery { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .gallery img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .author { display: flex; align-items: center; gap: var(--sp-3); }
+</style>
+</head>
+<body data-nav="feed">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar"
+          data-title-key="detail.title" data-back="true" data-actions="map"></header>
+
+  <main class="app-main" id="main">
+    <div id="content"></div>
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+<script src="./detail.js"></script>
+</body>
+</html>

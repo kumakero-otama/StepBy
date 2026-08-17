@@ -1,0 +1,164 @@
+/* ===========================================================
+   StepBy UI1 — Design tokens
+   Single source of truth for colour, type, spacing, motion.
+   Light is defined on :root; dark only overrides what changes.
+   =========================================================== */
+
+:root {
+  /* --- Brand --- */
+  --primary: #2E9E8F;
+  --primary-light: #4DBFB0;
+  --primary-dark: #1E7A6D;
+  --primary-bg: #E8F7F5;
+  --primary-glow: rgba(46, 158, 143, 0.25);
+  --header-grad: linear-gradient(135deg, #1A4A4A 0%, #2E9E8F 50%, #3BB49F 100%);
+
+  /* --- Semantic --- */
+  --accent: #FFB847;
+  --accent-bg: #FFF3D6;
+  --accent-fg: #8A5B00;
+  --danger: #D94A4A;
+  --danger-bg: #FDECEC;
+  --success: #1F8A55;
+  --success-bg: #E3F5EB;
+  --info: #2C6FD1;
+  --info-bg: #E6EFFC;
+
+  /* --- Surfaces & text --- */
+  --bg-app: #F5F7FA;
+  --bg-surface: #FFFFFF;
+  --bg-raised: #FFFFFF;
+  --bg-sunken: #EEF2F6;
+  --text-strong: #16242F;
+  --text: #33475A;
+  --text-muted: #5E7183;
+  --border: #DDE3EA;
+  --border-strong: #C2CCD6;
+  --overlay: rgba(12, 24, 32, 0.55);
+
+  /* --- Elevation --- */
+  --shadow-sm: 0 1px 3px rgba(16, 32, 44, 0.08);
+  --shadow-md: 0 4px 14px rgba(16, 32, 44, 0.10);
+  --shadow-lg: 0 12px 32px rgba(16, 32, 44, 0.16);
+
+  /* --- Radius --- */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* --- Type scale (rem, driven by html font-size) --- */
+  /* Noto Sans is self-hosted and covers Latin + Devanagari. Japanese falls
+     through to the platform's own UI face: a CJK webfont is several megabytes
+     even subsetted, which is not a reasonable download for an app people open
+     while walking. Listing the platform faces explicitly beats leaving it to
+     the browser default, which on Windows is still MS PGothic. */
+  --font-sans: 'Noto Sans', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+               'Yu Gothic UI', 'Yu Gothic', 'Noto Sans JP', 'Meiryo',
+               system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-xs: 0.6875rem;   /* 11 */
+  --fs-sm: 0.8125rem;   /* 13 */
+  --fs-base: 0.9375rem; /* 15 */
+  --fs-md: 1.0625rem;   /* 17 */
+  --fs-lg: 1.25rem;     /* 20 */
+  --fs-xl: 1.5rem;      /* 24 */
+  --lh-tight: 1.3;
+  --lh-base: 1.6;
+
+  /* --- Spacing --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* --- Layout --- */
+  --shell-max: 480px;
+  --tap-min: 44px; /* WCAG 2.5.8 target size */
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+}
+
+/* Dark: explicit choice wins, system preference is the fallback. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #4DBFB0;
+    --primary-light: #6DD5C8;
+    --primary-dark: #2E9E8F;
+    --primary-bg: #16332F;
+    --primary-glow: rgba(77, 191, 176, 0.22);
+    --header-grad: linear-gradient(135deg, #102C2C 0%, #1B5C53 50%, #237063 100%);
+
+    --accent: #FFC470;
+    --accent-bg: #3A2C10;
+    --accent-fg: #FFD9A0;
+    --danger: #FF8080;
+    --danger-bg: #3A1D1D;
+    --success: #5BC98D;
+    --success-bg: #16331F;
+    --info: #7FB0F5;
+    --info-bg: #16263A;
+
+    --bg-app: #0E151C;
+    --bg-surface: #18222C;
+    --bg-raised: #1F2B37;
+    --bg-sunken: #121A22;
+    --text-strong: #EAF1F6;
+    --text: #C7D4DE;
+    --text-muted: #92A3B1;
+    --border: #2B3945;
+    --border-strong: #3C4C5A;
+    --overlay: rgba(0, 0, 0, 0.65);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+  }
+}
+
+:root[data-theme="dark"] {
+  --primary: #4DBFB0;
+  --primary-light: #6DD5C8;
+  --primary-dark: #2E9E8F;
+  --primary-bg: #16332F;
+  --primary-glow: rgba(77, 191, 176, 0.22);
+  --header-grad: linear-gradient(135deg, #102C2C 0%, #1B5C53 50%, #237063 100%);
+
+  --accent: #FFC470;
+  --accent-bg: #3A2C10;
+  --accent-fg: #FFD9A0;
+  --danger: #FF8080;
+  --danger-bg: #3A1D1D;
+  --success: #5BC98D;
+  --success-bg: #16331F;
+  --info: #7FB0F5;
+  --info-bg: #16263A;
+
+  --bg-app: #0E151C;
+  --bg-surface: #18222C;
+  --bg-raised: #1F2B37;
+  --bg-sunken: #121A22;
+  --text-strong: #EAF1F6;
+  --text: #C7D4DE;
+  --text-muted: #92A3B1;
+  --border: #2B3945;
+  --border-strong: #3C4C5A;
+  --overlay: rgba(0, 0, 0, 0.65);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* ---- Text size preference -------------------------------------------------
+   Scales the root font-size so every rem-based size follows. Replaces the old
+   `zoom:` hack, which broke layout maths and Leaflet hit-testing. */
+:root { font-size: 16px; }
+:root[data-text-size="s"] { font-size: 14px; }
+:root[data-text-size="l"] { font-size: 18px; }
+:root[data-text-size="xl"] { font-size: 20px; }

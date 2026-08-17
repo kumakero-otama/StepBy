@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="settings.title">Settings</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .settings-section + .settings-section { margin-top: var(--sp-6); }
+  .preview {
+    margin-top: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    color: var(--text);
+  }
+  .about-row {
+    display: flex; justify-content: space-between; gap: var(--sp-3);
+    padding: var(--sp-2) 0; font-size: var(--fs-sm);
+  }
+  .credits { margin-top: var(--sp-4); font-size: var(--fs-xs); color: var(--text-muted); }
+  .credits a { color: inherit; }
+</style>
+</head>
+<body data-nav="">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar"
+          data-title-key="settings.title" data-back="true"></header>
+
+  <main class="app-main" id="main">
+
+    <!-- Language ------------------------------------------------------- -->
+    <section class="settings-section" aria-labelledby="lang-heading">
+      <h2 class="section-title" id="lang-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="language"></span></span>
+        <span data-i18n="settings.language">Language</span>
+      </h2>
+      <div class="option-group" id="lang-options" role="radiogroup" aria-labelledby="lang-heading"></div>
+      <p class="field__hint" data-i18n="settings.languageHint">Changes every screen immediately.</p>
+    </section>
+
+    <!-- Appearance ----------------------------------------------------- -->
+    <section class="settings-section" aria-labelledby="theme-heading">
+      <h2 class="section-title" id="theme-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="palette"></span></span>
+        <span data-i18n="settings.theme">Theme</span>
+      </h2>
+      <div class="option-group" role="radiogroup" aria-labelledby="theme-heading">
+        <label class="option">
+          <input type="radio" name="theme" value="system">
+          <span class="option__label" data-i18n="settings.theme.system">Match my device</span>
+        </label>
+        <label class="option">
+          <input type="radio" name="theme" value="light">
+          <span class="option__label" data-i18n="settings.theme.light">Light</span>
+        </label>
+        <label class="option">
+          <input type="radio" name="theme" value="dark">
+          <span class="option__label" data-i18n="settings.theme.dark">Dark</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Text size ------------------------------------------------------ -->
+    <section class="settings-section" aria-labelledby="size-heading">
+      <h2 class="section-title" id="size-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="text-height"></span></span>
+        <span data-i18n="settings.textSize">Text size</span>
+      </h2>
+      <div class="option-group" role="radiogroup" aria-labelledby="size-heading">
+        <label class="option">
+          <input type="radio" name="textSize" value="s">
+          <span class="option__label" data-i18n="settings.textSize.s">Small</span>
+        </label>
+        <label class="option">
+          <input type="radio" name="textSize" value="m">
+          <span class="option__label" data-i18n="settings.textSize.m">Default</span>
+        </label>
+        <label class="option">
+          <input type="radio" name="textSize" value="l">
+          <span class="option__label" data-i18n="settings.textSize.l">Large</span>
+        </label>
+        <label class="option">
+          <input type="radio" name="textSize" value="xl">
+          <span class="option__label" data-i18n="settings.textSize.xl">Extra large</span>
+        </label>
+      </div>
+      <p class="preview" data-i18n="settings.textSizePreview">The quick brown fox jumps over the lazy dog.</p>
+    </section>
+
+    <!-- About ---------------------------------------------------------- -->
+    <section class="settings-section" aria-labelledby="about-heading">
+      <h2 class="section-title" id="about-heading">
+        <span class="section-title__icon"><span class="icon" data-icon="circle-info"></span></span>
+        <span data-i18n="settings.about">About</span>
+      </h2>
+      <div class="card">
+        <p class="about-row">
+          <span data-i18n="app.name">StepBy</span>
+          <strong id="version-label" data-i18n="settings.version" data-i18n-v="0.0.0">Version 0.0.0</strong>
+        </p>
+        <p style="margin-top:12px">
+          <a class="btn btn--secondary btn--block" href="../help/">
+            <span class="icon" data-icon="circle-question"></span>
+            <span data-i18n="common.help">Help</span>
+          </a>
+        </p>
+        <p style="margin-top:8px">
+          <button type="button" class="btn btn--secondary btn--block" id="clear-cache">
+            <span class="icon" data-icon="arrows-rotate"></span>
+            <span data-i18n="settings.clearCache">Clear offline data</span>
+          </button>
+        </p>
+        <p class="credits">
+          Map data © <a href="https://www.openstreetmap.org/copyright" rel="noreferrer">OpenStreetMap</a> contributors.
+          Icons by <a href="https://fontawesome.com" rel="noreferrer">Font Awesome</a> (CC BY 4.0).
+          Typeface: Noto Sans (SIL Open Font License).
+        </p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  var cfg = window.APP_CONFIG;
+  var prefs = window.StepByPrefs;
+  var ui = window.StepByUI;
+  var t = window.t;
+
+  /* ---- Language ---------------------------------------------------------
+     Built from config so a third language is one config entry plus a
+     dictionary, never another hand-edited list that drifts out of sync. */
+  var langBox = document.getElementById('lang-options');
+  langBox.innerHTML = cfg.LANGS.map(function (lang) {
+    var checked = lang.code === prefs.lang ? ' checked' : '';
+    return '<label class="option">' +
+      '<input type="radio" name="lang" value="' + ui.esc(lang.code) + '"' + checked + '>' +
+      '<span class="option__label" lang="' + ui.esc(lang.code) + '">' + ui.esc(lang.native) +
+      '<span class="option__sub">' + ui.esc(lang.label) + '</span></span>' +
+      '</label>';
+  }).join('');
+
+  langBox.addEventListener('change', function (event) {
+    if (event.target.name !== 'lang') return;
+    /* setLang fires stepby:langchange; ui.js re-renders the shared chrome and
+       the listener below refreshes what this page owns. No reload, no cookie,
+       no flash — the radio you just pressed keeps focus. */
+    if (!prefs.setLang(event.target.value)) return;
+    ui.toast(t('common.saved'), 'success');
+  });
+
+  document.addEventListener('stepby:langchange', refreshVersionLabel);
+
+  /* ---- Theme ------------------------------------------------------------ */
+  var themeInput = document.querySelector('input[name="theme"][value="' + prefs.theme + '"]');
+  if (themeInput) themeInput.checked = true;
+  document.querySelectorAll('input[name="theme"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      prefs.setTheme(input.value);
+      ui.toast(t('common.saved'), 'success');
+    });
+  });
+
+  /* ---- Text size -------------------------------------------------------- */
+  var sizeInput = document.querySelector('input[name="textSize"][value="' + prefs.textSize + '"]');
+  if (sizeInput) sizeInput.checked = true;
+  document.querySelectorAll('input[name="textSize"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      prefs.setTextSize(input.value);
+    });
+  });
+
+  /* ---- About ------------------------------------------------------------ */
+  function refreshVersionLabel() {
+    var el = document.getElementById('version-label');
+    el.setAttribute('data-i18n-v', cfg.VERSION);
+    el.textContent = t('settings.version', { v: cfg.VERSION });
+  }
+  refreshVersionLabel();
+
+  document.getElementById('clear-cache').addEventListener('click', async function () {
+    try {
+      if (window.caches) {
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+      }
+      if (navigator.serviceWorker) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }
+      ui.toast(t('settings.cacheCleared'), 'success');
+      setTimeout(function () { location.reload(); }, 900);
+    } catch (err) {
+      ui.toast(t('error.generic'), 'error');
+    }
+  });
+})();
+</script>
+</body>
+</html>

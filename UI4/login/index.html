@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="login.title">Sign in</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .hero {
+    background: var(--header-grad);
+    color: #fff;
+    padding: calc(var(--sp-8) + env(safe-area-inset-top, 0px)) var(--sp-5) var(--sp-6);
+    text-align: center;
+  }
+  .hero__logo {
+    width: 60px; height: 60px;
+    margin: 0 auto var(--sp-3);
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    display: grid; place-items: center;
+    font-size: 26px;
+  }
+  .hero h1 { color: #fff; font-size: var(--fs-xl); }
+  .hero p { color: rgba(255,255,255,0.85); font-size: var(--fs-sm); margin-top: var(--sp-2); }
+
+  .features { display: flex; gap: var(--sp-2); padding: var(--sp-4); }
+  .feature {
+    flex: 1;
+    padding: var(--sp-3) var(--sp-2);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    text-align: center;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--text-strong);
+    /* Hindi labels are longer than the English ones; let them wrap to three
+       lines rather than clipping. */
+    overflow-wrap: anywhere;
+  }
+  .feature .icon { font-size: 20px; color: var(--primary); margin-bottom: var(--sp-2); }
+
+  .auth { padding: 0 var(--sp-4) var(--sp-6); }
+  .auth__divider {
+    display: flex; align-items: center; gap: var(--sp-3);
+    margin: var(--sp-5) 0 var(--sp-3);
+    font-size: var(--fs-xs); color: var(--text-muted);
+  }
+  .auth__divider::before, .auth__divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .terms { margin-top: var(--sp-4); font-size: var(--fs-xs); color: var(--text-muted); text-align: center; }
+  #google-slot { display: flex; justify-content: center; min-height: 44px; }
+</style>
+</head>
+<body data-nav="">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="hero">
+    <p class="hero__logo" aria-hidden="true"><span class="icon" data-icon="shoe-prints"></span></p>
+    <h1 data-i18n="app.name">StepBy</h1>
+    <p data-i18n="app.tagline">A barrier-free map, built together</p>
+  </header>
+
+  <main class="app-main flush" id="main">
+    <ul class="features" role="list">
+      <li class="feature">
+        <span class="icon" data-icon="map"></span>
+        <span data-i18n="login.feature.map">Browse the map</span>
+      </li>
+      <li class="feature">
+        <span class="icon" data-icon="braille"></span>
+        <span data-i18n="login.feature.record">Record tactile paving</span>
+      </li>
+      <li class="feature">
+        <span class="icon" data-icon="road"></span>
+        <span data-i18n="login.feature.report">Report road conditions</span>
+      </li>
+    </ul>
+
+    <section class="auth" aria-labelledby="signin-heading">
+      <h2 id="signin-heading" data-i18n="login.lead">Sign in to record routes and share what you find.</h2>
+
+      <div id="google-slot" style="margin-top:16px"></div>
+      <!-- Shown only when no Google client id is configured: a dead primary
+           CTA would look like a working sign-in path. -->
+      <div class="hidden" id="google-unavailable">
+        <button type="button" class="btn btn--secondary btn--block" disabled aria-disabled="true">
+          <span class="icon" data-icon="google"></span>
+          <span data-i18n="login.google">Continue with Google</span>
+        </button>
+        <p class="field__hint" style="text-align:center"
+           data-i18n="login.googleUnavailable">Google sign-in is not configured for this build.</p>
+      </div>
+
+      <p class="auth__divider" data-i18n="login.guestHeading">Not ready to sign in?</p>
+      <button type="button" class="btn btn--secondary btn--block" id="guest-btn">
+        <span class="icon" data-icon="right-to-bracket"></span>
+        <span data-i18n="login.guest">Continue as a guest</span>
+      </button>
+
+      <p class="terms" data-i18n="login.terms">By continuing you agree to our Terms of Use and Privacy Policy.</p>
+    </section>
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  var cfg = window.APP_CONFIG;
+  var auth = window.StepByAuth;
+  var api = window.StepByApi;
+  var ui = window.StepByUI;
+  var t = window.t;
+
+  /* Already signed in? Skip the screen. */
+  if (auth.isSignedIn() && !auth.isTokenExpired()) {
+    location.replace(auth.toApp('/map/'));
+    return;
+  }
+
+  var guestBtn = document.getElementById('guest-btn');
+
+  function busy(button, on) {
+    button.toggleAttribute('disabled', on);
+    button.setAttribute('aria-busy', on ? 'true' : 'false');
+  }
+
+  function afterSignIn(result) {
+    if (result && result.access_token) auth.setToken(result.access_token);
+    if (result && result.user) auth.setCachedUser(result.user);
+    var needsProfile = result && result.user && !result.user.username;
+    location.replace(auth.toApp(needsProfile ? '/onboarding/' : '/map/'));
+  }
+
+  guestBtn.addEventListener('click', async function () {
+    busy(guestBtn, true);
+    try {
+      afterSignIn(await api.signInAsGuest());
+    } catch (err) {
+      ui.toastError(err);
+      busy(guestBtn, false);
+    }
+  });
+
+  /* ---- Google Identity Services -----------------------------------------
+     Loaded only when a client id is configured, so a local or preview build
+     does not sit waiting on a script that can never succeed. */
+  function initGoogle() {
+    if (!cfg.GOOGLE_CLIENT_ID) {
+      document.getElementById('google-unavailable').classList.remove('hidden');
+      return;
+    }
+
+    var script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onerror = function () { ui.toast(t('error.network'), 'error'); };
+    script.onload = function () {
+      google.accounts.id.initialize({
+        client_id: cfg.GOOGLE_CLIENT_ID,
+        callback: async function (response) {
+          try {
+            afterSignIn(await api.signInWithGoogle(response.credential));
+          } catch (err) {
+            /* A brand-new Google account has no StepBy profile yet: send it
+               to onboarding with the id token instead of failing. */
+            if (err.status === 404) {
+              sessionStorage.setItem('stepby.pendingIdToken', response.credential);
+              location.replace(auth.toApp('/onboarding/'));
+              return;
+            }
+            ui.toastError(err);
+          }
+        }
+      });
+      google.accounts.id.renderButton(document.getElementById('google-slot'), {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        width: 300,
+        locale: window.StepByPrefs.lang
+      });
+    };
+    document.head.appendChild(script);
+  }
+
+  initGoogle();
+})();
+</script>
+</body>
+</html>

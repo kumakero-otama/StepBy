@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="onboarding.title">Set up your profile</title>
+<meta name="theme-color" content="#2E9E8F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/config.js"></script>
+<script src="../js/prefs.js"></script>
+<script src="../i18n/dict.js"></script>
+<style>
+  .avatar-picker { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); margin: var(--sp-4) 0 var(--sp-6); }
+</style>
+</head>
+<body data-nav="">
+
+<a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to main content</a>
+
+<div class="app-shell">
+  <header class="app-bar" data-component="app-bar" data-title-key="onboarding.title"></header>
+
+  <main class="app-main" id="main">
+    <p class="text-muted" data-i18n="onboarding.lead">Choose how you appear to other contributors.</p>
+
+    <form id="onboarding-form" novalidate>
+      <div class="avatar-picker">
+        <img class="avatar avatar--lg" id="avatar-preview" src="../assets/avatar-placeholder.svg" alt="">
+        <button type="button" class="btn btn--secondary" id="pick-photo">
+          <span class="icon" data-icon="camera"></span>
+          <span data-i18n="onboarding.choosePhoto">Choose a photo</span>
+        </button>
+        <input type="file" id="photo-input" accept="image/*" class="sr-only"
+               aria-label="Choose a photo" data-i18n-attr="aria-label:onboarding.choosePhoto">
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="name" data-i18n="onboarding.name">Display name</label>
+        <input class="input" id="name" type="text" maxlength="40" required
+               autocomplete="nickname" placeholder="e.g. Aarav"
+               data-i18n-attr="placeholder:onboarding.namePlaceholder">
+        <p class="field__hint" data-i18n="onboarding.nameHint">Shown next to everything you post. You can change it later.</p>
+        <p class="field__error hidden" id="name-error" data-i18n="onboarding.nameRequired">Please enter a display name.</p>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--block" id="submit">
+        <span class="icon" data-icon="check"></span>
+        <span data-i18n="onboarding.submit">Start using StepBy</span>
+      </button>
+    </form>
+  </main>
+</div>
+
+<script src="../js/icons.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+(function (w, d) {
+  'use strict';
+  var api = w.StepByApi;
+  var auth = w.StepByAuth;
+  var ui = w.StepByUI;
+  var t = w.t;
+
+  /* Reached either with a signed-in but profile-less account, or straight
+     after Google returned an id token for an account we have never seen. */
+  var pendingIdToken = null;
+  try { pendingIdToken = sessionStorage.getItem('stepby.pendingIdToken'); } catch (e) { /* ignore */ }
+
+  if (!pendingIdToken && !auth.isSignedIn()) {
+    location.replace(auth.toApp('/login/'));
+    return;
+  }
+
+  var form = d.getElementById('onboarding-form');
+  var nameEl = d.getElementById('name');
+  var nameError = d.getElementById('name-error');
+  var preview = d.getElementById('avatar-preview');
+  var fileInput = d.getElementById('photo-input');
+  var submitBtn = d.getElementById('submit');
+  var iconDataUrl = '';
+
+  var cached = auth.getCachedUser();
+  if (cached && cached.username) nameEl.value = cached.username;
+
+  d.getElementById('pick-photo').addEventListener('click', function () { fileInput.click(); });
+
+  fileInput.addEventListener('change', async function () {
+    var file = fileInput.files && fileInput.files[0];
+    fileInput.value = '';
+    if (!file) return;
+    try {
+      iconDataUrl = await ui.resizeImage(file, 256, 0.8);
+      preview.src = iconDataUrl;
+    } catch (err) {
+      ui.toast(t('error.generic'), 'error');
+    }
+  });
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var name = nameEl.value.trim();
+    if (!name) {
+      nameError.classList.remove('hidden');
+      nameEl.setAttribute('aria-invalid', 'true');
+      nameEl.focus();
+      return;
+    }
+    nameError.classList.add('hidden');
+    nameEl.removeAttribute('aria-invalid');
+
+    submitBtn.setAttribute('aria-busy', 'true');
+    submitBtn.setAttribute('disabled', '');
+    try {
+      var res = pendingIdToken
+        ? await api.signUpWithGoogle(pendingIdToken, name, iconDataUrl)
+        : await api.updateProfile(name, iconDataUrl);
+
+      if (res && res.access_token) auth.setToken(res.access_token);
+      if (res && res.user) auth.setCachedUser(res.user);
+      try { sessionStorage.removeItem('stepby.pendingIdToken'); } catch (e) { /* ignore */ }
+      location.replace(auth.toApp('/map/'));
+    } catch (err) {
+      ui.toastError(err);
+      submitBtn.removeAttribute('aria-busy');
+      submitBtn.removeAttribute('disabled');
+    }
+  });
+})(window, document);
+</script>
+</body>
+</html>
