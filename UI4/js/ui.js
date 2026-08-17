@@ -1,10 +1,10 @@
 /* ===========================================================
    StepBy UI1 — Shared UI behaviour
 
-   The app bar — logo, title, back button, header actions and the settings
-   dropdown — is rendered from here, so renaming a label or changing the menu
-   is a one-file edit. In the previous build the same markup was pasted into
-   17 pages and drifted apart.
+   The app bar — logo, title, back button and header actions — is rendered
+   from here, so renaming a label or changing the actions is a one-file edit.
+   In the previous build the same markup was pasted into 17 pages and drifted
+   apart.
    =========================================================== */
 (function (w, d) {
   'use strict';
@@ -29,36 +29,22 @@
   /* ---- App bar -----------------------------------------------------------
      Declarative: <header data-component="app-bar" data-title-key="map.title"
                           data-back="true" data-actions="settings,profile">   */
-  /* Header actions, as in the original design: map, a settings dropdown, and
-     profile. There is deliberately no bottom navigation bar — the original
-     UI1 has none on any screen, and everything else hangs off the profile
-     page. */
+  /* Header actions: map, settings, profile — three plain links, and the one
+     you are on is marked. The gear used to open a little dropdown, which
+     meant the settings screen itself could not be reached from it. UI2 links
+     straight to the page, so this does too.
+
+     There is deliberately no bottom navigation bar: UI1 has none on any
+     screen. */
   var ACTIONS = {
     map: { href: '/map/', icon: 'map', key: 'nav.map' },
+    settings: { href: '/settings/', icon: 'gear', key: 'common.settings' },
     profile: { href: '/profile/', icon: 'user', key: 'common.profile' },
     help: { href: '/help/', icon: 'circle-question', key: 'common.help' }
   };
 
   /* UI1 had a page each for appearance and language; they are one screen here,
      so these jump to the right section instead of both landing at the top. */
-  var MENU_ITEMS = [
-    { href: '/settings/#language', icon: 'language', key: 'settings.language' },
-    { href: '/settings/#appearance', icon: 'palette', key: 'settings.appearance' },
-    { href: '/help/', icon: 'circle-question', key: 'common.help' }
-  ];
-
-  function settingsMenuHtml() {
-    return '<details class="menu">' +
-      '<summary class="icon-btn" aria-label="' + esc(t('common.settings')) + '" role="button">' +
-      icon('gear') + '</summary>' +
-      '<div class="menu__panel">' +
-      MENU_ITEMS.map(function (item) {
-        return '<a class="menu__item" href="' + esc(auth.toApp(item.href)) + '">' +
-          icon(item.icon) + '<span>' + esc(t(item.key)) + '</span></a>';
-      }).join('') +
-      '</div></details>';
-  }
-
   function renderAppBar() {
     var bar = d.querySelector('[data-component="app-bar"]');
     if (!bar) return;
@@ -89,7 +75,6 @@
     }
 
     html += '<span class="app-bar__actions">' + actions.map(function (name) {
-      if (name === 'settings') return settingsMenuHtml();
       var a = ACTIONS[name];
       if (!a) return '';
       /* Mark the screen you are already on rather than offering it as a
