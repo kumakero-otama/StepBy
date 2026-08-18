@@ -1,4 +1,6 @@
-# フロントを GitHub Pages へ移行する際の仕様変更まとめ（＋PWA分離デザイン構成）
+# フロントを GitHub Pages へ移行する際の仕様変更まとめ（履歴資料）
+
+> **現在の構成ではありません。** ローカルサーバー＋loopholeから移行した時点の資料です。現在はUI10をGitHub Pagesで配信し、GCE上のHTTPS APIへ接続しています。現行仕様は[`../README.md`](../README.md)と[`../FRONTEND_REPRODUCTION.md`](../FRONTEND_REPRODUCTION.md)を参照してください。
 
 対象：バリアフリー地図アプリ\
 移行方針：フロントのみ GitHub Pages

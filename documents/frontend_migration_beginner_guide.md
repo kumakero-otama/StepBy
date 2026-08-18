@@ -1,4 +1,6 @@
-# フロント移行 手順書（中学生の初心者向け）
+# フロント移行 手順書（履歴資料）
+
+> **現在の構成ではありません。** GitHub Pages移行前の手順です。現在の提出候補はUI10です。再現・UI0への昇格は[`../FRONTEND_REPRODUCTION.md`](../FRONTEND_REPRODUCTION.md)を参照してください。
 
 この手順書は、次の4つを進めるためのものです。
 
@@ -178,4 +180,3 @@ GitHub の `Settings > Pages` で公開設定をONにする。
 ## 8. 参考ドキュメント
 
 - [Frontend_Migration_GitHub_Pages_Spec.md](/home/otama/barrierfree-map/documents/Frontend_Migration_GitHub_Pages_Spec.md)
-

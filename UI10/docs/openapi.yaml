@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Barrierfree Map API
-  version: 1.18.0
+  version: 1.27.2
   description: |
     barrierfree-map の実装（`server.js` と `server/api/*.js`）に基づく API 仕様。
     一部レスポンスは上流サービス（Valhalla / Overpass）の返却を透過的に返すため、
@@ -22,6 +22,9 @@ tags:
   - name: RoadInfo
   - name: PostTags
   - name: Auth
+  - name: ProStatus
+  - name: Tactile
+  - name: ClientLogs
 
 paths:
   /api/config:
@@ -65,6 +68,47 @@ paths:
                       type: integer
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
+
+  /api/stats:
+    get:
+      tags: [Config]
+      summary: 指定日までの総ユーザー数・総点字ブロック記録距離・総道情報件数を取得
+      description: |
+        指定日の終了時点までに作成・記録されたデータを集計します。
+        総ユーザー数は `login.users.is_active = true` かつ `created_at` が指定日以前の件数です。
+        総点字ブロック記録距離は `tactile.sessions.started_at` が指定日以前、かつ
+        `tactile.sessions.is_active = true` と `login.users.is_active = true` の記録をメートル単位で合計します。
+        総道情報件数は `roadinfo.road_info_point.status IN ('active', 'hidden')` かつ
+        `created_at` が指定日以前の件数です。
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+            example: '2026-05-03'
+          description: 集計対象日。未指定時は今日
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          description: invalid_date
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /api/match:
     get:
@@ -263,6 +307,110 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/session/deactivate:
+    post:
+      tags: [Session]
+      summary: セッションを論理無効化
+      description: |
+        対象の `tactile.sessions.is_active` を `false` に更新します。
+        関連データは削除しません。
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId: { type: string }
+                sessionUuid: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      success: { type: boolean, example: true }
+                      sessionId: { type: string }
+                      updated: { type: integer, example: 1 }
+                  - type: object
+                    properties:
+                      success: { type: boolean, example: true }
+                      sessionId: { type: string }
+                      dbDisabled: { type: boolean, example: true }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: session_not_found_or_forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/session/memo:
+    post:
+      tags: [Session]
+      summary: セッションメモを更新
+      description: |
+        対象の `tactile.sessions.memo` を、送信した文字列で上書き更新します。
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [memo]
+              properties:
+                sessionId: { type: string }
+                sessionUuid: { type: string }
+                memo:
+                  type: string
+                  description: 保存するメモ文字列。空文字も指定可能
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      success: { type: boolean, example: true }
+                      sessionId: { type: string }
+                      memo: { type: string }
+                      updated: { type: integer, example: 1 }
+                  - type: object
+                    properties:
+                      success: { type: boolean, example: true }
+                      sessionId: { type: string }
+                      memo: { type: string }
+                      dbDisabled: { type: boolean, example: true }
+        '400':
+          description: invalid_json / missing_session_id / missing_memo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: session_not_found_or_forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /api/records:
     get:
       tags: [Records]
@@ -303,8 +451,58 @@ paths:
                         source: { type: string, nullable: true }
                         created_at: { type: string, format: date-time }
                         geom_geojson: { type: string }
+                        tags:
+                          type: array
+                          items: { type: string }
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/tactile-ranking:
+    get:
+      tags: [Tactile]
+      summary: 指定期間の点字ブロック記録距離ランキングを取得
+      description: |
+        `tactile.sessions.started_at` を基準に指定日数内の記録を集計し、
+        `tactile.session_paths.geom` の距離をメートル単位で合計して順位付けします。
+        集計対象は `tactile.sessions.is_active = true` かつ `login.users.is_active = true` のデータのみです。
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3650
+            default: 7
+          description: 今日から何日前までを集計対象にするか
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: 何位まで返すか
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TactileRankingResponse'
+        '400':
+          description: invalid_days / invalid_limit
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
         '500':
@@ -499,6 +697,9 @@ paths:
     get:
       tags: [RoadInfo]
       summary: 道情報（一覧または詳細）
+      description: |
+        一覧取得モード（`pointId` 未指定）では `roadinfo.road_info_point.status = active` のポイントのみ返します。
+        詳細取得モード（`pointId` 指定）でも `roadinfo.road_info_point.status = deleted` のポイントは返しません。
       security:
         - bearerAuth: []
         - sessionCookie: []
@@ -550,7 +751,15 @@ paths:
 
     post:
       tags: [RoadInfo]
-      summary: 道情報を投稿
+      summary: 道情報を投稿（タグ自動作成対応）
+      description: |
+        投稿時の `tagIds` は以下のように処理されます。
+        - 既存タグコードはそのまま利用
+        - 未登録コードは `roadinfo.road_info_tag` に新規作成
+        - 解決されたタグは `roadinfo.road_info_point_tag` に紐付け（重複は無視）
+        - 完了タグ（code: `complete` / `completed` / `done` / `resolved` / `inactive` または label_ja: `完了`）が含まれる場合、対象ポイントの `roadinfo.road_info_point.status` は `inactive` に更新されます
+        - `status = deleted` を指定した場合は、タグ解決・note追加・media追加を行わず、対象ポイントの `roadinfo.road_info_point.status` 更新だけを実行します
+        また、投稿成功時に対象ポイントの `roadinfo.road_info_point.updated_at` を更新します。
       security:
         - bearerAuth: []
         - sessionCookie: []
@@ -574,7 +783,12 @@ paths:
                   type: string
                 tagIds:
                   type: array
+                  description: タグコード配列。未登録コードは自動作成される
                   items: { type: string }
+                status:
+                  type: string
+                  enum: [active, inactive, hidden, deleted]
+                  description: 任意。指定時は対象ポイントのstatusを更新。`hidden` と `deleted` は完了タグより優先される。`deleted` 指定時は note/media/tag の追加を行わない
                 images:
                   type: array
                   items:
@@ -595,9 +809,18 @@ paths:
                 properties:
                   success: { type: boolean, example: true }
                   pointId: { type: integer }
-                  noteId: { type: integer }
+                  noteId:
+                    type: integer
+                    nullable: true
+                    description: "`status = deleted` 指定時は `null`"
                   tagsCount: { type: integer }
-                  mediaCount: { type: integer }
+                  createdTags:
+                    type: array
+                    description: この投稿で新規作成されたタグコード
+                    items: { type: string }
+                  mediaCount:
+                    type: integer
+                    description: "`status = deleted` 指定時は 0"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -616,6 +839,469 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/pro-status:
+    get:
+      tags: [ProStatus]
+      summary: 現在ログイン中のユーザーの PRO 状態を取得
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: user_not_found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '503':
+          description: db_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    put:
+      tags: [ProStatus]
+      summary: 現在ログイン中のユーザーの PRO 状態を更新
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isPro]
+              properties:
+                isPro:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ProStatusResponse'
+                  - type: object
+                    properties:
+                      ok: { type: boolean, example: true }
+        '400':
+          description: invalid_json or invalid_is_pro
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: guest_pro_locked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: user_not_found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '503':
+          description: db_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/tactile-tags:
+    get:
+      tags: [Tactile]
+      summary: tactile.tags の一覧を取得
+      parameters:
+        - in: query
+          name: activeOnly
+          schema: { type: string, enum: ['1', 'true'] }
+          description: 指定時は is_active = true のタグのみ返す
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  count: { type: integer }
+                  tags:
+                    type: array
+                    items: { $ref: '#/components/schemas/TactileTag' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    post:
+      tags: [Tactile]
+      summary: tactile.tags にタグを追加
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, labelJa]
+              properties:
+                code: { type: string }
+                labelJa: { type: string }
+                sortOrder: { type: integer, default: 0 }
+                isActive: { type: boolean, default: true }
+      responses:
+        '200':
+          description: 既存タグ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  created: { type: boolean, example: false }
+                  requestedBy: { type: integer }
+                  tag: { $ref: '#/components/schemas/TactileTag' }
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  created: { type: boolean, example: true }
+                  requestedBy: { type: integer }
+                  tag: { $ref: '#/components/schemas/TactileTag' }
+        '400':
+          description: invalid_json / invalid_code / invalid_label_ja / invalid_sort_order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/session-tags:
+    get:
+      tags: [Tactile]
+      summary: 現在ログイン中ユーザーの tactile.session_tags 一覧を取得
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - in: query
+          name: sessionId
+          schema: { type: string, format: uuid }
+          description: 指定時は対象セッションのみ返す。sessionUuid でも指定可能
+        - in: query
+          name: sessionUuid
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  count: { type: integer }
+                  sessionTags:
+                    type: array
+                    items: { $ref: '#/components/schemas/SessionTag' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    post:
+      tags: [Tactile]
+      summary: tactile.session_tags に紐づけを追加
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId: { type: string, format: uuid }
+                sessionUuid: { type: string, format: uuid }
+                tagId: { type: integer }
+                tagCode: { type: string }
+      responses:
+        '200':
+          description: 既存紐づけ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  created: { type: boolean, example: false }
+                  sessionTag: { $ref: '#/components/schemas/SessionTag' }
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  created: { type: boolean, example: true }
+                  sessionTag: { $ref: '#/components/schemas/SessionTag' }
+        '400':
+          description: invalid_json / missing_session_id / missing_tag_id_or_tag_code
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: session_not_found_or_forbidden or tag_not_found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/tactile-session-info:
+    get:
+      tags: [Tactile]
+      summary: session_id から記録ユーザー情報とタグ表示名を取得
+      description: |
+        `tactile.sessions.memo` もあわせて返します。
+      parameters:
+        - in: query
+          name: sessionId
+          schema: { type: string, format: uuid }
+          description: sessionUuid でも指定可能
+        - in: query
+          name: sessionUuid
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  session: { $ref: '#/components/schemas/TactileSessionInfo' }
+        '400':
+          description: missing_session_id
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: session_not_found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: database_unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/client-logs/health:
+    get:
+      tags: [ClientLogs]
+      summary: フロント側ログ受信APIの疎通確認
+      description: |
+        クライアント側のログ送信機構がサーバーまで到達できるかを確認します。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  serverRequestId: { type: string }
+                  timestamp: { type: string, format: date-time }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+
+  /api/client-logs:
+    post:
+      tags: [ClientLogs]
+      summary: フロント側で蓄積した通信ログをまとめて送信
+      description: |
+        認証前後どちらの状態でも送信できるログ受信APIです。
+        受信ログは `logs/client_logs.csv` に保存され、`logId` の重複は
+        サーバープロセス内メモリで最新 10000 件を上限に判定します。
+        実装上の上限は、1リクエストあたり 256KB、`logs[]` は最大 200 件です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client, session, logs]
+              properties:
+                client:
+                  type: object
+                  properties:
+                    appVersion: { type: string }
+                    userAgent: { type: string }
+                    platform: { type: string }
+                session:
+                  type: object
+                  properties:
+                    requestId: { type: string }
+                logs:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [logId, createdAt, event, category]
+                    properties:
+                      logId:
+                        type: string
+                        maxLength: 128
+                      createdAt:
+                        type: string
+                        format: date-time
+                      event:
+                        type: string
+                        maxLength: 128
+                      category:
+                        type: string
+                        maxLength: 64
+                      level:
+                        type: string
+                        enum: [debug, info, warn, error]
+                      path:
+                        type: string
+                        maxLength: 256
+                      method:
+                        type: string
+                        maxLength: 16
+                      status:
+                        type: integer
+                        nullable: true
+                      message:
+                        type: string
+                        maxLength: 500
+                      meta:
+                        type: object
+                        additionalProperties: true
+      responses:
+        '200':
+          description: すべて受理または重複扱い
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  serverRequestId: { type: string }
+                  accepted:
+                    type: array
+                    items: { type: string }
+                  duplicate:
+                    type: array
+                    items: { type: string }
+                  rejected:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        logId: { type: string }
+                        reason: { type: string }
+        '207':
+          description: 一部受理、一部拒否
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  serverRequestId: { type: string }
+                  accepted:
+                    type: array
+                    items: { type: string }
+                  duplicate:
+                    type: array
+                    items: { type: string }
+                  rejected:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        logId: { type: string }
+                        reason: { type: string }
+        '400':
+          description: invalid_payload
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    properties:
+                      serverRequestId: { type: string }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '413':
+          description: payload_too_large
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    properties:
+                      serverRequestId: { type: string }
 
   /auth/google:
     post:
@@ -656,6 +1342,41 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/guest:
+    post:
+      tags: [Auth]
+      summary: Guest アカウントでログイン
+      description: |
+        通常ユーザーで未認証の場合は、内部的に Guest ユーザーを新規作成して
+        access token と session Cookie を発行します。
+        すでに Guest セッション中ならその Guest を再利用します。
+      responses:
+        '200':
+          description: OK
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: session Cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          description: invalid_access_token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '409':
+          description: already_authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -797,6 +1518,11 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: guest_profile_locked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           description: user_not_found
           content:
@@ -806,73 +1532,6 @@ paths:
           $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalError'
-
-  /api/admin/database-overview:
-    get:
-      tags: [Admin]
-      summary: 開発DBの容量・許可済みテーブル件数一覧
-      description: 開発環境限定。Bearer認証と開発管理者キーの両方が必要。本番DBには接続しない。
-      security:
-        - bearerAuth: []
-          adminKey: []
-      responses:
-        '200': { description: 開発DB概要 }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { description: admin_required }
-
-  /api/admin/tables/{tableKey}:
-    get:
-      tags: [Admin]
-      summary: 許可済み主要テーブルの最新レコードを読み取る
-      security:
-        - bearerAuth: []
-          adminKey: []
-      parameters:
-        - in: path
-          name: tableKey
-          required: true
-          schema: { type: string }
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
-      responses:
-        '200': { description: テーブル内容 }
-        '404': { description: table_not_allowed }
-
-  /api/admin/experiments:
-    get:
-      tags: [Admin]
-      summary: 開発DB専用API実験データ一覧
-      security:
-        - bearerAuth: []
-          adminKey: []
-      responses:
-        '200': { description: 実験データ一覧 }
-    post:
-      tags: [Admin]
-      summary: 開発DB専用の試験レコードを1件作成
-      security:
-        - bearerAuth: []
-          adminKey: []
-      responses:
-        '201': { description: 作成済み }
-
-  /api/admin/experiments/{experimentId}:
-    delete:
-      tags: [Admin]
-      summary: 自分が作成した開発DB試験レコードを削除
-      description: 本体は削除し、ID・操作・payload digestだけを監査履歴へ残す。
-      security:
-        - bearerAuth: []
-          adminKey: []
-      parameters:
-        - in: path
-          name: experimentId
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: 削除済み }
-        '404': { description: experiment_not_found }
 
   /auth/osm/status:
     get:
@@ -896,7 +1555,7 @@ paths:
   /api/osm/split-plan:
     post:
       summary: 所有記録のWay分割・点字タグ変更案を追記保存
-      description: 公開対象タグだけを扱い、本人限定タグとメモは含めない。
+      description: 公開対象タグだけを扱い、柵・塀・グレーチング・メモは含めない。
       security: [{ bearerAuth: [] }]
       responses:
         '201': { description: 変更案作成 }
@@ -904,6 +1563,7 @@ paths:
   /api/osm/records/{recordId}/publish:
     post:
       summary: 保存確認済みの1記録をStepBy専用OSMアカウントから送信
+      description: authorization=record_save、追記監査、冪等性、最新Version一致を必須とする。
       security: [{ bearerAuth: [] }]
       parameters:
         - { in: path, name: recordId, required: true, schema: { type: string, format: uuid } }
@@ -914,6 +1574,7 @@ paths:
   /api/osm/records/{recordId}/revert:
     post:
       summary: 本人の緑線削除確認に対応する反対changesetを送信
+      description: authorization=owned_green_line_delete。元履歴は削除せず追記する。
       security: [{ bearerAuth: [] }]
       parameters:
         - { in: path, name: recordId, required: true, schema: { type: string, format: uuid } }
@@ -932,10 +1593,6 @@ components:
       type: apiKey
       in: cookie
       name: session
-    adminKey:
-      type: apiKey
-      in: header
-      name: X-StepBy-Admin-Key
 
   responses:
     BadRequest:
@@ -977,6 +1634,18 @@ components:
       properties:
         success: { type: boolean, example: true }
         sessionId: { type: string }
+
+    StatsResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        targetDate:
+          type: string
+          format: date
+          example: '2026-05-03'
+        totalUsers: { type: integer, example: 123 }
+        totalTactileLengthMeters: { type: integer, example: 456789 }
+        totalRoadInfoPosts: { type: integer, example: 321 }
 
     PostTag:
       type: object
@@ -1060,6 +1729,64 @@ components:
         totalTactileLength: { type: number }
         totalRoadPosts: { type: integer }
         totalHearts: { type: integer }
+        isGuest: { type: boolean, example: false }
+
+    ProStatusResponse:
+      type: object
+      properties:
+        userId: { type: integer }
+        isPro: { type: boolean }
+
+    TactileTag:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        labelJa: { type: string }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+
+    SessionTag:
+      type: object
+      properties:
+        sessionId: { type: string, format: uuid }
+        tagId: { type: integer }
+        tagCode: { type: string, nullable: true }
+        tagLabelJa: { type: string, nullable: true }
+        sortOrder: { type: integer, nullable: true }
+        isActive: { type: boolean, nullable: true }
+
+    TactileRankingItem:
+      type: object
+      properties:
+        userId: { type: integer }
+        username: { type: string, nullable: true }
+        rank: { type: integer }
+        iconUrl: { type: string, nullable: true }
+        distanceMeters: { type: integer }
+
+    TactileRankingResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        periodDays: { type: integer, example: 7 }
+        limit: { type: integer, example: 10 }
+        count: { type: integer, example: 10 }
+        ranking:
+          type: array
+          items: { $ref: '#/components/schemas/TactileRankingItem' }
+
+    TactileSessionInfo:
+      type: object
+      properties:
+        sessionId: { type: string, format: uuid }
+        username: { type: string, nullable: true }
+        iconUrl: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        memo: { type: string }
+        tags:
+          type: array
+          items: { type: string }
 
     AuthSuccessResponse:
       type: object
