@@ -84,6 +84,12 @@
   box-shadow: none !important;
 }
 
+.settings-card .language-options {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .settings-card .record-toggle,
 .settings-card .language-option {
   min-height: 52px;
@@ -93,6 +99,14 @@
   background: transparent !important;
   box-shadow: none !important;
   color: var(--ui11-text-strong) !important;
+}
+
+.settings-card .language-option {
+  width: fit-content !important;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 6px 10px 0 !important;
+  box-sizing: border-box;
 }
 
 .settings-card .record-toggle + .record-toggle,
