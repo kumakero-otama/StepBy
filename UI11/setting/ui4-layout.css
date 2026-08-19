@@ -46,6 +46,28 @@
   background: var(--ui11-primary-bg);
 }
 
+.setting-trigger-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.setting-trigger-title {
+  color: var(--ui11-text-strong);
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.setting-trigger-description {
+  color: var(--ui11-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .settings-card .accordion-panel {
   padding: 0 16px 14px !important;
   background: var(--ui11-raised) !important;
