@@ -1,0 +1,106 @@
+/* UI4の設定画面を基準にしたUI11専用レイアウト。
+   項目と処理は変えず、カードの集合を線区切りの一覧として見せる。 */
+.settings-wrap {
+  width: min(480px, 100%) !important;
+  padding: 16px 14px 28px !important;
+  box-sizing: border-box;
+}
+
+.settings-card {
+  display: block !important;
+  overflow: hidden;
+  border: 1px solid var(--ui11-border) !important;
+  border-radius: var(--ui11-radius-md) !important;
+  background: var(--ui11-raised) !important;
+  box-shadow: var(--ui11-shadow-sm) !important;
+}
+
+.settings-card .accordion-item {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.settings-card .accordion-item + .accordion-item {
+  border-top: 1px solid var(--ui11-border) !important;
+}
+
+.settings-card .accordion-trigger {
+  min-height: 64px;
+  padding: 13px 16px !important;
+  background: var(--ui11-raised) !important;
+  color: var(--ui11-text-strong) !important;
+}
+
+.settings-card .accordion-trigger:active {
+  background: var(--ui11-sunken) !important;
+}
+
+.settings-card .accordion-trigger-icon {
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--ui11-primary-bg);
+}
+
+.settings-card .accordion-panel {
+  padding: 0 16px 14px !important;
+  background: var(--ui11-raised) !important;
+}
+
+/* 地図表示と同様に、選択肢は外側のカードで囲まず横線だけで区切る。 */
+.settings-card .setting-group,
+.settings-card .language-options {
+  overflow: visible !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.settings-card .record-toggle,
+.settings-card .language-option {
+  min-height: 52px;
+  padding: 13px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ui11-text-strong) !important;
+}
+
+.settings-card .record-toggle + .record-toggle,
+.settings-card .language-option + .language-option {
+  border-top: 1px solid var(--ui11-border) !important;
+}
+
+.settings-card .language-option:has(input:checked) {
+  color: var(--ui11-primary-dark) !important;
+}
+
+.help-link {
+  min-height: 72px !important;
+  margin: 14px 0 0 !important;
+  border-radius: var(--ui11-radius-md) var(--ui11-radius-md) 0 0 !important;
+  box-shadow: var(--ui11-shadow-sm) !important;
+}
+
+.help-link + .help-link {
+  margin-top: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 0 var(--ui11-radius-md) var(--ui11-radius-md) !important;
+}
+
+@media (max-width: 380px) {
+  .settings-card .record-toggle {
+    gap: 6px;
+  }
+
+  .settings-card .record-label {
+    font-size: 0.7rem;
+  }
+}

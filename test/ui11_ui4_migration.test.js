@@ -69,6 +69,14 @@ for (const localeFile of ["edit.html", "edit_en.html", "edit_hi.html"]) {
   assert.match(profileEditHtml, /id="profile-edit-save-btn"/, `${localeFile} must retain profile saving`);
 }
 
+const settingsLayoutCss = fs.readFileSync(path.join(ui11, "setting/ui4-layout.css"), "utf8");
+assert.match(settingsLayoutCss, /\.settings-card \.accordion-item \+ \.accordion-item\s*\{[\s\S]*?border-top:/, "UI11 settings sections must use UI4-style line separators");
+assert.match(settingsLayoutCss, /\.settings-card \.language-option \+ \.language-option\s*\{[\s\S]*?border-top:/, "UI11 settings choices must be separated by lines");
+for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
+  const settingsHtml = fs.readFileSync(path.join(ui11, "setting", localeFile), "utf8");
+  assert.match(settingsHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 settings layout`);
+}
+
 const htmlFiles = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
