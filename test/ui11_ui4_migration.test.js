@@ -1,0 +1,75 @@
+const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
+
+const root = path.resolve(__dirname, "..");
+const ui10 = path.join(root, "UI10");
+const ui11 = path.join(root, "UI11");
+
+assert.ok(fs.existsSync(ui11), "UI11 must exist");
+
+const functionalFiles = [
+  "auth/auth.js",
+  "auth/token_client.js",
+  "language_redirect.js",
+  "map/async-record-queue.js",
+  "map/map.js",
+  "map/osm-browser-matcher.js",
+  "post_road/Index.html",
+  "profile/edit.js",
+  "profile/profile.js",
+  "pwa.js",
+  "road-info-queue.js",
+  "road_info_detail/road_info_detail.js",
+];
+
+function normalizeUiName(source) {
+  return source.replaceAll("UI11", "UI10").replaceAll("ui11", "ui10");
+}
+
+for (const relativePath of functionalFiles) {
+  const source = fs.readFileSync(path.join(ui10, relativePath), "utf8");
+  const migrated = normalizeUiName(fs.readFileSync(path.join(ui11, relativePath), "utf8"));
+  if (relativePath.endsWith(".html")) {
+    assert.strictEqual(
+      migrated.replace(/\s*<link rel="stylesheet" href="\.\.\/ui4-theme\.css" \/>/, ""),
+      source,
+      `${relativePath} must retain UI10 structure and behavior`
+    );
+  } else {
+    assert.strictEqual(migrated, source, `${relativePath} must retain UI10 behavior`);
+  }
+}
+
+const config = fs.readFileSync(path.join(ui11, "config.js"), "utf8");
+const serviceWorker = fs.readFileSync(path.join(ui11, "sw.js"), "utf8");
+const manifest = JSON.parse(fs.readFileSync(path.join(ui11, "manifest.webmanifest"), "utf8"));
+const theme = fs.readFileSync(path.join(ui11, "ui4-theme.css"), "utf8");
+
+assert.match(config, /APP_BASE_PATH:\s*"\/StepBy\/UI11"/);
+assert.match(config, /UI11 · DEV/);
+assert.match(serviceWorker, /APP_BASE_PATH = "\/StepBy\/UI11"/);
+assert.match(serviceWorker, /stepby-ui11/);
+assert.match(serviceWorker, /ui4-theme\.css/);
+assert.strictEqual(manifest.scope, "/StepBy/UI11/");
+assert.strictEqual(manifest.start_url, "/StepBy/UI11/map/Index.html");
+assert.match(theme, /UI10 remains the functional and structural source of truth/);
+assert.match(theme, /--ui11-shell:\s*480px/);
+
+const htmlFiles = [];
+function walk(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) walk(target);
+    else if (entry.name.endsWith(".html")) htmlFiles.push(target);
+  }
+}
+walk(ui11);
+assert.ok(htmlFiles.length > 0);
+for (const htmlFile of htmlFiles) {
+  const html = fs.readFileSync(htmlFile, "utf8");
+  assert.match(html, /ui4-theme\.css/, `${path.relative(root, htmlFile)} must load the UI4 visual layer`);
+  assert.doesNotMatch(html, /\/StepBy\/UI10\//, `${path.relative(root, htmlFile)} must not target UI10`);
+}
+
+console.log(JSON.stringify({ result: "passed", htmlFiles: htmlFiles.length, functionalFiles: functionalFiles.length }));
