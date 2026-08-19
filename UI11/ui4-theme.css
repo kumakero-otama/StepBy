@@ -246,14 +246,73 @@ select {
 
 .record-toggle-card {
   min-height: 92px !important;
+  padding: 14px 10px 12px !important;
   border: 1.5px solid var(--ui11-border) !important;
   border-radius: var(--ui11-radius-md) !important;
   background: var(--ui11-raised) !important;
+  justify-content: center !important;
+  gap: 8px !important;
 }
 
 .record-toggle-card:has(input:checked) {
-  border-color: var(--ui11-primary) !important;
-  background: var(--ui11-primary-bg) !important;
+  border-color: var(--ui11-card-accent) !important;
+  background: var(--ui11-card-active-bg) !important;
+  box-shadow: inset 0 -3px 0 var(--ui11-card-accent), var(--ui11-shadow-sm) !important;
+}
+
+/* UI4と同じ「アイコンが上、ラベルが下」のカード配置。状態は右上の点と
+   選択色で示すため、旧UI10のON/OFFピルは表示しない。 */
+.record-toggle-card .record-toggle-status {
+  display: none !important;
+}
+
+.record-toggle-card .record-toggle-icon {
+  order: 1;
+  margin: 0 auto !important;
+  background: var(--ui11-card-chip) !important;
+  border: 1px solid var(--ui11-card-edge) !important;
+  color: var(--ui11-card-accent) !important;
+  box-shadow: none !important;
+}
+
+.record-toggle-card .record-title {
+  order: 2;
+  color: var(--ui11-text-strong) !important;
+}
+
+.record-toggle-card:has(input:checked) .record-title {
+  color: var(--ui11-card-accent) !important;
+}
+
+.record-toggle-card:has(input:checked)::after {
+  background: var(--ui11-card-accent) !important;
+  box-shadow: 0 0 6px 2px var(--ui11-card-glow) !important;
+}
+
+.map-info-card {
+  --ui11-card-accent: #3a7bd5;
+  --ui11-card-active-bg: #e8f0fc;
+  --ui11-card-chip: #d6e5f9;
+  --ui11-card-edge: rgba(58, 123, 213, 0.3);
+  --ui11-card-glow: rgba(58, 123, 213, 0.35);
+}
+
+.center-current-card {
+  --ui11-card-accent: #2e9e8f;
+  --ui11-card-active-bg: #e2f4f2;
+  --ui11-card-chip: #c6e9e4;
+  --ui11-card-edge: rgba(46, 158, 143, 0.3);
+  --ui11-card-glow: rgba(46, 158, 143, 0.35);
+}
+
+:root[data-theme="dark"] .map-info-card {
+  --ui11-card-active-bg: #17263f;
+  --ui11-card-chip: #22375c;
+}
+
+:root[data-theme="dark"] .center-current-card {
+  --ui11-card-active-bg: #123330;
+  --ui11-card-chip: #1b4a45;
 }
 
 .version-footer,
