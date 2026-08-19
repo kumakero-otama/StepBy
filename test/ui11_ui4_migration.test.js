@@ -83,7 +83,8 @@ assert.match(settingsLayoutCss, /\.settings-card \.language-option \+ \.language
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const settingsHtml = fs.readFileSync(path.join(ui11, "setting", localeFile), "utf8");
   assert.match(settingsHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 settings layout`);
-  assert.match(settingsHtml, /setting-trigger-description/, `${localeFile} map display must include UI4-style supporting text`);
+  assert.doesNotMatch(settingsHtml, /setting-trigger-description/, `${localeFile} must not place the map explanation under the accordion title`);
+  assert.match(settingsHtml, /<p class="map-display-note">/, `${localeFile} must place the UI4 note below the map choices`);
 }
 
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
@@ -93,7 +94,7 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   assert.match(roadPostHtml, /id="complete-tag-button"/, `${localeFile} must expose complete as a dedicated action`);
   assert.match(roadPostHtml, /id="complete-tag-info-button"[\s\S]*?>i<\/button>/, `${localeFile} must provide completion-tag information`);
 }
-assert.match(settingsLayoutCss, /\.setting-trigger-description\s*\{[\s\S]*?font-size:\s*0\.75rem/, "UI11 map display description must use smaller text");
+assert.match(settingsLayoutCss, /\.settings-card \.map-display-note\s*\{[\s\S]*?font-size:\s*0\.75rem/, "UI11 map display note must use UI4's smaller supporting text");
 assert.match(settingsLayoutCss, /\.settings-card \.language-options\s*\{[\s\S]*?align-items:\s*flex-start/, "UI11 radio choices must not stretch across the settings panel");
 assert.match(settingsLayoutCss, /\.settings-card \.language-option\s*\{[\s\S]*?width:\s*fit-content/, "UI11 radio choice width must follow its label");
 
