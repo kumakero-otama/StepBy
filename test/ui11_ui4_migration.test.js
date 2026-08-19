@@ -56,6 +56,9 @@ assert.strictEqual(manifest.scope, "/StepBy/UI11/");
 assert.strictEqual(manifest.start_url, "/StepBy/UI11/map/Index.html");
 assert.match(theme, /UI10 remains the functional and structural source of truth/);
 assert.match(theme, /--ui11-shell:\s*480px/);
+assert.match(theme, /\.map-row\s*\{[\s\S]*?width:\s*min\(100vw, var\(--ui11-shell\)\)/, "UI11 map must fill the visible app shell");
+assert.match(theme, /\.map-row\s*\{[\s\S]*?flex-shrink:\s*0/, "UI11 map must not shrink away its right edge");
+assert.doesNotMatch(theme, /\.map-row\s*\{[^}]*margin-inline:\s*auto/, "UI11 theme must not shift the full-width map to the right");
 
 const profileEditCss = fs.readFileSync(path.join(ui11, "profile/edit.css"), "utf8");
 assert.match(profileEditCss, /\.form-card:nth-child\(2\)\s*\{[\s\S]*?order:\s*-1/, "UI11 profile edit must place the avatar picker first like UI4");
@@ -76,6 +79,7 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const settingsHtml = fs.readFileSync(path.join(ui11, "setting", localeFile), "utf8");
   assert.match(settingsHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 settings layout`);
 }
+
 
 const htmlFiles = [];
 function walk(directory) {

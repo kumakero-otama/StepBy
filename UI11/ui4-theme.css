@@ -218,8 +218,12 @@ select {
 }
 
 .map-row {
-  max-width: var(--ui11-shell);
-  margin-inline: auto;
+  /* map.css側がレイアウト余白を相殺して画面幅いっぱいに広げる。
+     ここで中央寄せを上書きすると、余った幅が右側だけにはみ出す。 */
+  width: min(100vw, var(--ui11-shell));
+  min-width: min(100vw, var(--ui11-shell));
+  max-width: min(100vw, var(--ui11-shell));
+  flex-shrink: 0;
 }
 
 .record-actions {
