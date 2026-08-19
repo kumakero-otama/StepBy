@@ -652,12 +652,12 @@
         <input id="tag-search" class="tag-search" type="text" placeholder="検索または追加..." enterkeyhint="done" />
         <div id="tag-selected" class="tag-selected"></div>
         <div id="tag-list" class="tag-list"></div>
+        <div class="complete-tag-controls">
+          <button id="complete-tag-button" class="complete-tag-button" type="button" aria-pressed="false" disabled>完了タグ</button>
+          <button id="complete-tag-info-button" class="complete-tag-info-button" type="button" aria-label="完了タグの説明" aria-expanded="false" aria-controls="complete-tag-info"><img src="../assets/buttons/help_66gray.png" alt="" /></button>
+        </div>
+        <p id="complete-tag-info" class="complete-tag-info" hidden>投稿されていた道情報の状態が何らかの理由で完了したことを示すタグです（例: 劣化した点字ブロックという道情報が投稿されていたが、修理された）。これをつけられた道情報は非表示になります。</p>
       </section>
-      <div class="complete-tag-controls">
-        <button id="complete-tag-button" class="complete-tag-button" type="button" aria-pressed="false" disabled>完了タグ</button>
-        <button id="complete-tag-info-button" class="complete-tag-info-button" type="button" aria-label="完了タグの説明" aria-expanded="false" aria-controls="complete-tag-info">i</button>
-      </div>
-      <p id="complete-tag-info" class="complete-tag-info" hidden>投稿されていた道情報の状態が何らかの理由で完了したことを示すタグです（例: 劣化した点字ブロックという道情報が投稿されていたが、修理された）。これをつけられた道情報は非表示になります。</p>
 
       <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v12.5A1.5 1.5 0 0 1 19.5 20H7l-4 3V6a2 2 0 0 1 2-2Zm2.5 5h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h6a1 1 0 1 0 0-2h-6a1 1 0 1 0 0 2Z"/></svg></span><span>詳細</span></h2>
       <textarea class="detail-input" placeholder="ここにテキストを入力..."></textarea>
