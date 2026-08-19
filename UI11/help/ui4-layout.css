@@ -1,0 +1,39 @@
+/* UI4と同様に、各見出しを対応するカードの上へ分けて配置する。 */
+.help-wrap > .help-card {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.help-section + .help-section {
+  margin-top: 24px !important;
+}
+
+.section-title {
+  margin: 0 0 12px !important;
+  color: var(--ui11-text-strong) !important;
+}
+
+/* FAQは質問ごと、使い方とフォームは内容全体を一枚のカードにする。 */
+.faq-item,
+.help-section > .help-list {
+  border: 1px solid var(--ui11-border) !important;
+  border-radius: var(--ui11-radius-md) !important;
+  background: var(--ui11-raised) !important;
+  box-shadow: var(--ui11-shadow-sm) !important;
+}
+
+.help-section > .help-list {
+  padding: 16px 16px 16px 36px !important;
+}
+
+.faq-trigger {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.faq-answer {
+  margin: 0 12px 12px !important;
+}

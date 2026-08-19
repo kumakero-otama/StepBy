@@ -89,6 +89,14 @@ assert.match(settingsLayoutCss, /\.setting-trigger-description\s*\{[\s\S]*?font-
 assert.match(settingsLayoutCss, /\.settings-card \.language-options\s*\{[\s\S]*?align-items:\s*flex-start/, "UI11 radio choices must not stretch across the settings panel");
 assert.match(settingsLayoutCss, /\.settings-card \.language-option\s*\{[\s\S]*?width:\s*fit-content/, "UI11 radio choice width must follow its label");
 
+const helpLayoutCss = fs.readFileSync(path.join(ui11, "help/ui4-layout.css"), "utf8");
+assert.match(helpLayoutCss, /\.help-wrap > \.help-card\s*\{[\s\S]*?background:\s*transparent\s*!important/, "UI11 help sections must not remain inside one shared card");
+assert.match(helpLayoutCss, /\.help-section > \.help-list\s*\{[\s\S]*?background:\s*var\(--ui11-raised\)\s*!important/, "UI11 help content must sit on separate UI4-style cards");
+for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
+  const helpHtml = fs.readFileSync(path.join(ui11, "help", localeFile), "utf8");
+  assert.match(helpHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 help layout`);
+}
+
 
 const htmlFiles = [];
 function walk(directory) {
