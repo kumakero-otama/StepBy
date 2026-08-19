@@ -1,0 +1,23 @@
+{
+  "name": "StepBy UI11",
+  "short_name": "StepBy 11",
+  "start_url": "/StepBy/UI11/map/Index.html",
+  "scope": "/StepBy/UI11/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#2e9e8f",
+  "icons": [
+    {
+      "src": "/StepBy/UI11/assets/StepBy_icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/StepBy/UI11/assets/StepBy_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

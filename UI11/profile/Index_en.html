@@ -1,0 +1,148 @@
+<!doctype html>
+<!-- このファイルは プロフィール画面の英語マークアップを定義する。 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../language_redirect.js"></script>
+    <title>Profile</title>
+    <meta name="theme-color" content="#348f82" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../appbar.css" />
+    <link rel="stylesheet" href="profile.css?v=ui11-osm-oauth-20260804" />
+    <link rel="stylesheet" href="../ui4-theme.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1 class="app-bar-title">PROFILE</h1>
+      <div class="app-bar-actions" aria-label="App menu">
+        <a class="app-bar-icon-link" href="../map/Index.html" aria-label="Home">
+          <img src="../assets/buttons/map_white.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link is-current" href="../profile/Index.html" aria-label="Profile">
+          <img src="../assets/buttons/account.png" alt="" />
+        </a>
+        <a class="app-bar-icon-link" href="../setting/Index.html" aria-label="Settings">
+          <img src="../assets/buttons/setting.png" alt="" />
+        </a>
+      </div>
+    </header>
+    <div class="app-bar-spacer" aria-hidden="true"></div>
+
+    <main class="profile-page">
+      <section class="profile-card">
+        <section class="profile-hero" aria-label="Profile overview">
+          <div class="profile-hero-top">
+            <div class="profile-avatar-wrap">
+              <img
+                id="profile-avatar"
+                class="profile-avatar"
+                src="../assets/account_default.png"
+                alt="Profile icon"
+              />
+            </div>
+          </div>
+
+          <h2 id="profile-username" class="profile-username">username</h2>
+          <script>
+            (function () {
+              // プロフィール画面表示時にキャッシュをできるだけ早くDOMに反映する先回り処理。
+              // HTMLパース中にこの位置で実行されるため、profile.jsの実行を待たずに
+              // キャッシュ済みのユーザー名・アイコンが初回ペイントから表示される。
+              try {
+                var raw = null;
+                try { raw = window.localStorage && localStorage.getItem("cached_profile_user.v1"); } catch (e) {}
+                if (!raw) {
+                  try { raw = window.sessionStorage && sessionStorage.getItem("cached_profile_user.v1"); } catch (e) {}
+                }
+                if (!raw) return;
+                var c = JSON.parse(raw);
+                if (!c) return;
+                if (c.username) {
+                  var unEl = document.getElementById("profile-username");
+                  if (unEl) unEl.textContent = c.username;
+                }
+                if (c.iconUrl) {
+                  var avEl = document.getElementById("profile-avatar");
+                  if (avEl) {
+                    var src = c.iconUrl;
+                    if (src.indexOf("http") !== 0) {
+                      src = "https://stepby-api-8-229-191-182.sslip.io" + (src.indexOf("/") === 0 ? src : "/" + src);
+                    }
+                    // base64データURLでlocalStorageキャッシュ済みであればネットワークを経由せず即時表示する。
+                    var iconRaw = null;
+                    try { iconRaw = localStorage.getItem("cachedProfileIcon.v1"); } catch (e) {}
+                    var usedDataUrl = false;
+                    if (iconRaw) {
+                      try {
+                        var iconCache = JSON.parse(iconRaw);
+                        if (iconCache && iconCache.url === src && iconCache.dataUrl) {
+                          avEl.src = iconCache.dataUrl;
+                          usedDataUrl = true;
+                        }
+                      } catch (e) {}
+                    }
+                    if (!usedDataUrl) {
+                      avEl.src = src;
+                    }
+                  }
+                }
+              } catch (e) {}
+            })();
+          </script>
+          <div class="profile-badge-row">
+            <span id="profile-pro-chip" class="pro-badge hidden">PRO</span>
+          </div>
+          <button id="profile-edit-btn" class="profile-edit-btn" type="button">
+            <img src="../assets/buttons/edit_white.png" alt="" />
+            <span>Edit profile</span>
+          </button>
+        </section>
+
+        <section class="stats-row" aria-label="Achievements">
+          <article class="stat-card">
+            <div class="stat-label">Total tactile records</div>
+            <div id="total-tactile-length" class="stat-value">0m</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Total road info posts</div>
+            <div id="total-road-posts" class="stat-value">0</div>
+          </article>
+        </section>
+
+        <section class="osm-connection-card" aria-labelledby="osm-connection-title">
+          <div>
+            <h2 id="osm-connection-title">Publishing to OpenStreetMap</h2>
+            <p id="osm-connection-status" class="osm-connection-status">Recorded tactile paving information is merged into <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>.</p>
+          </div>
+        </section>
+
+        <div class="profile-wide-actions" aria-label="More actions">
+          <a class="profile-wide-btn" href="../help/Index_en.html">
+            <span class="profile-wide-btn-icon profile-wide-btn-icon-help" aria-hidden="true">
+              <img src="../assets/buttons/help_white.png" alt="" />
+            </span>
+            <span class="profile-wide-btn-body">
+              <span class="profile-wide-btn-label">Help</span>
+              <span class="profile-wide-btn-description">How to use, FAQ, forms, etc.</span>
+            </span>
+          </a>
+          <button id="profile-logout-btn" class="profile-wide-btn profile-wide-btn-danger" type="button">
+            <span class="profile-wide-btn-icon profile-wide-btn-icon-logout" aria-hidden="true">
+              <img src="../assets/buttons/logout_white.png" alt="" />
+            </span>
+            <span class="profile-wide-btn-body">
+              <span class="profile-wide-btn-label">Log out</span>
+              <span class="profile-wide-btn-description">Sign out of your account</span>
+            </span>
+          </button>
+        </div>
+      </section>
+    </main>
+    <script src="../config.js"></script>
+
+    <script src="../auth/token_client.js"></script>
+    <script src="profile.js?v=1.31.1-osm-publication-notice"></script>
+    <script src="../pwa.js"></script>
+  </body>
+</html>

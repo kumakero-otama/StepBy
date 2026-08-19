@@ -6,6 +6,16 @@ StepByのブラウザ/PWAフロントエンドです。現在の提出候補・�
 
 提出までにUI10の確認済み実装をUI0へ移植し、正式URLへ切り替える予定です。現時点ではUI10とUI0を混ぜず、UI10を独立した開発版として維持します。
 
+## UI11デザイン統合版
+
+`UI11/`は、UI10を機能・画面構成の基準として複製し、チームメンバーが`main`へ追加したUI4のデザインを移植した候補です。UI4とUI10は変更せず、UI4の不完全な認証・API・画面構成は取り込んでいません。UI4由来の見た目は`UI11/ui4-theme.css`へ分離しています。
+
+- 入口: `UI11/map/Index.html`
+- PWA scope: `/StepBy/UI11/`
+- API・認証・記録・OSM処理: UI10と同じ
+- デザイン: UI4の配色、最大480pxのモバイルシェル、ヘッダー、カード、フォーム、ボタン
+- 検証: `test/ui11_ui4_migration.test.js`でUI10の機能コード維持とUI11専用パスを確認
+
 ## 現在のUI10
 
 - 公開: GitHub Pages `https://kumakero-otama.github.io/StepBy/UI10/`
