@@ -77,7 +77,9 @@ assert.match(settingsLayoutCss, /\.settings-card \.language-option \+ \.language
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const settingsHtml = fs.readFileSync(path.join(ui11, "setting", localeFile), "utf8");
   assert.match(settingsHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 settings layout`);
+  assert.match(settingsHtml, /setting-trigger-description/, `${localeFile} map display must include UI4-style supporting text`);
 }
+assert.match(settingsLayoutCss, /\.setting-trigger-description\s*\{[\s\S]*?font-size:\s*0\.75rem/, "UI11 map display description must use smaller text");
 
 
 const htmlFiles = [];
