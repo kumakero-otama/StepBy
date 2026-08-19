@@ -71,6 +71,10 @@ for (const localeFile of ["edit.html", "edit_en.html", "edit_hi.html"]) {
   assert.match(profileEditHtml, /id="profile-edit-save-btn"/, `${localeFile} must retain profile saving`);
 }
 
+const profileCss = fs.readFileSync(path.join(ui11, "profile/profile.css"), "utf8");
+assert.match(profileCss, /\.profile-edit-btn\s*\{[\s\S]*?background:\s*rgba\(255, 255, 255, 0\.9\)/, "UI11 profile edit button must use UI4's light hero-button tone");
+assert.match(profileCss, /\.profile-edit-btn\s*\{[\s\S]*?color:\s*#1e7a6d/, "UI11 profile edit button must use UI4's primary-dark text tone");
+
 const settingsLayoutCss = fs.readFileSync(path.join(ui11, "setting/ui4-layout.css"), "utf8");
 assert.match(settingsLayoutCss, /\.settings-card \.accordion-item \+ \.accordion-item\s*\{[\s\S]*?border-top:/, "UI11 settings sections must use UI4-style line separators");
 assert.match(settingsLayoutCss, /\.settings-card \.language-option \+ \.language-option\s*\{[\s\S]*?border-top:/, "UI11 settings choices must be separated by lines");
