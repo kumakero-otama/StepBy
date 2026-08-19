@@ -108,7 +108,9 @@ assert.match(helpLayoutCss, /\.help-section > \.help-list\s*\{[\s\S]*?background
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const helpHtml = fs.readFileSync(path.join(ui11, "help", localeFile), "utf8");
   assert.match(helpHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 help layout`);
+  assert.strictEqual((helpHtml.match(/class="help-heading-icon"/g) || []).length, 3, `${localeFile} must show an icon beside each help subheading`);
 }
+assert.match(helpLayoutCss, /\.help-heading-icon\s*\{[\s\S]*?background:\s*var\(--ui11-primary-bg\)/, "UI11 help heading icons must use the UI4-style icon tile");
 
 
 const htmlFiles = [];
