@@ -57,6 +57,18 @@ assert.strictEqual(manifest.start_url, "/StepBy/UI11/map/Index.html");
 assert.match(theme, /UI10 remains the functional and structural source of truth/);
 assert.match(theme, /--ui11-shell:\s*480px/);
 
+const profileEditCss = fs.readFileSync(path.join(ui11, "profile/edit.css"), "utf8");
+assert.match(profileEditCss, /\.form-card:nth-child\(2\)\s*\{[\s\S]*?order:\s*-1/, "UI11 profile edit must place the avatar picker first like UI4");
+assert.match(profileEditCss, /\.edit-footer\s*\{[\s\S]*?position:\s*static/, "UI11 profile edit save action must follow UI4's document layout");
+for (const localeFile of ["edit.html", "edit_en.html", "edit_hi.html"]) {
+  const profileEditHtml = fs.readFileSync(path.join(ui11, "profile", localeFile), "utf8");
+  assert.match(profileEditHtml, /id="profile-edit-back-btn"/, `${localeFile} must use UI4's back-button header`);
+  assert.match(profileEditHtml, /id="profile-icon-preview"/, `${localeFile} must retain avatar editing`);
+  assert.match(profileEditHtml, /id="profile-username-input"/, `${localeFile} must retain username editing`);
+  assert.match(profileEditHtml, /id="profile-pro-toggle-input"/, `${localeFile} must retain PRO mode editing`);
+  assert.match(profileEditHtml, /id="profile-edit-save-btn"/, `${localeFile} must retain profile saving`);
+}
+
 const htmlFiles = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
