@@ -92,7 +92,8 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   assert.match(roadPostHtml, /new Set\(\["test", "test１", "テスト", "テスト用", "テスト用2"\]\)/, `${localeFile} must hide test-only database tags`);
   assert.match(roadPostHtml, /!isCompleteTag\(tag\).*tag\.label\.toLowerCase\(\)\.includes\(query\)/, `${localeFile} must exclude complete from the normal tag list`);
   assert.match(roadPostHtml, /id="complete-tag-button"/, `${localeFile} must expose complete as a dedicated action`);
-  assert.match(roadPostHtml, /id="complete-tag-info-button"[\s\S]*?>i<\/button>/, `${localeFile} must provide completion-tag information`);
+  assert.match(roadPostHtml, /id="tag-list"[\s\S]*?class="complete-tag-controls"[\s\S]*?<\/section>/, `${localeFile} must keep the completion tag inside the tag card`);
+  assert.match(roadPostHtml, /id="complete-tag-info-button"[\s\S]*?help_66gray\.png[\s\S]*?<\/button>/, `${localeFile} must use the profile PRO help icon`);
 }
 assert.match(settingsLayoutCss, /\.settings-card \.map-display-note\s*\{[\s\S]*?font-size:\s*0\.75rem/, "UI11 map display note must use UI4's smaller supporting text");
 assert.match(settingsLayoutCss, /\.settings-card \.language-options\s*\{[\s\S]*?align-items:\s*flex-start/, "UI11 radio choices must not stretch across the settings panel");

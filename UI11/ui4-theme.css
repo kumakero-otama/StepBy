@@ -246,12 +246,20 @@ select {
 .complete-tag-info-button {
   width: 46px;
   min-height: 46px;
-  border: 1.5px solid #c99418;
-  border-radius: 50%;
-  background: #fff8d8;
-  color: #725100;
-  font: 800 1.1rem/1 Georgia, serif;
+  border: 0;
+  border-radius: var(--ui11-radius-sm);
+  background: transparent;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.complete-tag-info-button img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
 }
 
 .complete-tag-info {
@@ -271,12 +279,16 @@ select {
 }
 
 :root[data-theme="dark"] .complete-tag-button,
-:root[data-theme="dark"] .complete-tag-info-button,
 :root[data-theme="dark"] .complete-tag-info,
 :root[data-theme="dark"] .tag-item-complete {
   border-color: #b98a26 !important;
   background: #493b16 !important;
   color: #ffe49a !important;
+}
+
+:root[data-theme="dark"] .complete-tag-info-button img {
+  filter: brightness(0) invert(1);
+  opacity: 0.78;
 }
 
 :root[data-theme="dark"] .complete-tag-button[aria-pressed="true"] {
