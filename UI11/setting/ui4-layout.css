@@ -87,9 +87,16 @@
   box-sizing: border-box;
 }
 
-.settings-card .record-toggle + .record-toggle,
-.settings-card .language-option + .language-option {
+.settings-card .record-toggle + .record-toggle {
   border-top: 1px solid var(--ui11-border) !important;
+}
+
+.settings-card .option-separator {
+  width: calc(100% - 8px);
+  height: 0;
+  margin: 0 4px;
+  border-top: 1px solid var(--ui11-border);
+  pointer-events: none;
 }
 
 .settings-card .map-display-note {

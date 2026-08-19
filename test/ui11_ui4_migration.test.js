@@ -78,12 +78,13 @@ assert.match(profileCss, /\.profile-edit-btn\s*\{[\s\S]*?color:\s*#1e7a6d/, "UI1
 
 const settingsLayoutCss = fs.readFileSync(path.join(ui11, "setting/ui4-layout.css"), "utf8");
 assert.match(settingsLayoutCss, /\.settings-card \.accordion-item \+ \.accordion-item\s*\{[\s\S]*?border-top:/, "UI11 settings sections must use UI4-style line separators");
-assert.match(settingsLayoutCss, /\.settings-card \.language-option \+ \.language-option\s*\{[\s\S]*?border-top:/, "UI11 settings choices must be separated by lines");
+assert.match(settingsLayoutCss, /\.settings-card \.option-separator\s*\{[\s\S]*?border-top:/, "UI11 settings choices must be separated by lines");
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const settingsHtml = fs.readFileSync(path.join(ui11, "setting", localeFile), "utf8");
   assert.match(settingsHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 settings layout`);
   assert.doesNotMatch(settingsHtml, /setting-trigger-description/, `${localeFile} must not place the map explanation under the accordion title`);
   assert.match(settingsHtml, /<p class="map-display-note">/, `${localeFile} must place the UI4 note below the map choices`);
+  assert.strictEqual((settingsHtml.match(/class="option-separator"/g) || []).length, 6, `${localeFile} must separate all theme, text-size, and language choices`);
 }
 
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
@@ -96,6 +97,7 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
 assert.match(settingsLayoutCss, /\.settings-card \.map-display-note\s*\{[\s\S]*?font-size:\s*0\.75rem/, "UI11 map display note must use UI4's smaller supporting text");
 assert.match(settingsLayoutCss, /\.settings-card \.language-options\s*\{[\s\S]*?align-items:\s*flex-start/, "UI11 radio choices must not stretch across the settings panel");
 assert.match(settingsLayoutCss, /\.settings-card \.language-option\s*\{[\s\S]*?width:\s*fit-content/, "UI11 radio choice width must follow its label");
+assert.match(settingsLayoutCss, /\.settings-card \.option-separator\s*\{[\s\S]*?width:\s*calc\(100% - 8px\)/, "UI11 option separators must be slightly shorter than their panel");
 
 const helpLayoutCss = fs.readFileSync(path.join(ui11, "help/ui4-layout.css"), "utf8");
 assert.match(helpLayoutCss, /\.help-wrap > \.help-card\s*\{[\s\S]*?background:\s*transparent\s*!important/, "UI11 help sections must not remain inside one shared card");
