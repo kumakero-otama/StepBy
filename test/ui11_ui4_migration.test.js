@@ -16,7 +16,6 @@ const functionalFiles = [
   "map/async-record-queue.js",
   "map/map.js",
   "map/osm-browser-matcher.js",
-  "post_road/Index.html",
   "profile/edit.js",
   "profile/profile.js",
   "pwa.js",
@@ -85,6 +84,14 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const settingsHtml = fs.readFileSync(path.join(ui11, "setting", localeFile), "utf8");
   assert.match(settingsHtml, /ui4-layout\.css/, `${localeFile} must load the UI4 settings layout`);
   assert.match(settingsHtml, /setting-trigger-description/, `${localeFile} map display must include UI4-style supporting text`);
+}
+
+for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
+  const roadPostHtml = fs.readFileSync(path.join(ui11, "post_road", localeFile), "utf8");
+  assert.match(roadPostHtml, /new Set\(\["test", "test１", "テスト", "テスト用", "テスト用2"\]\)/, `${localeFile} must hide test-only database tags`);
+  assert.match(roadPostHtml, /!isCompleteTag\(tag\).*tag\.label\.toLowerCase\(\)\.includes\(query\)/, `${localeFile} must exclude complete from the normal tag list`);
+  assert.match(roadPostHtml, /id="complete-tag-button"/, `${localeFile} must expose complete as a dedicated action`);
+  assert.match(roadPostHtml, /id="complete-tag-info-button"[\s\S]*?>i<\/button>/, `${localeFile} must provide completion-tag information`);
 }
 assert.match(settingsLayoutCss, /\.setting-trigger-description\s*\{[\s\S]*?font-size:\s*0\.75rem/, "UI11 map display description must use smaller text");
 assert.match(settingsLayoutCss, /\.settings-card \.language-options\s*\{[\s\S]*?align-items:\s*flex-start/, "UI11 radio choices must not stretch across the settings panel");

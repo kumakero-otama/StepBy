@@ -212,6 +212,77 @@ select {
   color: #fff !important;
 }
 
+/* 道情報の完了状態は、通常タグと区別できる専用の黄色い操作にする。 */
+.complete-tag-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.complete-tag-button {
+  flex: 1;
+  min-height: 46px;
+  border: 1.5px solid #c99418;
+  border-radius: var(--ui11-radius-md);
+  background: #fff2b8;
+  color: #624500;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.complete-tag-button[aria-pressed="true"] {
+  background: #f5bf35;
+  border-color: #a97400;
+  box-shadow: 0 0 0 3px rgba(245, 191, 53, 0.25);
+}
+
+.complete-tag-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.complete-tag-info-button {
+  width: 46px;
+  min-height: 46px;
+  border: 1.5px solid #c99418;
+  border-radius: 50%;
+  background: #fff8d8;
+  color: #725100;
+  font: 800 1.1rem/1 Georgia, serif;
+  cursor: pointer;
+}
+
+.complete-tag-info {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #d8b95d;
+  border-radius: var(--ui11-radius-md);
+  background: #fff9df;
+  color: #59491d;
+  line-height: 1.65;
+}
+
+.tag-item-complete {
+  border-color: #c99418 !important;
+  background: #fff2b8 !important;
+  color: #624500 !important;
+}
+
+:root[data-theme="dark"] .complete-tag-button,
+:root[data-theme="dark"] .complete-tag-info-button,
+:root[data-theme="dark"] .complete-tag-info,
+:root[data-theme="dark"] .tag-item-complete {
+  border-color: #b98a26 !important;
+  background: #493b16 !important;
+  color: #ffe49a !important;
+}
+
+:root[data-theme="dark"] .complete-tag-button[aria-pressed="true"] {
+  background: #735714 !important;
+}
+
 .profile-page,
 .profile-edit-page,
 .settings-wrap,

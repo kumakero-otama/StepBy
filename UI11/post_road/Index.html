@@ -653,6 +653,11 @@
         <div id="tag-selected" class="tag-selected"></div>
         <div id="tag-list" class="tag-list"></div>
       </section>
+      <div class="complete-tag-controls">
+        <button id="complete-tag-button" class="complete-tag-button" type="button" aria-pressed="false" disabled>完了タグ</button>
+        <button id="complete-tag-info-button" class="complete-tag-info-button" type="button" aria-label="完了タグの説明" aria-expanded="false" aria-controls="complete-tag-info">i</button>
+      </div>
+      <p id="complete-tag-info" class="complete-tag-info" hidden>投稿されていた道情報の状態が何らかの理由で完了したことを示すタグです（例: 劣化した点字ブロックという道情報が投稿されていたが、修理された）。これをつけられた道情報は非表示になります。</p>
 
       <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v12.5A1.5 1.5 0 0 1 19.5 20H7l-4 3V6a2 2 0 0 1 2-2Zm2.5 5h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h6a1 1 0 1 0 0-2h-6a1 1 0 1 0 0 2Z"/></svg></span><span>詳細</span></h2>
       <textarea class="detail-input" placeholder="ここにテキストを入力..."></textarea>
@@ -696,6 +701,9 @@
       const tagSearchEl = document.getElementById("tag-search");
       const tagSelectedEl = document.getElementById("tag-selected");
       const tagListEl = document.getElementById("tag-list");
+      const completeTagButtonEl = document.getElementById("complete-tag-button");
+      const completeTagInfoButtonEl = document.getElementById("complete-tag-info-button");
+      const completeTagInfoEl = document.getElementById("complete-tag-info");
       const backButton = document.getElementById("back-button");
       const photoUploadArea = document.getElementById("photo-upload-area");
       const photoLibraryButton = document.getElementById("photo-library-button");
@@ -710,6 +718,7 @@
       const submitLoadingEl = document.getElementById("submit-loading");
       let maxImageBytes = 2 * 1024 * 1024;
       let allTags = [];
+      const hiddenTagLabels = new Set(["test", "test１", "テスト", "テスト用", "テスト用2"]);
       const selectedTagIds = new Set();
       const selectedImages = [];
       let currentMapCenter = null;
@@ -764,15 +773,19 @@
             }
             return { id, label };
           })
-          .filter(Boolean);
+          .filter((tag) => tag && !hiddenTagLabels.has(tag.label));
+      }
+
+      function isCompleteTag(tag) {
+        return Boolean(tag && tag.label.toLowerCase() === "complete");
       }
 
       // 検索語と選択状態から、表示対象タグを絞り込む。
       function getVisibleTags() {
         const query = tagSearchEl ? tagSearchEl.value.trim().toLowerCase() : "";
         const filtered = query
-          ? allTags.filter((tag) => tag.label.toLowerCase().includes(query))
-          : allTags.slice();
+          ? allTags.filter((tag) => !isCompleteTag(tag) && tag.label.toLowerCase().includes(query))
+          : allTags.filter((tag) => !isCompleteTag(tag));
 
         filtered.sort((a, b) => {
           const aSelected = selectedTagIds.has(a.id);
@@ -795,7 +808,7 @@
           return;
         }
         tagSelectedEl.innerHTML = selectedTags
-          .map((tag) => `<button type="button" class="tag-item" data-remove-tag-id="${escapeHtml(tag.id)}">${escapeHtml(tag.label)} ×</button>`)
+          .map((tag) => `<button type="button" class="tag-item${isCompleteTag(tag) ? " tag-item-complete" : ""}" data-remove-tag-id="${escapeHtml(tag.id)}">${isCompleteTag(tag) ? "完了タグ" : escapeHtml(tag.label)} ×</button>`)
           .join("");
       }
 
@@ -820,6 +833,12 @@
       function renderTagUi() {
         renderSelectedTags();
         renderTagList();
+        const completeTag = allTags.find(isCompleteTag);
+        if (completeTagButtonEl) {
+          completeTagButtonEl.disabled = !completeTag;
+          completeTagButtonEl.dataset.tagId = completeTag ? completeTag.id : "";
+          completeTagButtonEl.setAttribute("aria-pressed", completeTag && selectedTagIds.has(completeTag.id) ? "true" : "false");
+        }
       }
 
       // サーバー設定から画像の上限バイト数を取得する。
@@ -952,6 +971,24 @@
           }
           selectedTagIds.delete(removeTagId);
           renderTagUi();
+        });
+      }
+
+      if (completeTagButtonEl) {
+        completeTagButtonEl.addEventListener("click", () => {
+          const tagId = completeTagButtonEl.dataset.tagId;
+          if (!tagId) return;
+          if (selectedTagIds.has(tagId)) selectedTagIds.delete(tagId);
+          else selectedTagIds.add(tagId);
+          renderTagUi();
+        });
+      }
+
+      if (completeTagInfoButtonEl && completeTagInfoEl) {
+        completeTagInfoButtonEl.addEventListener("click", () => {
+          const willOpen = completeTagInfoEl.hidden;
+          completeTagInfoEl.hidden = !willOpen;
+          completeTagInfoButtonEl.setAttribute("aria-expanded", willOpen ? "true" : "false");
         });
       }
 
