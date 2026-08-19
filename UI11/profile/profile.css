@@ -157,13 +157,20 @@ body {
   gap: 8px;
   padding: 10px 22px;
   border-radius: 999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e7a6d;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(18, 69, 63, 0.16);
+  transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.profile-edit-btn:active {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(0.98);
+  box-shadow: 0 1px 5px rgba(18, 69, 63, 0.14);
 }
 
 .profile-edit-btn:disabled,
@@ -185,6 +192,7 @@ body {
   height: 16px;
   object-fit: contain;
   display: block;
+  filter: invert(39%) sepia(24%) saturate(1350%) hue-rotate(121deg) brightness(89%) contrast(88%);
 }
 
 .stats-row {
