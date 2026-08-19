@@ -63,6 +63,23 @@
   color-scheme: dark;
 }
 
+/* appbar.css の旧ダーク配色より後で、UI11のページ背景を一色に統一する。 */
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] main,
+:root[data-theme="dark"] .profile-edit-page,
+:root[data-theme="dark"] .profile-edit-card,
+:root[data-theme="dark"] .profile-edit-card .form-card,
+:root[data-theme="dark"] .edit-footer {
+  background: var(--ui11-page) !important;
+  background-color: var(--ui11-page) !important;
+}
+
+/* 道情報投稿画面の固定投稿欄は、ライト用の白いグラデーションを残さない。 */
+:root[data-theme="dark"] .actions {
+  background: var(--ui11-page) !important;
+  background-color: var(--ui11-page) !important;
+}
+
 html {
   min-height: 100%;
   background: var(--ui11-sunken);

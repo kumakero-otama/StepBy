@@ -59,6 +59,8 @@ assert.match(theme, /--ui11-shell:\s*480px/);
 assert.match(theme, /\.map-row\s*\{[\s\S]*?width:\s*min\(100vw, var\(--ui11-shell\)\)/, "UI11 map must fill the visible app shell");
 assert.match(theme, /\.map-row\s*\{[\s\S]*?flex-shrink:\s*0/, "UI11 map must not shrink away its right edge");
 assert.doesNotMatch(theme, /\.map-row\s*\{[^}]*margin-inline:\s*auto/, "UI11 theme must not shift the full-width map to the right");
+assert.match(theme, /:root\[data-theme="dark"\] \.actions\s*\{[\s\S]*?background:\s*var\(--ui11-page\)\s*!important/, "UI11 road-post actions must not retain their white light-theme background in dark mode");
+assert.match(theme, /:root\[data-theme="dark"\] \.profile-edit-card[\s\S]*?background-color:\s*var\(--ui11-page\)\s*!important/, "UI11 profile editor must use one continuous dark page background");
 
 const profileEditCss = fs.readFileSync(path.join(ui11, "profile/edit.css"), "utf8");
 assert.match(profileEditCss, /\.form-card:nth-child\(2\)\s*\{[\s\S]*?order:\s*-1/, "UI11 profile edit must place the avatar picker first like UI4");
