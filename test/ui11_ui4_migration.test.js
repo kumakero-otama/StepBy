@@ -102,6 +102,7 @@ assert.match(settingsLayoutCss, /\.settings-card \.option-separator\s*\{[\s\S]*?
 
 const helpLayoutCss = fs.readFileSync(path.join(ui11, "help/ui4-layout.css"), "utf8");
 assert.match(helpLayoutCss, /\.help-wrap > \.help-card\s*\{[\s\S]*?background:\s*transparent\s*!important/, "UI11 help sections must not remain inside one shared card");
+assert.match(helpLayoutCss, /\.help-wrap > \.help-card\s*\{[\s\S]*?margin-top:\s*24px\s*!important/, "UI11 help FAQ must have breathing room below the hero");
 assert.match(helpLayoutCss, /\.help-section > \.help-list\s*\{[\s\S]*?background:\s*var\(--ui11-raised\)\s*!important/, "UI11 help content must sit on separate UI4-style cards");
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const helpHtml = fs.readFileSync(path.join(ui11, "help", localeFile), "utf8");

@@ -1,5 +1,6 @@
 /* UI4と同様に、各見出しを対応するカードの上へ分けて配置する。 */
 .help-wrap > .help-card {
+  margin-top: 24px !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
