@@ -1583,6 +1583,23 @@ paths:
         '409': { description: 所有者不一致またはVersion競合 }
         '423': { description: OSM書込み安全条件未成立 }
 
+  /api/osm/reviews:
+    get:
+      summary: 管理者用OSM公開前審査一覧
+      responses:
+        '200': { description: 審査対象一覧 }
+        '403': { description: review_admin_required }
+  /api/osm/reviews/{reviewId}/approve:
+    post:
+      summary: 管理者承認後に安全条件付きでOSMへ送信
+      responses:
+        '200': { description: 承認または送信結果 }
+  /api/osm/reviews/{reviewId}/reject:
+    post:
+      summary: 理由付き却下
+      responses:
+        '200': { description: 却下結果 }
+
 components:
   securitySchemes:
     bearerAuth:
