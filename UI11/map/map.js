@@ -2269,29 +2269,13 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
         to: segment.to,
       })),
       recordId,
-      clientContext: { ui: "UI11", previewOnly: false, osmWriteRequested: true, authorization: "record_save", automaticDraft: true },
+      clientContext: { ui: "UI11", previewOnly: false, osmWriteRequested: false, authorization: "administrator_review_required", automaticDraft: true },
     }),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(result.error || `HTTP ${response.status}`);
     error.code = result.error || `HTTP_${response.status}`;
-    error.status = response.status;
-    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
-    throw error;
-  }
-  return result;
-}
-
-async function publishOsmRecord(recordId) {
-  const response = await authFetch(`/api/osm/records/${encodeURIComponent(recordId)}/publish`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ authorization: "record_save" }),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(result.error || `osm_publish_failed:${response.status}`);
     error.status = response.status;
     error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
     throw error;
@@ -2441,17 +2425,7 @@ async function processQueuedRecording(payload, context) {
       await context.checkpoint("osm_draft_skipped_safely");
       return;
     }
-    await runStage("osm_published", async () => {
-      const publication = await publishOsmRecord(payload.sessionId);
-      if (publication && publication.skipped && publication.reason === "tactile_tag_already_present") {
-        payload.osmAlreadyPresent = true;
-      }
-    });
-    await runStage("osm_network_refreshed", async () => {
-      if (browserOsmMatcher && typeof browserOsmMatcher.refreshAfterOsmChange === "function") {
-        await browserOsmMatcher.refreshAfterOsmChange(payload.rawPoints || []);
-      }
-    });
+    await runStage("osm_review_queued", async () => {});
   } else {
     await runStage("osm_draft_skipped_stepby_only", async () => {});
   }
@@ -2473,9 +2447,6 @@ function initRecordUploadQueue() {
         showMapToast("記録を保存しています…", 2400);
       } else if (event.type === "completed") {
         showMapToast("記録しました。", 2800);
-        if ((event.job && event.job.completedStages || []).includes("osm_published")) {
-          refreshVisibleMapDataAfterOsmChange();
-        }
       } else if (event.type === "retry") {
         showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
       } else if (event.type === "blocked") {
