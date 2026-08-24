@@ -1,7 +1,7 @@
 const GOOGLE_CLIENT_ID="808129330394-dagp56961vbank89vi7bc50pp4u7mgv8.apps.googleusercontent.com";
 let token="",reviews=[],selected=null,map,pathLayer,rawLayer,operationLayer;
 const $=id=>document.getElementById(id);
-const apiUrl=path=>window.AppPath&&typeof AppPath.toApi==="function"?AppPath.toApi(path):path;
+const apiUrl=path=>{if(/^https?:\/\//i.test(path))return path;const base=String(window.APP_CONFIG?.API_BASE_URL||"https://stepby-api-8-229-191-182.sslip.io").replace(/\/+$/,"");return path.startsWith("/api/")||path.startsWith("/auth/")?`${base}${path}`:path};
 async function api(path,options={}){const res=await fetch(apiUrl(path),{...options,headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`,...options.headers}});const body=await res.json().catch(()=>({}));if(!res.ok)throw new Error(body.error||`HTTP ${res.status}`);return body}
 async function googleLogin(response){$("login-status").textContent="確認しています…";try{const res=await fetch(apiUrl("/auth/google"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id_token:response.credential})});const contentType=res.headers.get("content-type")||"";const body=contentType.includes("application/json")?await res.json():{};if(!res.ok)throw new Error(body.error||`認証サーバーへ接続できませんでした（${res.status}）`);if(!body.access_token)throw new Error("認証情報を取得できませんでした");token=body.access_token;$("login").hidden=true;$("app").hidden=false;await load()}catch(e){$("login-status").textContent=`ログインできません: ${e.message}`}}
 function initGoogle(){if(!window.google)return setTimeout(initGoogle,100);google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:googleLogin});google.accounts.id.renderButton($("google-button"),{theme:"outline",size:"large"})}
