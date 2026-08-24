@@ -14,7 +14,6 @@ const functionalFiles = [
   "auth/token_client.js",
   "language_redirect.js",
   "map/async-record-queue.js",
-  "map/map.js",
   "map/osm-browser-matcher.js",
   "profile/edit.js",
   "profile/profile.js",
@@ -26,6 +25,10 @@ const functionalFiles = [
 function normalizeUiName(source) {
   return source.replaceAll("UI11", "UI10").replaceAll("ui11", "ui10");
 }
+
+const ui11MapSource = fs.readFileSync(path.join(ui11, "map/map.js"), "utf8");
+assert.match(ui11MapSource, /osm_review_queued/, "UI11 must stop after creating the administrator review item");
+assert.doesNotMatch(ui11MapSource, /function publishOsmRecord/, "UI11 must not immediately publish a saved record to OSM");
 
 for (const relativePath of functionalFiles) {
   const source = fs.readFileSync(path.join(ui10, relativePath), "utf8");
