@@ -39,10 +39,10 @@ assert.match(ui11MapSource, /recordEnabled = true;[\s\S]{0,180}?確認画面を�
 const ui11MapCss = fs.readFileSync(path.join(ui11, "map/map.css"), "utf8");
 assert.match(ui11MapCss, /\.record-main-btn:disabled\s*\{[\s\S]{0,80}?color:\s*#fff/,
   "the recording label must stay white while stop processing is busy");
-assert.match(ui11MapSource, /function handleNewLocation[\s\S]{0,500}?updateCurrentLocationMarker\(latitude, longitude\)/,
+assert.match(ui11MapSource, /function handleNewLocation[\s\S]{0,600}?if \(!marker\) \{[\s\S]{0,100}?updateCurrentLocationMarker\(latitude, longitude\)/,
   "the first GPS fix must show the current-location pin without waiting for map matching");
-assert.doesNotMatch(ui11MapSource, /updateDisplay\(latitude, longitude, latitude, longitude, true\)/,
-  "a failed or delayed map match must not suppress the raw-location fallback pin");
+assert.match(ui11MapSource, /if \(browser\)[\s\S]{0,350}?updateDisplay\(latitude, longitude, latitude, longitude, true\)/,
+  "a temporary map-match miss must preserve the last matched marker instead of moving it back to raw GPS");
 
 for (const relativePath of functionalFiles) {
   const source = fs.readFileSync(path.join(ui10, relativePath), "utf8");

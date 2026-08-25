@@ -2685,13 +2685,14 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
         updateDisplay(latitude, longitude, browser.lat, browser.lng);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
       } else {
-        updateDisplay(latitude, longitude, latitude, longitude);
+        // 一時的にフィッティングできなくても、直前のフィッティング済みピンを維持する。
+        updateDisplay(latitude, longitude, latitude, longitude, true);
       }
       return browser;
     })
     .catch((error) => {
       console.error('[requestSnappedLocation] Browser fitting error:', error);
-      updateDisplay(latitude, longitude, latitude, longitude);
+      updateDisplay(latitude, longitude, latitude, longitude, true);
       return null;
     });
 }
@@ -2808,8 +2809,11 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
-  // GPS通知と同時に生座標へ表示し、フィッティング完了後に道路上へ更新する。
-  updateCurrentLocationMarker(latitude, longitude);
+  // 初回だけ生座標を仮表示する。以後のGPS通知では直前のフィッティング済み
+  // 座標を維持し、生座標と道路上を往復してピンがちらつく状態を防ぐ。
+  if (!marker) {
+    updateCurrentLocationMarker(latitude, longitude);
+  }
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
     browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
