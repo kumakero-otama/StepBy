@@ -1265,11 +1265,7 @@ function applyCachedLocation(cached) {
   if (rawCoordsEl) {
     rawCoordsEl.textContent = `Raw: ${cached.lat.toFixed(6)}, ${cached.lng.toFixed(6)}`;
   }
-  if (!marker) {
-    marker = L.marker([cached.lat, cached.lng], { icon: redPinIcon }).addTo(map);
-  } else {
-    marker.setLatLng([cached.lat, cached.lng]);
-  }
+  updateCurrentLocationMarker(cached.lat, cached.lng);
   if (isCenterCurrentEnabled()) {
     // 追従ONでは保存済みの地図中心より現在地を必ず優先する。
     suppressAutoCenterAfterReturn = false;
@@ -1277,6 +1273,15 @@ function applyCachedLocation(cached) {
     map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
   }
   return true;
+}
+
+function updateCurrentLocationMarker(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  if (!marker) {
+    marker = L.marker([lat, lng], { icon: redPinIcon }).addTo(map);
+  } else {
+    marker.setLatLng([lat, lng]);
+  }
 }
 
 function setMapControlsCollapsed(collapsed) {
@@ -2680,13 +2685,13 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
         updateDisplay(latitude, longitude, browser.lat, browser.lng);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
       } else {
-        updateDisplay(latitude, longitude, latitude, longitude, true);
+        updateDisplay(latitude, longitude, latitude, longitude);
       }
       return browser;
     })
     .catch((error) => {
       console.error('[requestSnappedLocation] Browser fitting error:', error);
-      updateDisplay(latitude, longitude, latitude, longitude, true);
+      updateDisplay(latitude, longitude, latitude, longitude);
       return null;
     });
 }
@@ -2803,6 +2808,8 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
+  // GPS通知と同時に生座標へ表示し、フィッティング完了後に道路上へ更新する。
+  updateCurrentLocationMarker(latitude, longitude);
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
     browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
@@ -2930,14 +2937,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
 
   if (skipMarker) return;
   
-  // マーカーの更新
-  if (!marker) {
-    console.log('[updateDisplay] Creating new marker');
-    marker = L.marker([snappedLat, snappedLng], { icon: redPinIcon }).addTo(map);
-  } else {
-    console.log('[updateDisplay] Updating existing marker position');
-    marker.setLatLng([snappedLat, snappedLng]);
-  }
+  updateCurrentLocationMarker(snappedLat, snappedLng);
 
   // 記録中のみ軌跡のドットを表示する。記録していないときは現在地の黒い点を出さず、
   // 残っている古い軌跡があれば消去する。
