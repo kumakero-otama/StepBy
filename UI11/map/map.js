@@ -2184,12 +2184,18 @@ async function prepareTraceTagModal() {
     traceMemoInputEl.value = "";
   }
   try {
-    await fetchTactileTags();
+    await Promise.race([
+      fetchTactileTags(),
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error("tactile_tags_fetch_timeout")), 10000);
+      }),
+    ]);
     renderTraceTagUi();
   } catch (err) {
     console.error("[trace_confirm] tactile tags fetch failed:", err);
     traceTagOptions = [];
     renderTraceTagUi();
+    setTraceTagError(getTraceTagText().loadFailed || "タグを読み込めませんでした。キャンセルして、もう一度お試しください。");
   }
 }
 
@@ -2291,8 +2297,8 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
     }
 
     const setupAndBind = async () => {
-      await prepareTraceTagModal();
-
+      // 通信を伴うPROタグ取得より先に確認画面を表示する。タグAPIが遅延しても、
+      // 記録停止後に画面が何も出ず、記録ボタンだけが無効に見える状態にしない。
       traceConfirmModalEl.classList.remove("hidden");
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -2315,6 +2321,9 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       };
 
       const onOk = () => {
+        if (traceConfirmOkBtn.disabled) {
+          return;
+        }
         if (isCurrentUserPro && selectedTraceTagIds.size === 0) {
           setTraceTagError(getTraceTagText().requiredForPro);
           return;
@@ -2327,6 +2336,14 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
 
       traceConfirmOkBtn.addEventListener("click", onOk);
       traceConfirmCancelBtn.addEventListener("click", onCancel);
+
+      // PROモードではタグの読み込み完了まで保存を待つ。キャンセル操作は常に可能。
+      traceConfirmOkBtn.disabled = Boolean(isCurrentUserPro);
+      try {
+        await prepareTraceTagModal();
+      } finally {
+        traceConfirmOkBtn.disabled = false;
+      }
 
       setTimeout(() => {
         if (traceConfirmMap) {
@@ -3680,9 +3697,19 @@ if ("geolocation" in navigator) {
             console.log(
               `[Record] Stop requested. totalRaw=${recordedRawPoints.length}, totalSnapped=${recordedSnappedPoints.length}, activeSession=${currentSessionId || "none"}`
             );
-            await handleRecordStopWithConfirmation();
-            markTrailDotsAsIdle();
-            resetRecordingState();
+            try {
+              await handleRecordStopWithConfirmation();
+              markTrailDotsAsIdle();
+              resetRecordingState();
+            } catch (error) {
+              // 予期しない通信・地図処理エラーで確認画面を開けなかった場合は、
+              // 記録内容を消さず記録中へ戻し、もう一度停止操作を試せるようにする。
+              console.error("[Record] Failed to open or finish confirmation:", error);
+              recordEnabled = true;
+              recordPaused = false;
+              saveRecordingStateToStorage();
+              alert("確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
+            }
           }
         } finally {
           isHandlingRecordToggle = false;

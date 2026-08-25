@@ -560,6 +560,11 @@ body {
   opacity: 1;
 }
 
+/* 記録停止処理中も主ボタンのラベルを白で維持する。処理待ちを文字色の変化に見せない。 */
+.record-main-btn:disabled {
+  color: #fff;
+}
+
 .record-action-icon {
   width: 16px;
   height: 16px;

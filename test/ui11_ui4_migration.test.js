@@ -29,6 +29,16 @@ function normalizeUiName(source) {
 const ui11MapSource = fs.readFileSync(path.join(ui11, "map/map.js"), "utf8");
 assert.match(ui11MapSource, /osm_review_queued/, "UI11 must stop after creating the administrator review item");
 assert.doesNotMatch(ui11MapSource, /function publishOsmRecord/, "UI11 must not immediately publish a saved record to OSM");
+assert.ok(
+  ui11MapSource.indexOf('traceConfirmModalEl.classList.remove("hidden")') < ui11MapSource.indexOf("await prepareTraceTagModal()"),
+  "the save confirmation must appear before waiting for PRO tag network access"
+);
+assert.match(ui11MapSource, /tactile_tags_fetch_timeout/, "PRO tag loading must not leave confirmation setup waiting forever");
+assert.match(ui11MapSource, /recordEnabled = true;[\s\S]{0,180}?確認画面を開けませんでした。記録は保持されています。/,
+  "unexpected confirmation errors must preserve the recording for a retry");
+const ui11MapCss = fs.readFileSync(path.join(ui11, "map/map.css"), "utf8");
+assert.match(ui11MapCss, /\.record-main-btn:disabled\s*\{[\s\S]{0,80}?color:\s*#fff/,
+  "the recording label must stay white while stop processing is busy");
 
 for (const relativePath of functionalFiles) {
   const source = fs.readFileSync(path.join(ui10, relativePath), "utf8");
