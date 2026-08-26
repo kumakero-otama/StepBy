@@ -26,6 +26,7 @@ const safetyConfirmModalEl = document.getElementById("safety-confirm-modal");
 const safetyConfirmAcceptBtn = document.getElementById("safety-confirm-accept");
 const safetyConfirmRejectBtn = document.getElementById("safety-confirm-reject");
 const traceConfirmModalEl = document.getElementById("trace-confirm-modal");
+const traceConfirmTitleEl = document.getElementById("trace-confirm-title");
 const traceConfirmMapEl = document.getElementById("trace-confirm-map");
 const traceConfirmOkBtn = document.getElementById("trace-confirm-ok");
 const traceConfirmCancelBtn = document.getElementById("trace-confirm-cancel");
@@ -832,13 +833,12 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors",
 }).addTo(map);
 
-const redPinIcon = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41], // ピンの先端（下部中央）を座標に合わせる
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+const redPinIcon = L.divIcon({
+  className: "stepby-current-location-icon",
+  html: '<span class="stepby-current-location-pin" aria-hidden="true"></span>',
+  iconSize: [30, 42],
+  iconAnchor: [15, 39],
+  popupAnchor: [0, -36],
 });
 const bluePinIcon = L.icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
@@ -2254,6 +2254,17 @@ function closeTraceConfirmModal() {
     traceConfirmMap.remove();
     traceConfirmMap = null;
   }
+  traceConfirmModalEl?.classList.remove("is-preparing");
+}
+
+function showTraceConfirmPreparing() {
+  if (!traceConfirmModalEl) return;
+  closeTraceConfirmModal();
+  if (traceConfirmTitleEl) traceConfirmTitleEl.textContent = "経路を確認しています…";
+  traceConfirmOkBtn.disabled = true;
+  traceConfirmCancelBtn.disabled = true;
+  traceConfirmModalEl.classList.add("is-preparing");
+  traceConfirmModalEl.classList.remove("hidden");
 }
 
 function isIndependentOsmWalkway(segment) {
@@ -2305,6 +2316,9 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       // 通信を伴うPROタグ取得より先に確認画面を表示する。タグAPIが遅延しても、
       // 記録停止後に画面が何も出ず、記録ボタンだけが無効に見える状態にしない。
       traceConfirmModalEl.classList.remove("hidden");
+      traceConfirmModalEl.classList.remove("is-preparing");
+      if (traceConfirmTitleEl) traceConfirmTitleEl.textContent = "この経路で保存しますか";
+      traceConfirmCancelBtn.disabled = false;
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -2359,6 +2373,7 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
 
     setupAndBind().catch((err) => {
       console.error("[trace_confirm] modal setup failed:", err);
+      closeTraceConfirmModal();
       resolve("cancel");
     });
   });
@@ -2544,13 +2559,21 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
+  // OSM取得と経路確定の開始時点で表示し、処理中の無反応状態をなくす。
+  showTraceConfirmPreparing();
+
   let osmPreview = null;
   if (browserOsmMatcher) {
     try {
       // 軌跡の開始・途中・終了をすべて道路網で覆ってから経路を確定する。
       // 保存直前はブラウザ・サーバー双方のキャッシュを使わず、最新のOSM Wayで確定する。
       // 別端末や管理処理による直前のOSM変更を、古いWayとして送信しないため。
-      await browserOsmMatcher.ensureTraceCoverage(allTracePoints, 450, { force: true });
+      await Promise.race([
+        browserOsmMatcher.ensureTraceCoverage(allTracePoints, 450, { force: true }),
+        new Promise((_, reject) => {
+          window.setTimeout(() => reject(new Error("trace_coverage_timeout")), 12000);
+        }),
+      ]);
     } catch (error) {
       console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
     }
@@ -2570,6 +2593,7 @@ async function handleRecordStopWithConfirmation() {
   }
 
   if (!osmPreview) {
+    closeTraceConfirmModal();
     alert("ブラウザ側でOSM Way上の連続した経路を確定できませんでした。記録は保存されていません。");
     await cancelRecordingSessions(allSessionIds);
     return;
@@ -2577,6 +2601,7 @@ async function handleRecordStopWithConfirmation() {
   const previewCoords = osmPreview.segments.flatMap((segment, index) =>
     segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
+    closeTraceConfirmModal();
     alert("保存確認用の経路を生成できませんでした。");
     await cancelRecordingSessions(allSessionIds);
     return;
@@ -3709,6 +3734,7 @@ if ("geolocation" in navigator) {
               // 予期しない通信・地図処理エラーで確認画面を開けなかった場合は、
               // 記録内容を消さず記録中へ戻し、もう一度停止操作を試せるようにする。
               console.error("[Record] Failed to open or finish confirmation:", error);
+              closeTraceConfirmModal();
               recordEnabled = true;
               recordPaused = false;
               saveRecordingStateToStorage();

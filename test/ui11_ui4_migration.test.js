@@ -43,6 +43,14 @@ assert.match(ui11MapSource, /function handleNewLocation[\s\S]{0,600}?if \(!marke
   "the first GPS fix must show the current-location pin without waiting for map matching");
 assert.match(ui11MapSource, /if \(browser\)[\s\S]{0,350}?updateDisplay\(latitude, longitude, latitude, longitude, true\)/,
   "a temporary map-match miss must preserve the last matched marker instead of moving it back to raw GPS");
+assert.ok(ui11MapSource.indexOf("showTraceConfirmPreparing();") < ui11MapSource.indexOf("browserOsmMatcher.ensureTraceCoverage"),
+  "record stop must show its confirmation progress window before refreshing OSM data");
+assert.match(ui11MapSource, /const redPinIcon = L\.divIcon\(/,
+  "the current-location pin must render locally without waiting for an external marker image");
+assert.doesNotMatch(ui11MapSource, /marker-icon-2x-red\.png/,
+  "the current-location pin must not depend on GitHub-hosted marker artwork");
+assert.match(ui11MapSource, /trace_coverage_timeout/,
+  "OSM refresh must not leave the visible confirmation progress window waiting forever");
 
 for (const relativePath of functionalFiles) {
   const source = fs.readFileSync(path.join(ui10, relativePath), "utf8");
