@@ -1314,32 +1314,6 @@ body {
 
 @keyframes trace-confirm-spin { to { transform: rotate(360deg); } }
 
-.stepby-current-location-icon { background: transparent; border: 0; }
-
-.stepby-current-location-pin {
-  position: relative;
-  display: block;
-  width: 25px;
-  height: 25px;
-  margin: 2px;
-  background: #df342f;
-  border: 3px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.38);
-  transform: rotate(-45deg);
-}
-
-.stepby-current-location-pin::after {
-  content: "";
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  top: 9px;
-  left: 9px;
-  background: #fff;
-  border-radius: 50%;
-}
-
 .safety-confirm-modal {
   position: fixed;
   inset: 0;
