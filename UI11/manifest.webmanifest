@@ -1,6 +1,6 @@
 {
-  "name": "StepBy UI11",
-  "short_name": "StepBy 11",
+  "name": "StepBy",
+  "short_name": "StepBy",
   "start_url": "/StepBy/UI11/map/Index.html",
   "scope": "/StepBy/UI11/",
   "display": "standalone",

@@ -77,6 +77,8 @@ assert.match(serviceWorker, /stepby-ui11/);
 assert.match(serviceWorker, /ui4-theme\.css/);
 assert.strictEqual(manifest.scope, "/StepBy/UI11/");
 assert.strictEqual(manifest.start_url, "/StepBy/UI11/map/Index.html");
+assert.strictEqual(manifest.name, "StepBy");
+assert.strictEqual(manifest.short_name, "StepBy");
 assert.match(theme, /UI10 remains the functional and structural source of truth/);
 assert.match(theme, /--ui11-shell:\s*480px/);
 assert.match(theme, /\.map-row\s*\{[\s\S]*?width:\s*min\(100vw, var\(--ui11-shell\)\)/, "UI11 map must fill the visible app shell");
