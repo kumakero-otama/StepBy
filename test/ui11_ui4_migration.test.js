@@ -70,7 +70,8 @@ const manifest = JSON.parse(fs.readFileSync(path.join(ui11, "manifest.webmanifes
 const theme = fs.readFileSync(path.join(ui11, "ui4-theme.css"), "utf8");
 
 assert.match(config, /APP_BASE_PATH:\s*"\/StepBy\/UI11"/);
-assert.match(config, /UI11 · DEV/);
+assert.doesNotMatch(config, /UI11 · DEV|data-stepby-dev-badge|stepbyDevBadge/,
+  "UI11 must not display a development badge over general-user screens");
 assert.match(serviceWorker, /APP_BASE_PATH = "\/StepBy\/UI11"/);
 assert.match(serviceWorker, /stepby-ui11/);
 assert.match(serviceWorker, /ui4-theme\.css/);
