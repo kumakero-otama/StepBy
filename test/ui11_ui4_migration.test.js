@@ -45,10 +45,8 @@ assert.match(ui11MapSource, /if \(browser\)[\s\S]{0,350}?updateDisplay\(latitude
   "a temporary map-match miss must preserve the last matched marker instead of moving it back to raw GPS");
 assert.ok(ui11MapSource.indexOf("showTraceConfirmPreparing();") < ui11MapSource.indexOf("browserOsmMatcher.ensureTraceCoverage"),
   "record stop must show its confirmation progress window before refreshing OSM data");
-assert.match(ui11MapSource, /const redPinIcon = L\.divIcon\(/,
-  "the current-location pin must render locally without waiting for an external marker image");
-assert.doesNotMatch(ui11MapSource, /marker-icon-2x-red\.png/,
-  "the current-location pin must not depend on GitHub-hosted marker artwork");
+assert.match(ui11MapSource, /const redPinIcon = L\.icon\([\s\S]{0,300}?marker-icon-2x-red\.png/,
+  "the current-location marker must retain the original red pin artwork");
 assert.match(ui11MapSource, /trace_coverage_timeout/,
   "OSM refresh must not leave the visible confirmation progress window waiting forever");
 
