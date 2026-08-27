@@ -904,6 +904,8 @@ let isHandlingRecordToggle = false;
 let isHandlingPauseToggle = false;
 let currentUserId = null;
 let latestSnappedLocation = null;
+let hasLiveGpsFix = false;
+let hasLiveMatchedFix = false;
 let mapLayoutSyncTimer = null;
 let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
@@ -2695,6 +2697,9 @@ async function saveFittingComparison(payload) {
 
 // 一般利用の現在地フィッティングはブラウザ版だけで完結する。
 function requestSnappedLocation(latitude, longitude, accuracy = null) {
+  // 起動時キャッシュを再フィッティングして「現在位置」と確定しない。
+  // OSからライブGPSを1回以上受け取ってから処理を始める。
+  if (!hasLiveGpsFix) return;
   if (!currentUserId) {
     setComparisonStatus("ログイン待ち", "waiting");
     return;
@@ -2706,19 +2711,24 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
     : Promise.resolve({ match: null, duration: 0, error: new Error("browser matcher unavailable") });
   return browserPromise
     .then((browserResult) => {
+      if (!latestLocation || latestLocation.lat !== latitude || latestLocation.lng !== longitude) {
+        return null;
+      }
       const browser = browserResult.match;
       if (browser) {
+        hasLiveMatchedFix = true;
         updateDisplay(latitude, longitude, browser.lat, browser.lng);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
       } else {
-        // 一時的にフィッティングできなくても、直前のフィッティング済みピンを維持する。
-        updateDisplay(latitude, longitude, latitude, longitude, true);
+        // 初回フィッティング前だけ生座標を使う。成功後の一時失敗では直前の
+        // フィッティング済み表示を維持する。
+        if (!hasLiveMatchedFix) updateDisplay(latitude, longitude, latitude, longitude);
       }
       return browser;
     })
     .catch((error) => {
       console.error('[requestSnappedLocation] Browser fitting error:', error);
-      updateDisplay(latitude, longitude, latitude, longitude, true);
+      if (!hasLiveMatchedFix) updateDisplay(latitude, longitude, latitude, longitude);
       return null;
     });
 }
@@ -2835,10 +2845,22 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
-  // 初回だけ生座標を仮表示する。以後のGPS通知では直前のフィッティング済み
-  // 座標を維持し、生座標と道路上を往復してピンがちらつく状態を防ぐ。
-  if (!marker) {
+  updateTimestamp();
+  if (rawCoordsEl) rawCoordsEl.textContent = `Raw: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  if (!hasLiveGpsFix) {
+    // 起動時キャッシュを「現在のフィッティング結果」として扱わない。
+    hasLiveGpsFix = true;
+    latestSnappedLocation = null;
+  }
+  // 最初のライブ・フィッティングが得られるまでは、新しいGPSをそのまま表示する。
+  // 認証やOSM読込みが遅れていても、前回起動時の位置へ取り残さない。
+  if (!hasLiveMatchedFix) {
     updateCurrentLocationMarker(latitude, longitude);
+    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+    if (isCenterCurrentEnabled()) {
+      suppressAutoCenterAfterReturn = false;
+      map.setView([latitude, longitude], map.getZoom(), { animate: false });
+    }
   }
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
