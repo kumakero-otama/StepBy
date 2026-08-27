@@ -38,9 +38,9 @@ assert.match(ui11MapSource, /recordEnabled = true;[\s\S]{0,180}?確認画面を�
 const ui11MapCss = fs.readFileSync(path.join(ui11, "map/map.css"), "utf8");
 assert.match(ui11MapCss, /\.record-main-btn:disabled\s*\{[\s\S]{0,80}?color:\s*#fff/,
   "the recording label must stay white while stop processing is busy");
-assert.match(ui11MapSource, /function handleNewLocation[\s\S]{0,600}?if \(!marker\) \{[\s\S]{0,100}?updateCurrentLocationMarker\(latitude, longitude\)/,
-  "the first GPS fix must show the current-location pin without waiting for map matching");
-assert.match(ui11MapSource, /if \(browser\)[\s\S]{0,350}?updateDisplay\(latitude, longitude, latitude, longitude, true\)/,
+assert.match(ui11MapSource, /function handleNewLocation[\s\S]{0,1000}?if \(!hasLiveMatchedFix\) \{[\s\S]{0,160}?updateCurrentLocationMarker\(latitude, longitude\)/,
+  "live GPS must replace the previous-launch marker while the first map match is pending");
+assert.match(ui11MapSource, /if \(browser\)[\s\S]{0,500}?else \{[\s\S]{0,180}?if \(!hasLiveMatchedFix\) updateDisplay\(latitude, longitude, latitude, longitude\)/,
   "a temporary map-match miss must preserve the last matched marker instead of moving it back to raw GPS");
 assert.ok(ui11MapSource.indexOf("showTraceConfirmPreparing();") < ui11MapSource.indexOf("browserOsmMatcher.ensureTraceCoverage"),
   "record stop must show its confirmation progress window before refreshing OSM data");
@@ -48,6 +48,12 @@ assert.match(ui11MapSource, /const redPinIcon = L\.icon\([\s\S]{0,300}?marker-ic
   "the current-location marker must retain the original red pin artwork");
 assert.match(ui11MapSource, /trace_coverage_timeout/,
   "OSM refresh must not leave the visible confirmation progress window waiting forever");
+assert.match(ui11MapSource, /if \(!hasLiveGpsFix\)[\s\S]{0,180}?latestSnappedLocation = null/,
+  "the first live GPS fix must invalidate the previous-launch snapped location");
+assert.match(ui11MapSource, /if \(!hasLiveMatchedFix\)[\s\S]{0,350}?map\.setView\(\[latitude, longitude\]/,
+  "live GPS must update the marker and auto-center while the first map match is pending");
+assert.match(ui11MapSource, /function requestSnappedLocation[\s\S]{0,180}?if \(!hasLiveGpsFix\) return/,
+  "a cached previous-launch coordinate must never be accepted as a new live map match");
 
 for (const relativePath of functionalFiles) {
   const source = fs.readFileSync(path.join(ui10, relativePath), "utf8");

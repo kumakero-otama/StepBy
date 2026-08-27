@@ -1,5 +1,5 @@
 // UI11開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.33.8-pwa-name-stepby";
+const CACHE_VERSION = "1.33.9-live-location-priority";
 const APP_BASE_PATH = "/StepBy/UI11";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 // 時刻を含めるとService Worker再起動のたびに別名になり、既存キャッシュを
