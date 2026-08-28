@@ -20,7 +20,7 @@ assert.match(css, /data-theme="dark"[\s\S]*?\.osm-disconnect-btn[\s\S]*?\.trace-
   "dark mode must cover secondary buttons");
 assert.match(css, /data-theme="dark"[\s\S]*?background:\s*#11171b !important/,
   "dark mode must color the root canvas below short pages");
-assert.match(css, /data-theme="dark"[\s\S]*?\.record-actions[\s\S]*?\.tactile-session-card[\s\S]*?\.fitting-detail-panel/,
+assert.match(css, /data-theme="dark"[\s\S]*?\.record-actions[\s\S]*?\.tactile-session-card[\s\S]*?\.detail-main/,
   "dark mode must cover map action and detail cards");
 assert.match(css, /\.record-action-btn[\s\S]*?font-size:\s*0\.9375rem !important/,
   "record and pause labels must follow the selected root font size");

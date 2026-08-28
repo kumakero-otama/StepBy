@@ -139,7 +139,6 @@
   .tactile-session-card-edit-action, .safety-confirm-panel,
   .trace-confirm-panel, .trace-confirm-actions, .trace-tag-panel,
   .trace-tag-list, .trace-tag-option, .trace-memo-panel,
-  .fitting-comparison-panel, .comparison-values > div, .fitting-detail-panel,
   .tag-panel, .tag-list,
   .tag-item, .tag-option, .photo-upload-area, .preview-card,
   .detail-loading-card, .detail-main, .detail-content, .section-card,
@@ -189,8 +188,7 @@
   .help-link-description, .faq-answer, .help-list, .record-label,
   .profile-wide-btn-description, .stat-label, .version-footer,
   #app-version, .trace-memo-note, .tag-selected-empty,
-  .photo-upload-copy, .post-count, .comparison-legend,
-  .comparison-values dt, .trace-tag-list-empty
+  .photo-upload-copy, .post-count, .trace-tag-list-empty
 ) {
   color: var(--stepby-muted) !important;
 }

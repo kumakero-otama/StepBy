@@ -1100,40 +1100,6 @@ body {
   --toggle-card-glow: rgba(58, 163, 91, 0.35);
 }
 
-.fitting-comparison-panel {
-  margin: 12px 12px 0;
-  padding: 14px;
-  border: 1px solid rgba(46, 158, 143, 0.25);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 4px 18px rgba(27, 65, 61, 0.08);
-}
-
-.comparison-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.comparison-heading-row h2 { margin: 0; font-size: 15px; color: #24313c; }
-.comparison-status { padding: 4px 9px; border-radius: 999px; background: #eef2f5; color: #65747f; font-size: 11px; font-weight: 700; }
-.comparison-status[data-state="success"] { background: #daf4ec; color: #16695d; }
-.comparison-status[data-state="error"] { background: #ffe5e2; color: #a52c25; }
-.comparison-status[data-state="loading"] { background: #e8f0ff; color: #285ea8; }
-.comparison-legend { display: flex; flex-wrap: wrap; gap: 8px 15px; margin-top: 11px; font-size: 11px; color: #51616d; }
-.comparison-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.legend-dot.raw { background: #68747d; }
-.legend-line { width: 18px; height: 4px; border-radius: 4px; display: inline-block; }
-.legend-line.valhalla { background: #2474d2; }
-.legend-line.browser { background: #1b9b68; }
-.legend-line.difference { height: 0; border-top: 3px dashed #d84b43; border-radius: 0; }
-.comparison-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; }
-.comparison-values div { min-width: 0; padding: 8px 9px; border-radius: 10px; background: #f6f9f9; }
-.comparison-values dt { font-size: 10px; color: #73818a; }
-.comparison-values dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 700; color: #24313c; }
-.comparison-test-button { width: 100%; margin-top: 11px; padding: 10px 12px; border: 1px solid #2e9e8f; border-radius: 10px; background: #effaf7; color: #1c7569; font-weight: 700; cursor: pointer; }
-.comparison-test-button:disabled { opacity: .55; cursor: wait; }
-
-@media (max-width: 680px) {
-  .comparison-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
 .map-info-card .record-toggle-icon {
   color: #3aa35b;
   background: rgba(58, 163, 91, 0.12);
@@ -1452,20 +1418,6 @@ body {
   overflow: hidden;
 }
 
-.fitting-detail-button { margin-top: 8px; background: #2f5f8f; }
-.fitting-detail-modal { position: fixed; inset: 0; z-index: 5000; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.58); }
-.fitting-detail-modal.hidden { display: none; }
-.fitting-detail-panel { width: min(1100px, 96vw); max-height: 88vh; overflow: auto; padding: 18px; border-radius: 14px; background: white; color: #17212b; }
-.fitting-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.fitting-detail-heading h2 { margin: 0; font-size: 1.15rem; }
-.fitting-detail-heading button { padding: 8px 14px; border: 0; border-radius: 8px; background: #333; color: white; }
-.fitting-detail-table-wrap { overflow-x: auto; }
-.fitting-detail-table-wrap table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-.fitting-detail-table-wrap th,.fitting-detail-table-wrap td { padding: 7px; border: 1px solid #ccd5dc; text-align: left; white-space: nowrap; }
-.fitting-detail-table-wrap th { background: #edf3f7; }
-.fitting-detail-osm-status { margin: 14px 0; padding: 12px 14px; border: 1px solid #9eb7ca; border-radius: 10px; background: #edf5fa; line-height: 1.65; overflow-wrap: anywhere; }
-.fitting-detail-osm-status[data-status="merged"] { border-color: #62a984; background: #edf9f2; }
-
 .osm-owned-record-delete-button {
   width: 100%;
   border: 0;
@@ -1482,10 +1434,6 @@ body {
   opacity: 0.65;
   cursor: default;
 }
-.fitting-detail-osm-status[data-status="reverted"] { border-color: #9aa5ae; background: #f3f5f6; }
-.fitting-detail-osm-status[data-status="failed"],.fitting-detail-osm-status[data-status="conflict"] { border-color: #d78278; background: #fff1ef; }
-.fitting-detail-revert-button { display: block; margin-top: 10px; padding: 9px 13px; border: 0; border-radius: 8px; background: #8a4b28; color: white; font-weight: 700; }
-
 .trace-tag-panel {
   border: 1px solid #cfcfcf;
   border-radius: 10px;

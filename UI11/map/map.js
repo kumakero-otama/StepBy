@@ -40,21 +40,7 @@ const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
-const comparisonStatusEl = document.getElementById("comparison-status");
-const comparisonValhallaWayEl = document.getElementById("comparison-valhalla-way");
-const comparisonBrowserWayEl = document.getElementById("comparison-browser-way");
-const comparisonDistanceEl = document.getElementById("comparison-distance");
-const comparisonPriorityEl = document.getElementById("comparison-priority");
-const comparisonDurationEl = document.getElementById("comparison-duration");
-const comparisonSaveStatusEl = document.getElementById("comparison-save-status");
-const comparisonTestButtonEl = document.getElementById("comparison-test-button");
-const osmPreviewTestButtonEl = document.getElementById("osm-preview-test-button");
-const fittingDetailButtonEl = document.getElementById("fitting-detail-button");
-const fittingDetailModalEl = document.getElementById("fitting-detail-modal");
-const fittingDetailBodyEl = document.getElementById("fitting-detail-body");
-const fittingDetailCloseEl = document.getElementById("fitting-detail-close");
-// UI11の通常記録はブラウザ側マッチャーを正として保存する。
-// Valhallaは開発用の比較パネルだけで並行実行し、通常記録の確定には使わない。
+// UI11の通常記録はブラウザ側マッチャーだけで完結する。
 const browserOsmMatcher = window.StepByOsmMatcher
   ? new window.StepByOsmMatcher.BrowserMatcher({ fetcher: authFetch, radiusMeters: 1000 })
   : null;
@@ -886,12 +872,6 @@ let currentSessionRawStartIndex = 0;
 let currentSessionSnappedStartIndex = 0;
 let recordingSessionIds = []; // 記録開始から終了までに作成したセッションID一覧
 let tracePolyline = null; // trace_attributesの結果を表示する黄緑線
-let comparisonRawMarker = null;
-let comparisonValhallaMarker = null;
-let comparisonBrowserMarker = null;
-let comparisonValhallaLine = null;
-let comparisonBrowserLine = null;
-let comparisonDifferenceLine = null;
 let currentSessionId = null;
 if (typeof window !== "undefined" && window.__restoredRecordingSessionId) {
   currentSessionId = window.__restoredRecordingSessionId;
@@ -2648,62 +2628,12 @@ async function handleRecordStopWithConfirmation() {
   }
 }
 
-function setComparisonStatus(label, state) {
-  if (!comparisonStatusEl) return;
-  comparisonStatusEl.textContent = label;
-  comparisonStatusEl.dataset.state = state;
-}
-
-function removeComparisonLayer(layer) {
-  if (layer && map.hasLayer(layer)) map.removeLayer(layer);
-}
-
-function renderFittingComparison(raw, valhalla, browser, durations) {
-  removeComparisonLayer(comparisonRawMarker);
-  removeComparisonLayer(comparisonValhallaMarker);
-  removeComparisonLayer(comparisonBrowserMarker);
-  removeComparisonLayer(comparisonValhallaLine);
-  removeComparisonLayer(comparisonBrowserLine);
-  removeComparisonLayer(comparisonDifferenceLine);
-  comparisonRawMarker = L.circleMarker([raw.lat, raw.lng], { radius: 6, color: "#fff", weight: 2, fillColor: "#68747d", fillOpacity: 1 }).addTo(map);
-  comparisonValhallaMarker = valhalla ? L.circleMarker([valhalla.lat, valhalla.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#2474d2", fillOpacity: .9 }).addTo(map) : null;
-  comparisonBrowserMarker = browser ? L.circleMarker([browser.lat, browser.lng], { radius: 4, color: "#fff", weight: 1, fillColor: "#1b9b68", fillOpacity: 1 }).addTo(map) : null;
-  comparisonValhallaLine = valhalla ? L.polyline([[raw.lat, raw.lng], [valhalla.lat, valhalla.lng]], { color: "#2474d2", weight: 5, opacity: .9 }).addTo(map) : null;
-  comparisonBrowserLine = browser ? L.polyline([[raw.lat, raw.lng], [browser.lat, browser.lng]], { color: "#1b9b68", weight: 5, opacity: .9 }).addTo(map) : null;
-  comparisonDifferenceLine = valhalla && browser ? L.polyline([[valhalla.lat, valhalla.lng], [browser.lat, browser.lng]], { color: "#d84b43", weight: 3, dashArray: "7 6", opacity: .95 }).addTo(map) : null;
-  const resultDistance = valhalla && browser && window.StepByOsmMatcher
-    ? window.StepByOsmMatcher.distanceMeters({ lat: valhalla.lat, lng: valhalla.lng }, { lat: browser.lat, lng: browser.lng }) : null;
-  if (comparisonValhallaWayEl) comparisonValhallaWayEl.textContent = valhalla && valhalla.wayId ? String(valhalla.wayId) : "取得不可";
-  if (comparisonBrowserWayEl) comparisonBrowserWayEl.textContent = browser && browser.wayId ? String(browser.wayId) : "取得不可";
-  if (comparisonDistanceEl) comparisonDistanceEl.textContent = Number.isFinite(resultDistance) ? `${resultDistance.toFixed(2)} m` : "—";
-  if (comparisonPriorityEl) comparisonPriorityEl.textContent = browser ? `${browser.priority === "pedestrian" ? "歩道優先" : "道路"}・${browser.connectedToPrevious === false ? "非連続" : "連続"}` : "—";
-  if (comparisonDurationEl) comparisonDurationEl.textContent = `V ${durations.valhalla} ms / B ${durations.browser} ms`;
-  setComparisonStatus(valhalla && browser ? "比較完了" : "一部取得失敗", valhalla && browser ? "success" : "error");
-  return resultDistance;
-}
-
-async function saveFittingComparison(payload) {
-  if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "保存中…";
-  try {
-    const response = await authFetch("/api/fitting-comparisons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    if (!response.ok) throw new Error(`history save failed with status ${response.status}`);
-    const result = await response.json();
-    if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = `保存済み #${result.id}`;
-  } catch (error) {
-    if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "保存失敗";
-    console.error("[FittingComparison] history save failed", error);
-  }
-}
-
 // 一般利用の現在地フィッティングはブラウザ版だけで完結する。
 function requestSnappedLocation(latitude, longitude, accuracy = null) {
   // 起動時キャッシュを再フィッティングして「現在位置」と確定しない。
   // OSからライブGPSを1回以上受け取ってから処理を始める。
   if (!hasLiveGpsFix) return;
-  if (!currentUserId) {
-    setComparisonStatus("ログイン待ち", "waiting");
-    return;
-  }
+  if (!currentUserId) return;
   console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
   const browserStartedAt = performance.now();
   const browserPromise = browserOsmMatcher
@@ -2732,114 +2662,6 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
       return null;
     });
 }
-
-if (comparisonTestButtonEl) {
-  comparisonTestButtonEl.addEventListener("click", async () => {
-    comparisonTestButtonEl.disabled = true;
-    try {
-      map.setView([35.681236, 139.767125], 19, { animate: false });
-      await requestSnappedLocation(35.681236, 139.767125, null, { compareValhalla: true });
-    } finally {
-      comparisonTestButtonEl.disabled = false;
-    }
-  });
-}
-
-if (osmPreviewTestButtonEl) {
-  osmPreviewTestButtonEl.addEventListener("click", async () => {
-    if (!browserOsmMatcher || !window.StepByOsmMatcher) {
-      if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = "プレビュー失敗：ブラウザ版マッチャー未読込";
-      return;
-    }
-    osmPreviewTestButtonEl.disabled = true;
-    osmPreviewTestButtonEl.textContent = "プレビュー生成中…";
-    try {
-      await browserOsmMatcher.ensureNetwork(35.681236, 139.767125);
-      const testWay = (browserOsmMatcher.network || []).find((way) =>
-        way.priority !== "pedestrian" && Array.isArray(way.coordinates) && way.coordinates.length >= 2);
-      if (!testWay) throw new Error("左右判定の試験に使える道路Wayが見つかりませんでした");
-      const [aLng, aLat] = testWay.coordinates[0];
-      const [bLng, bLat] = testWay.coordinates[1];
-      const length = Math.hypot(bLng - aLng, bLat - aLat) || 1;
-      const leftOffsetDegrees = 3 / 111320;
-      const pointAt = (fraction) => ({
-        lat: aLat + (bLat - aLat) * fraction + ((bLng - aLng) / length) * leftOffsetDegrees,
-        lng: aLng + (bLng - aLng) * fraction - ((bLat - aLat) / length) * leftOffsetDegrees,
-      });
-      const points = [pointAt(0.2), pointAt(0.5), pointAt(0.8)];
-      const route = {
-        ways: [testWay],
-        rawPoints: points,
-        start: { wayId: testWay.id, segmentIndex: 0, fraction: 0.2, lat: aLat + (bLat - aLat) * 0.2, lng: aLng + (bLng - aLng) * 0.2 },
-        end: { wayId: testWay.id, segmentIndex: 0, fraction: 0.8, lat: aLat + (bLat - aLat) * 0.8, lng: aLng + (bLng - aLng) * 0.8 },
-      };
-      const preview = window.StepByOsmMatcher.buildOsmChangePreview(route);
-      if (!preview) throw new Error("道路Wayの変更予定を作成できませんでした");
-      const previewCoordinates = preview.segments.flatMap((segment) =>
-        segment.coordinates.map(([lng, lat]) => [lat, lng]));
-      await openTraceConfirmModal(previewCoordinates, preview);
-    } catch (error) {
-      if (comparisonSaveStatusEl) comparisonSaveStatusEl.textContent = `プレビュー失敗：${error.message}`;
-      alert(`OSM dry-runプレビューを生成できませんでした: ${error.message}`);
-    } finally {
-      osmPreviewTestButtonEl.disabled = false;
-      osmPreviewTestButtonEl.textContent = "東京駅付近でOSM dry-runプレビュー";
-    }
-  });
-}
-
-async function openLatestFittingDetails() {
-  if (!fittingDetailModalEl || !fittingDetailBodyEl) return;
-  fittingDetailModalEl.classList.remove("hidden");
-  fittingDetailBodyEl.innerHTML = "<p>最新記録を読み込み中…</p>";
-  try {
-    const response = await authFetch("/api/fitting-details/latest", { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-    const osm = result.osm || { status: "not_created" };
-    const statusLabels = {
-      not_created: "変更案なし",
-      draft: "dry-run変更案あり",
-      merged: "OSM送信済み",
-      revert_draft: "取消変更案あり（未送信）",
-      reverted: "取消済み",
-      failed: "送信失敗",
-      conflict: "競合のため停止",
-    };
-    const osmStatus = statusLabels[osm.status] || osm.status;
-    const osmIds = [
-      osm.mergePlanId ? `<span><strong>変更案ID：</strong>${escapeHtml(osm.mergePlanId)}</span>` : "",
-      osm.mergeChangesetId ? `<span><strong>送信changeset：</strong>${escapeHtml(osm.mergeChangesetId)}</span>` : "",
-      osm.revertPlanId ? `<span><strong>取消案ID：</strong>${escapeHtml(osm.revertPlanId)}</span>` : "",
-      osm.revertChangesetId ? `<span><strong>取消changeset：</strong>${escapeHtml(osm.revertChangesetId)}</span>` : "",
-    ].filter(Boolean).join("<br>");
-    const revertButton = osm.status === "merged"
-      ? `<button type="button" class="fitting-detail-revert-button" data-record-id="${escapeHtml(result.session.session_id)}">この記録の取消変更案を作る</button>`
-      : "";
-    const rows = result.points.map((p) => `<tr><td>${p.n}</td><td>${Number(p.raw_lat).toFixed(7)}, ${Number(p.raw_lng).toFixed(7)}</td><td>${p.matched_lat == null ? "—" : `${Number(p.matched_lat).toFixed(7)}, ${Number(p.matched_lng).toFixed(7)}`}</td><td>${p.accuracy == null ? "未取得" : `${Number(p.accuracy).toFixed(1)} m`}</td><td>${p.distance_m == null ? "—" : `${Number(p.distance_m).toFixed(2)} m`}</td><td>${p.way_id || "—"}</td></tr>`).join("");
-    fittingDetailBodyEl.innerHTML = `<section class="fitting-detail-osm-status" data-status="${escapeHtml(osm.status)}"><strong>OSM状態：</strong>${escapeHtml(osmStatus)}${osmIds ? `<br>${osmIds}` : ""}${revertButton}</section><p><strong>セッション：</strong>${escapeHtml(result.session.session_id)}<br><strong>GPS点：</strong>${result.points.length}点</p><div class="fitting-detail-table-wrap"><table><thead><tr><th>#</th><th>GPS生座標</th><th>フィッティング後</th><th>accuracy</th><th>移動距離</th><th>Way ID</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    const revertButtonEl = fittingDetailBodyEl.querySelector(".fitting-detail-revert-button");
-    if (revertButtonEl) {
-      revertButtonEl.addEventListener("click", async () => {
-        revertButtonEl.disabled = true;
-        revertButtonEl.textContent = "取消変更案を作成中…";
-        try {
-          const revertResponse = await authFetch(`/api/osm/records/${encodeURIComponent(revertButtonEl.dataset.recordId)}/revert-plan`, { method: "POST" });
-          const revertResult = await revertResponse.json();
-          if (!revertResponse.ok) throw new Error(revertResult.error || `HTTP ${revertResponse.status}`);
-          await openLatestFittingDetails();
-        } catch (revertError) {
-          revertButtonEl.disabled = false;
-          revertButtonEl.textContent = `作成失敗：${revertError.message}`;
-        }
-      });
-    }
-  } catch (error) {
-    fittingDetailBodyEl.innerHTML = `<p>読込み失敗：${error.message}</p>`;
-  }
-}
-if (fittingDetailButtonEl) fittingDetailButtonEl.addEventListener("click", openLatestFittingDetails);
-if (fittingDetailCloseEl) fittingDetailCloseEl.addEventListener("click", () => fittingDetailModalEl.classList.add("hidden"));
 
 function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
