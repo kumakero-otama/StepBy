@@ -1,5 +1,5 @@
 // UI0開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.33.9-live-location-priority";
+const CACHE_VERSION = "1.34.0-ui0-production";
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 // 時刻を含めるとService Worker再起動のたびに別名になり、既存キャッシュを
@@ -73,7 +73,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => {
       // 古いキャッシュをすべて削除
       const deletePromises = keys
-        .filter((key) => key.includes("-stepby-ui0-") && key !== CACHE_NAME)
+        .filter((key) => key.includes("-stepby-ui0") && key !== CACHE_NAME && key !== IMAGE_CACHE_NAME)
         .map((key) => {
           console.log("[SW] Deleting old cache:", key);
           return caches.delete(key);

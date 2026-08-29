@@ -64,6 +64,10 @@ assert.doesNotMatch(config, /UI0 · DEV|data-stepby-dev-badge|stepbyDevBadge/,
   "UI0 must not display a development badge over general-user screens");
 assert.match(serviceWorker, /APP_BASE_PATH = "\/StepBy\/UI0"/);
 assert.match(serviceWorker, /stepby-ui0/);
+assert.match(serviceWorker, /key\.includes\("-stepby-ui0"\)/,
+  "the production service worker must remove caches left by the former UI0");
+assert.match(serviceWorker, /key !== IMAGE_CACHE_NAME/,
+  "the production upgrade must preserve the dedicated uploaded-image cache");
 assert.match(serviceWorker, /ui4-theme\.css/);
 assert.strictEqual(manifest.scope, "/StepBy/UI0/");
 assert.strictEqual(manifest.start_url, "/StepBy/UI0/map/Index.html");
