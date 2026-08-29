@@ -26,6 +26,7 @@ const safetyConfirmModalEl = document.getElementById("safety-confirm-modal");
 const safetyConfirmAcceptBtn = document.getElementById("safety-confirm-accept");
 const safetyConfirmRejectBtn = document.getElementById("safety-confirm-reject");
 const traceConfirmModalEl = document.getElementById("trace-confirm-modal");
+const traceConfirmTitleEl = document.getElementById("trace-confirm-title");
 const traceConfirmMapEl = document.getElementById("trace-confirm-map");
 const traceConfirmOkBtn = document.getElementById("trace-confirm-ok");
 const traceConfirmCancelBtn = document.getElementById("trace-confirm-cancel");
@@ -39,6 +40,18 @@ const traceMemoInputEl = document.getElementById("trace-memo-input");
 const recordToggleCardEls = Array.from(document.querySelectorAll(".record-toggle-card"));
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
+// UI0の通常記録はブラウザ側マッチャーだけで完結する。
+const browserOsmMatcher = window.StepByOsmMatcher
+  ? new window.StepByOsmMatcher.BrowserMatcher({ fetcher: authFetch, radiusMeters: 1000 })
+  : null;
+let recordUploadQueue = null;
+let osmRevertQueue = null;
+let lastNetworkPrefetchAt = 0;
+let lastMapDataDownloadCenter = null;
+let lastOsmDisplayDownloadCenter = null;
+const MAP_DATA_REFRESH_DISTANCE_METERS = 650;
+const OSM_DISPLAY_RADIUS_KM = 10;
+const OSM_DISPLAY_REFRESH_DISTANCE_METERS = 8000;
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -121,18 +134,24 @@ const TRACE_TAG_TEXT = {
     noMatch: "一致するタグがありません",
     addTagFailed: "タグの追加に失敗しました。時間をおいて再度お試しください。",
     requiredForPro: "タグを追加してください",
+    publicScope: "OSM公開対象",
+    privateScope: "本人のみ表示",
   },
   en: {
     noSelection: "None selected",
     noMatch: "No matching tags",
     addTagFailed: "Failed to add tag. Please try again later.",
     requiredForPro: "Please add at least one tag.",
+    publicScope: "Published to OSM",
+    privateScope: "Visible only to you",
   },
   hi: {
     noSelection: "कोई चयन नहीं",
     noMatch: "कोई मिलते-जुलते टैग नहीं",
     addTagFailed: "टैग जोड़ने में विफल। कृपया बाद में फिर प्रयास करें।",
     requiredForPro: "タグを追加してください",
+    publicScope: "OSM पर प्रकाशित",
+    privateScope: "केवल आपको दिखाई देगा",
   },
 };
 
@@ -249,6 +268,11 @@ const TACTILE_SESSION_TEXT = {
     memoSaveFailed: "ひとことメモの保存に失敗しました。",
     selfLabel: "あなた",
     delete: "削除",
+    stepByOnly: "StepBy内のみ",
+    osmPublished: "OSM公開済み",
+    deleteStepBy: "StepByから削除",
+    deleteOsm: "OSM公開を取り消して削除",
+    deleteOsmConfirm: "この点字ブロックのOSM公開を取り消し、StepByからも削除しますか？",
     deleteConfirm: "本当にこの点字ブロックを削除してよろしいですか？",
     deleteFailed: "点字ブロックの削除に失敗しました。",
     noTags: "タグなし",
@@ -268,6 +292,11 @@ const TACTILE_SESSION_TEXT = {
     memoSaveFailed: "Failed to save the short memo.",
     selfLabel: "You",
     delete: "Delete",
+    stepByOnly: "StepBy only",
+    osmPublished: "Published to OSM",
+    deleteStepBy: "Delete from StepBy",
+    deleteOsm: "Revert OSM publication and delete",
+    deleteOsmConfirm: "Revert this tactile block from OSM and delete it from StepBy?",
     deleteConfirm: "Are you sure you want to delete this tactile block?",
     deleteFailed: "Failed to delete the tactile block.",
     noTags: "No tags",
@@ -287,6 +316,11 @@ const TACTILE_SESSION_TEXT = {
     memoSaveFailed: "छोटा मेमो सहेजने में विफल रहा।",
     selfLabel: "आप",
     delete: "हटाएं",
+    stepByOnly: "केवल StepBy",
+    osmPublished: "OSM पर प्रकाशित",
+    deleteStepBy: "StepBy से हटाएं",
+    deleteOsm: "OSM प्रकाशन वापस लेकर हटाएं",
+    deleteOsmConfirm: "क्या इस टैक्टाइल ब्लॉक का OSM प्रकाशन वापस लेकर इसे StepBy से भी हटाना है?",
     deleteConfirm: "क्या आप वाकई इस टैक्टाइल ब्लॉक को हटाना चाहते हैं?",
     deleteFailed: "टैक्टाइल ब्लॉक हटाने में विफल रहा।",
     noTags: "कोई टैग नहीं",
@@ -414,7 +448,13 @@ function buildTactileSessionCardShell(innerHtml) {
     </div>`;
 }
 
-function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, error = "", ownerUserId = null } = {}) {
+function buildTactileSessionCardHtml(sessionId, sessionInfo, {
+  loading = false,
+  error = "",
+  ownerUserId = null,
+  osmPublished = false,
+  osmRecordId = "",
+} = {}) {
   const text = getTactileSessionText();
   if (loading) {
     return buildTactileSessionCardShell(`
@@ -445,15 +485,12 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
   const deleteIconUrl = escapeHtml(AppPath.toApp("/assets/buttons/delete.png"));
   const memoValue = sessionInfo && sessionInfo.memo != null ? String(sessionInfo.memo).trim() : "";
   const canEditOwnSession = isOwnTactileSession(ownerUserId);
+  const publicationBadge = `<div class="tactile-session-publication-status ${osmPublished ? "is-osm" : "is-stepby"}">${escapeHtml(osmPublished ? text.osmPublished : text.stepByOnly)}</div>`;
   const memoHtml = memoValue
     ? `
     <div class="tactile-session-card-memo">
       <div class="tactile-session-card-memo-head">
         <div class="tactile-session-card-memo-label">${escapeHtml(text.memo)}</div>
-        ${canEditOwnSession ? `
-        <button class="tactile-session-card-memo-edit" type="button" data-edit-tactile-memo="${escapeHtml(sessionId)}" aria-label="${escapeHtml(text.memoEdit)}">
-          <img src="${memoEditIconUrl}" alt="">
-        </button>` : ""}
       </div>
       <div class="tactile-session-card-memo-body">${escapeHtml(memoValue)}</div>
     </div>`
@@ -465,9 +502,11 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
         <img src="${memoEditIconUrl}" alt="">
         <span>${escapeHtml(text.memoEdit)}</span>
       </button>
-      <button class="tactile-session-card-delete" type="button" data-deactivate-tactile-session="${escapeHtml(sessionId)}">
+      <button class="tactile-session-card-delete" type="button" ${osmPublished
+        ? `data-revert-osm-record="${escapeHtml(osmRecordId || sessionId)}"`
+        : `data-deactivate-tactile-session="${escapeHtml(sessionId)}"`}>
         <img src="${deleteIconUrl}" alt="">
-        <span>${escapeHtml(text.delete)}</span>
+        <span>${escapeHtml(osmPublished ? text.deleteOsm : text.deleteStepBy)}</span>
       </button>
     </div>`
     : "";
@@ -483,6 +522,7 @@ function buildTactileSessionCardHtml(sessionId, sessionInfo, { loading = false, 
         <img src="${closeIconUrl}" alt="">
       </button>
     </div>
+    ${publicationBadge}
     <div class="tactile-session-card-tags">${buildTactileSessionTagsHtml(sessionInfo && sessionInfo.tags)}</div>
     ${memoHtml}
     ${actionButtons}`;
@@ -523,7 +563,7 @@ function hideTactileSessionCard() {
   tactileSessionCardLatLng = null;
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
-      color: "#00b050",
+      color: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
       weight: 4,
       opacity: 0.85,
     });
@@ -548,7 +588,7 @@ function setActiveTactileSessionPolyline(polyline) {
 
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
-      color: "#00b050",
+      color: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
       weight: 4,
       opacity: 0.85,
     });
@@ -615,6 +655,19 @@ function renderTactileSessionCard(contentHtml, latlng) {
         return;
       }
       void deactivateTactileSession(targetSessionId, target);
+    });
+  }
+  const osmRevertBtn = card.querySelector("[data-revert-osm-record]");
+  if (osmRevertBtn) {
+    osmRevertBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.currentTarget;
+      const recordId = target instanceof HTMLElement
+        ? String(target.getAttribute("data-revert-osm-record") || "").trim()
+        : "";
+      if (!recordId) return;
+      void requestOwnedOsmRevert(recordId, target);
     });
   }
   const memoEditBtn = card.querySelector("[data-edit-tactile-memo]");
@@ -770,7 +823,7 @@ const redPinIcon = L.icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
-  iconAnchor: [12, 41], // ピンの先端（下部中央）を座標に合わせる
+  iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
@@ -831,6 +884,8 @@ let isHandlingRecordToggle = false;
 let isHandlingPauseToggle = false;
 let currentUserId = null;
 let latestSnappedLocation = null;
+let hasLiveGpsFix = false;
+let hasLiveMatchedFix = false;
 let mapLayoutSyncTimer = null;
 let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
@@ -1071,7 +1126,6 @@ function buildMapReturnCachePayload() {
       : null,
     zoom: Number.isFinite(zoom) ? zoom : null,
     visibleSessionPaths: cloneSerializable(cachedVisibleSessionPaths) || [],
-    osmFeatures: cloneSerializable(cachedOsmFeatures) || [],
     visibleRoadInfoPoints: cloneSerializable(cachedVisibleRoadInfoPoints) || [],
   };
   return payload;
@@ -1120,10 +1174,9 @@ function restoreMapReturnCache() {
 
   // 地図位置とズームは地図情報表示の状態に関わらず常に復元し、
   // 他画面から戻ったときに表示位置がリセットされないようにする。
-  if (cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
+  if (!isCenterCurrentEnabled() && cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
     const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
     map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
-    // 復帰時の保存位置を表示したので、ユーザーが地図に触れるまで自動中央追従を止める。
     suppressAutoCenterAfterReturn = true;
   }
 
@@ -1132,18 +1185,14 @@ function restoreMapReturnCache() {
     cachedVisibleSessionPaths = Array.isArray(cached.visibleSessionPaths)
       ? cloneSerializable(cached.visibleSessionPaths) || []
       : [];
-    cachedOsmFeatures = Array.isArray(cached.osmFeatures)
-      ? cloneSerializable(cached.osmFeatures) || []
-      : [];
+    // 表示専用OSM点字ブロックはブラウザストレージへ保存せず、画面ごとに読み直す。
+    cachedOsmFeatures = [];
     cachedVisibleRoadInfoPoints = Array.isArray(cached.visibleRoadInfoPoints)
       ? cloneSerializable(cached.visibleRoadInfoPoints) || []
       : [];
 
     if (shouldShowAppTactile() && cachedVisibleSessionPaths.length > 0) {
       showAllSessionPathsOnMap(cachedVisibleSessionPaths, { preFiltered: true });
-    }
-    if (shouldShowOsmTactile() && cachedOsmFeatures.length > 0) {
-      showOsmTactileWaysOnMap(cachedOsmFeatures);
     }
     if (shouldShowRoadInfo() && cachedVisibleRoadInfoPoints.length > 0) {
       showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
@@ -1199,34 +1248,23 @@ function applyCachedLocation(cached) {
   if (rawCoordsEl) {
     rawCoordsEl.textContent = `Raw: ${cached.lat.toFixed(6)}, ${cached.lng.toFixed(6)}`;
   }
-  if (!marker) {
-    marker = L.marker([cached.lat, cached.lng], { icon: redPinIcon }).addTo(map);
-  } else {
-    marker.setLatLng([cached.lat, cached.lng]);
-  }
+  updateCurrentLocationMarker(cached.lat, cached.lng);
   if (isCenterCurrentEnabled()) {
-    // 直近のセッション内に保存された地図表示位置（mapReturnCache）があれば、
-    // 現在地ではなくそちらに即座にsetViewして、復帰時に一瞬現在地中央が見えるチラつきを防ぐ。
-    // mapReturnCacheが無い／期限切れの場合は従来どおり現在地（last known）を中央に表示する。
-    const returnCache = loadMapReturnCache();
-    if (
-      returnCache
-      && returnCache.center
-      && Number.isFinite(returnCache.center.lat)
-      && Number.isFinite(returnCache.center.lng)
-    ) {
-      const nextZoom = Number.isFinite(Number(returnCache.zoom))
-        ? Number(returnCache.zoom)
-        : map.getZoom();
-      map.setView([returnCache.center.lat, returnCache.center.lng], nextZoom, { animate: false });
-      // 復帰時の保存位置を表示したので、ユーザーが地図に触れるまで自動中央追従を止める。
-      suppressAutoCenterAfterReturn = true;
-    } else {
-      const currentZoom = map.getZoom();
-      map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
-    }
+    // 追従ONでは保存済みの地図中心より現在地を必ず優先する。
+    suppressAutoCenterAfterReturn = false;
+    const currentZoom = map.getZoom();
+    map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
   }
   return true;
+}
+
+function updateCurrentLocationMarker(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  if (!marker) {
+    marker = L.marker([lat, lng], { icon: redPinIcon }).addTo(map);
+  } else {
+    marker.setLatLng([lat, lng]);
+  }
 }
 
 function setMapControlsCollapsed(collapsed) {
@@ -1547,6 +1585,12 @@ async function loadCurrentUserId() {
   }
 }
 
+async function requireOsmConnectionBeforeMapUse() {
+  // OSM edits use the StepBy-managed account on the server.
+  // Individual users authenticate to StepBy with Google only.
+  return true;
+}
+
 function updateRecordButton() {
   if (recordActionBtn) {
     recordActionBtn.setAttribute("aria-pressed", recordEnabled ? "true" : "false");
@@ -1764,8 +1808,53 @@ function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
   });
 }
 
+function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
+  const coordinates = osmPreview.segments.flatMap((segment, segmentIndex) =>
+    segment.coordinates.slice(segmentIndex > 0 ? 1 : 0).map(([lng, lat]) => ({ lat, lon: lng })));
+  return authFetch("/api/trace", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sessionId,
+      source: "browser",
+      route_confirmed: osmPreview.routeConfirmed === true,
+      raw_points: (rawPoints || []).map((point) => ({
+        lat: Number(point.lat),
+        lon: Number(point.lng),
+        accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null,
+      })),
+      matched_points: coordinates,
+      matched_samples: (osmPreview.matchedSamples || []).map((sample) => ({
+        lat: Number(sample.lat),
+        lon: Number(sample.lon),
+        way_id: Number(sample.wayId),
+        confidence: Number.isFinite(Number(sample.distance)) ? 1 / (1 + Math.max(0, Number(sample.distance))) : null,
+      })),
+      way_segments: osmPreview.segments.map((segment) => ({
+        way_id: segment.wayId,
+        way_version: segment.wayVersion,
+        node_ids: segment.nodes,
+        full_coordinates: segment.fullCoordinates,
+        segment_from: segment.from,
+        segment_to: segment.to,
+        original_tags: segment.tags || {},
+        relations: segment.relations || [],
+        side: segment.side || null,
+        planned_tags: isIndependentOsmWalkway(segment)
+          ? { tactile_paving: "yes" }
+          : { [`sidewalk:${segment.side}:tactile_paving`]: "yes" },
+      })),
+      edges: osmPreview.segments.map((segment) => ({ way_id: segment.wayId })),
+    }),
+  }).then(async (res) => {
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || `browser trace failed: ${res.status}`);
+    return payload;
+  });
+}
+
 // trace_attributesでフィッティングしてマップに表示
-function processAndDisplayTrace(sessionId = null, sourcePoints = null) {
+function processAndDisplayTrace(sessionId = null, sourcePoints = null, osmPreview = null) {
   const tracePoints = Array.isArray(sourcePoints) && sourcePoints.length > 0
     ? sourcePoints
     : getAllRecordingTracePoints();
@@ -1776,7 +1865,10 @@ function processAndDisplayTrace(sessionId = null, sourcePoints = null) {
   }
 
   const shape = tracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
-  return requestTraceData(shape, { sessionId, persist: Boolean(sessionId) })
+  const traceRequest = sessionId && osmPreview
+    ? requestBrowserTraceData(osmPreview, sessionId, tracePoints)
+    : requestTraceData(shape, { sessionId, persist: Boolean(sessionId) });
+  return traceRequest
     .then((data) => {
       const coords = extractTraceCoordinates(data, shape);
       displayTraceLine(coords);
@@ -1820,7 +1912,12 @@ function normalizeTactileTags(rawTags) {
       if (!id || !code || !label) {
         return null;
       }
-      return { id, code, label };
+      return {
+        id, code, label,
+        osmExportable: Boolean(tag.osmExportable ?? tag.osm_exportable),
+        displayColor: String(tag.displayColor ?? tag.display_color ?? "red"),
+        systemDefined: Boolean(tag.systemDefined ?? tag.system_defined),
+      };
     })
     .filter(Boolean);
 }
@@ -1861,6 +1958,17 @@ async function loadCurrentUserProStatus() {
   } catch {
     isCurrentUserPro = false;
   }
+  document.documentElement.classList.toggle("is-pro-mode", isCurrentUserPro);
+  const badge = document.getElementById("map-pro-badge");
+  if (badge) badge.hidden = !isCurrentUserPro;
+}
+
+function getSelectedTraceTags() {
+  return traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
+}
+
+function isCurrentRecordingOsmEligible() {
+  return !isCurrentUserPro || getSelectedTraceTags().some((tag) => tag.osmExportable);
 }
 
 function setTraceTagError(message) {
@@ -1906,7 +2014,7 @@ function renderTraceTagList() {
     return;
   }
   traceTagListEl.innerHTML = visibleTags
-    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)}</button>`)
+    .map((tag) => `<button type="button" class="trace-tag-option" data-tag-id="${tag.id}">${escapeHtml(tag.label)} <small>${escapeHtml(tag.osmExportable ? text.publicScope : text.privateScope)}</small></button>`)
     .join("");
 }
 
@@ -2064,18 +2172,26 @@ async function prepareTraceTagModal() {
     traceMemoInputEl.value = "";
   }
   try {
-    await fetchTactileTags();
+    await Promise.race([
+      fetchTactileTags(),
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error("tactile_tags_fetch_timeout")), 10000);
+      }),
+    ]);
     renderTraceTagUi();
   } catch (err) {
     console.error("[trace_confirm] tactile tags fetch failed:", err);
     traceTagOptions = [];
     renderTraceTagUi();
+    setTraceTagError(getTraceTagText().loadFailed || "タグを読み込めませんでした。キャンセルして、もう一度お試しください。");
   }
 }
 
-async function saveSessionTags(sessionIds) {
+async function saveSessionTags(sessionIds, fixedTagIds = null) {
   const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
-  const selectedTags = traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
+  const selectedTags = Array.isArray(fixedTagIds)
+    ? [...new Set(fixedTagIds.map(Number).filter(Number.isFinite))].map((id) => ({ id }))
+    : traceTagOptions.filter((tag) => selectedTraceTagIds.has(tag.id));
   for (const sessionId of uniqueSessionIds) {
     for (const tag of selectedTags) {
       const res = await authFetch("/api/session-tags", {
@@ -2084,7 +2200,9 @@ async function saveSessionTags(sessionIds) {
         body: JSON.stringify({ sessionId, tagId: tag.id }),
       });
       if (!res.ok) {
-        throw new Error(`session_tag_save_failed:${res.status}`);
+        const error = new Error(`session_tag_save_failed:${res.status}`);
+        error.retryable = res.status >= 500 || res.status === 408 || res.status === 429;
+        throw error;
       }
     }
   }
@@ -2119,9 +2237,58 @@ function closeTraceConfirmModal() {
     traceConfirmMap.remove();
     traceConfirmMap = null;
   }
+  traceConfirmModalEl?.classList.remove("is-preparing");
 }
 
-function openTraceConfirmModal(coordinates) {
+function showTraceConfirmPreparing() {
+  if (!traceConfirmModalEl) return;
+  closeTraceConfirmModal();
+  if (traceConfirmTitleEl) traceConfirmTitleEl.textContent = "経路を確認しています…";
+  traceConfirmOkBtn.disabled = true;
+  traceConfirmCancelBtn.disabled = true;
+  traceConfirmModalEl.classList.add("is-preparing");
+  traceConfirmModalEl.classList.remove("hidden");
+}
+
+function isIndependentOsmWalkway(segment) {
+  const tags = segment && segment.tags || {};
+  return ["footway", "path", "pedestrian", "steps", "corridor"].includes(String(tags.highway || "").toLowerCase()) ||
+    String(tags.footway || "").toLowerCase() === "sidewalk";
+}
+
+async function saveOsmSplitDraft(osmPreview, recordId) {
+  const response = await authFetch("/api/osm/split-plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      summary: "StepByによる点字ブロック記録",
+      segments: osmPreview.segments.map((segment) => ({
+        wayId: segment.wayId,
+        wayVersion: segment.wayVersion,
+        tags: segment.tags,
+        nodes: segment.nodes,
+        fullCoordinates: segment.fullCoordinates,
+        relations: segment.relations || [],
+        side: segment.side || null,
+        from: segment.from,
+        to: segment.to,
+      })),
+      recordId,
+      clientContext: { ui: "UI0", previewOnly: false, osmWriteRequested: false, authorization: "administrator_review_required", automaticDraft: true },
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || `HTTP ${response.status}`);
+    error.code = result.error || `HTTP_${response.status}`;
+    error.status = response.status;
+    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+    throw error;
+  }
+  return result;
+}
+
+function openTraceConfirmModal(coordinates, osmPreview = null) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) {
       resolve("cancel");
@@ -2129,9 +2296,12 @@ function openTraceConfirmModal(coordinates) {
     }
 
     const setupAndBind = async () => {
-      await prepareTraceTagModal();
-
+      // 通信を伴うPROタグ取得より先に確認画面を表示する。タグAPIが遅延しても、
+      // 記録停止後に画面が何も出ず、記録ボタンだけが無効に見える状態にしない。
       traceConfirmModalEl.classList.remove("hidden");
+      traceConfirmModalEl.classList.remove("is-preparing");
+      if (traceConfirmTitleEl) traceConfirmTitleEl.textContent = "この経路で保存しますか";
+      traceConfirmCancelBtn.disabled = false;
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -2139,9 +2309,9 @@ function openTraceConfirmModal(coordinates) {
       }).addTo(traceConfirmMap);
 
       traceConfirmPathLayer = L.polyline(coordinates, {
-        color: "#9acd32",
-        weight: 5,
-        opacity: 0.9,
+        color: "#68747d",
+        weight: 4,
+        opacity: 0.65,
       }).addTo(traceConfirmMap);
       traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
 
@@ -2153,17 +2323,29 @@ function openTraceConfirmModal(coordinates) {
       };
 
       const onOk = () => {
+        if (traceConfirmOkBtn.disabled) {
+          return;
+        }
         if (isCurrentUserPro && selectedTraceTagIds.size === 0) {
           setTraceTagError(getTraceTagText().requiredForPro);
           return;
         }
         setTraceTagError("");
-        cleanupAndResolve("ok");
+        const osmEligible = isCurrentRecordingOsmEligible();
+        cleanupAndResolve({ action: "ok", osmEligible });
       };
-      const onCancel = () => cleanupAndResolve("cancel");
+      const onCancel = () => cleanupAndResolve({ action: "cancel" });
 
       traceConfirmOkBtn.addEventListener("click", onOk);
       traceConfirmCancelBtn.addEventListener("click", onCancel);
+
+      // PROモードではタグの読み込み完了まで保存を待つ。キャンセル操作は常に可能。
+      traceConfirmOkBtn.disabled = Boolean(isCurrentUserPro);
+      try {
+        await prepareTraceTagModal();
+      } finally {
+        traceConfirmOkBtn.disabled = false;
+      }
 
       setTimeout(() => {
         if (traceConfirmMap) {
@@ -2174,12 +2356,13 @@ function openTraceConfirmModal(coordinates) {
 
     setupAndBind().catch((err) => {
       console.error("[trace_confirm] modal setup failed:", err);
+      closeTraceConfirmModal();
       resolve("cancel");
     });
   });
 }
 
-async function persistCurrentSessionWithoutConfirmation() {
+async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   if (!currentSessionId) {
     return { success: true, skipped: true };
   }
@@ -2191,7 +2374,7 @@ async function persistCurrentSessionWithoutConfirmation() {
     return { success: true, canceled: true };
   }
 
-  const persisted = await processAndDisplayTrace(sessionId, tracePoints);
+  const persisted = await processAndDisplayTrace(sessionId, tracePoints, osmPreview);
   if (!persisted) {
     await postSessionLifecycle("cancel", { sessionId });
     rollbackCurrentSessionPointsFromRecording();
@@ -2202,6 +2385,143 @@ async function persistCurrentSessionWithoutConfirmation() {
     endedAt: new Date().toISOString(),
   });
   return { success: true, ended: true };
+}
+
+async function processQueuedRecording(payload, context) {
+  if (Number.isFinite(Number(payload.ownerUserId))) {
+    if (!Number.isFinite(Number(currentUserId))) {
+      const error = new Error("record_owner_not_loaded");
+      error.retryable = true;
+      throw error;
+    }
+    if (Number(payload.ownerUserId) !== Number(currentUserId)) {
+      const error = new Error("record_owner_changed");
+      error.retryable = false;
+      throw error;
+    }
+  }
+  const completed = new Set(context.job.completedStages || []);
+  const runStage = async (name, operation) => {
+    if (completed.has(name)) return;
+    await operation();
+    completed.add(name);
+    await context.checkpoint(name);
+  };
+  await runStage("session_started", async () => {
+    const response = await authFetch("/api/session/start", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: payload.sessionId, startedAt: payload.startedAt }),
+    });
+    if (!response.ok) throw new Error(`queued_session_start_failed:${response.status}`);
+  });
+  await runStage("trace_saved", async () => {
+    await requestBrowserTraceData(payload.osmPreview, payload.sessionId, payload.rawPoints);
+  });
+  await runStage("session_ended", async () => {
+    const response = await authFetch("/api/session/end", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: payload.sessionId, endedAt: payload.endedAt }),
+    });
+    if (!response.ok) throw new Error(`queued_session_end_failed:${response.status}`);
+  });
+  if (payload.isPro) {
+    await runStage("memo_saved", () => saveSessionMemo(payload.sessionIds, payload.memo || ""));
+    await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
+  }
+  if (payload.osmEligible) {
+    try {
+      await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+    } catch (error) {
+      const safeSkipReasons = new Set([
+        "non_walkway_way_not_eligible",
+        "tactile_no_to_yes_required",
+        "tactile_tag_already_present",
+        "record_is_stepby_only",
+      ]);
+      if (!safeSkipReasons.has(String(error && (error.code || error.message)))) throw error;
+      payload.osmPublicationSkipped = true;
+      payload.osmPublicationSkipReason = String(error.code || error.message);
+      completed.add("osm_draft_skipped_safely");
+      await context.checkpoint("osm_draft_skipped_safely");
+      return;
+    }
+    await runStage("osm_review_queued", async () => {});
+  } else {
+    await runStage("osm_draft_skipped_stepby_only", async () => {});
+  }
+}
+
+function refreshVisibleMapDataAfterOsmChange() {
+  loadAndShowAllRecords(map.getCenter());
+  if (shouldShowOsmTactile()) {
+    loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
+  }
+}
+
+function initRecordUploadQueue() {
+  if (!window.StepByRecordQueue) return;
+  recordUploadQueue = new window.StepByRecordQueue.RecordQueue({
+    handler: processQueuedRecording,
+    onChange(event) {
+      if (event.type === "queued" || event.type === "sending") {
+        showMapToast("記録を保存しています…", 2400);
+      } else if (event.type === "completed") {
+        showMapToast("記録しました。", 2800);
+      } else if (event.type === "retry") {
+        showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
+      } else if (event.type === "blocked") {
+        showMapToast("記録は端末に保存されています。", 4000);
+      }
+    },
+  });
+  window.addEventListener("online", () => void recordUploadQueue.flush());
+  window.addEventListener("pageshow", () => void recordUploadQueue.flush());
+  void recordUploadQueue.flush();
+}
+
+async function processQueuedOsmRevert(payload, context) {
+  const completed = new Set(context.job.completedStages || []);
+  if (!completed.has("osm_reverted")) {
+    const response = await authFetch(`/api/osm/records/${encodeURIComponent(payload.recordId)}/revert`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ authorization: "owned_green_line_delete" }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(result.error || `osm_revert_failed:${response.status}`);
+      error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+      throw error;
+    }
+    await context.checkpoint("osm_reverted");
+  }
+  if (!completed.has("osm_network_refreshed") && browserOsmMatcher && typeof browserOsmMatcher.refreshAfterOsmChange === "function") {
+    await browserOsmMatcher.refreshAfterOsmChange([]);
+    await context.checkpoint("osm_network_refreshed");
+  }
+}
+
+function initOsmRevertQueue() {
+  if (!window.StepByRecordQueue) return;
+  osmRevertQueue = new window.StepByRecordQueue.RecordQueue({
+    storage: window.StepByRecordQueue.createIndexedDbStorage("stepby-ui0-osm-revert-queue-v1", "jobs"),
+    handler: processQueuedOsmRevert,
+    onChange(event) {
+      if (event.type === "queued" || event.type === "sending") {
+        showMapToast("削除しています…", 2400);
+      } else if (event.type === "completed") {
+        showMapToast("削除しました。", 2800);
+        refreshVisibleMapDataAfterOsmChange();
+      } else if (event.type === "retry") {
+        showMapToast("通信が不安定です。削除はあとで自動的に続けます。", 4400);
+      } else if (event.type === "blocked") {
+        showMapToast("削除できませんでした。もう一度お試しください。", 4000);
+      }
+    },
+  });
+  window.addEventListener("online", () => void osmRevertQueue.flush());
+  window.addEventListener("pageshow", () => void osmRevertQueue.flush());
+  void osmRevertQueue.flush();
 }
 
 async function handleRecordStopWithConfirmation() {
@@ -2222,49 +2542,82 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
-  const shape = allTracePoints.map((p) => ({ lat: p.lat, lon: p.lng }));
-  let previewData;
-  try {
-    previewData = await requestTraceData(shape);
-  } catch (err) {
-    console.error("[Record] preview trace error:", err);
-    alert(`保存確認用の経路生成に失敗しました: ${err.message}`);
+  // OSM取得と経路確定の開始時点で表示し、処理中の無反応状態をなくす。
+  showTraceConfirmPreparing();
+
+  let osmPreview = null;
+  if (browserOsmMatcher) {
+    try {
+      // 軌跡の開始・途中・終了をすべて道路網で覆ってから経路を確定する。
+      // 保存直前はブラウザ・サーバー双方のキャッシュを使わず、最新のOSM Wayで確定する。
+      // 別端末や管理処理による直前のOSM変更を、古いWayとして送信しないため。
+      await Promise.race([
+        browserOsmMatcher.ensureTraceCoverage(allTracePoints, 450, { force: true }),
+        new Promise((_, reject) => {
+          window.setTimeout(() => reject(new Error("trace_coverage_timeout")), 12000);
+        }),
+      ]);
+    } catch (error) {
+      console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
+    }
+    const browserRoute = browserOsmMatcher.finalize(allTracePoints);
+    if (browserRoute) {
+      osmPreview = window.StepByOsmMatcher.buildOsmChangePreview(browserRoute);
+      console.log("[BrowserMatcher] connected final route", {
+        wayIds: browserRoute.wayIds,
+        startWayId: browserRoute.start.wayId,
+        startFraction: browserRoute.start.fraction,
+        endWayId: browserRoute.end.wayId,
+        endFraction: browserRoute.end.fraction,
+      });
+    } else {
+      console.warn("[BrowserMatcher] could not build a connected final route");
+    }
+  }
+
+  if (!osmPreview) {
+    closeTraceConfirmModal();
+    alert("ブラウザ側でOSM Way上の連続した経路を確定できませんでした。記録は保存されていません。");
     await cancelRecordingSessions(allSessionIds);
     return;
   }
-
-  const previewCoords = extractTraceCoordinates(previewData, shape);
+  const previewCoords = osmPreview.segments.flatMap((segment, index) =>
+    segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
+    closeTraceConfirmModal();
     alert("保存確認用の経路を生成できませんでした。");
     await cancelRecordingSessions(allSessionIds);
     return;
   }
 
-  const decision = await openTraceConfirmModal(previewCoords);
-  if (decision === "ok") {
-    const memo = traceMemoInputEl ? traceMemoInputEl.value : "";
-    const persistResult = await persistCurrentSessionWithoutConfirmation();
-    if (!persistResult.success) {
-      await cancelRecordingSessions(allSessionIds);
+  const decision = await openTraceConfirmModal(previewCoords, osmPreview);
+  if (decision && decision.action === "ok") {
+    if (!recordUploadQueue || !activeSessionId) {
+      alert("端末内の送信待ちキューを利用できないため、記録を確定できませんでした。");
       return;
     }
-    if (isCurrentUserPro) {
-      try {
-        await saveSessionMemo(allSessionIds, memo);
-      } catch (err) {
-        console.error("[Record] save session memo error:", err);
-        alert(getTraceConfirmText().memoSaveFailed);
-      }
+    const payload = {
+      id: `record:${activeSessionId}`,
+      sessionId: activeSessionId,
+      sessionIds: allSessionIds,
+      startedAt: currentSessionStartedAt || new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      rawPoints: allTracePoints.map((point) => ({ lat: point.lat, lng: point.lng, accuracy: point.accuracy == null ? null : point.accuracy })),
+      ownerUserId: currentUserId,
+      osmPreview,
+      isPro: Boolean(isCurrentUserPro),
+      memo: traceMemoInputEl ? traceMemoInputEl.value : "",
+      tagIds: Array.from(selectedTraceTagIds),
+      osmEligible: Boolean(decision.osmEligible),
+    };
+    try {
+      await recordUploadQueue.enqueue(payload);
+    } catch (error) {
+      console.error("[RecordQueue] enqueue failed", error);
+      alert("端末に記録を保管できませんでした。空き容量を確認して、もう一度確定してください。");
+      return;
     }
-    if (isCurrentUserPro) {
-      try {
-        await saveSessionTags(allSessionIds);
-      } catch (err) {
-        console.error("[Record] save session tags error:", err);
-        // セッション本体は保存済みなので、タグ保存失敗時は記録自体を取り消さない。
-        alert("タグの保存に失敗しました。タグなしで記録は保存されています。");
-      }
-    }
+    displayTraceLine(previewCoords);
     return;
   }
 
@@ -2275,86 +2628,102 @@ async function handleRecordStopWithConfirmation() {
   }
 }
 
-// 現在地取得結果をスナップし、表示更新と記録中の追跡へつなげる。
-function requestSnappedLocation(latitude, longitude) {
-  if (!currentUserId) {
-    return;
-  }
-  const params = new URLSearchParams({
-    lat: latitude.toString(),
-    lng: longitude.toString(),
-    userId: String(currentUserId),
-  });
-  if (isRecordingActive()) {
-    params.set("record", "1");
-    if (currentSessionId) {
-      params.set("sessionId", currentSessionId);
-    }
-  }
-  
-  if (lastSent) {
-    params.set("prevLat", lastSent.latitude.toString());
-    params.set("prevLng", lastSent.longitude.toString());
-  }
-
-  console.log(`[requestSnappedLocation] Requesting: lat=${latitude}, lng=${longitude}`);
-
-  authFetch(`/api/match?${params.toString()}`)
-    .then((res) => {
-      console.log(`[requestSnappedLocation] Response status: ${res.status}`);
-      if (res.status === 204) {
-        console.log('[requestSnappedLocation] Received 204 No Content - no update');
-        // 変化がなくても現在値を表示更新（時刻などは変わる）
-        updateDisplay(latitude, longitude, latitude, longitude, true);
+// 一般利用の現在地フィッティングはブラウザ版だけで完結する。
+function requestSnappedLocation(latitude, longitude, accuracy = null) {
+  // 起動時キャッシュを再フィッティングして「現在位置」と確定しない。
+  // OSからライブGPSを1回以上受け取ってから処理を始める。
+  if (!hasLiveGpsFix) return;
+  if (!currentUserId) return;
+  console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
+  const browserStartedAt = performance.now();
+  const browserPromise = browserOsmMatcher
+    ? browserOsmMatcher.match(latitude, longitude).then((match) => ({ match, duration: Math.round(performance.now() - browserStartedAt), error: null })).catch((error) => ({ match: null, duration: Math.round(performance.now() - browserStartedAt), error }))
+    : Promise.resolve({ match: null, duration: 0, error: new Error("browser matcher unavailable") });
+  return browserPromise
+    .then((browserResult) => {
+      if (!latestLocation || latestLocation.lat !== latitude || latestLocation.lng !== longitude) {
         return null;
       }
-      if (!res.ok) {
-        throw new Error(`match failed with status ${res.status}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      console.log('[requestSnappedLocation] Response data:', data);
-      if (!data) {
-        console.log('[requestSnappedLocation] No data received (204 response)');
-        return;
-      }
-      if (typeof data.lat === "number" && typeof data.lng === "number") {
-        console.log(`[requestSnappedLocation] Valid snapped coordinates: lat=${data.lat}, lng=${data.lng}`);
-        updateDisplay(latitude, longitude, data.lat, data.lng);
-        // スナップされた座標を次回の基準点として保存
-        lastSent = { latitude: data.lat, longitude: data.lng };
+      const browser = browserResult.match;
+      if (browser) {
+        hasLiveMatchedFix = true;
+        updateDisplay(latitude, longitude, browser.lat, browser.lng);
+        lastSent = { latitude: browser.lat, longitude: browser.lng };
       } else {
-        console.warn('[requestSnappedLocation] Invalid data format:', data);
-        return;
+        // 初回フィッティング前だけ生座標を使う。成功後の一時失敗では直前の
+        // フィッティング済み表示を維持する。
+        if (!hasLiveMatchedFix) updateDisplay(latitude, longitude, latitude, longitude);
       }
+      return browser;
     })
     .catch((error) => {
-      console.error('[requestSnappedLocation] Error:', error);
-      // keep current display on failure
+      console.error('[requestSnappedLocation] Browser fitting error:', error);
+      if (!hasLiveMatchedFix) updateDisplay(latitude, longitude, latitude, longitude);
+      return null;
     });
 }
 
-function handleNewLocation(latitude, longitude) {
+function handleNewLocation(latitude, longitude, accuracy = null) {
   // 位置情報を変数に保存するだけ（書き込み）
-  latestLocation = { lat: latitude, lng: longitude };
+  latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
+  updateTimestamp();
+  if (rawCoordsEl) rawCoordsEl.textContent = `Raw: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  if (!hasLiveGpsFix) {
+    // 起動時キャッシュを「現在のフィッティング結果」として扱わない。
+    hasLiveGpsFix = true;
+    latestSnappedLocation = null;
+  }
+  // 最初のライブ・フィッティングが得られるまでは、新しいGPSをそのまま表示する。
+  // 認証やOSM読込みが遅れていても、前回起動時の位置へ取り残さない。
+  if (!hasLiveMatchedFix) {
+    updateCurrentLocationMarker(latitude, longitude);
+    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+    if (isCenterCurrentEnabled()) {
+      suppressAutoCenterAfterReturn = false;
+      map.setView([latitude, longitude], map.getZoom(), { animate: false });
+    }
+  }
+  if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
+    lastNetworkPrefetchAt = Date.now();
+    browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
+      console.warn("[BrowserMatcher] moving network prefetch deferred:", error && error.message ? error.message : error);
+    });
+  }
+  const currentPoint = { lat: latitude, lng: longitude };
+  const movedFromMapDataCenter = !lastMapDataDownloadCenter || (
+    window.StepByOsmMatcher &&
+    window.StepByOsmMatcher.distanceMeters(lastMapDataDownloadCenter, currentPoint) >= MAP_DATA_REFRESH_DISTANCE_METERS
+  );
+  if (movedFromMapDataCenter) {
+    lastMapDataDownloadCenter = currentPoint;
+    if (shouldShowAppTactile()) loadAndShowAllRecords(currentPoint);
+    if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints(currentPoint);
+  }
+  const movedFromOsmDisplayCenter = !lastOsmDisplayDownloadCenter || (
+    window.StepByOsmMatcher &&
+    window.StepByOsmMatcher.distanceMeters(lastOsmDisplayDownloadCenter, currentPoint) >= OSM_DISPLAY_REFRESH_DISTANCE_METERS
+  );
+  if (movedFromOsmDisplayCenter && shouldShowOsmTactile()) {
+    lastOsmDisplayDownloadCenter = currentPoint;
+    loadAndShowOsmTactileWays(currentPoint);
+  }
 }
 
 function pollAndSendLocation() {
   if (!latestLocation) return;
 
-  const { lat, lng } = latestLocation;
+  const { lat, lng, accuracy } = latestLocation;
 
   // 記録アクティブ時はrawデータをメモリへ保存（全体 + 現在セッション）
   if (isRecordingActive()) {
-    recordedRawPoints.push({ lat, lng });
-    currentSessionRawPoints.push({ lat, lng });
+    recordedRawPoints.push({ lat, lng, accuracy });
+    currentSessionRawPoints.push({ lat, lng, accuracy });
     console.log(`[Record] Saved raw point: total=${recordedRawPoints.length}, current=${currentSessionRawPoints.length}`);
   }
 
   // サーバーへ送信（読み取り）
-  requestSnappedLocation(lat, lng);
+  requestSnappedLocation(lat, lng, accuracy);
 }
 
 function updateTimestamp() {
@@ -2442,14 +2811,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
 
   if (skipMarker) return;
   
-  // マーカーの更新
-  if (!marker) {
-    console.log('[updateDisplay] Creating new marker');
-    marker = L.marker([snappedLat, snappedLng], { icon: redPinIcon }).addTo(map);
-  } else {
-    console.log('[updateDisplay] Updating existing marker position');
-    marker.setLatLng([snappedLat, snappedLng]);
-  }
+  updateCurrentLocationMarker(snappedLat, snappedLng);
 
   // 記録中のみ軌跡のドットを表示する。記録していないときは現在地の黒い点を出さず、
   // 残っている古い軌跡があれば消去する。
@@ -2479,16 +2841,16 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
 
 // session_pathsを取得して表示
 // 地図上に重ねる各種データレイヤーの取得と再描画を担当する。
-function loadAndShowAllRecords() {
+function loadAndShowAllRecords(centerOverride = null) {
   refreshMapDisplaySettings();
   const requestSeq = ++recordsLoadRequestSeq;
   setRecordsLoadingVisible(true);
   console.log("[loadAndShowAllRecords] Fetching all session paths...");
-  const center = map.getCenter();
+  const center = centerOverride || map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "10",
+    radiusKm: String(OSM_DISPLAY_RADIUS_KM),
   });
   if (shouldShowOnlyMyTactile()) {
     params.set("mine", "1");
@@ -2555,20 +2917,26 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       return;
     }
 
+    const recordColor = path.record_class === "pro_private" ? "#d92d20" : "#00b050";
     const polyline = L.polyline(coordinates, {
-      color: "#00b050",
+      color: recordColor,
       weight: 4,
       opacity: 0.85,
       interactive: false,
     }).addTo(map);
-    const hitPolyline = L.polyline(coordinates, {
-      color: "#00b050",
-      weight: 12,
+    polyline.options.stepByBaseColor = recordColor;
+    // OSM送信済みの記録はOSM表示レイヤーだけでクリックを受け、保存経路との
+    // 二重判定（わずかな位置差）を避ける。
+    const osmManaged = path.osm_status === "merged" || path.osm_status === "revert_draft";
+    const hitPolyline = osmManaged ? null : L.polyline(coordinates, {
+      color: recordColor,
+      // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
+      weight: 48,
       opacity: 0,
       bubblingMouseEvents: false,
     }).addTo(map);
     const sessionId = typeof path.session_id === "string" ? path.session_id : "";
-    if (sessionId) {
+    if (sessionId && hitPolyline) {
       hitPolyline.on("click", (event) => {
         L.DomEvent.stop(event);
         setActiveTactileSessionPolyline(polyline);
@@ -2598,7 +2966,7 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
       });
     }
     allRecordsMarkers.push(polyline);
-    allRecordsMarkers.push(hitPolyline);
+    if (hitPolyline) allRecordsMarkers.push(hitPolyline);
   });
 
   console.log(`[showAllSessionPathsOnMap] Displayed ${allRecordsMarkers.length} polylines`);
@@ -2626,24 +2994,18 @@ function setRecordsLoadingVisible(visible) {
   recordsLoadingOverlayEl.classList.add("hidden");
 }
 
-function loadAndShowOsmTactileWays() {
+function loadAndShowOsmTactileWays(centerOverride = null) {
   // トグルONの最新リクエストだけを有効にするための採番。
   const requestSeq = ++osmTactileLoadRequestSeq;
   setOsmLoadingVisible(true);
   console.log("[loadAndShowOsmTactileWays] Fetching tactile ways from OSM...");
-  const center = map.getCenter();
+  const center = centerOverride || map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "10",
+    radiusKm: "1",
   });
-  authFetch(`/api/osm-tactile-ways?${params.toString()}`)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(`osm tactile fetch failed: ${res.status}`);
-      }
-      return res.json();
-    })
+  fetchOsmTactileDisplay(center.lat, center.lng, OSM_DISPLAY_RADIUS_KM)
     .then((data) => {
       if (requestSeq !== osmTactileLoadRequestSeq || !shouldShowOsmTactile()) {
         return;
@@ -2661,7 +3023,7 @@ function loadAndShowOsmTactileWays() {
         return;
       }
       console.error("[loadAndShowOsmTactileWays] Error:", err);
-      alert("OSM点字ブロックデータの取得に失敗しました。");
+      alert("OSM点字ブロックデータの取得に失敗しました。しばらく待ってから再度お試しください。");
       clearOsmTactileWaysFromMap();
     })
     .finally(() => {
@@ -2669,6 +3031,172 @@ function loadAndShowOsmTactileWays() {
         setOsmLoadingVisible(false);
       }
     });
+}
+
+function overpassTactileFeature(element) {
+  const tags = element && element.tags && typeof element.tags === "object" ? element.tags : {};
+  const stepbyRecorded = Object.entries(tags).some(([key, value]) => /stepby/i.test(`${key}:${value}`));
+  const properties = {
+    osm_type: element.type,
+    matched_tag_key: "tactile_paving",
+    matched_tag_value: tags.tactile_paving || "",
+    osm_changeset_id: element.changeset == null ? null : Number(element.changeset),
+    stepby_recorded: stepbyRecorded,
+  };
+  if (element.type === "way" && Array.isArray(element.geometry)) {
+    const coordinates = element.geometry.map((point) => [Number(point.lon), Number(point.lat)])
+      .filter(([lng, lat]) => Number.isFinite(lng) && Number.isFinite(lat));
+    return coordinates.length >= 2 ? { type: "Feature", properties: { ...properties, osm_way_id: element.id }, geometry: { type: "LineString", coordinates } } : null;
+  }
+  if (element.type === "node" && Number.isFinite(Number(element.lat)) && Number.isFinite(Number(element.lon))) {
+    return { type: "Feature", properties: { ...properties, osm_node_id: element.id }, geometry: { type: "Point", coordinates: [Number(element.lon), Number(element.lat)] } };
+  }
+  return null;
+}
+
+async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
+  const radiusMeters = radiusKm * 1000;
+  const latDelta = radiusMeters / 111320;
+  const lngDelta = radiusMeters / (111320 * Math.max(0.2, Math.cos(centerLat * Math.PI / 180)));
+  const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
+    .map((value) => value.toFixed(7)).join(",");
+  const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
+  // クラウドIPがOverpassの混雑制限を受ける場合に備え、APIプロキシと端末からの
+  // 読取専用リクエストを並行し、最初に成功した結果を採用する。
+  const hosts = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+  ];
+  const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
+  const apiAttempt = (async () => {
+      // 10km検索はOverpass混雑時に複数の読取先を順番に試すため、API側の
+      // フォールバックが完了する時間を確保する。個々のブラウザ直読は30秒で打ち切る。
+      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(100000) });
+      if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
+      return apiResponse.json();
+    })();
+  try {
+    // StepBy記録ID・投稿者・本人だけの削除権限を付与できるサーバー応答を優先する。
+    const apiResult = await apiAttempt;
+    if (apiResult && Array.isArray(apiResult.features)) return apiResult;
+  } catch (error) {
+    console.warn("[OSM tactile display] StepBy API unavailable; using read-only Overpass fallback", error && error.message);
+  }
+  const attempts = hosts.map(async (endpoint) => {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!response.ok) throw new Error(`overpass_status_${response.status}`);
+      const payload = await response.json();
+      const features = (Array.isArray(payload.elements) ? payload.elements : [])
+        .map(overpassTactileFeature).filter(Boolean);
+      return { success: true, features, count: features.length, source: "browser_overpass" };
+    });
+  try {
+    const nonEmptyAttempts = attempts.map((attempt) => attempt.then((result) => {
+      if (!result || !Array.isArray(result.features) || result.features.length === 0) throw new Error("empty_osm_tactile_result");
+      return result;
+    }));
+    try {
+      return await Promise.any(nonEmptyAttempts);
+    } catch {
+      const settled = await Promise.allSettled(attempts);
+      const emptySuccess = settled.find((result) => result.status === "fulfilled" && result.value && Array.isArray(result.value.features));
+      if (emptySuccess) return emptySuccess.value;
+      throw new Error("all_osm_tactile_reads_failed");
+    }
+  } catch (error) {
+    console.warn("[OSM tactile display] all read endpoints failed", error && error.message);
+    throw new Error("all_overpass_hosts_failed");
+  }
+}
+
+async function requestOwnedOsmRevert(recordId, button) {
+  const text = getTactileSessionText();
+  if (!window.confirm(text.deleteOsmConfirm)) return;
+  if (!osmRevertQueue) {
+    showMapToast("削除処理を開始できませんでした。ページを再読み込みしてください。", 4200);
+    return;
+  }
+  if (button instanceof HTMLButtonElement) button.disabled = true;
+  try {
+    await osmRevertQueue.enqueue({ id: `osm-revert:${recordId}`, recordId });
+    hideTactileSessionCard();
+  } catch (error) {
+    if (button instanceof HTMLButtonElement) button.disabled = false;
+    showMapToast("削除要求を端末に保存できませんでした。", 4200);
+  }
+}
+
+function bindStepByOsmRecordCard(layer, feature, displayPolyline) {
+  const properties = feature && feature.properties || {};
+  const recordId = String(properties.stepby_record_id || properties.stepby_owned_record_id || "");
+  const ownerUserId = Number(properties.stepby_owner_user_id);
+  if (!properties.stepby_recorded || !recordId) return;
+  layer.on("click", (event) => {
+    if (event.originalEvent) L.DomEvent.stop(event.originalEvent);
+    setActiveTactileSessionPolyline(displayPolyline);
+    renderTactileSessionCard(
+      buildTactileSessionCardHtml(recordId, null, { loading: true, ownerUserId }),
+      event.latlng
+    );
+    fetchTactileSessionInfo(recordId)
+      .then((sessionInfo) => {
+        renderTactileSessionCard(
+          buildTactileSessionCardHtml(recordId, sessionInfo, {
+            ownerUserId: Number.isFinite(ownerUserId) ? ownerUserId : sessionInfo.ownerUserId,
+            osmPublished: true,
+            osmRecordId: properties.stepby_can_revert ? recordId : "",
+          }),
+          event.latlng
+        );
+      })
+      .catch((error) => {
+        const text = getTactileSessionText();
+        renderTactileSessionCard(
+          buildTactileSessionCardHtml(recordId, null, {
+            error: error && error.message === "session_not_found" ? text.notFound : text.fetchFailed,
+            ownerUserId,
+          }),
+          event.latlng
+        );
+      });
+  });
+}
+
+// Leaflet/SVGでは完全透明な短い線の端が端末によって判定されにくいことがある。
+// 太い線に加え、線上の各頂点と区間中央へ円形判定を置くことで、見える線を
+// 中心とした同じ幅のタップ領域を確実に作る。
+function createCenteredPolylineHitTarget(coordinates, color) {
+  const hitLayers = [L.polyline(coordinates, {
+    color,
+    weight: 48,
+    opacity: 0.001,
+    lineCap: "round",
+    lineJoin: "round",
+    bubblingMouseEvents: false,
+  })];
+  const points = [];
+  coordinates.forEach((point, index) => {
+    points.push(point);
+    if (index === 0) return;
+    const previous = coordinates[index - 1];
+    points.push([(previous[0] + point[0]) / 2, (previous[1] + point[1]) / 2]);
+  });
+  points.forEach((point) => {
+    hitLayers.push(L.circleMarker(point, {
+      radius: 24,
+      stroke: false,
+      fillColor: color,
+      fillOpacity: 0.001,
+      bubblingMouseEvents: false,
+    }));
+  });
+  return L.featureGroup(hitLayers).addTo(map);
 }
 
 function showOsmTactileWaysOnMap(features) {
@@ -2690,12 +3218,24 @@ function showOsmTactileWaysOnMap(features) {
         return;
       }
 
+      const osmColor = feature.properties && feature.properties.stepby_recorded ? "#00b050" : "#0066ff";
+      const isStepByRecord = Boolean(feature.properties &&
+        feature.properties.stepby_recorded &&
+        (feature.properties.stepby_record_id || feature.properties.stepby_owned_record_id));
       const polyline = L.polyline(coordinates, {
-        color: "#0066ff",
+        color: osmColor,
         weight: 4,
         opacity: 0.9,
+        // StepByの緑線は投稿者に関係なく、透明な専用レイヤーで詳細を開く。
+        interactive: !isStepByRecord,
       }).addTo(map);
+      polyline.options.stepByBaseColor = osmColor;
       osmTactileMarkers.push(polyline);
+      if (isStepByRecord) {
+        const hitTarget = createCenteredPolylineHitTarget(coordinates, osmColor);
+        bindStepByOsmRecordCard(hitTarget, feature, polyline);
+        osmTactileMarkers.push(hitTarget);
+      }
       return;
     }
 
@@ -2707,13 +3247,15 @@ function showOsmTactileWaysOnMap(features) {
         return;
       }
 
+      const osmColor = feature.properties && feature.properties.stepby_recorded ? "#00b050" : "#0066ff";
       const point = L.circleMarker([lat, lng], {
         radius: 4,
-        color: "#0066ff",
-        fillColor: "#0066ff",
+        color: osmColor,
+        fillColor: osmColor,
         fillOpacity: 0.95,
         weight: 1,
       }).addTo(map);
+      bindStepByOsmRecordCard(point, feature, point);
       osmTactileMarkers.push(point);
     }
   });
@@ -2741,16 +3283,16 @@ function setOsmLoadingVisible(visible) {
   osmLoadingOverlayEl.classList.add("hidden");
 }
 
-function loadAndShowRoadInfoPoints() {
+function loadAndShowRoadInfoPoints(centerOverride = null) {
   refreshMapDisplaySettings();
   const requestSeq = ++roadInfoLoadRequestSeq;
-  // 地図中心から10kmの道情報ポイントを取得する。
+  // 地図中心から1kmの道情報ポイントを取得する。
   console.log("[loadAndShowRoadInfoPoints] Fetching road info points...");
-  const center = map.getCenter();
+  const center = centerOverride || map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "10",
+    radiusKm: "1",
   });
   if (shouldShowOnlyMyRoadInfo()) {
     params.set("mine", "1");
@@ -2898,6 +3440,8 @@ function loadConfig() {
 
 initTraceTagUiEvents();
 initSafetyConfirmModal();
+initRecordUploadQueue();
+initOsmRevertQueue();
 
 if ("geolocation" in navigator) {
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
@@ -2906,7 +3450,7 @@ if ("geolocation" in navigator) {
     // 手動リクエスト用
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        handleNewLocation(pos.coords.latitude, pos.coords.longitude, force);
+        handleNewLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
       },
       (err) => {
         console.error("[Geolocation] getCurrentPosition error:", err);
@@ -2930,7 +3474,7 @@ if ("geolocation" in navigator) {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         // OSから位置情報が届くたびに処理
-        handleNewLocation(pos.coords.latitude, pos.coords.longitude, false);
+        handleNewLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
       },
       (err) => {
         console.error("[Geolocation] watchPosition error:", err);
@@ -2961,6 +3505,7 @@ if ("geolocation" in navigator) {
     });
     try {
       await loadCurrentUserId();
+      await requireOsmConnectionBeforeMapUse();
       await loadCurrentUserProStatus();
     } catch (error) {
       logMapEvent("map_gps_bootstrap_partial", {
@@ -2968,7 +3513,7 @@ if ("geolocation" in navigator) {
         level: "warn",
         message: error && error.message ? String(error.message) : "map bootstrap failed before gps start",
       });
-      if (error && (error.message === "unauthorized" || error.message === "invalid_user")) {
+      if (error && (error.message === "unauthorized" || error.message === "invalid_user" || error.message === "osm_required")) {
         return;
       }
     }
@@ -3026,9 +3571,20 @@ if ("geolocation" in navigator) {
             console.log(
               `[Record] Stop requested. totalRaw=${recordedRawPoints.length}, totalSnapped=${recordedSnappedPoints.length}, activeSession=${currentSessionId || "none"}`
             );
-            await handleRecordStopWithConfirmation();
-            markTrailDotsAsIdle();
-            resetRecordingState();
+            try {
+              await handleRecordStopWithConfirmation();
+              markTrailDotsAsIdle();
+              resetRecordingState();
+            } catch (error) {
+              // 予期しない通信・地図処理エラーで確認画面を開けなかった場合は、
+              // 記録内容を消さず記録中へ戻し、もう一度停止操作を試せるようにする。
+              console.error("[Record] Failed to open or finish confirmation:", error);
+              closeTraceConfirmModal();
+              recordEnabled = true;
+              recordPaused = false;
+              saveRecordingStateToStorage();
+              alert("確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
+            }
           }
         } finally {
           isHandlingRecordToggle = false;
@@ -3137,7 +3693,23 @@ if ("geolocation" in navigator) {
   }
 }
 
-// ===== 道情報投稿完了トーストの表示 =====
+// ===== 共通トーストと道情報投稿完了通知 =====
+let mapToastTimer = null;
+function showMapToast(message, durationMs = 2800) {
+  const toastEl = document.getElementById("map-toast");
+  if (!toastEl) return;
+  const textEl = toastEl.querySelector(".map-toast-text");
+  if (textEl) textEl.textContent = String(message || "");
+  if (mapToastTimer) clearTimeout(mapToastTimer);
+  toastEl.classList.remove("hidden");
+  requestAnimationFrame(() => toastEl.classList.add("visible"));
+  mapToastTimer = setTimeout(() => {
+    toastEl.classList.remove("visible");
+    setTimeout(() => toastEl.classList.add("hidden"), 300);
+    mapToastTimer = null;
+  }, durationMs);
+}
+
 // post_road からの遷移直後にトーストを表示する。
 // post_road 側で投稿リクエストを keepalive で送信し、sessionStorage にフラグを置く設計。
 // 戻るで遷移したときはbfcacheから復元されるためIIFEは再実行されない。pageshow（persistedありなし両方）で毎回チェックする。
@@ -3146,26 +3718,20 @@ function showRoadInfoPostToastIfNeeded() {
   try { flag = sessionStorage.getItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   if (!flag) return;
   try { sessionStorage.removeItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
-  const toastEl = document.getElementById("map-toast");
-  if (!toastEl) return;
   const lang = getCurrentLanguage();
   const messages = {
-    ja: "道情報の投稿が完了しました！",
-    en: "Road info posted!",
-    hi: "सड़क जानकारी पोस्ट हो गई!",
+    ja: "道情報を受け付けました。保存処理は裏で続けています。",
+    en: "Road information queued. Saving continues in the background.",
+    hi: "सड़क की जानकारी कतार में है। सहेजना पृष्ठभूमि में जारी है।",
   };
-  const text = messages[lang] || messages.ja;
-  const textEl = toastEl.querySelector(".map-toast-text");
-  if (textEl) textEl.textContent = text;
-  toastEl.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    toastEl.classList.add("visible");
-  });
-  setTimeout(() => {
-    toastEl.classList.remove("visible");
-    setTimeout(() => { toastEl.classList.add("hidden"); }, 300);
-  }, 2800);
+  showMapToast(messages[lang] || messages.ja);
 }
+
+window.addEventListener("stepby:road-info-queue", (event) => {
+  const status = event && event.detail && event.detail.status;
+  if (status === "completed") showMapToast("道情報の保存が完了しました。", 3000);
+  if (status === "retry") showMapToast("道情報は端末に保管中です。通信回復後に自動で再送します。", 4200);
+});
 
 // 初回ロードと bfcache 復元の両方で動くよう、pageshow と DOMContentLoaded 両方にフックする。
 showRoadInfoPostToastIfNeeded();

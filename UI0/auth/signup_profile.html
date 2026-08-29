@@ -8,7 +8,8 @@
     <title>サインアップ | Draggable Map</title>
     <meta name="theme-color" content="#0f766e" />
     <link rel="manifest" href="../manifest.webmanifest" />
-    <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="auth.css?v=ui0-policy-layout-20260804" />
+    <link rel="stylesheet" href="../ui4-theme.css" />
   </head>
   <body class="signup-profile-page">
     <main class="auth-shell signup-profile-shell">
@@ -45,7 +46,8 @@
             <label class="agreement-label" for="signup-agreement-checkbox">
               <input id="signup-agreement-checkbox" name="agreement" type="checkbox" />
               <span>
-                <button id="open-user-agreement" type="button" class="agreement-link agreement-link-inline">利用規約</button>に同意します
+                <button type="button" class="agreement-link agreement-link-inline open-policy-document" data-document="terms">利用規約</button>と
+                <button type="button" class="agreement-link agreement-link-inline open-policy-document" data-document="privacy">プライバシーポリシー</button>に同意します
               </span>
             </label>
           </div>
@@ -76,7 +78,7 @@
     <script src="../config.js"></script>
 
     <script src="../auth/token_client.js"></script>
-    <script src="auth.js?v=20260228"></script>
+    <script src="auth.js?v=ui0-policy-layout-20260804"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>

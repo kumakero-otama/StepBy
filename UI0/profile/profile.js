@@ -6,6 +6,7 @@ const totalTactileEl = document.getElementById("total-tactile-length");
 const totalRoadPostsEl = document.getElementById("total-road-posts");
 const logoutBtnEl = document.getElementById("profile-logout-btn");
 const editBtnEl = document.getElementById("profile-edit-btn");
+const osmStatusEl = document.getElementById("osm-connection-status");
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const PROFILE_ICON_CACHE_KEY = "cachedProfileIcon.v1";
 
@@ -48,12 +49,18 @@ const authTokenApi = window.AuthToken || null;
 const PROFILE_TEXT = {
   ja: {
     guestEditLocked: "ゲストアカウントではプロフィール編集はできません。",
+    osmChecking: "OpenStreetMapへの公開状態を確認しています…",
+    osmFailed: "OpenStreetMapへの公開状態を確認できませんでした。",
   },
   en: {
     guestEditLocked: "Profile editing is not available for guest accounts.",
+    osmChecking: "Checking OpenStreetMap publishing status…",
+    osmFailed: "Could not check OpenStreetMap publishing status.",
   },
   hi: {
     guestEditLocked: "गेस्ट खाते में प्रोफ़ाइल संपादन उपलब्ध नहीं है।",
+    osmChecking: "OpenStreetMap प्रकाशन स्थिति की जांच हो रही है…",
+    osmFailed: "OpenStreetMap प्रकाशन स्थिति की जांच नहीं हो सकी।",
   },
 };
 
@@ -285,18 +292,60 @@ function applyProfileUser(user) {
   applyProfileEditAvailability(Boolean(user.isGuest || user.is_guest));
 }
 
-function applyProfileEditAvailability(isGuest) {
+function applyProfileEditAvailability() {
   if (!editBtnEl) {
     return;
   }
-  editBtnEl.disabled = isGuest;
-  editBtnEl.classList.toggle("is-disabled", isGuest);
-  if (isGuest) {
-    editBtnEl.setAttribute("aria-disabled", "true");
-    editBtnEl.title = getProfileText().guestEditLocked;
-  } else {
-    editBtnEl.removeAttribute("aria-disabled");
-    editBtnEl.removeAttribute("title");
+  editBtnEl.disabled = false;
+  editBtnEl.classList.remove("is-disabled");
+  editBtnEl.removeAttribute("aria-disabled");
+  editBtnEl.removeAttribute("title");
+}
+
+function setOsmStatus(message, state) {
+  if (!osmStatusEl) return;
+  osmStatusEl.textContent = message;
+  osmStatusEl.classList.toggle("is-connected", state === "connected");
+  osmStatusEl.classList.toggle("is-error", state === "error");
+}
+
+function setOsmPublicationNotice(state = "connected") {
+  if (!osmStatusEl) return;
+  const language = getCurrentLanguage();
+  const before = language === "en"
+    ? "Recorded tactile paving information is merged into "
+    : language === "hi"
+      ? "रिकॉर्ड की गई स्पर्शनीय फ़र्श जानकारी "
+      : "記録した点字ブロック情報は";
+  const after = language === "en"
+    ? "."
+    : language === "hi"
+      ? " में मर्ज की जाती है।"
+      : "にマージされます。";
+  const link = document.createElement("a");
+  link.href = "https://www.openstreetmap.org/";
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "OpenStreetMap";
+  osmStatusEl.replaceChildren(document.createTextNode(before), link, document.createTextNode(after));
+  osmStatusEl.classList.toggle("is-connected", state === "connected");
+  osmStatusEl.classList.remove("is-error");
+}
+
+async function loadOsmConnection() {
+  if (!osmStatusEl) return;
+  const text = getProfileText();
+  setOsmStatus(text.osmChecking, "checking");
+  try {
+    const response = await authFetch("/auth/osm/status", { cache: "no-store" });
+    if (response.status === 401) return redirectToLogin();
+    if (!response.ok) throw new Error("osm_status_failed");
+    const payload = await response.json();
+    if (payload.editorMode !== "stepby_service_account") throw new Error("unexpected_osm_editor_mode");
+    if (payload.configured) setOsmPublicationNotice();
+    else setOsmStatus("OSM公開機能は現在準備中です。", "idle");
+  } catch {
+    setOsmStatus(text.osmFailed, "error");
   }
 }
 
@@ -361,13 +410,10 @@ if (logoutBtnEl) {
 
 if (editBtnEl) {
   editBtnEl.addEventListener("click", () => {
-    if (editBtnEl.disabled) {
-      window.alert(getProfileText().guestEditLocked);
-      return;
-    }
     window.location.href = AppPath.toApp("/profile/edit.html");
   });
 }
 
 loadProfile();
 void syncProfileProChip();
+void loadOsmConnection();

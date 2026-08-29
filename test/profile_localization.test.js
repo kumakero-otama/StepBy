@@ -7,7 +7,7 @@ for (const [relativePath, expectedTitle] of [
   ["help/Index.html", "ヘルプ"],
   ["setting/Index.html", "設定"],
 ]) {
-  const html = fs.readFileSync(path.join(__dirname, "../UI10", relativePath), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../UI0", relativePath), "utf8");
   assert.match(
     html,
     new RegExp(`<h1 class="app-bar-title">${expectedTitle}</h1>`),

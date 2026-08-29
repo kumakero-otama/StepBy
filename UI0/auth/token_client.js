@@ -2,7 +2,7 @@
 (function initAuthTokenClient(globalScope) {
   const ACCESS_TOKEN_KEY = "access_token.v1";
   const DEFAULT_APP_BASE_PATH = "/StepBy/UI2";
-  const DEFAULT_API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net";
+  const DEFAULT_API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
   const DEFAULT_AUTH_TIMEOUT_MS = 12000;
   const REQUEST_ID_STORAGE_KEY = "client_log_request_id.v1";
   const SESSION_ID_STORAGE_KEY = "client_log_session_id.v1";
@@ -183,11 +183,17 @@
       return explicitTimeoutMs;
     }
     const path = typeof target === "string" ? target : "";
-    if (/\/api\/(match|trace|osm-tactile-ways)/.test(path)) {
+    if (/\/api\/osm-tactile-ways/.test(path)) {
+      return 40000;
+    }
+    if (/\/api\/(match|trace)/.test(path)) {
       return 25000;
     }
     if (/\/api\/(config|pro-status)/.test(path)) {
       return 15000;
+    }
+    if (/\/auth\/profile/.test(path)) {
+      return 30000;
     }
     if (/\/auth\//.test(path)) {
       return 12000;

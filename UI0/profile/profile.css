@@ -157,13 +157,20 @@ body {
   gap: 8px;
   padding: 10px 22px;
   border-radius: 999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e7a6d;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(18, 69, 63, 0.16);
+  transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.profile-edit-btn:active {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(0.98);
+  box-shadow: 0 1px 5px rgba(18, 69, 63, 0.14);
 }
 
 .profile-edit-btn:disabled,
@@ -185,6 +192,7 @@ body {
   height: 16px;
   object-fit: contain;
   display: block;
+  filter: invert(39%) sepia(24%) saturate(1350%) hue-rotate(121deg) brightness(89%) contrast(88%);
 }
 
 .stats-row {
@@ -200,6 +208,34 @@ body {
   gap: 12px;
   margin-top: 16px;
 }
+
+.osm-connection-card {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid #dbe5e3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(31, 51, 68, 0.08);
+}
+
+.osm-connection-card h2 { margin: 0 0 8px; font-size: 1.1rem; color: #244b48; }
+.osm-connection-status { margin: 0; font-weight: 700; color: #355066; }
+.osm-connection-status.is-connected { color: #18735f; }
+.osm-connection-status.is-error { color: #a33d31; }
+
+.osm-connect-btn,
+.osm-disconnect-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osm-connect-btn { border: 0; color: #fff; background: #2e8b75; }
+.osm-connect-btn:disabled { cursor: default; opacity: .5; }
+.osm-disconnect-btn { border: 1px solid #c8d2d0; color: #5d6967; background: #fff; }
 
 .profile-wide-btn {
   box-sizing: border-box;

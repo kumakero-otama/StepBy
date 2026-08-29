@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="../appbar.css" />
     <link rel="stylesheet" href="../style.css" />
-    <link rel="stylesheet" href="map.css" />
+    <link rel="stylesheet" href="map.css?v=1.30.7-original-pin" />
+    <link rel="preload" as="image" href="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png" />
+    <link rel="stylesheet" href="../ui4-theme.css" />
   </head>
   <body>
 
@@ -40,10 +42,10 @@
     <header class="app-bar map-app-bar">
       <div class="map-app-bar-brand">
         <a class="map-app-bar-logo" href="../map/Index.html" aria-label="होम">
-          <img src="../assets/StepBy_icon_192.png" alt="" />
+          <img src="../assets/map_stepby_icon.png" alt="" />
         </a>
         <div class="map-app-bar-copy">
-          <div class="map-app-bar-name">StepBy</div>
+          <div class="map-app-bar-name">StepBy <span id="map-pro-badge" class="pro-badge map-pro-badge" hidden>PRO</span></div>
           <div class="map-app-bar-tagline">barrier-free map</div>
         </div>
         <span id="gps-indicator" class="map-gps-indicator" aria-hidden="true">
@@ -78,16 +80,16 @@
         if (query.get("debug") === "1") {
           return;
         }
-        try {
-          const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
+        const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
             ? window.AuthToken.authFetch
             : fetch;
-          const getAccessToken = window.AuthToken && typeof window.AuthToken.getAccessToken === "function"
+        const getAccessToken = window.AuthToken && typeof window.AuthToken.getAccessToken === "function"
             ? window.AuthToken.getAccessToken
             : () => "";
-          const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
+        const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
             ? window.AuthToken.isTemporaryError
             : () => false;
+        try {
           const res = await authFetch("/auth/me");
           if (res.status === 401 || res.status === 403) {
             if (window.AuthToken && typeof window.AuthToken.clearAccessToken === "function") {
@@ -325,7 +327,10 @@
       })();
     </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="map.js"></script>
+    <script src="osm-browser-matcher.js?v=1.24.0"></script>
+    <script src="async-record-queue.js?v=1.24.0"></script>
+    <script src="../road-info-queue.js?v=1.24.0"></script>
+    <script src="map.js?v=1.30.8-live-location-priority"></script>
     <script src="../pwa.js"></script>
     <!-- 道情報投稿完了などを画面上端で通知するトースト -->
     <div id="map-toast" class="map-toast hidden" role="status" aria-live="polite">

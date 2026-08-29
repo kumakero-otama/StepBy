@@ -2,8 +2,8 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const mapCss = fs.readFileSync(path.join(__dirname, "../UI10/map/map.css"), "utf8");
-const appBarCss = fs.readFileSync(path.join(__dirname, "../UI10/appbar.css"), "utf8");
+const mapCss = fs.readFileSync(path.join(__dirname, "../UI0/map/map.css"), "utf8");
+const appBarCss = fs.readFileSync(path.join(__dirname, "../UI0/appbar.css"), "utf8");
 const mobileAppBarCss = mapCss.slice(
   mapCss.indexOf("@media (max-width: 520px)"),
   mapCss.indexOf(".map-layout"),

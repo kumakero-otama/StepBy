@@ -250,33 +250,24 @@ body {
 .map-app-bar {
   height: calc(56px + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) 14px 0;
-  background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 60%, #3bb49f 100%);
-  overflow: visible;
-  box-shadow: 0 10px 26px rgba(15, 55, 61, 0.18);
+  background: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 52%, #3bb49f 100%);
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(30, 122, 109, 0.26);
 }
 
 .map-app-bar::before {
   content: "";
   position: absolute;
-  top: -30px;
-  right: -20px;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.12), transparent 20%),
+    linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.1) 50%, transparent 78%);
   pointer-events: none;
 }
 
 .map-app-bar::after {
-  content: "";
-  position: absolute;
-  bottom: -40px;
-  left: 40px;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 184, 71, 0.1) 0%, transparent 70%);
-  pointer-events: none;
+  content: none;
 }
 
 .map-app-bar-brand,
@@ -300,51 +291,24 @@ body {
   justify-content: center;
   position: relative;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 184, 71, 0.3));
-  backdrop-filter: blur(8px);
+  background: transparent;
   text-decoration: none;
 }
 
 .map-app-bar-logo::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 12px rgba(255, 184, 71, 0.3);
-  animation: map-logo-glow 3s ease-in-out infinite;
-}
-
-@keyframes map-logo-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 12px rgba(255, 184, 71, 0.2);
-  }
-
-  50% {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 184, 71, 0.4);
-  }
+  content: none;
 }
 
 .map-app-bar-logo img {
   position: relative;
   z-index: 1;
-  width: 27px;
-  height: 27px;
-  object-fit: contain;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 10px;
   display: block;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
-  animation: map-logo-icon-float 3s ease-in-out infinite;
-}
-
-@keyframes map-logo-icon-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-2px);
-  }
+  filter: none;
+  animation: none;
 }
 
 .map-app-bar-copy {
@@ -390,11 +354,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(4px);
-  box-shadow: 0 8px 18px rgba(16, 53, 58, 0.14);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .map-app-bar-action:active {
@@ -408,8 +371,8 @@ body {
 }
 
 .map-app-bar-settings {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .map-gps-indicator {
@@ -440,13 +403,7 @@ body {
 }
 
 .map-app-bar-wave {
-  position: fixed;
-  top: calc(56px + env(safe-area-inset-top) - 1px);
-  left: 0;
-  width: 100%;
-  height: 14px;
-  z-index: 2599;
-  pointer-events: none;
+  display: none;
 }
 
 .map-app-bar-wave svg {
@@ -456,11 +413,6 @@ body {
 }
 
 @media (max-width: 520px) {
-  .map-app-bar {
-    padding-right: 8px;
-    padding-left: 12px;
-  }
-
   .map-app-bar-copy {
     margin-left: 8px;
   }
@@ -473,10 +425,6 @@ body {
   .map-app-bar-tagline {
     font-size: 7px;
     letter-spacing: 1.6px;
-  }
-
-  .map-app-bar-actions {
-    gap: 6px;
   }
 
   .map-app-bar-action {
@@ -508,13 +456,29 @@ body {
   position: relative;
 }
 
+.is-pro-mode .map-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 5px solid #d92d20;
+  pointer-events: none;
+  z-index: 1500;
+  box-sizing: border-box;
+}
+
+.map-pro-badge {
+  margin-left: 8px;
+}
+
+.trace-tag-option small { opacity: .7; margin-left: .35em; }
+
 .record-actions {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   padding: 8px 6px 8px;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--stepby-surface, rgba(255, 255, 255, 0.94));
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.08);
 }
@@ -528,7 +492,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -567,6 +531,11 @@ body {
   color: #6f7a85;
   box-shadow: none;
   opacity: 1;
+}
+
+/* 記録停止処理中も主ボタンのラベルを白で維持する。処理待ちを文字色の変化に見せない。 */
+.record-main-btn:disabled {
+  color: #fff;
 }
 
 .record-action-icon {
@@ -745,6 +714,27 @@ body {
   margin-top: 18px;
 }
 
+.tactile-session-publication-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tactile-session-publication-status.is-osm {
+  color: #17695d;
+  background: #dff7ee;
+}
+
+.tactile-session-publication-status.is-stepby {
+  color: #516276;
+  background: #eef2f5;
+}
+
 .tactile-session-card-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -774,7 +764,6 @@ body {
   color: #2e9e8f;
 }
 
-.tactile-session-card-memo-edit,
 .tactile-session-card-edit-action {
   min-height: 54px;
   padding: 0 16px;
@@ -792,16 +781,6 @@ body {
   gap: 8px;
 }
 
-.tactile-session-card-memo-edit {
-  width: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-}
-
-.tactile-session-card-memo-edit img,
 .tactile-session-card-edit-action img,
 .tactile-session-card-delete img {
   display: block;
@@ -810,7 +789,6 @@ body {
   object-fit: contain;
 }
 
-.tactile-session-card-memo-edit:disabled,
 .tactile-session-card-edit-action:disabled {
   opacity: 0.6;
   cursor: default;
@@ -1253,6 +1231,28 @@ body {
   display: none;
 }
 
+.trace-confirm-modal.is-preparing .trace-confirm-scroll,
+.trace-confirm-modal.is-preparing .trace-confirm-actions { display: none; }
+
+.trace-confirm-modal.is-preparing .trace-confirm-panel {
+  min-height: 180px;
+  place-content: center;
+  text-align: center;
+}
+
+.trace-confirm-modal.is-preparing .trace-confirm-panel::after {
+  content: "";
+  width: 34px;
+  height: 34px;
+  margin: 8px auto 0;
+  border: 4px solid rgba(38, 166, 148, 0.22);
+  border-top-color: #269f90;
+  border-radius: 50%;
+  animation: trace-confirm-spin 0.8s linear infinite;
+}
+
+@keyframes trace-confirm-spin { to { transform: rotate(360deg); } }
+
 .safety-confirm-modal {
   position: fixed;
   inset: 0;
@@ -1391,6 +1391,22 @@ body {
   overflow: hidden;
 }
 
+.osm-owned-record-delete-button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #b42318;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osm-owned-record-delete-button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
 .trace-tag-panel {
   border: 1px solid #cfcfcf;
   border-radius: 10px;

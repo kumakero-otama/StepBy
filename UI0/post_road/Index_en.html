@@ -609,6 +609,7 @@
       }
 
     </style>
+    <link rel="stylesheet" href="../ui4-theme.css" />
   </head>
   <body>
     <header class="app-bar">
@@ -651,6 +652,11 @@
         <input id="tag-search" class="tag-search" type="text" placeholder="Search or add..." enterkeyhint="done" />
         <div id="tag-selected" class="tag-selected"></div>
         <div id="tag-list" class="tag-list"></div>
+        <div class="complete-tag-controls">
+          <button id="complete-tag-button" class="complete-tag-button" type="button" aria-pressed="false" disabled>Completion tag</button>
+          <button id="complete-tag-info-button" class="complete-tag-info-button" type="button" aria-label="About the completion tag" aria-expanded="false" aria-controls="complete-tag-info"><img src="../assets/buttons/help_66gray.png" alt="" /></button>
+        </div>
+        <p id="complete-tag-info" class="complete-tag-info" hidden>This tag indicates that a previously reported road condition has been resolved for some reason (for example, damaged tactile paving was repaired). Road information with this tag will be hidden.</p>
       </section>
 
       <h2 class="section-title"><span class="section-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v12.5A1.5 1.5 0 0 1 19.5 20H7l-4 3V6a2 2 0 0 1 2-2Zm2.5 5h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h9a1 1 0 1 0 0-2h-9a1 1 0 1 0 0 2Zm0 4h6a1 1 0 1 0 0-2h-6a1 1 0 1 0 0 2Z"/></svg></span><span>Details</span></h2>
@@ -684,25 +690,20 @@
     </main>
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
+    <script src="../map/async-record-queue.js?v=1.24.0"></script>
+    <script src="../road-info-queue.js?v=1.24.0"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // Post画面の状態管理・画像処理・送信を扱うメインスクリプト。
       const authFetch = window.AuthToken && typeof window.AuthToken.authFetch === "function"
         ? window.AuthToken.authFetch
         : fetch;
-      const fallbackTags = [
-        { id: "step", label: "段差" },
-        { id: "construction", label: "工事中" },
-        { id: "tactile", label: "点字ブロック" },
-        { id: "slope", label: "スロープあり" },
-        { id: "caution", label: "通行注意" },
-        { id: "rough_surface", label: "路面が悪い" },
-        { id: "crowded", label: "混雑" },
-        { id: "dark_at_night", label: "夜間暗い" }
-      ];
       const tagSearchEl = document.getElementById("tag-search");
       const tagSelectedEl = document.getElementById("tag-selected");
       const tagListEl = document.getElementById("tag-list");
+      const completeTagButtonEl = document.getElementById("complete-tag-button");
+      const completeTagInfoButtonEl = document.getElementById("complete-tag-info-button");
+      const completeTagInfoEl = document.getElementById("complete-tag-info");
       const backButton = document.getElementById("back-button");
       const photoUploadArea = document.getElementById("photo-upload-area");
       const photoLibraryButton = document.getElementById("photo-library-button");
@@ -717,6 +718,7 @@
       const submitLoadingEl = document.getElementById("submit-loading");
       let maxImageBytes = 2 * 1024 * 1024;
       let allTags = [];
+      const hiddenTagLabels = new Set(["test", "test１", "テスト", "テスト用", "テスト用2"]);
       const selectedTagIds = new Set();
       const selectedImages = [];
       let currentMapCenter = null;
@@ -771,15 +773,19 @@
             }
             return { id, label };
           })
-          .filter(Boolean);
+          .filter((tag) => tag && !hiddenTagLabels.has(tag.label));
+      }
+
+      function isCompleteTag(tag) {
+        return Boolean(tag && tag.label.toLowerCase() === "complete");
       }
 
       // 検索語と選択状態から、表示対象Tagsを絞り込む。
       function getVisibleTags() {
         const query = tagSearchEl ? tagSearchEl.value.trim().toLowerCase() : "";
         const filtered = query
-          ? allTags.filter((tag) => tag.label.toLowerCase().includes(query))
-          : allTags.slice();
+          ? allTags.filter((tag) => !isCompleteTag(tag) && tag.label.toLowerCase().includes(query))
+          : allTags.filter((tag) => !isCompleteTag(tag));
 
         filtered.sort((a, b) => {
           const aSelected = selectedTagIds.has(a.id);
@@ -802,7 +808,7 @@
           return;
         }
         tagSelectedEl.innerHTML = selectedTags
-          .map((tag) => `<button type="button" class="tag-item" data-remove-tag-id="${escapeHtml(tag.id)}">${escapeHtml(tag.label)} ×</button>`)
+          .map((tag) => `<button type="button" class="tag-item${isCompleteTag(tag) ? " tag-item-complete" : ""}" data-remove-tag-id="${escapeHtml(tag.id)}">${isCompleteTag(tag) ? "Completion tag" : escapeHtml(tag.label)} ×</button>`)
           .join("");
       }
 
@@ -827,6 +833,12 @@
       function renderTagUi() {
         renderSelectedTags();
         renderTagList();
+        const completeTag = allTags.find(isCompleteTag);
+        if (completeTagButtonEl) {
+          completeTagButtonEl.disabled = !completeTag;
+          completeTagButtonEl.dataset.tagId = completeTag ? completeTag.id : "";
+          completeTagButtonEl.setAttribute("aria-pressed", completeTag && selectedTagIds.has(completeTag.id) ? "true" : "false");
+        }
       }
 
       // サーバーSettingsから画像の上限バイト数を取得する。
@@ -857,12 +869,13 @@
         })
         .then((payload) => {
           const tags = normalizeTags(Array.isArray(payload && payload.tags) ? payload.tags : []);
-          allTags = tags.length > 0 ? tags : fallbackTags;
+          allTags = tags;
           renderTagUi();
         })
         .catch(() => {
-          allTags = fallbackTags;
-          renderTagUi();
+          allTags = [];
+          if (tagSelectedEl) tagSelectedEl.innerHTML = '<div class="tag-selected-empty">None selected</div>';
+          if (tagListEl) tagListEl.innerHTML = '<div class="tag-list-empty">Could not load tags from the database</div>';
         });
 
       if (tagSearchEl) {
@@ -961,6 +974,24 @@
         });
       }
 
+      if (completeTagButtonEl) {
+        completeTagButtonEl.addEventListener("click", () => {
+          const tagId = completeTagButtonEl.dataset.tagId;
+          if (!tagId) return;
+          if (selectedTagIds.has(tagId)) selectedTagIds.delete(tagId);
+          else selectedTagIds.add(tagId);
+          renderTagUi();
+        });
+      }
+
+      if (completeTagInfoButtonEl && completeTagInfoEl) {
+        completeTagInfoButtonEl.addEventListener("click", () => {
+          const willOpen = completeTagInfoEl.hidden;
+          completeTagInfoEl.hidden = !willOpen;
+          completeTagInfoButtonEl.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        });
+      }
+
       if (backButton) {
         backButton.addEventListener("click", () => {
           window.history.back();
@@ -1014,6 +1045,13 @@
               window.history.back();
             };
 
+            if (window.StepByRoadInfoQueue) {
+              const submissionId = "road:" + (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+              await window.StepByRoadInfoQueue.enqueue(body, submissionId);
+              clearInputsAndGoBack();
+              return;
+            }
+
             if (bodySize <= KEEPALIVE_BODY_LIMIT) {
               // 小さいリクエストは keepalive でバックグラウンド送信し、即座にマップ画面へ戻る。
               try {
@@ -1045,7 +1083,7 @@
               } catch (e) {}
 
               if (activeSw) {
-                const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://barrierfree-map.tail5de5e1.ts.net";
+                const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://stepby-api-8-229-191-182.sslip.io";
                 const fullUrl = apiBase.replace(/\/+$/, "") + "/api/road-info";
                 const accessToken = (window.AuthToken && typeof window.AuthToken.getAccessToken === "function")
                   ? window.AuthToken.getAccessToken()

@@ -2,9 +2,9 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const css = fs.readFileSync(path.join(__dirname, "../UI10/appbar.css"), "utf8");
-const profileSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/profile.js"), "utf8");
-const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
+const css = fs.readFileSync(path.join(__dirname, "../UI0/appbar.css"), "utf8");
+const profileSource = fs.readFileSync(path.join(__dirname, "../UI0/profile/profile.js"), "utf8");
+const mapSource = fs.readFileSync(path.join(__dirname, "../UI0/map/map.js"), "utf8");
 
 assert.match(css, /:root\[data-font-size="medium"\][\s\S]*?font-size:\s*115%/,
   "medium must increase the root rem size");

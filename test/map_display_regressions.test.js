@@ -2,12 +2,12 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
-const matcherSource = fs.readFileSync(path.join(__dirname, "../UI10/map/osm-browser-matcher.js"), "utf8");
-const mapCss = fs.readFileSync(path.join(__dirname, "../UI10/map/map.css"), "utf8");
-const appBarCss = fs.readFileSync(path.join(__dirname, "../UI10/appbar.css"), "utf8");
+const mapSource = fs.readFileSync(path.join(__dirname, "../UI0/map/map.js"), "utf8");
+const matcherSource = fs.readFileSync(path.join(__dirname, "../UI0/map/osm-browser-matcher.js"), "utf8");
+const mapCss = fs.readFileSync(path.join(__dirname, "../UI0/map/map.css"), "utf8");
+const appBarCss = fs.readFileSync(path.join(__dirname, "../UI0/appbar.css"), "utf8");
 for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
-  const html = fs.readFileSync(path.join(__dirname, "../UI10/map", name), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../UI0/map", name), "utf8");
   assert.match(html, /class="pro-badge map-pro-badge"/);
   assert.doesNotMatch(html, /osm-change-preview|OSM変更予定プレビュー/,
     "general-user save confirmation must not expose the OSM change preview");
@@ -33,10 +33,12 @@ assert.match(mapSource, /osm_draft_skipped_safely/,
   "a safely ineligible OSM Way must complete StepBy storage instead of retrying forever");
 assert.match(mapSource, /showMapToast\("削除しました。"/,
   "delete completion must use a short general-user message");
-assert.match(mapSource, /\/api\/osm\/records\/\$\{encodeURIComponent\(recordId\)\}\/publish/,
-  "saving an OSM-eligible record must enqueue its publication");
-assert.match(mapSource, /authorization:\s*"record_save"/,
-  "the Save action must be carried to the record-scoped publication endpoint");
+assert.doesNotMatch(mapSource, /\/api\/osm\/records\/\$\{encodeURIComponent\(recordId\)\}\/publish/,
+  "a general-user save must not publish directly to OSM");
+assert.match(mapSource, /authorization:\s*"administrator_review_required"/,
+  "an OSM-eligible save must create an administrator-review draft");
+assert.match(mapSource, /runStage\("osm_review_queued"/,
+  "the durable queue must checkpoint completion of administrator review registration");
 assert.match(mapSource, /stepby_owned_record_id/,
   "only server-identified owned StepBy features may expose deletion");
 assert.match(mapSource, /function bindStepByOsmRecordCard/,
@@ -83,10 +85,8 @@ assert.match(mapSource, /OSM公開済み/,
   "the unified card must clearly show the OSM publication state");
 assert.doesNotMatch(mapSource, /bindOwnedOsmRevertPopup|StepByで記録した点字ブロックです。/,
   "the old delete-only OSM popup must not remain");
-assert.match(mapSource, /stepby-ui10-osm-revert-queue-v1/,
+assert.match(mapSource, /stepby-ui0-osm-revert-queue-v1/,
   "OSM reverts must survive page/network interruptions in their own persistent queue");
-assert.match(mapSource, /runStage\("osm_network_refreshed"/,
-  "a successful publish must refresh the browser OSM network before the queue completes");
 assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refreshAfterOsmChange/,
   "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
 assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,

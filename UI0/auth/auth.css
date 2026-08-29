@@ -14,9 +14,10 @@ body {
 }
 
 body.login-page {
-  height: var(--login-visible-height);
+  height: auto;
   min-height: var(--login-visible-height);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .auth-shell {
@@ -142,20 +143,21 @@ body.login-page {
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 24%),
     linear-gradient(160deg, #0d3535 0%, #1a5c5c 30%, #2e9e8f 66%, #4bdbb4 100%);
-  height: var(--login-visible-height);
+  height: auto;
   min-height: var(--login-visible-height);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .login-shell {
-  height: var(--login-visible-height);
+  height: auto;
   min-height: var(--login-visible-height);
   max-width: 480px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   background: transparent;
 }
@@ -304,13 +306,13 @@ body.login-page {
   background: #fff;
   border-radius: 0;
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
-  padding: 32px 24px calc(20px + var(--login-safe-bottom) + var(--login-system-ui-bottom));
+  padding: 32px 24px max(44px, calc(36px + var(--login-safe-bottom) + var(--login-system-ui-bottom)));
   margin: 0;
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  max-height: calc(var(--login-visible-height) - 120px - var(--login-system-ui-bottom));
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .login-card-hint {
@@ -381,6 +383,26 @@ body.login-page {
   display: flex;
   justify-content: center;
   margin-bottom: 0;
+}
+
+.login-policy-note {
+  margin: 12px 0 0;
+  color: #657786;
+  font-size: 12px;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.login-policy-note .agreement-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #087f73;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .login-guest-button {
@@ -633,6 +655,58 @@ body.login-page {
   }
 }
 
+@media (max-height: 720px) {
+  .login-hero {
+    flex: 0 0 auto;
+    padding-top: 18px;
+    padding-bottom: 10px;
+  }
+
+  .login-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+  }
+
+  .login-logo img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .login-subtitle {
+    margin-bottom: 10px;
+  }
+
+  .login-features {
+    margin-bottom: 10px;
+  }
+
+  .login-card {
+    padding-top: 20px;
+  }
+}
+
+@media (max-height: 580px) {
+  .login-features {
+    display: none;
+  }
+
+  .login-card-hint {
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-height: 500px) {
+  .login-card {
+    padding-top: 12px;
+  }
+
+  .login-card-hint {
+    display: none;
+  }
+}
+
 .signup-icon-preview {
   display: block;
   margin-top: 10px;
@@ -666,6 +740,17 @@ body.login-page {
   width: 16px;
   height: 16px;
   margin: 0;
+}
+
+.agreement-link-inline {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #075f9f;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .agreement-link {
@@ -733,31 +818,35 @@ body.login-page {
 
 .agreement-content {
   margin: 0;
-  padding: 12px;
+  padding: 18px 20px 24px;
   overflow: auto;
   word-break: break-word;
   font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.94rem;
+  line-height: 1.8;
 }
 
 .agreement-content h1,
 .agreement-content h2,
 .agreement-content h3 {
-  margin: 0 0 10px;
-  line-height: 1.4;
+  margin: 1.4em 0 0.65em;
+  line-height: 1.35;
 }
 
+.agreement-content h1:first-child { margin-top: 0; }
+
 .agreement-content h1 {
-  font-size: 1.2rem;
+  font-size: 1.55rem;
 }
 
 .agreement-content h2 {
-  font-size: 1.08rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #dbe3ea;
+  font-size: 1.25rem;
 }
 
 .agreement-content h3 {
-  font-size: 1rem;
+  font-size: 1.08rem;
 }
 
 .agreement-content p,
@@ -765,13 +854,15 @@ body.login-page {
 .agreement-content ol,
 .agreement-content blockquote,
 .agreement-content hr {
-  margin: 0 0 10px;
+  margin: 0 0 1em;
 }
 
 .agreement-content ul,
 .agreement-content ol {
-  padding-left: 20px;
+  padding-left: 1.5em;
 }
+
+.agreement-content li + li { margin-top: 0.35em; }
 
 .agreement-content blockquote {
   border-left: 3px solid #cbd5e1;

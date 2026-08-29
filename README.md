@@ -1,19 +1,41 @@
-# StepBy
+# StepBy フロントエンド
 
-## UI10現行仕様（2026-08-17）
+StepByの公開PWAフロントエンドです。GitHub Pagesで配信し、画面表示、GPS記録、ブラウザ内マップマッチング、記録の一時保存と再送をHTML・CSS・JavaScriptで実装しています。
 
-UI10はGitHub Pagesから配信し、通常のGPS記録はブラウザ内で約1kmのOSM道路網へフィッティングします。保存直前にはブラウザ・API双方のキャッシュを回避して最新Way・Versionを取得します。
+## 公開画面
 
-利用者はGoogle認証だけを使います。個人OSMアカウントの登録・連携は不要で、OSM公開対象の点字ブロックはバックエンドのStepBy専用OSMアカウントから送信されます。柵・塀・グレーチング・その他・ひとことメモは本人限定情報としてPostgreSQLだけに保存します。
+- 入口: `UI0/map/Index.html`
+- PWA scope: `/StepBy/UI0/`
+- API URL: `UI0/config.js`
+- 地図表示: Leaflet
+- マップマッチング: ブラウザ内JavaScript（Valhallaは使用しません）
 
-本人の「保存」はその記録1件の公開許可、本人の緑線に対する削除確定はその記録1件の取消し許可です。処理はIndexedDBの永続キューで再試行し、同じ記録を二重送信しません。
+旧UIは2026-08-29の正式版切替で削除しました。切替前の状態はGitタグ`pre-ui11-to-ui0-20260829`から確認・復元できます。
 
-## UI11デザイン統合版
+## 主な構成
 
-`UI11/`は、UI10を機能・画面構成の基準として複製し、チームメンバーが`main`へ追加したUI4のデザインを移植した候補です。UI4とUI10は変更せず、UI4の不完全な認証・API・画面構成は取り込んでいません。UI4由来の見た目は`UI11/ui4-theme.css`へ分離しています。
+- `UI0/auth/`: Google認証と利用開始画面
+- `UI0/map/`: 地図、GPS記録、ブラウザフィッティング、バックグラウンド送信
+- `UI0/profile/`: プロフィール表示・編集
+- `UI0/post_road/`: 道情報の投稿
+- `UI0/road_info_detail/`: 記録詳細
+- `UI0/setting/`: 表示と言語の設定
+- `UI0/admin/`: 管理者向け確認画面
+- `UI0/sw.js`: PWAキャッシュとバックグラウンド通信
+- `test/`: 主要仕様の退行テスト
 
-- 入口: `UI11/map/Index.html`
-- PWA scope: `/StepBy/UI11/`
-- API・認証・記録・OSM処理: UI10と同じ
-- デザイン: UI4の配色、最大480pxのモバイルシェル、ヘッダー、カード、フォーム、ボタン
-- 検証: `test/ui11_ui4_migration.test.js`でUI10の機能コード維持とUI11専用パスを確認
+## ローカル確認
+
+```bash
+python3 -m http.server 8080
+```
+
+ブラウザで`http://localhost:8080/UI0/map/Index.html`を開きます。認証や保存には、`UI0/config.js`が指すバックエンドと、公開元URLを許可したGoogle OAuth設定が必要です。
+
+## テスト
+
+```bash
+for test_file in test/*.test.js; do node "$test_file"; done
+```
+
+テストではHTML参照、認証導線、GPS表示、記録キュー、マップマッチング、安全条件、PROモード、外観、多言語表示などを確認します。OSMへの実送信は行いません。

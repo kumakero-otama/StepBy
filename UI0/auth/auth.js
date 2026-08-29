@@ -10,6 +10,8 @@ const loginCardElement = document.querySelector(".login-card");
 const signupPage = window.location.pathname.endsWith("/auth/signup.html");
 const signupProfilePage = window.location.pathname.endsWith("/auth/signup_profile.html");
 const PENDING_SIGNUP_ID_TOKEN_KEY = "pending_google_signup_id_token";
+const TERMS_VERSION = "2026-08-17";
+const PRIVACY_VERSION = "2026-08-17";
 const PROFILE_CACHE_KEY = "cached_profile_user.v1";
 const authTokenApi = window.AuthToken || null;
 const clientLogApi = window.ClientLogs || null;
@@ -312,6 +314,9 @@ function renderMarkdownToHtml(markdown) {
   return parts.join("");
 }
 
+// 規約表示と自動試験で同じ安全なMarkdown整形処理を使う。
+window.StepByPolicyMarkdown = Object.freeze({ render: renderMarkdownToHtml });
+
 // 新規登録途中の Google 情報やアクセストークンを安全に保持する。
 function setPendingSignupIdToken(idToken) {
   if (!idToken || typeof idToken !== "string") {
@@ -437,8 +442,7 @@ async function redirectIfAlreadyAuthenticated() {
         status: 200,
         message: "Authenticated session found on login page",
       });
-      markNavigation("authenticated_session_redirect", AppPath.toApp("/map/Index.html"));
-      window.location.replace(AppPath.toApp("/map/Index.html"));
+      await continueAfterGoogleAuth("authenticated_session_redirect");
       return true;
     }
     return false;
@@ -448,6 +452,12 @@ async function redirectIfAlreadyAuthenticated() {
     }
     return false;
   }
+}
+
+async function continueAfterGoogleAuth(navigationReason) {
+  const mapUrl = AppPath.toApp("/map/Index.html");
+  markNavigation(navigationReason, mapUrl);
+  window.location.href = mapUrl;
 }
 
 function cacheProfileUser(user) {
@@ -554,9 +564,7 @@ async function loginWithGoogle(idToken) {
       return true;
     }
 
-    setGoogleStatus("ログイン成功。地図画面へ移動します...");
-    markNavigation("google_login_success", AppPath.toApp("/map/Index.html"));
-    window.location.href = AppPath.toApp("/map/Index.html");
+    await continueAfterGoogleAuth("google_login_success");
     return true;
   } catch (err) {
     logAuthEvent("auth_google_post_failed", {
@@ -585,6 +593,15 @@ async function loginWithGoogle(idToken) {
 
 async function loginAsGuest() {
   const text = getAuthText();
+  const lang = String(document.documentElement.lang || "ja").toLowerCase();
+  const consentMessage = lang.startsWith("en")
+    ? "To create a guest account, please confirm that you agree to the Terms of Service and Privacy Policy. Continue?"
+    : lang.startsWith("hi")
+      ? "गेस्ट अकाउंट बनाने के लिए उपयोग की शर्तों और गोपनीयता नीति से सहमति आवश्यक है। क्या आप जारी रखना चाहते हैं?"
+      : "ゲストアカウントを作成するには、利用規約とプライバシーポリシーへの同意が必要です。同意して続けますか？";
+  if (!window.confirm(consentMessage)) {
+    return false;
+  }
   const requestId = clientLogApi && typeof clientLogApi.createRequestId === "function"
     ? clientLogApi.createRequestId("req")
     : "";
@@ -609,7 +626,12 @@ async function loginAsGuest() {
     const res = await fetch(AppPath.toApi("/auth/guest"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify({
+        terms_accepted: true,
+        privacy_accepted: true,
+        terms_version: TERMS_VERSION,
+        privacy_version: PRIVACY_VERSION,
+      }),
     });
     const payload = await res.json().catch(() => null);
     if (!res.ok) {
@@ -743,8 +765,9 @@ async function initSignupProfilePage() {
   const submitButton = document.getElementById("signup-profile-submit");
   const agreementModal = document.getElementById("user-agreement-modal");
   const agreementContent = document.getElementById("user-agreement-content");
-  const openAgreementButton = document.getElementById("open-user-agreement");
+  const openPolicyButtons = Array.from(document.querySelectorAll(".open-policy-document"));
   const closeAgreementButton = document.getElementById("close-user-agreement");
+  const agreementTitle = document.getElementById("user-agreement-title");
   if (
     !form ||
     !usernameInput ||
@@ -754,30 +777,37 @@ async function initSignupProfilePage() {
     !submitButton ||
     !agreementModal ||
     !agreementContent ||
-    !openAgreementButton ||
+    !agreementTitle ||
+    openPolicyButtons.length !== 2 ||
     !closeAgreementButton
   ) {
     return;
   }
 
-  let agreementLoaded = false;
-  const openAgreementModal = async () => {
+  const loadedDocuments = new Map();
+  const openAgreementModal = async (documentType) => {
+    const isPrivacy = documentType === "privacy";
+    const documentPath = isPrivacy ? "/assets/privacy_policy.md" : "/assets/terms.md";
+    const documentLabel = isPrivacy ? "プライバシーポリシー" : "利用規約";
     agreementModal.classList.remove("hidden");
-    if (agreementLoaded) {
+    agreementTitle.textContent = documentLabel;
+    if (loadedDocuments.has(documentType)) {
+      agreementContent.innerHTML = loadedDocuments.get(documentType);
       return;
     }
     agreementContent.textContent = "読み込み中...";
     try {
-      const res = await fetch(AppPath.toApp("/assets/user_agreement.md"), { cache: "no-store" });
+      const res = await fetch(AppPath.toApp(documentPath), { cache: "no-store" });
       if (!res.ok) {
-        agreementContent.textContent = "利用規約の読み込みに失敗しました。";
+        agreementContent.textContent = `${documentLabel}の読み込みに失敗しました。`;
         return;
       }
       const text = await res.text();
-      agreementContent.innerHTML = renderMarkdownToHtml(text);
-      agreementLoaded = true;
+      const rendered = renderMarkdownToHtml(text);
+      loadedDocuments.set(documentType, rendered);
+      agreementContent.innerHTML = rendered;
     } catch {
-      agreementContent.textContent = "利用規約の読み込みに失敗しました。";
+      agreementContent.textContent = `${documentLabel}の読み込みに失敗しました。`;
     }
   };
 
@@ -789,11 +819,11 @@ async function initSignupProfilePage() {
     submitButton.disabled = !agreementCheckbox.checked;
   };
 
-  openAgreementButton.addEventListener("click", (event) => {
+  openPolicyButtons.forEach((button) => button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    openAgreementModal();
-  });
+    openAgreementModal(button.dataset.document || "terms");
+  }));
   closeAgreementButton.addEventListener("click", closeAgreementModal);
   agreementCheckbox.addEventListener("change", syncSubmitButtonState);
   agreementModal.addEventListener("click", (event) => {
@@ -837,7 +867,7 @@ async function initSignupProfilePage() {
       return;
     }
     if (!agreementCheckbox.checked) {
-      setGoogleStatus("利用規約に同意してください。");
+      setGoogleStatus("利用規約とプライバシーポリシーに同意してください。");
       return;
     }
 
@@ -855,6 +885,10 @@ async function initSignupProfilePage() {
             id_token: pendingSignupIdToken,
             username,
             icon_data_url: iconDataUrl,
+            terms_accepted: true,
+            privacy_accepted: true,
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
           }),
         });
       } else {
@@ -886,6 +920,10 @@ async function initSignupProfilePage() {
           setGoogleStatus("アイコン画像を選択してください。");
           return;
         }
+        if (errorMessage === "consent_required" || errorMessage === "invalid_consent_version") {
+          setGoogleStatus("利用規約とプライバシーポリシーを確認し、同意してください。");
+          return;
+        }
         if (errorMessage === "account_not_found") {
           clearPendingSignupIdToken();
           setGoogleStatus("登録状態の確認に失敗しました。ログイン画面からやり直してください。");
@@ -905,21 +943,20 @@ async function initSignupProfilePage() {
         return;
       }
 
+      let savedPayload = {};
       try {
-        const payload = await res.json().catch(() => ({}));
-        if (payload && payload.access_token) {
-          setAccessToken(payload.access_token);
+        savedPayload = await res.json().catch(() => ({}));
+        if (savedPayload && savedPayload.access_token) {
+          setAccessToken(savedPayload.access_token);
         }
-        if (payload && payload.user) {
-          cacheProfileUser(payload.user);
+        if (savedPayload && savedPayload.user) {
+          cacheProfileUser(savedPayload.user);
         }
       } catch {
         // Ignore parse/cache failure.
       }
       clearPendingSignupIdToken();
-      setGoogleStatus("保存しました。地図画面へ移動します...");
-      markNavigation("signup_profile_saved", AppPath.toApp("/map/Index.html"));
-      window.location.href = AppPath.toApp("/map/Index.html");
+      await continueAfterGoogleAuth("signup_profile_saved");
     } catch (error) {
       logAuthEvent("auth_signup_save_failed", {
         level: "error",
@@ -975,15 +1012,26 @@ function initGoogleSignIn() {
     return;
   }
 
+  let attempts = 0;
+  let initialized = false;
   const initialize = () => {
+    if (initialized) return;
     if (!(window.google && window.google.accounts && window.google.accounts.id)) {
-      setGoogleStatus("Googleログインの読み込みに失敗しました。");
+      attempts += 1;
+      if (attempts < 20) window.setTimeout(initialize, 250);
+      else setGoogleStatus("Googleログインを読み込めませんでした。ページを再読み込みしてください。");
       return;
     }
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: handleGoogleCredential,
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: false,
+      itp_support: true,
     });
+    initialized = true;
+    buttonContainer.replaceChildren();
     window.google.accounts.id.renderButton(buttonContainer, {
       theme: "outline",
       size: "large",
@@ -998,6 +1046,7 @@ function initGoogleSignIn() {
     return;
   }
   window.addEventListener("load", initialize, { once: true });
+  window.setTimeout(initialize, 0);
 }
 
 function initGuestLogin() {
@@ -1009,6 +1058,47 @@ function initGuestLogin() {
   });
 }
 
+function initLoginPolicyDocuments() {
+  if (signupPage || signupProfilePage) return;
+  const modal = document.getElementById("user-agreement-modal");
+  const content = document.getElementById("user-agreement-content");
+  const title = document.getElementById("user-agreement-title");
+  const closeButton = document.getElementById("close-user-agreement");
+  const buttons = Array.from(document.querySelectorAll(".open-policy-document"));
+  if (!modal || !content || !title || !closeButton || buttons.length !== 2) return;
+  const loaded = new Map();
+  const language = String(document.documentElement.lang || "ja").toLowerCase();
+  const labels = language.startsWith("en")
+    ? { terms: "Terms of Service", privacy: "Privacy Policy", loading: "Loading...", failed: "Could not load this document." }
+    : language.startsWith("hi")
+      ? { terms: "सेवा की शर्तें", privacy: "गोपनीयता नीति", loading: "लोड हो रहा है...", failed: "दस्तावेज़ लोड नहीं हो सका।" }
+      : { terms: "利用規約", privacy: "プライバシーポリシー", loading: "読み込み中...", failed: "文書の読み込みに失敗しました。" };
+  const close = () => modal.classList.add("hidden");
+  const open = async (type) => {
+    const isPrivacy = type === "privacy";
+    title.textContent = isPrivacy ? labels.privacy : labels.terms;
+    modal.classList.remove("hidden");
+    if (loaded.has(type)) {
+      content.innerHTML = loaded.get(type);
+      return;
+    }
+    content.textContent = labels.loading;
+    try {
+      const response = await fetch(AppPath.toApp(isPrivacy ? "/assets/privacy_policy.md" : "/assets/terms.md"), { cache: "no-store" });
+      if (!response.ok) throw new Error("policy_load_failed");
+      const rendered = renderMarkdownToHtml(await response.text());
+      loaded.set(type, rendered);
+      content.innerHTML = rendered;
+    } catch {
+      content.textContent = labels.failed;
+    }
+  };
+  buttons.forEach((button) => button.addEventListener("click", () => void open(button.dataset.document)));
+  closeButton.addEventListener("click", close);
+  modal.addEventListener("click", (event) => { if (event.target === modal) close(); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
+}
+
 (async () => {
   logAuthEvent("auth_page_init", {
     path: window.location.pathname,
@@ -1016,6 +1106,7 @@ function initGuestLogin() {
     message: "Auth page initialized",
   });
   initLoginViewportMetrics();
+  initLoginPolicyDocuments();
   if (signupProfilePage) {
     initSignupProfilePage();
     return;

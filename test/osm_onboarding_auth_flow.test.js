@@ -2,9 +2,9 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const authSource = fs.readFileSync(path.join(__dirname, "../UI10/auth/auth.js"), "utf8");
-const mapSource = fs.readFileSync(path.join(__dirname, "../UI10/map/map.js"), "utf8");
-const profileSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/profile.js"), "utf8");
+const authSource = fs.readFileSync(path.join(__dirname, "../UI0/auth/auth.js"), "utf8");
+const mapSource = fs.readFileSync(path.join(__dirname, "../UI0/map/map.js"), "utf8");
+const profileSource = fs.readFileSync(path.join(__dirname, "../UI0/profile/profile.js"), "utf8");
 const continuation = authSource.slice(
   authSource.indexOf("async function continueAfterGoogleAuth"),
   authSource.indexOf("function cacheProfileUser")
@@ -30,7 +30,7 @@ assert.doesNotMatch(mapSource, /auth\/osm\/start|OSM OAuth|oauthPopup/,
 assert.match(profileSource, /記録した点字ブロック情報は/);
 assert.match(profileSource, /https:\/\/www\.openstreetmap\.org\//);
 for (const name of ["Index.html", "Index_en.html", "Index_hi.html"]) {
-  const html = fs.readFileSync(path.join(__dirname, `../UI10/profile/${name}`), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, `../UI0/profile/${name}`), "utf8");
   assert.doesNotMatch(html, /id="osm-disconnect-btn"/,
     "統合アカウントは一般利用者のプロフィールから解除できないこと");
 }

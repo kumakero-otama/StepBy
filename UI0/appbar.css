@@ -41,10 +41,16 @@
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.02em;
-  color: #7a2d00;
-  background: #ffd56a;
-  border: 1px solid rgba(122, 45, 0, 0.35);
+  color: #fff;
+  background: #d92d20;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 2px 7px rgba(94, 20, 14, 0.28);
   font-family: inherit;
+}
+
+/* author CSS の display がHTML標準の hidden 表示を上書きしないようにする。 */
+.pro-badge[hidden] {
+  display: none;
 }
 
 .app-bar-actions {
@@ -54,6 +60,7 @@
 }
 
 .app-bar-icon-link {
+  box-sizing: content-box;
   width: 36px;
   height: 36px;
   border-radius: 9px;
@@ -87,74 +94,158 @@
 }
 
 /* ========================== テーマ（ライト/ダーク） ========================== */
-/* <html data-theme="dark"> 時に各画面の主要な配色を上書きする */
+:root {
+  --stepby-page-bg: #f5f7fa;
+  --stepby-surface: #ffffff;
+  --stepby-surface-soft: #f3f6f8;
+  --stepby-text: #1f2d3a;
+  --stepby-muted: #667786;
+  --stepby-border: #dfe6eb;
+  --stepby-input-bg: #ffffff;
+}
+
 :root[data-theme="dark"] {
   color-scheme: dark;
+  background: #11171b !important;
+  --stepby-page-bg: #11171b;
+  --stepby-surface: #20282d;
+  --stepby-surface-soft: #182025;
+  --stepby-text: #edf2f5;
+  --stepby-muted: #b5c0c8;
+  --stepby-border: #44515a;
+  --stepby-input-bg: #151c20;
 }
-:root[data-theme="dark"] body {
-  background: #14181a;
-  color: #e8edf2;
-}
+
+:root[data-theme="dark"] body,
 :root[data-theme="dark"] main,
 :root[data-theme="dark"] .settings-wrap,
-:root[data-theme="dark"] .profile-page {
-  color: #e8edf2;
+:root[data-theme="dark"] .profile-page,
+:root[data-theme="dark"] .profile-edit-page,
+:root[data-theme="dark"] .help-wrap,
+:root[data-theme="dark"] .detail-wrap,
+:root[data-theme="dark"] .page {
+  background-color: var(--stepby-page-bg) !important;
+  color: var(--stepby-text) !important;
 }
-:root[data-theme="dark"] .help-link,
-:root[data-theme="dark"] .accordion-item,
-:root[data-theme="dark"] .profile-wide-btn,
-:root[data-theme="dark"] .profile-edit-btn,
-:root[data-theme="dark"] .stats-row,
-:root[data-theme="dark"] .language-options {
-  background: #1f262b;
-  border-color: #2c343a;
-  color: #e8edf2;
+
+:root[data-theme="dark"] :where(
+  .help-card, .help-link, .faq-item, .faq-trigger, .faq-answer,
+  .accordion-item, .accordion-trigger, .accordion-panel, .setting-group,
+  .language-options, .language-option, .record-toggle,
+  .stats-row, .stat-card, .osm-connection-card, .profile-wide-btn,
+  .profile-edit-btn, .profile-edit-card, .form-card, .choice-btn,
+  .pro-help-panel, .map-controls-panel, .map-controls-content,
+  .record-actions, .record-toggle-card, .tactile-session-card,
+  .tactile-session-card-edit-action, .safety-confirm-panel,
+  .trace-confirm-panel, .trace-confirm-actions, .trace-tag-panel,
+  .trace-tag-list, .trace-tag-option, .trace-memo-panel,
+  .tag-panel, .tag-list,
+  .tag-item, .tag-option, .photo-upload-area, .preview-card,
+  .detail-loading-card, .detail-main, .detail-content, .section-card,
+  .tags-block, .posts-head, .posts-list, .comment-window,
+  .comment-window-body, .comment-window-foot, .comment-result-panel,
+  .comment-tag-panel, .comment-tag-list, .comment-tag-option,
+  .comment-complete-tag-btn, .comment-upload-buttons .btn,
+  .comment-image-preview, .footer-btn-light,
+  .leaflet-popup-content-wrapper,
+  .leaflet-popup-tip
+) {
+  background: var(--stepby-surface) !important;
+  border-color: var(--stepby-border) !important;
+  color: var(--stepby-text) !important;
 }
-:root[data-theme="dark"] .help-link-label,
-:root[data-theme="dark"] .accordion-trigger,
-:root[data-theme="dark"] .accordion-trigger-label,
-:root[data-theme="dark"] .language-option,
-:root[data-theme="dark"] .profile-username,
-:root[data-theme="dark"] .profile-wide-btn-label {
-  color: #e8edf2;
+
+:root[data-theme="dark"] :where(
+  .faq-answer, .record-toggle-card, .map-controls-content,
+  .placeholder-panel, .comment-window-body, .comment-window-foot
+) {
+  background: var(--stepby-surface-soft) !important;
 }
-:root[data-theme="dark"] .help-link-description,
-:root[data-theme="dark"] .profile-wide-btn-description,
-:root[data-theme="dark"] .version-footer,
-:root[data-theme="dark"] #app-version {
-  color: #9aa6b1;
+
+:root[data-theme="dark"] :where(
+  .tag-search, .detail-input, .form-input, .trace-tag-search,
+  .trace-memo-input, .comment-body-input, .comment-tag-search,
+  input[type="text"], input[type="search"], textarea, select
+) {
+  background: var(--stepby-input-bg) !important;
+  border-color: var(--stepby-border) !important;
+  color: var(--stepby-text) !important;
+}
+
+:root[data-theme="dark"] :where(
+  .help-link-label, .accordion-trigger, .accordion-trigger-label,
+  .language-option, .record-title, .profile-username,
+  .profile-wide-btn, .profile-wide-btn-label, .stat-value,
+  .osm-connection-card h2, .osm-connection-status, .form-card-title,
+  .form-label, .toggle-label, .choice-btn, .pro-help-message,
+  .section-title, .faq-trigger, .section-heading, .section-label,
+  .comment-window-title, .tag-option, .leaflet-popup-content
+) {
+  color: var(--stepby-text) !important;
+}
+
+:root[data-theme="dark"] :where(
+  .help-link-description, .faq-answer, .help-list, .record-label,
+  .profile-wide-btn-description, .stat-label, .version-footer,
+  #app-version, .trace-memo-note, .tag-selected-empty,
+  .photo-upload-copy, .post-count, .trace-tag-list-empty
+) {
+  color: var(--stepby-muted) !important;
+}
+
+:root[data-theme="dark"] :where(
+  .osm-disconnect-btn, .comment-close-btn, .preview-remove,
+  .photo-btn, .btn:not(.btn-primary):not(.btn-danger),
+  .trace-confirm-cancel-btn, .safety-confirm-reject-btn
+) {
+  background: var(--stepby-surface-soft) !important;
+  border-color: var(--stepby-border) !important;
+  color: var(--stepby-text) !important;
 }
 
 /* ========================== 文字サイズ（小/中/大） ========================== */
-/* :root の --ui0-font-scale を切り替え、body と主要なテキスト要素の font-size をスケーリングする */
+/* remの基準自体を変え、画面固有CSSのrem指定も含めて一貫して拡大する。 */
 :root[data-font-size="small"] {
   --ui0-font-scale: 1;
+  font-size: 100%;
 }
 :root[data-font-size="medium"] {
   --ui0-font-scale: 1.15;
+  font-size: 115%;
 }
 :root[data-font-size="large"] {
   --ui0-font-scale: 1.3;
+  font-size: 130%;
 }
-:root[data-font-size="medium"] body,
-:root[data-font-size="large"] body {
-  font-size: calc(16px * var(--ui0-font-scale, 1));
+
+:root[data-font-size] body {
+  font-size: 1rem;
 }
-:root[data-font-size="medium"] .help-link-label,
-:root[data-font-size="large"] .help-link-label,
-:root[data-font-size="medium"] .accordion-trigger-label > span,
-:root[data-font-size="large"] .accordion-trigger-label > span,
-:root[data-font-size="medium"] .language-option,
-:root[data-font-size="large"] .language-option,
-:root[data-font-size="medium"] .profile-wide-btn-label,
-:root[data-font-size="large"] .profile-wide-btn-label,
-:root[data-font-size="medium"] .profile-username,
-:root[data-font-size="large"] .profile-username {
-  font-size: calc(15px * var(--ui0-font-scale, 1));
+
+/* 固定pxだった主要テキストもremへ正規化し、設定に追従させる。 */
+:root[data-font-size] :where(button, input, textarea, select) {
+  font-family: inherit;
 }
-:root[data-font-size="medium"] .help-link-description,
-:root[data-font-size="large"] .help-link-description,
-:root[data-font-size="medium"] .profile-wide-btn-description,
-:root[data-font-size="large"] .profile-wide-btn-description {
-  font-size: calc(12px * var(--ui0-font-scale, 1));
-}
+:root[data-font-size] :where(
+  .record-label, .profile-wide-btn-description, .stat-label,
+  .version-footer, #app-version
+) { font-size: 0.75rem !important; }
+:root[data-font-size] :where(
+  .help-hero-text, .help-link-description, .record-title,
+  .faq-trigger, .faq-answer, .help-list, .language-option,
+  .osm-connection-status, .form-label, .toggle-label,
+  .pro-help-message, .photo-upload-copy, .tag-list-empty,
+  .section-label, .post-count
+) { font-size: 0.875rem !important; }
+:root[data-font-size] :where(
+  .accordion-trigger, .help-link-label, .profile-wide-btn-label,
+  .choice-btn, .footer-btn, .osm-connect-btn, .osm-disconnect-btn,
+  .btn, .comment-close-btn, .photo-btn, .record-action-btn,
+  .map-controls-handle, .trace-confirm-ok-btn, .trace-confirm-cancel-btn
+) { font-size: 0.9375rem !important; }
+:root[data-font-size] :where(
+  .tag-search, .detail-input, .form-input, .trace-tag-search,
+  .trace-memo-input, .comment-body-input, .comment-tag-search
+) { font-size: 1rem !important; }
+:root[data-font-size] .section-title { font-size: 1.0625rem !important; }
+:root[data-font-size] .help-hero-title { font-size: 1.375rem !important; }

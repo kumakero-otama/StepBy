@@ -9,7 +9,8 @@
     <meta name="theme-color" content="#348f82" />
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="stylesheet" href="../appbar.css" />
-    <link rel="stylesheet" href="profile.css" />
+    <link rel="stylesheet" href="profile.css?v=ui0-osm-oauth-20260804" />
+    <link rel="stylesheet" href="../ui4-theme.css" />
   </head>
   <body>
     <header class="app-bar">
@@ -66,7 +67,7 @@
                   if (avEl) {
                     var src = c.iconUrl;
                     if (src.indexOf("http") !== 0) {
-                      src = "https://barrierfree-map.tail5de5e1.ts.net" + (src.indexOf("/") === 0 ? src : "/" + src);
+                      src = "https://stepby-api-8-229-191-182.sslip.io" + (src.indexOf("/") === 0 ? src : "/" + src);
                     }
                     // base64データURLでlocalStorageキャッシュ済みであればネットワークを経由せず即時表示する。
                     var iconRaw = null;
@@ -93,7 +94,7 @@
             <span id="profile-pro-chip" class="pro-badge hidden">PRO</span>
           </div>
           <button id="profile-edit-btn" class="profile-edit-btn" type="button">
-            <img src="../assets/buttons/edit_white.png" alt="" />
+            <img src="../assets/buttons/profile_edit.png" alt="" />
             <span>प्रोफ़ाइल संपादित करें</span>
           </button>
         </section>
@@ -107,6 +108,13 @@
             <div class="stat-label">कुल सड़क जानकारी पोस्ट</div>
             <div id="total-road-posts" class="stat-value">0</div>
           </article>
+        </section>
+
+        <section class="osm-connection-card" aria-labelledby="osm-connection-title">
+          <div>
+            <h2 id="osm-connection-title">OpenStreetMap पर प्रकाशन</h2>
+            <p id="osm-connection-status" class="osm-connection-status">Google से प्रमाणित उपयोगकर्ताओं के स्पर्शनीय फ़र्श रिकॉर्ड की समीक्षा की जाती है और केवल स्वीकृत रिकॉर्ड <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> में जोड़े जाते हैं। अतिथि रिकॉर्ड प्रकाशित नहीं किए जाते।</p>
+          </div>
         </section>
 
         <div class="profile-wide-actions" aria-label="अतिरिक्त क्रियाएं">
@@ -134,7 +142,7 @@
     <script src="../config.js"></script>
 
     <script src="../auth/token_client.js"></script>
-    <script src="profile.js"></script>
+    <script src="profile.js?v=1.31.1-osm-publication-notice"></script>
     <script src="../pwa.js"></script>
   </body>
 </html>

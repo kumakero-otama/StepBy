@@ -2,11 +2,11 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const editSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.js"), "utf8");
-const profileSource = fs.readFileSync(path.join(__dirname, "../UI10/profile/profile.js"), "utf8");
-const editCss = fs.readFileSync(path.join(__dirname, "../UI10/profile/edit.css"), "utf8");
+const editSource = fs.readFileSync(path.join(__dirname, "../UI0/profile/edit.js"), "utf8");
+const profileSource = fs.readFileSync(path.join(__dirname, "../UI0/profile/profile.js"), "utf8");
+const editCss = fs.readFileSync(path.join(__dirname, "../UI0/profile/edit.css"), "utf8");
 const profileHtmlFiles = ["Index.html", "Index_en.html", "Index_hi.html"].map((name) => (
-  fs.readFileSync(path.join(__dirname, "../UI10/profile", name), "utf8")
+  fs.readFileSync(path.join(__dirname, "../UI0/profile", name), "utf8")
 ));
 const loadStatusMatch = editSource.match(
   /async function loadCurrentProStatus\(user\) \{([\s\S]*?)\n\}/,

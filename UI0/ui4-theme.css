@@ -1,0 +1,442 @@
+/*
+ * UI0 visual layer
+ *
+ * UI0 remains the functional and structural source of truth. This file ports
+ * UI4's design tokens and component feel without importing UI4's incomplete
+ * navigation, authentication, recording, or API implementation.
+ */
+
+:root {
+  --ui0-primary: #2e9e8f;
+  --ui0-primary-light: #4dbfb0;
+  --ui0-primary-dark: #1e7a6d;
+  --ui0-primary-bg: #e8f7f5;
+  --ui0-accent: #ffb847;
+  --ui0-danger: #d94a4a;
+  --ui0-page: #f5f7fa;
+  --ui0-surface: #ffffff;
+  --ui0-raised: #ffffff;
+  --ui0-sunken: #eef2f6;
+  --ui0-text-strong: #16242f;
+  --ui0-text: #33475a;
+  --ui0-muted: #5e7183;
+  --ui0-border: #dde3ea;
+  --ui0-border-strong: #c2ccd6;
+  --ui0-header: linear-gradient(135deg, #1a4a4a 0%, #2e9e8f 50%, #3bb49f 100%);
+  --ui0-shadow-sm: 0 1px 3px rgba(16, 32, 44, 0.08);
+  --ui0-shadow-md: 0 4px 14px rgba(16, 32, 44, 0.1);
+  --ui0-shadow-lg: 0 12px 32px rgba(16, 32, 44, 0.16);
+  --ui0-radius-sm: 10px;
+  --ui0-radius-md: 16px;
+  --ui0-radius-lg: 22px;
+  --ui0-shell: 480px;
+  --stepby-page-bg: var(--ui0-page);
+  --stepby-surface: var(--ui0-surface);
+  --stepby-surface-soft: var(--ui0-sunken);
+  --stepby-text: var(--ui0-text-strong);
+  --stepby-muted: var(--ui0-muted);
+  --stepby-border: var(--ui0-border);
+  --stepby-input-bg: var(--ui0-surface);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --ui0-primary: #4dbfb0;
+  --ui0-primary-light: #6dd5c8;
+  --ui0-primary-dark: #4dbfb0;
+  --ui0-primary-bg: #16332f;
+  --ui0-accent: #ffc470;
+  --ui0-danger: #ff8080;
+  --ui0-page: #0e151c;
+  --ui0-surface: #18222c;
+  --ui0-raised: #1f2b37;
+  --ui0-sunken: #121a22;
+  --ui0-text-strong: #eaf1f6;
+  --ui0-text: #c7d4de;
+  --ui0-muted: #92a3b1;
+  --ui0-border: #2b3945;
+  --ui0-border-strong: #3c4c5a;
+  --ui0-header: linear-gradient(135deg, #102c2c 0%, #1b5c53 50%, #237063 100%);
+  --ui0-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --ui0-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --ui0-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+
+/* appbar.css の旧ダーク配色より後で、UI0のページ背景を一色に統一する。 */
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] main,
+:root[data-theme="dark"] .profile-edit-page,
+:root[data-theme="dark"] .profile-edit-card,
+:root[data-theme="dark"] .profile-edit-card .form-card,
+:root[data-theme="dark"] .edit-footer {
+  background: var(--ui0-page) !important;
+  background-color: var(--ui0-page) !important;
+}
+
+/* 道情報投稿画面の固定投稿欄は、ライト用の白いグラデーションを残さない。 */
+:root[data-theme="dark"] .actions {
+  background: var(--ui0-page) !important;
+  background-color: var(--ui0-page) !important;
+}
+
+html {
+  min-height: 100%;
+  background: var(--ui0-sunken);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  max-width: var(--ui0-shell);
+  min-height: 100dvh;
+  margin-inline: auto !important;
+  color: var(--ui0-text);
+  background: var(--ui0-page);
+  font-family: "Noto Sans", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", Meiryo, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  box-shadow: var(--ui0-shadow-lg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ui0-primary) !important;
+  outline-offset: 2px;
+}
+
+.app-bar {
+  left: 50% !important;
+  right: auto !important;
+  width: min(100%, var(--ui0-shell)) !important;
+  transform: translateX(-50%);
+  background: var(--ui0-header) !important;
+  padding-inline: 12px !important;
+  box-shadow: var(--ui0-shadow-md) !important;
+}
+
+.app-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.12), transparent 20%),
+    linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.1) 50%, transparent 78%);
+  pointer-events: none;
+}
+
+.app-bar-title,
+.app-bar-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.app-bar .app-bar-title {
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+}
+
+.app-bar-icon-link {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: var(--ui0-radius-sm) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.app-bar-icon-link.is-current {
+  background: rgba(255, 255, 255, 0.34) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.app-bar-icon-link.is-current img {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+:where(
+  .auth-card, .accordion-item, .setting-group, .language-options,
+  .stats-row > *, .stat-card, .osm-connection-card, .profile-wide-btn,
+  .profile-edit-card, .form-card, .pro-help-panel, .map-controls-panel,
+  .record-actions, .record-toggle-card, .tactile-session-card,
+  .trace-confirm-panel, .trace-tag-panel,
+  .tag-panel, .photo-upload-area, .preview-card, .detail-loading-card,
+  .detail-main, .section-card, .comment-window, .help-card, .help-link,
+  .faq-item
+) {
+  background: var(--ui0-raised) !important;
+  border-color: var(--ui0-border) !important;
+  border-radius: var(--ui0-radius-md) !important;
+  box-shadow: var(--ui0-shadow-sm) !important;
+  color: var(--ui0-text) !important;
+}
+
+:where(
+  input[type="text"], input[type="search"], input[type="email"],
+  textarea, select, .tag-search, .detail-input, .form-input,
+  .trace-tag-search, .trace-memo-input, .comment-body-input,
+  .comment-tag-search
+) {
+  min-height: 44px;
+  background: var(--ui0-surface) !important;
+  color: var(--ui0-text-strong) !important;
+  border: 1.5px solid var(--ui0-border-strong) !important;
+  border-radius: var(--ui0-radius-sm) !important;
+}
+
+:where(.btn, .profile-edit-btn, .profile-wide-btn, .record-action-btn,
+  .footer-btn, .photo-btn, .trace-confirm-ok-btn, .trace-confirm-cancel-btn,
+  .osm-connect-btn, .osm-disconnect-btn) {
+  min-height: 44px;
+  border-radius: var(--ui0-radius-md) !important;
+  font-weight: 700 !important;
+}
+
+:where(.btn-primary, .trace-confirm-ok-btn, .osm-connect-btn) {
+  background: var(--ui0-primary) !important;
+  color: #fff !important;
+  border-color: var(--ui0-primary) !important;
+}
+
+:where(.btn-danger, .tactile-session-card-delete) {
+  background: var(--ui0-danger) !important;
+  color: #fff !important;
+}
+
+/* 道情報の完了状態は、通常タグと区別できる専用の黄色い操作にする。 */
+.complete-tag-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.complete-tag-button {
+  flex: 1;
+  min-height: 46px;
+  border: 1.5px solid #c99418;
+  border-radius: var(--ui0-radius-md);
+  background: #fff2b8;
+  color: #624500;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.complete-tag-button[aria-pressed="true"] {
+  background: #f5bf35;
+  border-color: #a97400;
+  box-shadow: 0 0 0 3px rgba(245, 191, 53, 0.25);
+}
+
+.complete-tag-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.complete-tag-info-button {
+  width: 46px;
+  min-height: 46px;
+  border: 0;
+  border-radius: var(--ui0-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.complete-tag-info-button img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+}
+
+.complete-tag-info {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #d8b95d;
+  border-radius: var(--ui0-radius-md);
+  background: #fff9df;
+  color: #59491d;
+  line-height: 1.65;
+}
+
+.tag-item-complete {
+  border-color: #c99418 !important;
+  background: #fff2b8 !important;
+  color: #624500 !important;
+}
+
+:root[data-theme="dark"] .complete-tag-button,
+:root[data-theme="dark"] .complete-tag-info,
+:root[data-theme="dark"] .tag-item-complete {
+  border-color: #b98a26 !important;
+  background: #493b16 !important;
+  color: #ffe49a !important;
+}
+
+:root[data-theme="dark"] .complete-tag-info-button img {
+  filter: brightness(0) invert(1);
+  opacity: 0.78;
+}
+
+:root[data-theme="dark"] .complete-tag-button[aria-pressed="true"] {
+  background: #735714 !important;
+}
+
+.profile-page,
+.profile-edit-page,
+.settings-wrap,
+.help-wrap,
+.detail-wrap,
+.page {
+  max-width: var(--ui0-shell) !important;
+  color: var(--ui0-text);
+  background: var(--ui0-page) !important;
+}
+
+.profile-hero,
+.login-hero,
+.splash {
+  background: var(--ui0-header) !important;
+}
+
+.profile-wide-actions,
+.stats-row {
+  gap: 10px !important;
+}
+
+.map-row {
+  /* map.css側がレイアウト余白を相殺して画面幅いっぱいに広げる。
+     ここで中央寄せを上書きすると、余った幅が右側だけにはみ出す。 */
+  width: min(100vw, var(--ui0-shell));
+  min-width: min(100vw, var(--ui0-shell));
+  max-width: min(100vw, var(--ui0-shell));
+  flex-shrink: 0;
+}
+
+.record-actions {
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  background: var(--ui0-surface) !important;
+}
+
+.record-action-btn {
+  min-height: 58px !important;
+  border-radius: var(--ui0-radius-lg) !important;
+}
+
+.record-action-btn:first-child {
+  background: linear-gradient(135deg, var(--ui0-primary), var(--ui0-primary-light)) !important;
+  box-shadow: 0 4px 14px rgba(46, 158, 143, 0.25) !important;
+}
+
+.map-controls-panel {
+  border-radius: 24px 24px 0 0 !important;
+  background: var(--ui0-surface) !important;
+  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+.record-toggle-card {
+  min-height: 92px !important;
+  padding: 14px 10px 12px !important;
+  border: 1.5px solid var(--ui0-border) !important;
+  border-radius: var(--ui0-radius-md) !important;
+  background: var(--ui0-raised) !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.record-toggle-card:has(input:checked) {
+  border-color: var(--ui0-card-accent) !important;
+  background: var(--ui0-card-active-bg) !important;
+  box-shadow: inset 0 -3px 0 var(--ui0-card-accent), var(--ui0-shadow-sm) !important;
+}
+
+/* UI4と同じ「アイコンが上、ラベルが下」のカード配置。状態は右上の点と
+   選択色で示すため、旧UI0のON/OFFピルは表示しない。 */
+.record-toggle-card .record-toggle-status {
+  display: none !important;
+}
+
+.record-toggle-card .record-toggle-icon {
+  order: 1;
+  margin: 0 auto !important;
+  background: var(--ui0-card-chip) !important;
+  border: 1px solid var(--ui0-card-edge) !important;
+  color: var(--ui0-card-accent) !important;
+  box-shadow: none !important;
+}
+
+.record-toggle-card .record-title {
+  order: 2;
+  color: var(--ui0-text-strong) !important;
+}
+
+.record-toggle-card:has(input:checked) .record-title {
+  color: var(--ui0-card-accent) !important;
+}
+
+.record-toggle-card:has(input:checked)::after {
+  background: var(--ui0-card-accent) !important;
+  box-shadow: 0 0 6px 2px var(--ui0-card-glow) !important;
+}
+
+.map-info-card {
+  --ui0-card-accent: #3a7bd5;
+  --ui0-card-active-bg: #e8f0fc;
+  --ui0-card-chip: #d6e5f9;
+  --ui0-card-edge: rgba(58, 123, 213, 0.3);
+  --ui0-card-glow: rgba(58, 123, 213, 0.35);
+}
+
+.center-current-card {
+  --ui0-card-accent: #2e9e8f;
+  --ui0-card-active-bg: #e2f4f2;
+  --ui0-card-chip: #c6e9e4;
+  --ui0-card-edge: rgba(46, 158, 143, 0.3);
+  --ui0-card-glow: rgba(46, 158, 143, 0.35);
+}
+
+:root[data-theme="dark"] .map-info-card {
+  --ui0-card-active-bg: #17263f;
+  --ui0-card-chip: #22375c;
+}
+
+:root[data-theme="dark"] .center-current-card {
+  --ui0-card-active-bg: #123330;
+  --ui0-card-chip: #1b4a45;
+}
+
+.version-footer,
+#app-version,
+.helper-text,
+.auth-subtitle,
+.record-label,
+.stat-label,
+.profile-wide-btn-description {
+  color: var(--ui0-muted) !important;
+}
+
+@media (min-width: 481px) {
+  html { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

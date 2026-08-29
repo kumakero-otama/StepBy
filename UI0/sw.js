@@ -1,37 +1,51 @@
-// このファイルは UI0 用 Service Worker として最低限のキャッシュ制御を行う。
-const CACHE_VERSION = "1.18.28"; // このバージョンはpackage.jsonから自動生成されます
+// UI0開発環境専用Service Worker。UI0のキャッシュには触れない。
+const CACHE_VERSION = "1.33.9-live-location-priority";
 const APP_BASE_PATH = "/StepBy/UI0";
-const API_BASE_URL = "https://barrierfree-map.tail5de5e1.ts.net";
-const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0-${Date.now()}`;
+const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
+// 時刻を含めるとService Worker再起動のたびに別名になり、既存キャッシュを
+// 見失って画面遷移が白くなるため、バージョンだけで一意にする。
+const CACHE_NAME = `barrierfree-map-v${CACHE_VERSION}-stepby-ui0`;
 // 画像（プロフィール画像など）はバージョンが変わっても保持し続けるための専用キャッシュ。
 // CACHE_NAMEと違いタイムスタンプを含めず、activateハンドラの古いキャッシュ削除フィルタにも引っかからない名前にする。
-const IMAGE_CACHE_NAME = "barrierfree-map-images-v1";
+const IMAGE_CACHE_NAME = "barrierfree-map-images-ui0-v1";
 const API_ORIGIN = new URL(API_BASE_URL).origin;
 const API_PATH_PREFIX = new URL(API_BASE_URL).pathname.replace(/\/+$/, "");
 const CORE_ASSETS = [
   `${APP_BASE_PATH}/config.js`,
   `${APP_BASE_PATH}/style.css`,
   `${APP_BASE_PATH}/appbar.css`,
+  `${APP_BASE_PATH}/ui4-theme.css`,
   `${APP_BASE_PATH}/version.js`,
   `${APP_BASE_PATH}/map/Index.html`,
   `${APP_BASE_PATH}/map/map.css`,
   `${APP_BASE_PATH}/map/map.js`,
+  `${APP_BASE_PATH}/map/osm-browser-matcher.js`,
+  `${APP_BASE_PATH}/map/async-record-queue.js`,
+  `${APP_BASE_PATH}/road-info-queue.js`,
   `${APP_BASE_PATH}/manifest.webmanifest`,
   `${APP_BASE_PATH}/assets/icon.svg`,
   `${APP_BASE_PATH}/assets/otamap_logo.png`,
   `${APP_BASE_PATH}/assets/StepBy_icon_192.png`,
   `${APP_BASE_PATH}/assets/StepBy_icon_512.png`,
+  `${APP_BASE_PATH}/assets/map_stepby_icon.png`,
   `${APP_BASE_PATH}/auth/login.html`,
   `${APP_BASE_PATH}/auth/signup.html`,
   `${APP_BASE_PATH}/auth/auth.css`,
   `${APP_BASE_PATH}/auth/auth.js`,
   `${APP_BASE_PATH}/auth/token_client.js`,
+  `${APP_BASE_PATH}/admin/database.html`,
+  `${APP_BASE_PATH}/admin/database.css`,
+  `${APP_BASE_PATH}/admin/database.js`,
   `${APP_BASE_PATH}/profile/Index.html`,
   `${APP_BASE_PATH}/profile/profile.css`,
   `${APP_BASE_PATH}/profile/profile.js`,
   `${APP_BASE_PATH}/profile/edit.html`,
   `${APP_BASE_PATH}/profile/edit.css`,
   `${APP_BASE_PATH}/profile/edit.js`,
+  `${APP_BASE_PATH}/setting/Index.html`,
+  `${APP_BASE_PATH}/setting/Index_en.html`,
+  `${APP_BASE_PATH}/setting/Index_hi.html`,
+  `${APP_BASE_PATH}/setting/ui4-layout.css`,
   `${APP_BASE_PATH}/pwa.js`,
 ];
 
@@ -59,7 +73,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => {
       // 古いキャッシュをすべて削除
       const deletePromises = keys
-        .filter((key) => key.startsWith("barrierfree-map-v") && key !== CACHE_NAME)
+        .filter((key) => key.includes("-stepby-ui0-") && key !== CACHE_NAME)
         .map((key) => {
           console.log("[SW] Deleting old cache:", key);
           return caches.delete(key);
@@ -128,7 +142,19 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(async () => {
+          const cached = await caches.match(request, { ignoreSearch: true });
+          if (cached) return cached;
+          const fallbackPath = url.pathname.includes("/auth/")
+            ? `${APP_BASE_PATH}/auth/login.html`
+            : `${APP_BASE_PATH}/map/Index.html`;
+          const fallback = await caches.match(fallbackPath, { ignoreSearch: true });
+          if (fallback) return fallback;
+          return new Response(
+            "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>StepBy</title><p>画面を読み込めませんでした。通信を確認して再読み込みしてください。</p>",
+            { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
+        })
     );
     return;
   }
