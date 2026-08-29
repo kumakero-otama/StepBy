@@ -291,51 +291,24 @@ body {
   justify-content: center;
   position: relative;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 184, 71, 0.3));
-  backdrop-filter: blur(8px);
+  background: transparent;
   text-decoration: none;
 }
 
 .map-app-bar-logo::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 12px rgba(255, 184, 71, 0.3);
-  animation: map-logo-glow 3s ease-in-out infinite;
-}
-
-@keyframes map-logo-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 12px rgba(255, 184, 71, 0.2);
-  }
-
-  50% {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 184, 71, 0.4);
-  }
+  content: none;
 }
 
 .map-app-bar-logo img {
   position: relative;
   z-index: 1;
-  width: 27px;
-  height: 27px;
-  object-fit: contain;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 10px;
   display: block;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
-  animation: map-logo-icon-float 3s ease-in-out infinite;
-}
-
-@keyframes map-logo-icon-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-2px);
-  }
+  filter: none;
+  animation: none;
 }
 
 .map-app-bar-copy {
