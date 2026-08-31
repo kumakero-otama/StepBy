@@ -1593,6 +1593,8 @@ async function requireOsmConnectionBeforeMapUse() {
 
 function updateRecordButton() {
   if (recordActionBtn) {
+    // 一時停止中は「記録終了」を受け付けない。再開後にだけ終了できるようにする。
+    recordActionBtn.disabled = Boolean(recordPaused || isHandlingRecordToggle || isHandlingPauseToggle);
     recordActionBtn.setAttribute("aria-pressed", recordEnabled ? "true" : "false");
     recordActionBtn.classList.toggle("is-recording", recordEnabled);
     const startLabel = recordActionBtn.dataset.startLabel || "記録";
@@ -2374,10 +2376,15 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
     return { success: true, canceled: true };
   }
 
-  const persisted = await processAndDisplayTrace(sessionId, tracePoints, osmPreview);
+  // 一時停止も通常終了と同じブラウザ版マッチャーを使う。
+  // Valhallaを停止した現在、osmPreviewなしで /api/trace を呼ぶと500になるため、
+  // 現在の区間だけをOSM Way上の連続経路として確定してから保存する。
+  const effectivePreview = osmPreview || await buildBrowserOsmPreview(tracePoints);
+  if (!effectivePreview) {
+    return { success: false, reason: "browser_route_not_confirmed" };
+  }
+  const persisted = await processAndDisplayTrace(sessionId, tracePoints, effectivePreview);
   if (!persisted) {
-    await postSessionLifecycle("cancel", { sessionId });
-    rollbackCurrentSessionPointsFromRecording();
     return { success: false };
   }
   await postSessionLifecycle("end", {
@@ -2385,6 +2392,25 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
     endedAt: new Date().toISOString(),
   });
   return { success: true, ended: true };
+}
+
+async function buildBrowserOsmPreview(tracePoints) {
+  if (!browserOsmMatcher || !Array.isArray(tracePoints) || tracePoints.length < 2) {
+    return null;
+  }
+  try {
+    await Promise.race([
+      browserOsmMatcher.ensureTraceCoverage(tracePoints, 450, { force: true }),
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error("trace_coverage_timeout")), 12000);
+      }),
+    ]);
+  } catch (error) {
+    // 取得済みの道路網があれば、それを使って確定を続ける。
+    console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
+  }
+  const browserRoute = browserOsmMatcher.finalize(tracePoints);
+  return browserRoute ? window.StepByOsmMatcher.buildOsmChangePreview(browserRoute) : null;
 }
 
 async function processQueuedRecording(payload, context) {
@@ -2545,35 +2571,8 @@ async function handleRecordStopWithConfirmation() {
   // OSM取得と経路確定の開始時点で表示し、処理中の無反応状態をなくす。
   showTraceConfirmPreparing();
 
-  let osmPreview = null;
-  if (browserOsmMatcher) {
-    try {
-      // 軌跡の開始・途中・終了をすべて道路網で覆ってから経路を確定する。
-      // 保存直前はブラウザ・サーバー双方のキャッシュを使わず、最新のOSM Wayで確定する。
-      // 別端末や管理処理による直前のOSM変更を、古いWayとして送信しないため。
-      await Promise.race([
-        browserOsmMatcher.ensureTraceCoverage(allTracePoints, 450, { force: true }),
-        new Promise((_, reject) => {
-          window.setTimeout(() => reject(new Error("trace_coverage_timeout")), 12000);
-        }),
-      ]);
-    } catch (error) {
-      console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
-    }
-    const browserRoute = browserOsmMatcher.finalize(allTracePoints);
-    if (browserRoute) {
-      osmPreview = window.StepByOsmMatcher.buildOsmChangePreview(browserRoute);
-      console.log("[BrowserMatcher] connected final route", {
-        wayIds: browserRoute.wayIds,
-        startWayId: browserRoute.start.wayId,
-        startFraction: browserRoute.start.fraction,
-        endWayId: browserRoute.end.wayId,
-        endFraction: browserRoute.end.fraction,
-      });
-    } else {
-      console.warn("[BrowserMatcher] could not build a connected final route");
-    }
-  }
+  // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
+  const osmPreview = await buildBrowserOsmPreview(allTracePoints);
 
   if (!osmPreview) {
     closeTraceConfirmModal();

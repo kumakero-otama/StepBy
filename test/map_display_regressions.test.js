@@ -91,8 +91,12 @@ assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refr
   "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
 assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,
   "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
-assert.match(mapSource, /ensureTraceCoverage\(allTracePoints, 450, \{ force: true \}\)/,
+assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints\)/,
   "record finalization must use current OSM data instead of a fresh-looking browser cache");
+assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints\)/,
+  "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
+assert.match(mapSource, /recordActionBtn\.disabled = Boolean\(recordPaused/,
+  "record stop must be disabled while recording is paused");
 assert.match(matcherSource, /if \(options\.force\) params\.set\("forceRefresh", "1"\)/,
   "a forced browser refresh must also bypass the server-side OSM network cache");
 const mobileAppBarCss = mapCss.slice(
