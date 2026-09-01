@@ -3012,6 +3012,11 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
       if (!data || !Array.isArray(data.features)) {
         throw new Error("invalid osm tactile payload");
       }
+      if (data.osmUpstreamUnavailable && cachedOsmFeatures.length > 0) {
+        showOsmTactileWaysOnMap(cachedOsmFeatures);
+        showMapToast("最新のOSM情報を取得できないため、直前の表示を使用しています。", 4200);
+        return;
+      }
       console.log(`[loadAndShowOsmTactileWays] Loaded ${data.features.length} ways`);
       cachedOsmFeatures = cloneSerializable(data.features) || [];
       saveMapReturnCache();
@@ -3022,8 +3027,12 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
         return;
       }
       console.error("[loadAndShowOsmTactileWays] Error:", err);
-      alert("OSM点字ブロックデータの取得に失敗しました。しばらく待ってから再度お試しください。");
-      clearOsmTactileWaysFromMap();
+      if (cachedOsmFeatures.length > 0) {
+        showOsmTactileWaysOnMap(cachedOsmFeatures);
+        showMapToast("最新のOSM情報を取得できないため、直前の表示を使用しています。", 4200);
+      } else {
+        showMapToast("OSM情報を一時的に取得できません。しばらくして自動的に再取得します。", 4200);
+      }
     })
     .finally(() => {
       if (requestSeq === osmTactileLoadRequestSeq) {
@@ -3071,7 +3080,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const apiAttempt = (async () => {
       // 10km検索はOverpass混雑時に複数の読取先を順番に試すため、API側の
       // フォールバックが完了する時間を確保する。個々のブラウザ直読は30秒で打ち切る。
-      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(100000) });
+      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(40000) });
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
     })();

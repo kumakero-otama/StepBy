@@ -67,6 +67,10 @@ assert.match(mapSource, /session_tag_save_failed:\$\{res\.status\}[\s\S]{0,180}?
   "a PRO authorization rejection must not retry forever");
 assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("const attempts = hosts.map"),
   "the enriched StepBy API response must be preferred over anonymous Overpass data");
+assert.match(mapSource, /data\.osmUpstreamUnavailable && cachedOsmFeatures\.length > 0/,
+  "temporary OSM read failures must retain the last successful map display");
+assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得に失敗しました/,
+  "a temporary upstream failure must not interrupt users with a blocking alert");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
   "owned green OSM lines need centered line and circular tap targets");
 assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
