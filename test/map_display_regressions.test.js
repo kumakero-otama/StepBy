@@ -69,6 +69,8 @@ assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.in
   "the enriched StepBy API response must be preferred over anonymous Overpass data");
 assert.match(mapSource, /data\.osmUpstreamUnavailable && cachedOsmFeatures\.length > 0/,
   "temporary OSM read failures must retain the last successful map display");
+assert.match(mapSource, /if \(degradedApiResult\) return degradedApiResult/,
+  "the browser fallback must preserve StepBy data when every direct OSM read also fails");
 assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得に失敗しました/,
   "a temporary upstream failure must not interrupt users with a blocking alert");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,

@@ -3084,10 +3084,12 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
     })();
+  let degradedApiResult = null;
   try {
     // StepBy記録ID・投稿者・本人だけの削除権限を付与できるサーバー応答を優先する。
     const apiResult = await apiAttempt;
-    if (apiResult && Array.isArray(apiResult.features)) return apiResult;
+    if (apiResult && Array.isArray(apiResult.features) && !apiResult.osmUpstreamUnavailable) return apiResult;
+    if (apiResult && Array.isArray(apiResult.features)) degradedApiResult = apiResult;
   } catch (error) {
     console.warn("[OSM tactile display] StepBy API unavailable; using read-only Overpass fallback", error && error.message);
   }
@@ -3115,6 +3117,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
       const settled = await Promise.allSettled(attempts);
       const emptySuccess = settled.find((result) => result.status === "fulfilled" && result.value && Array.isArray(result.value.features));
       if (emptySuccess) return emptySuccess.value;
+      if (degradedApiResult) return degradedApiResult;
       throw new Error("all_osm_tactile_reads_failed");
     }
   } catch (error) {
