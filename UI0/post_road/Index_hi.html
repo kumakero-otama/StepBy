@@ -1472,8 +1472,8 @@
       }
     </script>
     <script>
-      // 記録中であれば、post_road 滞在中もGPSを取得して /api/match?record=1 へ送信し続ける。
-      // これによりマップ画面を離れて道情報を入力・送信している間も、点字ブロックの記録は継続する。
+      // इस पेज पर रहते समय GPS के मूल बिंदु डिवाइस और सर्वर पर सहेजें।
+      // मैप पर लौटने के बाद ब्राउज़र फिटिंग होती है; Valhalla का उपयोग नहीं होता।
       (function continueRecordingDuringPostRoad() {
         let stateRaw = null, state = null, userRaw = null, user = null;
         try { stateRaw = localStorage.getItem("recordingState.v1"); } catch (e) {}
@@ -1497,11 +1497,13 @@
         let lastSentMs = 0;
         let lastLat = null;
         let lastLng = null;
+        let lastAccuracy = null;
 
         const watchId = navigator.geolocation.watchPosition(
           (pos) => {
             lastLat = pos.coords.latitude;
             lastLng = pos.coords.longitude;
+            lastAccuracy = Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null;
           },
           (err) => { console.warn("[post_road] geolocation error:", err); },
           { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
@@ -1512,15 +1514,23 @@
           const now = Date.now();
           if (now - lastSentMs < 2000) return;
           lastSentMs = now;
-          const params = new URLSearchParams({
-            lat: String(lastLat),
-            lng: String(lastLng),
-            userId: String(user.userId),
-            record: "1",
-            sessionId: state.currentSessionId,
-          });
+          const point = { lat: lastLat, lng: lastLng, accuracy: lastAccuracy };
           try {
-            authFetch(`/api/match?${params.toString()}`).catch(() => {});
+            const latestState = JSON.parse(localStorage.getItem("recordingState.v1") || "null");
+            if (latestState && latestState.currentSessionId === state.currentSessionId) {
+              latestState.rawPoints = Array.isArray(latestState.rawPoints) ? latestState.rawPoints : [];
+              latestState.rawPoints.push(point);
+              latestState.rawPoints = latestState.rawPoints.slice(-5000);
+              latestState.savedAt = Date.now();
+              localStorage.setItem("recordingState.v1", JSON.stringify(latestState));
+            }
+          } catch (e) {}
+          try {
+            authFetch("/api/session/point", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId: state.currentSessionId, ...point, recordedAt: new Date().toISOString() }),
+            }).catch(() => {});
           } catch (e) {}
         }, 1000);
 

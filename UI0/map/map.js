@@ -862,6 +862,12 @@ let recordPaused = false;
     recordPaused = Boolean(parsed.recordPaused);
     // currentSessionId は後で宣言される変数なので、グローバルに直接代入する。
     window.__restoredRecordingSessionId = parsed.currentSessionId;
+    window.__restoredRecordingRawPoints = Array.isArray(parsed.rawPoints)
+      ? parsed.rawPoints.slice(-5000) : [];
+    window.__restoredRecordingSessionIds = Array.isArray(parsed.sessionIds)
+      ? parsed.sessionIds.filter(Boolean) : [parsed.currentSessionId];
+    window.__restoredCurrentSessionRawStartIndex = Number.isInteger(parsed.currentSessionRawStartIndex)
+      ? parsed.currentSessionRawStartIndex : 0;
   } catch (e) {}
 })();
 let recordedRawPoints = []; // 記録開始から終了までのrawデータ（全セッション合算）
@@ -875,7 +881,23 @@ let tracePolyline = null; // trace_attributesの結果を表示する黄緑線
 let currentSessionId = null;
 if (typeof window !== "undefined" && window.__restoredRecordingSessionId) {
   currentSessionId = window.__restoredRecordingSessionId;
+  const restoredRawPoints = Array.isArray(window.__restoredRecordingRawPoints)
+    ? window.__restoredRecordingRawPoints.filter((point) => point && Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng)))
+      .map((point) => ({ lat: Number(point.lat), lng: Number(point.lng), accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null }))
+    : [];
+  recordedRawPoints = restoredRawPoints.slice();
+  currentSessionRawStartIndex = Math.max(0, Math.min(
+    Number(window.__restoredCurrentSessionRawStartIndex) || 0,
+    restoredRawPoints.length
+  ));
+  currentSessionRawPoints = restoredRawPoints.slice(currentSessionRawStartIndex);
+  recordingSessionIds = Array.isArray(window.__restoredRecordingSessionIds)
+    ? [...new Set(window.__restoredRecordingSessionIds.filter(Boolean))]
+    : [currentSessionId];
   delete window.__restoredRecordingSessionId;
+  delete window.__restoredRecordingRawPoints;
+  delete window.__restoredRecordingSessionIds;
+  delete window.__restoredCurrentSessionRawStartIndex;
 }
 let currentSessionStartedAt = null;
 let traceConfirmMap = null;
@@ -1672,6 +1694,9 @@ function saveRecordingStateToStorage() {
         recordEnabled: true,
         recordPaused: Boolean(recordPaused),
         currentSessionId,
+        rawPoints: recordedRawPoints.slice(-5000),
+        sessionIds: recordingSessionIds.slice(),
+        currentSessionRawStartIndex: Math.max(0, currentSessionRawStartIndex - Math.max(0, recordedRawPoints.length - 5000)),
         savedAt: Date.now(),
       }));
     } else {
@@ -2718,6 +2743,8 @@ function pollAndSendLocation() {
   if (isRecordingActive()) {
     recordedRawPoints.push({ lat, lng, accuracy });
     currentSessionRawPoints.push({ lat, lng, accuracy });
+    // 直後に別画面へ移動しても、それまでの点列と区間境界を失わないよう逐次保存する。
+    saveRecordingStateToStorage();
     console.log(`[Record] Saved raw point: total=${recordedRawPoints.length}, current=${currentSessionRawPoints.length}`);
   }
 

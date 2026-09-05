@@ -101,6 +101,14 @@ assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints\)/,
   "record finalization must use current OSM data instead of a fresh-looking browser cache");
 assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
+assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,
+  "recording state must keep raw GPS points across page navigation");
+assert.match(mapSource, /__restoredRecordingRawPoints[\s\S]{0,1500}?currentSessionRawPoints\s*=\s*restoredRawPoints\.slice\(currentSessionRawStartIndex\)/,
+  "the map must restore raw GPS points collected on another screen");
+assert.match(mapSource, /sessionIds:\s*recordingSessionIds\.slice\(\)/,
+  "recording state must retain all segments across page navigation");
+assert.match(mapSource, /currentSessionRawPoints\s*=\s*restoredRawPoints\.slice\(currentSessionRawStartIndex\)/,
+  "restoration must not mix earlier paused segments into the active segment");
 assert.match(mapSource, /recordActionBtn\.disabled = Boolean\(recordPaused/,
   "record stop must be disabled while recording is paused");
 assert.match(matcherSource, /if \(options\.force\) params\.set\("forceRefresh", "1"\)/,
