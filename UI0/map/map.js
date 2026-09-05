@@ -3096,8 +3096,8 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
     .map((value) => value.toFixed(7)).join(",");
   const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
-  // クラウドIPがOverpassの混雑制限を受ける場合に備え、APIプロキシと端末からの
-  // 読取専用リクエストを並行し、最初に成功した結果を採用する。
+  // 通常はStepBy APIのキャッシュと順次フォールバックを使う。API自体へ接続
+  // できない場合だけ、端末から読取専用ミラーを1台ずつ試す。
   const hosts = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
@@ -3105,9 +3105,8 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   ];
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
   const apiAttempt = (async () => {
-      // 10km検索はOverpass混雑時に複数の読取先を順番に試すため、API側の
-      // フォールバックが完了する時間を確保する。個々のブラウザ直読は30秒で打ち切る。
-      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(40000) });
+      // 3台を各30秒で順番に試せるようにし、途中でブラウザ側の重複要求を始めない。
+      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(95000) });
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
     })();
@@ -3120,7 +3119,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   } catch (error) {
     console.warn("[OSM tactile display] StepBy API unavailable; using read-only Overpass fallback", error && error.message);
   }
-  const attempts = hosts.map(async (endpoint) => {
+  const fetchBrowserFallback = async (endpoint) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
@@ -3132,21 +3131,21 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
       const features = (Array.isArray(payload.elements) ? payload.elements : [])
         .map(overpassTactileFeature).filter(Boolean);
       return { success: true, features, count: features.length, source: "browser_overpass" };
-    });
+    };
   try {
-    const nonEmptyAttempts = attempts.map((attempt) => attempt.then((result) => {
-      if (!result || !Array.isArray(result.features) || result.features.length === 0) throw new Error("empty_osm_tactile_result");
-      return result;
-    }));
-    try {
-      return await Promise.any(nonEmptyAttempts);
-    } catch {
-      const settled = await Promise.allSettled(attempts);
-      const emptySuccess = settled.find((result) => result.status === "fulfilled" && result.value && Array.isArray(result.value.features));
-      if (emptySuccess) return emptySuccess.value;
-      if (degradedApiResult) return degradedApiResult;
-      throw new Error("all_osm_tactile_reads_failed");
+    let emptySuccess = null;
+    for (const endpoint of hosts) {
+      try {
+        const result = await fetchBrowserFallback(endpoint);
+        if (result.features.length > 0) return result;
+        emptySuccess = emptySuccess || result;
+      } catch (error) {
+        console.warn("[OSM tactile display] browser fallback failed", endpoint, error && error.message);
+      }
     }
+    if (emptySuccess) return emptySuccess;
+    if (degradedApiResult) return degradedApiResult;
+    throw new Error("all_osm_tactile_reads_failed");
   } catch (error) {
     console.warn("[OSM tactile display] all read endpoints failed", error && error.message);
     throw new Error("all_overpass_hosts_failed");

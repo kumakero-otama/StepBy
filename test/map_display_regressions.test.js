@@ -65,7 +65,7 @@ assert.doesNotMatch(mapSource, /tag\.osmExportable \? "OSM公開対象" : "StepB
   "the obsolete StepBy-only tag scope label must not remain");
 assert.match(mapSource, /session_tag_save_failed:\$\{res\.status\}[\s\S]{0,180}?res\.status >= 500/,
   "a PRO authorization rejection must not retry forever");
-assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("const attempts = hosts.map"),
+assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("for (const endpoint of hosts)"),
   "the enriched StepBy API response must be preferred over anonymous Overpass data");
 assert.match(mapSource, /data\.osmUpstreamUnavailable && cachedOsmFeatures\.length > 0/,
   "temporary OSM read failures must retain the last successful map display");
@@ -113,6 +113,12 @@ assert.match(mapSource, /recordActionBtn\.disabled = Boolean\(recordPaused/,
   "record stop must be disabled while recording is paused");
 assert.match(matcherSource, /if \(options\.force\) params\.set\("forceRefresh", "1"\)/,
   "a forced browser refresh must also bypass the server-side OSM network cache");
+assert.match(mapSource, /AbortSignal\.timeout\(95000\)/,
+  "OSM tactile display must allow the API's sequential mirror fallback to finish");
+assert.match(mapSource, /for \(const endpoint of hosts\)[\s\S]{0,500}?await fetchBrowserFallback\(endpoint\)/,
+  "browser fallback must query Overpass mirrors sequentially");
+assert.doesNotMatch(mapSource, /hosts\.map\(async \(endpoint\)/,
+  "browser fallback must not fan out to every Overpass mirror at once");
 const mobileAppBarCss = mapCss.slice(
   mapCss.indexOf("@media (max-width: 520px)"),
   mapCss.indexOf(".map-layout"),
