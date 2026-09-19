@@ -1007,11 +1007,11 @@ function loadMapDisplaySettings() {
     }
     const parsed = JSON.parse(raw);
     return {
-      showAppTactile: Boolean(parsed && parsed.showAppTactile),
-      showOsmTactile: Boolean(parsed && parsed.showOsmTactile),
-      showAllRoadInfo: Boolean(parsed && parsed.showAllRoadInfo),
-      showOnlyMyTactile: Boolean(parsed && parsed.showOnlyMyTactile),
-      showOnlyMyRoadInfo: Boolean(parsed && parsed.showOnlyMyRoadInfo),
+      showAppTactile: typeof parsed?.showAppTactile === "boolean" ? parsed.showAppTactile : DEFAULT_MAP_DISPLAY_SETTINGS.showAppTactile,
+      showOsmTactile: typeof parsed?.showOsmTactile === "boolean" ? parsed.showOsmTactile : DEFAULT_MAP_DISPLAY_SETTINGS.showOsmTactile,
+      showAllRoadInfo: typeof parsed?.showAllRoadInfo === "boolean" ? parsed.showAllRoadInfo : DEFAULT_MAP_DISPLAY_SETTINGS.showAllRoadInfo,
+      showOnlyMyTactile: typeof parsed?.showOnlyMyTactile === "boolean" ? parsed.showOnlyMyTactile : DEFAULT_MAP_DISPLAY_SETTINGS.showOnlyMyTactile,
+      showOnlyMyRoadInfo: typeof parsed?.showOnlyMyRoadInfo === "boolean" ? parsed.showOnlyMyRoadInfo : DEFAULT_MAP_DISPLAY_SETTINGS.showOnlyMyRoadInfo,
     };
   } catch (err) {
     console.warn("[Settings] Failed to parse map display settings. Use defaults.", err);
