@@ -1653,3 +1653,19 @@ body {
 :root[data-theme="dark"] .map-toast {
   background: #348f82;
 }
+.road-info-pin-icon {
+  background: transparent;
+  border: 0;
+}
+
+.road-info-pin-shape {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 3px 0 0 4px;
+  background: #2477d4;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 3px 8px rgba(16, 49, 82, 0.38);
+  transform: rotate(-45deg);
+}

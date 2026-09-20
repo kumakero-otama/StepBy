@@ -71,6 +71,14 @@ assert.match(mapSource, /data\.osmUpstreamUnavailable && cachedOsmFeatures\.leng
   "temporary OSM read failures must retain the last successful map display");
 assert.match(mapSource, /if \(degradedApiResult\) return degradedApiResult/,
   "the browser fallback must preserve StepBy data when every direct OSM read also fails");
+assert.match(mapSource, /map\.on\("moveend"[\s\S]{0,300}?loadAndShowRoadInfoPoints\(\)/,
+  "road information must refresh after the visible map area changes");
+assert.match(mapSource, /radiusKm:\s*getRoadInfoViewportRadiusKm\(center\)\.toFixed\(3\)/,
+  "road information must use the visible map radius instead of a fixed one-kilometer GPS radius");
+assert.doesNotMatch(mapSource, /loadAndShowRoadInfoPoints\(currentPoint\)/,
+  "a GPS update must not overwrite road information loaded for the visible map area");
+assert.match(mapSource, /L\.divIcon\([\s\S]{0,180}?road-info-pin-shape/,
+  "road information pins must not depend on a third-party marker image");
 assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得に失敗しました/,
   "a temporary upstream failure must not interrupt users with a blocking alert");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,

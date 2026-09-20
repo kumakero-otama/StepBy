@@ -827,13 +827,11 @@ const redPinIcon = L.icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
-const bluePinIcon = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+const bluePinIcon = L.divIcon({
+  className: "road-info-pin-icon",
+  html: '<span class="road-info-pin-shape" aria-hidden="true"></span>',
+  iconSize: [30, 36],
+  iconAnchor: [15, 34],
 });
 
 let MIN_REQUEST_INTERVAL_MS = 2000; // 2秒間隔
@@ -982,6 +980,7 @@ let suppressMapTapUntil = 0;
 let osmTactileLoadRequestSeq = 0;
 let recordsLoadRequestSeq = 0;
 let roadInfoLoadRequestSeq = 0;
+let roadInfoViewportRefreshTimer = null;
 const MAP_TAP_SUPPRESS_AFTER_ZOOM_MS = 400;
 const MAP_DISPLAY_SETTINGS_KEY = "mapDisplaySettings.v1";
 const MAP_CONTROLS_COLLAPSED_KEY = "mapControlsCollapsed.v1";
@@ -1461,6 +1460,16 @@ map.on("move", () => {
   if (tactileSessionCardLatLng) {
     positionTactileSessionCard(tactileSessionCardLatLng);
   }
+});
+
+// 道情報はGPS位置ではなく、利用者が現在見ている地図範囲に合わせて更新する。
+// パン・ズーム中の連続リクエストを避けるため、操作終了後にまとめて取得する。
+map.on("moveend", () => {
+  if (!shouldShowRoadInfo()) return;
+  window.clearTimeout(roadInfoViewportRefreshTimer);
+  roadInfoViewportRefreshTimer = window.setTimeout(() => {
+    loadAndShowRoadInfoPoints();
+  }, 250);
 });
 
 // ユーザーが地図に触れたら、復帰直後の自動中央追従抑止を解除する。
@@ -2722,7 +2731,6 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   if (movedFromMapDataCenter) {
     lastMapDataDownloadCenter = currentPoint;
     if (shouldShowAppTactile()) loadAndShowAllRecords(currentPoint);
-    if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints(currentPoint);
   }
   const movedFromOsmDisplayCenter = !lastOsmDisplayDownloadCenter || (
     window.StepByOsmMatcher &&
@@ -3320,16 +3328,27 @@ function setOsmLoadingVisible(visible) {
   osmLoadingOverlayEl.classList.add("hidden");
 }
 
-function loadAndShowRoadInfoPoints(centerOverride = null) {
+function getRoadInfoViewportRadiusKm(center) {
+  try {
+    const bounds = map.getBounds();
+    const corners = [bounds.getNorthEast(), bounds.getSouthWest()];
+    const farthestMeters = Math.max(...corners.map((corner) => map.distance(center, corner)));
+    return Math.min(20, Math.max(1, farthestMeters * 1.2 / 1000));
+  } catch (error) {
+    return 1;
+  }
+}
+
+function loadAndShowRoadInfoPoints() {
   refreshMapDisplaySettings();
   const requestSeq = ++roadInfoLoadRequestSeq;
-  // 地図中心から1kmの道情報ポイントを取得する。
+  // 現在見えている地図範囲の道情報ポイントを取得する。
   console.log("[loadAndShowRoadInfoPoints] Fetching road info points...");
-  const center = centerOverride || map.getCenter();
+  const center = map.getCenter();
   const params = new URLSearchParams({
     centerLat: center.lat.toString(),
     centerLng: center.lng.toString(),
-    radiusKm: "1",
+    radiusKm: getRoadInfoViewportRadiusKm(center).toFixed(3),
   });
   if (shouldShowOnlyMyRoadInfo()) {
     params.set("mine", "1");
@@ -3445,9 +3464,9 @@ function applyMapInfoVisibility() {
   if (shouldShowRoadInfo()) {
     if (cachedVisibleRoadInfoPoints.length > 0) {
       showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
-    } else {
-      loadAndShowRoadInfoPoints();
     }
+    // キャッシュは即時表示にだけ使い、現在の表示範囲を必ず再取得する。
+    loadAndShowRoadInfoPoints();
   } else {
     roadInfoLoadRequestSeq += 1;
     clearRoadInfoPointsFromMap();
