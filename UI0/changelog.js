@@ -3,30 +3,33 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
-      version: "1.29.0",
+      version: "1.29.1",
       date: "2026-10-04",
       content: {
         ja: {
-          title: "新バージョン v1.29.0",
+          title: "新バージョン v1.29.1",
           items: [
             "アプリ更新後の初回起動時に、更新内容を確認できるようになりました。",
-            "ヘルプにPROモードの切り替え方法と、ご意見・ご質問フォームの案内を追加しました。",
+            "ヘルプページのフォーム一覧を整備し、「StepByご意見・ご質問フォーム」として分かりやすくしました。",
+            "FAQにPROモードの切り替え方法を追加しました。",
           ],
           close: "閉じる",
         },
         en: {
-          title: "New version v1.29.0",
+          title: "New version v1.29.1",
           items: [
             "The latest changes are now shown the first time you open an updated version of the app.",
-            "Help now explains how to switch PRO mode and links to the feedback and questions form.",
+            "The forms section on the Help page now clearly lists the StepBy Feedback and Questions Form.",
+            "The FAQ now explains how to switch PRO mode.",
           ],
           close: "Close",
         },
         hi: {
-          title: "नया संस्करण v1.29.0",
+          title: "नया संस्करण v1.29.1",
           items: [
             "ऐप अपडेट होने के बाद पहली बार खोलने पर अब नवीनतम बदलाव दिखाई देंगे।",
-            "सहायता पेज में PRO मोड बदलने और सुझाव व प्रश्न फ़ॉर्म की जानकारी जोड़ी गई है।",
+            "सहायता पेज की फ़ॉर्म सूची में अब StepBy सुझाव और प्रश्न फ़ॉर्म स्पष्ट रूप से दिखाया गया है।",
+            "FAQ में PRO मोड बदलने का तरीका जोड़ा गया है।",
           ],
           close: "बंद करें",
         },

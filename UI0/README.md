@@ -56,6 +56,6 @@ for file in test/*.test.js; do node "$file" || exit 1; done
 
 ## アプリ更新時のチェンジログ
 
-利用者へ知らせる更新では、`changelog.js`の配列先頭へ新しいバージョン・日付・日本語／英語／ヒンディー語の内容を追加し、`version.js`の`FRONTEND_VERSION`を同じ値へ更新します。PWAへ確実に配信するため、Service Workerの`CACHE_VERSION`も更新してください。
+利用者が画面上で気づく変更を行った場合は、`changelog.js`の配列先頭へ新しいバージョン・日付・日本語／英語／ヒンディー語の内容を必ず追加し、`version.js`の`FRONTEND_VERSION`を同じ値へ更新します。PWAへ確実に配信するため、Service Workerの`CACHE_VERSION`も更新してください。作業完了時には、チェンジログへ追記した内容も管理者へ報告します。
 
 最新の更新内容は、歩きスマホ防止の安全確認で利用者が「はい」を選んだ直後、マップ画面の上部バー直下へ端末ごと・バージョンごとに一度だけ表示されます。
