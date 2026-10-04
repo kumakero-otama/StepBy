@@ -19,13 +19,23 @@ assert.strictEqual(
 );
 assert.match(
   changelog,
-  /localStorage\.getItem\(SEEN_VERSION_KEY\)/,
-  "seen version must persist on the device"
+  /SEEN_ITEM_KEY_PREFIX/,
+  "seen item ids must persist locally for offline recovery"
 );
 assert.match(
   changelog,
-  /getSeenVersion\(\) === latest\.version/,
-  "the same version must only be shown once"
+  /currentUserScope\(\)/,
+  "local changelog state must be separated by authenticated user"
+);
+assert.match(
+  changelog,
+  /\/api\/changelog-views/,
+  "displayed items must be synchronized to the backend"
+);
+assert.match(
+  changelog,
+  /dataset\.changelogItemId = item\.id/,
+  "each displayed line must retain its stable changelog item id"
 );
 assert.match(
   map,
@@ -39,5 +49,5 @@ assert.match(
 );
 
 console.log(
-  "map changelog is versioned, one-time per device, and shown after safety acceptance"
+  "map changelog is versioned, tracked per user and item, and shown after safety acceptance"
 );
