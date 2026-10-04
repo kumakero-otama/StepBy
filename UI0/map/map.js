@@ -221,6 +221,9 @@ function initSafetyConfirmModal() {
       sessionStorage.setItem(SAFETY_CONFIRM_ACCEPTED_KEY, "1");
     } catch (e) {}
     hideSafetyConfirmModal();
+    if (window.StepByChangelog && typeof window.StepByChangelog.showLatest === "function") {
+      window.StepByChangelog.showLatest();
+    }
   });
 
   safetyConfirmRejectBtn.addEventListener("click", () => {
@@ -234,6 +237,9 @@ function initSafetyConfirmModal() {
   hideSafetyConfirmModal();
 
   if (acceptedThisSession) {
+    if (window.StepByChangelog && typeof window.StepByChangelog.showLatest === "function") {
+      window.StepByChangelog.showLatest();
+    }
     return;
   }
 

@@ -1,5 +1,5 @@
 // UI0開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.34.8-ui0-production";
+const CACHE_VERSION = "1.35.0-changelog";
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 // 時刻を含めるとService Worker再起動のたびに別名になり、既存キャッシュを
@@ -16,6 +16,7 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/appbar.css`,
   `${APP_BASE_PATH}/ui4-theme.css`,
   `${APP_BASE_PATH}/version.js`,
+  `${APP_BASE_PATH}/changelog.js`,
   `${APP_BASE_PATH}/map/Index.html`,
   `${APP_BASE_PATH}/map/map.css`,
   `${APP_BASE_PATH}/map/map.js`,

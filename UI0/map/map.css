@@ -412,6 +412,65 @@ body {
   height: 100%;
 }
 
+/* 安全確認後、更新版を初めて開いたときだけ上部バー直下へ表示する更新案内。 */
+.map-changelog-banner {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top));
+  left: 10px;
+  right: 10px;
+  z-index: 2550;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 760px;
+  max-height: min(42vh, 300px);
+  margin: 0 auto;
+  padding: 14px 14px 14px 16px;
+  overflow: auto;
+  border: 1px solid #a9ddd4;
+  border-top: 0;
+  border-radius: 0 0 16px 16px;
+  background: #ecfbf7;
+  color: #173d38;
+  box-shadow: 0 8px 24px rgba(20, 62, 57, 0.22);
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.map-changelog-banner.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.map-changelog-copy { flex: 1 1 auto; min-width: 0; }
+.map-changelog-title { display: block; margin-bottom: 5px; font-size: 1rem; }
+.map-changelog-list { margin: 0; padding-left: 1.2em; font-size: 0.88rem; line-height: 1.55; }
+.map-changelog-close {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #237f72;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:root[data-theme="dark"] .map-changelog-banner {
+  border-color: #376a63;
+  background: #1b302d;
+  color: #edf7f5;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.48);
+}
+
+@media (max-width: 520px) {
+  .map-changelog-banner { left: 6px; right: 6px; padding: 12px; }
+  .map-changelog-list { font-size: 0.82rem; }
+}
+
 @media (max-width: 520px) {
   .map-app-bar-copy {
     margin-left: 8px;
