@@ -55,6 +55,9 @@ const OSM_DISPLAY_RADIUS_KM = 10;
 const OSM_DISPLAY_REFRESH_DISTANCE_METERS = 8000;
 // 中心付近を先に描画し、広い範囲は地図操作を妨げず後から追加する。
 const OSM_DISPLAY_PROGRESSIVE_RADII_KM = [1, OSM_DISPLAY_RADIUS_KM];
+const OSM_DISPLAY_CACHE_KEY = "osmTactileDisplayCache.v1";
+const OSM_DISPLAY_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
+const OSM_DISPLAY_CACHE_MAX_CENTER_DISTANCE_METERS = 2000;
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -3106,9 +3109,17 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
     const osmId = properties.osm_way_id || properties.osm_node_id || properties.osm_id;
     return osmId ? `${properties.osm_type || feature.geometry?.type}:${osmId}` : JSON.stringify(feature.geometry);
   };
+  // 同じ地域を再表示したときは、公開OSM情報の直前の取得結果を即座に描画する。
+  // 表示後は必ずネットワーク更新を続けるため、古い内容へ固定されることはない。
+  const storedCache = loadOsmDisplayCache(center);
+  if (storedCache.length > 0) {
+    storedCache.forEach((feature) => accumulated.set(featureKey(feature), feature));
+    cachedOsmFeatures = cloneSerializable(storedCache) || [];
+    showOsmTactileWaysOnMap(cachedOsmFeatures);
+  }
   const runProgressiveLoad = async () => {
     let completedStage = false;
-    for (const radiusKm of OSM_DISPLAY_PROGRESSIVE_RADII_KM) {
+    const loadStage = async (radiusKm) => {
       if (requestSignal.aborted) return;
       try {
         const data = await fetchOsmTactileDisplay(center.lat, center.lng, radiusKm, { signal: requestSignal });
@@ -3118,11 +3129,15 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
           cachedOsmFeatures.forEach((feature) => accumulated.set(featureKey(feature), feature));
           completedStage = true;
           showOsmTactileWaysOnMap(Array.from(accumulated.values()));
-          continue;
+          return;
         }
+        // 10km応答は表示範囲全体の最新スナップショットなので、古い永続キャッシュを
+        // 置き換える。削除済み地物がキャッシュ更新のたびに残り続けるのを防ぐ。
+        if (radiusKm === OSM_DISPLAY_RADIUS_KM) accumulated.clear();
         data.features.forEach((feature) => accumulated.set(featureKey(feature), feature));
         completedStage = true;
         cachedOsmFeatures = cloneSerializable(Array.from(accumulated.values())) || [];
+        saveOsmDisplayCache(center, cachedOsmFeatures);
         saveMapReturnCache();
         showOsmTactileWaysOnMap(cachedOsmFeatures);
         console.log(`[loadAndShowOsmTactileWays] radius=${radiusKm}km, total=${cachedOsmFeatures.length}`);
@@ -3131,10 +3146,16 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
       } catch (error) {
         if (requestSignal.aborted) return;
         console.warn(`[loadAndShowOsmTactileWays] radius=${radiusKm}km failed`, error);
-        // 中心検索が失敗しても、次の段階または保存済み表示を試す。
+        // 一方が失敗しても、別範囲または保存済み表示を利用する。
       }
+    };
+    // 公開Overpassへ同じ地域の検索を重ねて送らない。中心1kmを先に描画し、
+    // 広域10kmはその直後にバックグラウンド更新する。
+    for (const radiusKm of OSM_DISPLAY_PROGRESSIVE_RADII_KM) {
+      await loadStage(radiusKm);
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
-    if (!completedStage) throw new Error("all_progressive_osm_tactile_reads_failed");
+    if (!completedStage && storedCache.length === 0) throw new Error("all_progressive_osm_tactile_reads_failed");
   };
   runProgressiveLoad()
     .catch((err) => {
@@ -3153,6 +3174,33 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
         osmTactileLoadAbortController = null;
       }
     });
+}
+
+function loadOsmDisplayCache(center) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OSM_DISPLAY_CACHE_KEY) || "null");
+    if (!parsed || !Array.isArray(parsed.features) || !Number.isFinite(Number(parsed.savedAt))) return [];
+    if (Date.now() - Number(parsed.savedAt) > OSM_DISPLAY_CACHE_MAX_AGE_MS) return [];
+    if (!parsed.center || !window.StepByOsmMatcher) return [];
+    const distance = window.StepByOsmMatcher.distanceMeters(parsed.center, center);
+    return Number.isFinite(distance) && distance <= OSM_DISPLAY_CACHE_MAX_CENTER_DISTANCE_METERS
+      ? cloneSerializable(parsed.features) || []
+      : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveOsmDisplayCache(center, features) {
+  try {
+    localStorage.setItem(OSM_DISPLAY_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      center: { lat: Number(center.lat), lng: Number(center.lng) },
+      features,
+    }));
+  } catch (_) {
+    // 容量制限やプライベートブラウズでは永続キャッシュなしで継続する。
+  }
 }
 
 function overpassTactileFeature(element) {
@@ -3183,18 +3231,17 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm, { signal =
   const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
     .map((value) => value.toFixed(7)).join(",");
   // bboxで検索範囲を限定し、ID順ソートより高速なquadtile順で必要な形状だけ返す。
-  const query = `[out:json][timeout:25][bbox:${bbox}];(way["tactile_paving"~"^(yes|both|contrasted)$"];node["tactile_paving"~"^(yes|both|contrasted)$"];);out geom qt;`;
+  const query = `[out:json][timeout:10][bbox:${bbox}];(way["tactile_paving"~"^(yes|both|contrasted)$"];node["tactile_paving"~"^(yes|both|contrasted)$"];);out geom qt;`;
   // 通常はStepBy APIのキャッシュと順次フォールバックを使う。API自体へ接続
   // できない場合だけ、端末から読取専用ミラーを1台ずつ試す。
   const hosts = [
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
   ];
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
   const apiAttempt = (async () => {
-      // 3台を各30秒で順番に試せるようにし、途中でブラウザ側の重複要求を始めない。
-      const apiResponse = await fetchWithTimeout(authFetch, `/api/osm-tactile-ways?${params}`, {}, 95000, signal);
+      // StepBy API側の最大待機時間に合わせ、接続不能時も約30秒で読取専用fallbackへ移る。
+      const apiResponse = await fetchWithTimeout(authFetch, `/api/osm-tactile-ways?${params}`, {}, 32000, signal);
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
     })();
@@ -3212,7 +3259,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm, { signal =
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: `data=${encodeURIComponent(query)}`,
-      }, 30000, signal);
+      }, 12000, signal);
       if (!response.ok) throw new Error(`overpass_status_${response.status}`);
       const payload = await response.json();
       const features = (Array.isArray(payload.elements) ? payload.elements : [])

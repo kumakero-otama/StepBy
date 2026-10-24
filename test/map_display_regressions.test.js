@@ -129,20 +129,30 @@ assert.match(mapSource, /recordActionBtn\.disabled = Boolean\(recordPaused/,
   "record stop must be disabled while recording is paused");
 assert.match(matcherSource, /if \(options\.force\) params\.set\("forceRefresh", "1"\)/,
   "a forced browser refresh must also bypass the server-side OSM network cache");
-assert.match(mapSource, /fetchWithTimeout\(authFetch,[\s\S]{0,180}?95000, signal\)/,
-  "OSM tactile display must allow the API's sequential mirror fallback to finish while remaining cancellable");
+assert.match(mapSource, /fetchWithTimeout\(authFetch,[\s\S]{0,180}?32000, signal\)/,
+  "OSM tactile display must stop waiting shortly after the API's bounded upstream attempt");
 assert.match(mapSource, /for \(const endpoint of hosts\)[\s\S]{0,500}?await fetchBrowserFallback\(endpoint\)/,
   "browser fallback must query Overpass mirrors sequentially");
 assert.doesNotMatch(mapSource, /hosts\.map\(async \(endpoint\)/,
   "browser fallback must not fan out to every Overpass mirror at once");
 assert.match(mapSource, /OSM_DISPLAY_PROGRESSIVE_RADII_KM\s*=\s*\[1, OSM_DISPLAY_RADIUS_KM\]/,
   "OSM tactile data must render the center area before the full background search");
-assert.match(mapSource, /for \(const radiusKm of OSM_DISPLAY_PROGRESSIVE_RADII_KM\)[\s\S]{0,1800}?showOsmTactileWaysOnMap\(cachedOsmFeatures\)/,
-  "each completed OSM search stage must be rendered without waiting for the full area");
+assert.match(mapSource, /for \(const radiusKm of OSM_DISPLAY_PROGRESSIVE_RADII_KM\)[\s\S]{0,200}?await loadStage\(radiusKm\)/,
+  "the center search must finish before starting the wide background search to protect public Overpass capacity");
+assert.match(mapSource, /loadOsmDisplayCache\(center\)[\s\S]{0,500}?showOsmTactileWaysOnMap\(cachedOsmFeatures\)/,
+  "recent OSM display data for the same area must be painted before background refresh");
+assert.match(mapSource, /saveOsmDisplayCache\(center, cachedOsmFeatures\)/,
+  "successful OSM display reads must refresh the short-lived spatial cache");
 assert.doesNotMatch(mapSource, /loadAndShowOsmTactileWays[\s\S]{0,500}?setOsmLoadingVisible\(true\)/,
   "OSM tactile loading must not block the map with a fullscreen spinner");
 assert.match(mapSource, /\[bbox:\$\{bbox\}\][\s\S]{0,180}?out geom qt;/,
   "browser fallback queries must use a bounded, quadtile-sorted output");
+assert.match(mapSource, /\[out:json\]\[timeout:10\]/,
+  "browser fallback queries must have a short Overpass execution timeout");
+assert.match(mapSource, /\}, 12000, signal\)/,
+  "browser fallback HTTP requests must have a bounded 12 second timeout");
+assert.doesNotMatch(mapSource, /overpass\.kumi\.systems/,
+  "the obsolete kumi alias must not duplicate the private.coffee mirror");
 const mobileAppBarCss = mapCss.slice(
   mapCss.indexOf("@media (max-width: 520px)"),
   mapCss.indexOf(".map-layout"),
