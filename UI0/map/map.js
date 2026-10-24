@@ -54,9 +54,12 @@ let osmRevertQueue = null;
 let lastNetworkPrefetchAt = 0;
 let lastMapDataDownloadCenter = null;
 let lastOsmDisplayDownloadCenter = null;
+let osmTactileLoadAbortController = null;
 const MAP_DATA_REFRESH_DISTANCE_METERS = 650;
 const OSM_DISPLAY_RADIUS_KM = 10;
 const OSM_DISPLAY_REFRESH_DISTANCE_METERS = 8000;
+// 中心付近を先に描画し、広い範囲は地図操作を妨げず後から追加する。
+const OSM_DISPLAY_PROGRESSIVE_RADII_KM = [1, OSM_DISPLAY_RADIUS_KM];
 
 // 多言語メッセージは画面内のモーダルや操作補助で共通利用する。
 const SAFETY_CONFIRM_TEXT = {
@@ -77,6 +80,23 @@ function authFetch(input, init) {
     return authTokenApi.authFetch(input, init);
   }
   return fetch(input, init);
+}
+
+// 外部signal（画面移動・再検索）と通信タイムアウトを1つのfetchへまとめる。
+// AbortSignal.anyに未対応の端末でも動くようAbortControllerで橋渡しする。
+function fetchWithTimeout(fetcher, input, init = {}, timeoutMs = 30000, externalSignal = null) {
+  const controller = new AbortController();
+  const abortFromExternal = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener("abort", abortFromExternal, { once: true });
+  }
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetcher(input, { ...init, signal: controller.signal })
+    .finally(() => {
+      clearTimeout(timer);
+      if (externalSignal) externalSignal.removeEventListener("abort", abortFromExternal);
+    });
 }
 
 function clearAccessToken() {
@@ -3095,36 +3115,52 @@ function setRecordsLoadingVisible(visible) {
 function loadAndShowOsmTactileWays(centerOverride = null) {
   // トグルONの最新リクエストだけを有効にするための採番。
   const requestSeq = ++osmTactileLoadRequestSeq;
-  setOsmLoadingVisible(true);
+  if (osmTactileLoadAbortController) osmTactileLoadAbortController.abort();
+  osmTactileLoadAbortController = new AbortController();
+  const requestSignal = osmTactileLoadAbortController.signal;
+  // OSM表示は補助情報なので、地図全面をローディング表示で塞がない。
+  setOsmLoadingVisible(false);
   console.log("[loadAndShowOsmTactileWays] Fetching tactile ways from OSM...");
   const center = centerOverride || map.getCenter();
-  const params = new URLSearchParams({
-    centerLat: center.lat.toString(),
-    centerLng: center.lng.toString(),
-    radiusKm: "1",
-  });
-  fetchOsmTactileDisplay(center.lat, center.lng, OSM_DISPLAY_RADIUS_KM)
-    .then((data) => {
-      if (requestSeq !== osmTactileLoadRequestSeq || !shouldShowOsmTactile()) {
-        return;
-      }
-      if (!data || !Array.isArray(data.features)) {
-        throw new Error("invalid osm tactile payload");
-      }
-      if (data.osmUpstreamUnavailable && cachedOsmFeatures.length > 0) {
+  const accumulated = new Map();
+  const featureKey = (feature) => {
+    const properties = feature && feature.properties || {};
+    const osmId = properties.osm_way_id || properties.osm_node_id || properties.osm_id;
+    return osmId ? `${properties.osm_type || feature.geometry?.type}:${osmId}` : JSON.stringify(feature.geometry);
+  };
+  const runProgressiveLoad = async () => {
+    let completedStage = false;
+    for (const radiusKm of OSM_DISPLAY_PROGRESSIVE_RADII_KM) {
+      if (requestSignal.aborted) return;
+      try {
+        const data = await fetchOsmTactileDisplay(center.lat, center.lng, radiusKm, { signal: requestSignal });
+        if (requestSeq !== osmTactileLoadRequestSeq || !shouldShowOsmTactile()) return;
+        if (!data || !Array.isArray(data.features)) throw new Error("invalid osm tactile payload");
+        if (data.osmUpstreamUnavailable && cachedOsmFeatures.length > 0) {
+          cachedOsmFeatures.forEach((feature) => accumulated.set(featureKey(feature), feature));
+          completedStage = true;
+          showOsmTactileWaysOnMap(Array.from(accumulated.values()));
+          continue;
+        }
+        data.features.forEach((feature) => accumulated.set(featureKey(feature), feature));
+        completedStage = true;
+        cachedOsmFeatures = cloneSerializable(Array.from(accumulated.values())) || [];
+        saveMapReturnCache();
         showOsmTactileWaysOnMap(cachedOsmFeatures);
-        showMapToast("最新のOSM情報を取得できないため、直前の表示を使用しています。", 4200);
-        return;
+        console.log(`[loadAndShowOsmTactileWays] radius=${radiusKm}km, total=${cachedOsmFeatures.length}`);
+        // 描画を先にブラウザへ返してから、次の広域検索へ進む。
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      } catch (error) {
+        if (requestSignal.aborted) return;
+        console.warn(`[loadAndShowOsmTactileWays] radius=${radiusKm}km failed`, error);
+        // 中心検索が失敗しても、次の段階または保存済み表示を試す。
       }
-      console.log(`[loadAndShowOsmTactileWays] Loaded ${data.features.length} ways`);
-      cachedOsmFeatures = cloneSerializable(data.features) || [];
-      saveMapReturnCache();
-      showOsmTactileWaysOnMap(data.features);
-    })
+    }
+    if (!completedStage) throw new Error("all_progressive_osm_tactile_reads_failed");
+  };
+  runProgressiveLoad()
     .catch((err) => {
-      if (requestSeq !== osmTactileLoadRequestSeq) {
-        return;
-      }
+      if (requestSeq !== osmTactileLoadRequestSeq || requestSignal.aborted) return;
       console.error("[loadAndShowOsmTactileWays] Error:", err);
       if (cachedOsmFeatures.length > 0) {
         showOsmTactileWaysOnMap(cachedOsmFeatures);
@@ -3136,6 +3172,7 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
     .finally(() => {
       if (requestSeq === osmTactileLoadRequestSeq) {
         setOsmLoadingVisible(false);
+        osmTactileLoadAbortController = null;
       }
     });
 }
@@ -3161,13 +3198,14 @@ function overpassTactileFeature(element) {
   return null;
 }
 
-async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
+async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm, { signal = null } = {}) {
   const radiusMeters = radiusKm * 1000;
   const latDelta = radiusMeters / 111320;
   const lngDelta = radiusMeters / (111320 * Math.max(0.2, Math.cos(centerLat * Math.PI / 180)));
   const bbox = [centerLat - latDelta, centerLng - lngDelta, centerLat + latDelta, centerLng + lngDelta]
     .map((value) => value.toFixed(7)).join(",");
-  const query = `[out:json][timeout:30];(way["tactile_paving"~"^(yes|both|contrasted)$"](${bbox});node["tactile_paving"~"^(yes|both|contrasted)$"](${bbox}););out meta geom;`;
+  // bboxで検索範囲を限定し、ID順ソートより高速なquadtile順で必要な形状だけ返す。
+  const query = `[out:json][timeout:25][bbox:${bbox}];(way["tactile_paving"~"^(yes|both|contrasted)$"];node["tactile_paving"~"^(yes|both|contrasted)$"];);out geom qt;`;
   // 通常はStepBy APIのキャッシュと順次フォールバックを使う。API自体へ接続
   // できない場合だけ、端末から読取専用ミラーを1台ずつ試す。
   const hosts = [
@@ -3178,7 +3216,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
   const params = new URLSearchParams({ centerLat: String(centerLat), centerLng: String(centerLng), radiusKm: String(radiusKm) });
   const apiAttempt = (async () => {
       // 3台を各30秒で順番に試せるようにし、途中でブラウザ側の重複要求を始めない。
-      const apiResponse = await authFetch(`/api/osm-tactile-ways?${params}`, { signal: AbortSignal.timeout(95000) });
+      const apiResponse = await fetchWithTimeout(authFetch, `/api/osm-tactile-ways?${params}`, {}, 95000, signal);
       if (!apiResponse.ok) throw new Error(`api_status_${apiResponse.status}`);
       return apiResponse.json();
     })();
@@ -3192,12 +3230,11 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm) {
     console.warn("[OSM tactile display] StepBy API unavailable; using read-only Overpass fallback", error && error.message);
   }
   const fetchBrowserFallback = async (endpoint) => {
-      const response = await fetch(endpoint, {
+      const response = await fetchWithTimeout(fetch, endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout(30000),
-      });
+      }, 30000, signal);
       if (!response.ok) throw new Error(`overpass_status_${response.status}`);
       const payload = await response.json();
       const features = (Array.isArray(payload.elements) ? payload.elements : [])
@@ -3492,6 +3529,10 @@ function applyMapInfoVisibility() {
     roadInfoLoadRequestSeq += 1;
     setRecordsLoadingVisible(false);
     setOsmLoadingVisible(false);
+    if (osmTactileLoadAbortController) {
+      osmTactileLoadAbortController.abort();
+      osmTactileLoadAbortController = null;
+    }
     clearAllRecordsFromMap();
     clearOsmTactileWaysFromMap();
     clearRoadInfoPointsFromMap();
@@ -3522,6 +3563,10 @@ function applyMapInfoVisibility() {
   } else {
     osmTactileLoadRequestSeq += 1;
     setOsmLoadingVisible(false);
+    if (osmTactileLoadAbortController) {
+      osmTactileLoadAbortController.abort();
+      osmTactileLoadAbortController = null;
+    }
     clearOsmTactileWaysFromMap();
   }
 

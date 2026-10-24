@@ -107,6 +107,14 @@ assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?
   "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
 assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints\)/,
   "record finalization must use current OSM data instead of a fresh-looking browser cache");
+assert.doesNotMatch(mapSource, /ブラウザ側でOSM Way上の連続した経路を確定できません。記録は保存されていません。/,
+  "a temporary browser matching failure must never discard a completed recording");
+assert.match(mapSource, /source:\s*"browser_raw"[\s\S]{0,500}?raw_points:/,
+  "unmatched recordings must retain their raw GPS points on the server");
+assert.match(mapSource, /payload\.osmPreview[\s\S]{0,180}?requestRawTraceData\(payload\.sessionId, payload\.rawPoints\)/,
+  "the durable upload queue must use the raw-only fallback when no route preview exists");
+assert.match(mapSource, /osmEligible:\s*Boolean\(decision\.osmEligible\)/,
+  "the raw-only fallback must remain ineligible for an automatic OSM draft");
 assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
 assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,
@@ -121,12 +129,20 @@ assert.match(mapSource, /recordActionBtn\.disabled = Boolean\(recordPaused/,
   "record stop must be disabled while recording is paused");
 assert.match(matcherSource, /if \(options\.force\) params\.set\("forceRefresh", "1"\)/,
   "a forced browser refresh must also bypass the server-side OSM network cache");
-assert.match(mapSource, /AbortSignal\.timeout\(95000\)/,
-  "OSM tactile display must allow the API's sequential mirror fallback to finish");
+assert.match(mapSource, /fetchWithTimeout\(authFetch,[\s\S]{0,180}?95000, signal\)/,
+  "OSM tactile display must allow the API's sequential mirror fallback to finish while remaining cancellable");
 assert.match(mapSource, /for \(const endpoint of hosts\)[\s\S]{0,500}?await fetchBrowserFallback\(endpoint\)/,
   "browser fallback must query Overpass mirrors sequentially");
 assert.doesNotMatch(mapSource, /hosts\.map\(async \(endpoint\)/,
   "browser fallback must not fan out to every Overpass mirror at once");
+assert.match(mapSource, /OSM_DISPLAY_PROGRESSIVE_RADII_KM\s*=\s*\[1, OSM_DISPLAY_RADIUS_KM\]/,
+  "OSM tactile data must render the center area before the full background search");
+assert.match(mapSource, /for \(const radiusKm of OSM_DISPLAY_PROGRESSIVE_RADII_KM\)[\s\S]{0,1800}?showOsmTactileWaysOnMap\(cachedOsmFeatures\)/,
+  "each completed OSM search stage must be rendered without waiting for the full area");
+assert.doesNotMatch(mapSource, /loadAndShowOsmTactileWays[\s\S]{0,500}?setOsmLoadingVisible\(true\)/,
+  "OSM tactile loading must not block the map with a fullscreen spinner");
+assert.match(mapSource, /\[bbox:\$\{bbox\}\][\s\S]{0,180}?out geom qt;/,
+  "browser fallback queries must use a bounded, quadtile-sorted output");
 const mobileAppBarCss = mapCss.slice(
   mapCss.indexOf("@media (max-width: 520px)"),
   mapCss.indexOf(".map-layout"),
