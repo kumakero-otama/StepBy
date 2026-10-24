@@ -1858,6 +1858,26 @@ function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
   });
 }
 
+function requestRawTraceData(sessionId, rawPoints) {
+  return authFetch("/api/trace", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sessionId,
+      source: "browser_raw",
+      raw_points: (rawPoints || []).map((point) => ({
+        lat: Number(point.lat),
+        lon: Number(point.lng),
+        accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null,
+      })),
+    }),
+  }).then(async (res) => {
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || `raw trace failed: ${res.status}`);
+    return payload;
+  });
+}
+
 function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
   const coordinates = osmPreview.segments.flatMap((segment, segmentIndex) =>
     segment.coordinates.slice(segmentIndex > 0 ? 1 : 0).map(([lng, lat]) => ({ lat, lon: lng })));
@@ -2381,7 +2401,9 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
           return;
         }
         setTraceTagError("");
-        const osmEligible = isCurrentRecordingOsmEligible();
+        // 道路網への確定に失敗した記録は生座標だけを安全に保存し、
+        // OSM変更案にはしない。管理者側で後から再マップマッチングできる。
+        const osmEligible = Boolean(osmPreview) && isCurrentRecordingOsmEligible();
         cleanupAndResolve({ action: "ok", osmEligible });
       };
       const onCancel = () => cleanupAndResolve({ action: "cancel" });
@@ -2407,7 +2429,7 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
     setupAndBind().catch((err) => {
       console.error("[trace_confirm] modal setup failed:", err);
       closeTraceConfirmModal();
-      resolve("cancel");
+      resolve({ action: "error", error: err });
     });
   });
 }
@@ -2489,7 +2511,11 @@ async function processQueuedRecording(payload, context) {
     if (!response.ok) throw new Error(`queued_session_start_failed:${response.status}`);
   });
   await runStage("trace_saved", async () => {
-    await requestBrowserTraceData(payload.osmPreview, payload.sessionId, payload.rawPoints);
+    if (payload.osmPreview) {
+      await requestBrowserTraceData(payload.osmPreview, payload.sessionId, payload.rawPoints);
+    } else {
+      await requestRawTraceData(payload.sessionId, payload.rawPoints);
+    }
   });
   await runStage("session_ended", async () => {
     const response = await authFetch("/api/session/end", {
@@ -2502,7 +2528,7 @@ async function processQueuedRecording(payload, context) {
     await runStage("memo_saved", () => saveSessionMemo(payload.sessionIds, payload.memo || ""));
     await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
   }
-  if (payload.osmEligible) {
+  if (payload.osmEligible && payload.osmPreview) {
     try {
       await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
     } catch (error) {
@@ -2621,27 +2647,21 @@ async function handleRecordStopWithConfirmation() {
 
   // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
   const osmPreview = await buildBrowserOsmPreview(allTracePoints);
-
-  if (!osmPreview) {
-    closeTraceConfirmModal();
-    alert("ブラウザ側でOSM Way上の連続した経路を確定できませんでした。記録は保存されていません。");
-    await cancelRecordingSessions(allSessionIds);
-    return;
-  }
-  const previewCoords = osmPreview.segments.flatMap((segment, index) =>
-    segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
+  // OSM道路網への確定に失敗しても、利用者が歩いて集めた記録は捨てない。
+  // その場合は生座標を確認画面に表示し、サーバーへ保存して後日の再処理対象にする。
+  const previewCoords = osmPreview
+    ? osmPreview.segments.flatMap((segment, index) =>
+      segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]))
+    : allTracePoints.map((point) => [Number(point.lat), Number(point.lng)]);
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
     closeTraceConfirmModal();
-    alert("保存確認用の経路を生成できませんでした。");
-    await cancelRecordingSessions(allSessionIds);
-    return;
+    throw new Error("trace_preview_unavailable");
   }
 
   const decision = await openTraceConfirmModal(previewCoords, osmPreview);
   if (decision && decision.action === "ok") {
     if (!recordUploadQueue || !activeSessionId) {
-      alert("端末内の送信待ちキューを利用できないため、記録を確定できませんでした。");
-      return;
+      throw new Error("record_queue_unavailable");
     }
     const payload = {
       id: `record:${activeSessionId}`,
@@ -2652,6 +2672,7 @@ async function handleRecordStopWithConfirmation() {
       rawPoints: allTracePoints.map((point) => ({ lat: point.lat, lng: point.lng, accuracy: point.accuracy == null ? null : point.accuracy })),
       ownerUserId: currentUserId,
       osmPreview,
+      matchingPending: !osmPreview,
       isPro: Boolean(isCurrentUserPro),
       memo: traceMemoInputEl ? traceMemoInputEl.value : "",
       tagIds: Array.from(selectedTraceTagIds),
@@ -2661,11 +2682,14 @@ async function handleRecordStopWithConfirmation() {
       await recordUploadQueue.enqueue(payload);
     } catch (error) {
       console.error("[RecordQueue] enqueue failed", error);
-      alert("端末に記録を保管できませんでした。空き容量を確認して、もう一度確定してください。");
-      return;
+      throw error;
     }
     displayTraceLine(previewCoords);
     return;
+  }
+
+  if (decision && decision.action === "error") {
+    throw decision.error || new Error("trace_confirm_unavailable");
   }
 
   await cancelRecordingSessions(allSessionIds);
