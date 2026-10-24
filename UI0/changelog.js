@@ -3,6 +3,41 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.0",
+      date: "2026-10-24",
+      items: [
+        {
+          id: "1.30.0.live-location",
+          text: {
+            ja: "現在地の黄緑の点と、道路上に補正された赤いピンが安定して更新されるよう改善しました。",
+            en: "The live green location dot and the road-matched red pin now update more reliably.",
+            hi: "लाइव हरा स्थान बिंदु और सड़क से मिलाया गया लाल पिन अब अधिक स्थिरता से अपडेट होते हैं।",
+          },
+        },
+        {
+          id: "1.30.0.record-preservation",
+          text: {
+            ja: "道路上の経路を確定できない場合も、歩行記録を失わず保存できるよう改善しました。",
+            en: "Walking records are now preserved even when a road-aligned route cannot be confirmed immediately.",
+            hi: "सड़क से जुड़ा मार्ग तुरंत तय न हो पाने पर भी चलने का रिकॉर्ड अब सुरक्षित रहता है।",
+          },
+        },
+        {
+          id: "1.30.0.osm-progressive-load",
+          text: {
+            ja: "OSMの点字ブロック情報を、地図を操作しながら中心付近から順次表示するよう高速化しました。",
+            en: "OSM tactile-paving information now loads progressively from the map center without blocking map use.",
+            hi: "OSM टैक्टाइल पेविंग जानकारी अब नक्शे के केंद्र से क्रमशः लोड होती है और नक्शे का उपयोग नहीं रोकती।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.0", close: "閉じる" },
+        en: { title: "New version v1.30.0", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.0", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.29.1",
       date: "2026-10-04",
       items: [
