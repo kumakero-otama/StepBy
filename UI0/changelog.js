@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.1",
+      date: "2026-10-24",
+      items: [
+        {
+          id: "1.30.1.fitted-location-only",
+          text: {
+            ja: "現在地表示を、道路上に補正された赤いピンだけに統一しました。",
+            en: "The map now shows only the road-matched red pin for your current location.",
+            hi: "वर्तमान स्थान के लिए अब केवल सड़क से मिलाया गया लाल पिन दिखाया जाता है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.1", close: "閉じる" },
+        en: { title: "New version v1.30.1", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.1", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.0",
       date: "2026-10-24",
       items: [
