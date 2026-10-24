@@ -1,6 +1,11 @@
 // このファイルは地図画面の位置取得、表示切替、記録操作、関連 API 通信を統括する。
 // 地図本体と、後続の表示更新で使う主要 DOM 参照を先に束ねておく。
 const map = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
+// 生GPSの黄緑点は、道路フィッティング後の赤いピンと同じ場所でも隠れないよう
+// 専用paneで最前面に表示する。
+map.createPane("liveLocationPane");
+map.getPane("liveLocationPane").style.zIndex = "680";
+map.getPane("liveLocationPane").style.pointerEvents = "none";
 const mapLayoutEl = document.getElementById("map-layout");
 const mapRowEl = document.querySelector(".map-row");
 const appBarSpacerEl = document.querySelector(".app-bar-spacer");
@@ -845,9 +850,12 @@ let latestLocation = null; // OSからの最新位置情報を保持する変数
 let marker = null;
 const trail = [];
 const MAX_TRAIL = 100;
+// OSから届いた生の現在地を示す黄緑の点。ブラウザ内フィッティングの成否や
+// 応答時間に左右されず、GPSを受け取るたびに動かす。
 let lastDot = null;
 let lastSent = null;
 let lastRequestTime = 0;
+let latestSnappedAt = 0;
 let recordEnabled = false;
 let recordPaused = false;
 // post_road 等の他画面で録音が継続されていた場合に備え、localStorage から状態を復元する。
@@ -2703,7 +2711,10 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
 }
 
 function handleNewLocation(latitude, longitude, accuracy = null) {
-  // 位置情報を変数に保存するだけ（書き込み）
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+  // ブラウザ内フィッティングを待たず、生GPSの黄緑点を毎回更新する。
+  // 道路上の赤いピンとは役割を分け、フィッティングが遅い場合もGPSの移動を見せる。
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
   updateTimestamp();
@@ -2722,6 +2733,28 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
       suppressAutoCenterAfterReturn = false;
       map.setView([latitude, longitude], map.getZoom(), { animate: false });
     }
+  }
+  if (!lastDot) {
+    lastDot = L.circleMarker([latitude, longitude], {
+      radius: 5,
+      color: "#ffffff",
+      fillColor: "#9acd32",
+      fillOpacity: 1,
+      weight: 2,
+      interactive: false,
+      pane: "liveLocationPane",
+    }).addTo(map);
+  } else {
+    lastDot.setLatLng([latitude, longitude]);
+  }
+  if (typeof lastDot.bringToFront === "function") lastDot.bringToFront();
+  if (hasLiveMatchedFix &&
+    isCenterCurrentEnabled()
+    && !suppressAutoCenterAfterReturn
+    && (!latestSnappedAt || Date.now() - latestSnappedAt > Math.max(MIN_REQUEST_INTERVAL_MS * 3, 6000))
+  ) {
+    // フィッティングが一時停止しても、追従表示だけは古い位置に取り残さない。
+    map.setView([latitude, longitude], map.getZoom(), { animate: false });
   }
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
@@ -2834,6 +2867,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
     rawCoordsEl.textContent = `Raw: ${rawLat.toFixed(6)}, ${rawLng.toFixed(6)}`;
   }
   latestSnappedLocation = { lat: snappedLat, lng: snappedLng };
+  latestSnappedAt = Date.now();
   if (isRecordingActive()) {
     appendUniquePoint(recordedSnappedPoints, snappedLat, snappedLng);
     appendUniquePoint(currentSessionSnappedPoints, snappedLat, snappedLng);
@@ -3516,10 +3550,10 @@ if ("geolocation" in navigator) {
       },
       (err) => {
         console.error("[Geolocation] getCurrentPosition error:", err);
-        if (coordsEl) {
+        if (!latestLocation && coordsEl) {
           coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
         }
-        if (lastUpdatedEl) {
+        if (!latestLocation && lastUpdatedEl) {
           lastUpdatedEl.textContent = "Last update: error";
         }
       },
@@ -3543,6 +3577,13 @@ if ("geolocation" in navigator) {
       },
       options
     );
+  }
+
+  function refreshLocationTracking() {
+    // 一部のモバイルブラウザはPWA復帰後に既存watchが止まるため、単発取得と
+    // watchの張り直しをセットで実行する。
+    requestPosition(true);
+    startWatching();
   }
 
   // 起動時はまずローカルキャッシュの位置を表示し、無ければ従来どおりGPS待ち表示にする。
@@ -3579,8 +3620,8 @@ if ("geolocation" in navigator) {
         return;
       }
     }
-    // 監視を開始
-    startWatching();
+    // watchPositionの初回通知が遅い端末向けに、単発取得も同時に開始する。
+    refreshLocationTracking();
     logMapEvent("gps_watch_start", {
       category: "navigation",
       path: window.location.pathname,
@@ -3706,6 +3747,13 @@ if ("geolocation" in navigator) {
     }
     
     bindToggleCards();
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshLocationTracking();
+    });
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) refreshLocationTracking();
+    });
 
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {
