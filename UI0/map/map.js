@@ -1,11 +1,6 @@
 // このファイルは地図画面の位置取得、表示切替、記録操作、関連 API 通信を統括する。
 // 地図本体と、後続の表示更新で使う主要 DOM 参照を先に束ねておく。
 const map = L.map("map", { zoomControl: true }).setView([35.681236, 139.767125], 13);
-// 生GPSの黄緑点は、道路フィッティング後の赤いピンと同じ場所でも隠れないよう
-// 専用paneで最前面に表示する。
-map.createPane("liveLocationPane");
-map.getPane("liveLocationPane").style.zIndex = "680";
-map.getPane("liveLocationPane").style.pointerEvents = "none";
 const mapLayoutEl = document.getElementById("map-layout");
 const mapRowEl = document.querySelector(".map-row");
 const appBarSpacerEl = document.querySelector(".app-bar-spacer");
@@ -870,9 +865,6 @@ let latestLocation = null; // OSからの最新位置情報を保持する変数
 let marker = null;
 const trail = [];
 const MAX_TRAIL = 100;
-// OSから届いた生の現在地を示す黄緑の点。ブラウザ内フィッティングの成否や
-// 応答時間に左右されず、GPSを受け取るたびに動かす。
-let lastDot = null;
 let lastSent = null;
 let lastRequestTime = 0;
 let latestSnappedAt = 0;
@@ -2757,8 +2749,8 @@ function requestSnappedLocation(latitude, longitude, accuracy = null) {
 function handleNewLocation(latitude, longitude, accuracy = null) {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
-  // ブラウザ内フィッティングを待たず、生GPSの黄緑点を毎回更新する。
-  // 道路上の赤いピンとは役割を分け、フィッティングが遅い場合もGPSの移動を見せる。
+  // 生GPSは追従・記録・フィッティングに利用するが、地図上には直接表示しない。
+  // 利用者へ表示する現在地は、道路上へフィッティングした赤いピンへ統一する。
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
   saveLastKnownLocation(latitude, longitude);
   updateTimestamp();
@@ -2778,20 +2770,6 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
       map.setView([latitude, longitude], map.getZoom(), { animate: false });
     }
   }
-  if (!lastDot) {
-    lastDot = L.circleMarker([latitude, longitude], {
-      radius: 5,
-      color: "#ffffff",
-      fillColor: "#9acd32",
-      fillOpacity: 1,
-      weight: 2,
-      interactive: false,
-      pane: "liveLocationPane",
-    }).addTo(map);
-  } else {
-    lastDot.setLatLng([latitude, longitude]);
-  }
-  if (typeof lastDot.bringToFront === "function") lastDot.bringToFront();
   if (hasLiveMatchedFix &&
     isCenterCurrentEnabled()
     && !suppressAutoCenterAfterReturn
