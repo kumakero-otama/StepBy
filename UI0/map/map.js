@@ -48,11 +48,13 @@ let recordUploadQueue = null;
 let osmRevertQueue = null;
 let lastNetworkPrefetchAt = 0;
 let lastMapDataDownloadCenter = null;
-let lastOsmDisplayDownloadCenter = null;
 let osmTactileLoadAbortController = null;
+let osmTactileViewportRefreshTimer = null;
+let osmTileApiUnavailable = false;
+let osmTileLegacyFallbackStarted = false;
+let osmTileLoader = null;
 const MAP_DATA_REFRESH_DISTANCE_METERS = 650;
 const OSM_DISPLAY_RADIUS_KM = 10;
-const OSM_DISPLAY_REFRESH_DISTANCE_METERS = 8000;
 // 中心付近を先に描画し、広い範囲は地図操作を妨げず後から追加する。
 const OSM_DISPLAY_PROGRESSIVE_RADII_KM = [1, OSM_DISPLAY_RADIUS_KM];
 const OSM_DISPLAY_CACHE_KEY = "osmTactileDisplayCache.v1";
@@ -998,6 +1000,10 @@ let suppressAutoCenterAfterReturn = false;
 let roadInfoMarkers = [];
 let cachedVisibleSessionPaths = [];
 let cachedOsmFeatures = [];
+const OSM_TILE_USER_METADATA_TTL_MS = 30 * 60 * 1000;
+const osmTileUserMetadata = window.StepByOsmTileCache
+  ? new window.StepByOsmTileCache.UserMetadataCache(OSM_TILE_USER_METADATA_TTL_MS)
+  : null;
 let cachedVisibleRoadInfoPoints = [];
 const tactileSessionInfoCache = new Map();
 let tactileSessionBackdropEl = null;
@@ -1499,6 +1505,14 @@ map.on("moveend", () => {
   roadInfoViewportRefreshTimer = window.setTimeout(() => {
     loadAndShowRoadInfoPoints();
   }, 250);
+});
+
+// OSM点字ブロックはGPS位置ではなく、利用者が見ている地図範囲を基準に更新する。
+// パン・ズーム中の連続要求を避け、操作終了500ms後に中央区画から取得する。
+map.on("moveend zoomend", () => {
+  if (!shouldShowOsmTactile()) return;
+  window.clearTimeout(osmTactileViewportRefreshTimer);
+  osmTactileViewportRefreshTimer = window.setTimeout(() => loadAndShowOsmTactileWays(), 500);
 });
 
 // ユーザーが地図に触れたら、復帰直後の自動中央追従抑止を解除する。
@@ -2569,7 +2583,14 @@ async function processQueuedRecording(payload, context) {
 function refreshVisibleMapDataAfterOsmChange() {
   loadAndShowAllRecords(map.getCenter());
   if (shouldShowOsmTactile()) {
-    loadAndShowOsmTactileWays(lastOsmDisplayDownloadCenter || map.getCenter());
+    const loader = ensureOsmTileLoader();
+    if (loader && isOsmTileCacheEnabled()) {
+      loader.invalidateBounds(map.getBounds(), map.getCenter())
+        .then(() => loadAndShowOsmTactileWays())
+        .catch(() => loadAndShowOsmTactileWays());
+    } else {
+      loadAndShowOsmTactileWays(map.getCenter());
+    }
   }
 }
 
@@ -2796,14 +2817,8 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     lastMapDataDownloadCenter = currentPoint;
     if (shouldShowAppTactile()) loadAndShowAllRecords(currentPoint);
   }
-  const movedFromOsmDisplayCenter = !lastOsmDisplayDownloadCenter || (
-    window.StepByOsmMatcher &&
-    window.StepByOsmMatcher.distanceMeters(lastOsmDisplayDownloadCenter, currentPoint) >= OSM_DISPLAY_REFRESH_DISTANCE_METERS
-  );
-  if (movedFromOsmDisplayCenter && shouldShowOsmTactile()) {
-    lastOsmDisplayDownloadCenter = currentPoint;
-    loadAndShowOsmTactileWays(currentPoint);
-  }
+  // OSM点字ブロック表示の取得範囲はGPSではなく、現在表示中の地図範囲から決める。
+  // 現在地中央がONならmap.setView後のmoveendが必要区画を更新する。
 }
 
 function pollAndSendLocation() {
@@ -3093,7 +3108,7 @@ function setRecordsLoadingVisible(visible) {
   recordsLoadingOverlayEl.classList.add("hidden");
 }
 
-function loadAndShowOsmTactileWays(centerOverride = null) {
+function loadAndShowOsmTactileWaysLegacy(centerOverride = null) {
   // トグルONの最新リクエストだけを有効にするための採番。
   const requestSeq = ++osmTactileLoadRequestSeq;
   if (osmTactileLoadAbortController) osmTactileLoadAbortController.abort();
@@ -3284,6 +3299,127 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm, { signal =
     console.warn("[OSM tactile display] all read endpoints failed", error && error.message);
     throw new Error("all_overpass_hosts_failed");
   }
+}
+
+function isOsmTileCacheEnabled() {
+  if (!window.StepByOsmTileCache || osmTileApiUnavailable) return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("legacy_osm_tiles") === "1") return false;
+    return localStorage.getItem("stepby.osmTileCache.disabled.v1") !== "1";
+  } catch (_) {
+    return true;
+  }
+}
+
+function rememberOsmTileUserMetadata(features) {
+  if (osmTileUserMetadata) osmTileUserMetadata.capture(currentUserId, features);
+}
+
+function mergeOsmTileUserMetadata(features) {
+  return osmTileUserMetadata ? osmTileUserMetadata.merge(currentUserId, features) : features;
+}
+
+function osmTileApiUnavailableError(message, cause = null) {
+  const error = new Error(message || "osm_tile_api_unavailable");
+  error.code = "osm_tile_api_unavailable";
+  if (cause) error.cause = cause;
+  return error;
+}
+
+async function fetchOsmTactileTile(tile, signal) {
+  const params = new URLSearchParams({ tiles: tile.tileId });
+  let response;
+  try {
+    response = await fetchWithTimeout(authFetch, `/api/osm-tactile-tiles?${params}`, {}, 30000, signal);
+  } catch (error) {
+    if (signal && signal.aborted) throw error;
+    throw osmTileApiUnavailableError("osm_tile_api_network_error", error);
+  }
+  if (window.StepByOsmTileCache.tileApiResponseRequiresLegacyFallback(response.status)) {
+    throw osmTileApiUnavailableError(`osm_tile_status_${response.status}`);
+  }
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    throw osmTileApiUnavailableError("invalid_osm_tile_json", error);
+  }
+  if (!response.ok) throw new Error(payload.error || `osm_tile_status_${response.status}`);
+  if (window.StepByOsmTileCache.tileApiResponseRequiresLegacyFallback(response.status, payload)) {
+    throw osmTileApiUnavailableError("osm_tile_all_failed");
+  }
+  const tilePayload = Array.isArray(payload.tiles)
+    ? payload.tiles.find((candidate) => candidate && candidate.tileId === tile.tileId) || payload.tiles[0]
+    : payload.tile || payload;
+  if (!tilePayload || !Array.isArray(tilePayload.features)) {
+    throw osmTileApiUnavailableError("invalid_osm_tile_payload");
+  }
+  const rawStatus = String(tilePayload.status || payload.status || "").toLowerCase();
+  if (rawStatus === "error" || rawStatus === "failed") {
+    throw osmTileApiUnavailableError(tilePayload.error || "osm_tile_payload_error");
+  }
+  const fetchedAtValue = tilePayload.fetchedAt;
+  const fetchedAt = Number.isFinite(Number(fetchedAtValue))
+    ? Number(fetchedAtValue)
+    : Date.parse(fetchedAtValue || "");
+  rememberOsmTileUserMetadata(tilePayload.features);
+  return {
+    tileId: tile.tileId,
+    features: tilePayload.features.map((feature) => window.StepByOsmTileCache.publicFeatureForCache(feature)),
+    fetchedAt: Number.isFinite(fetchedAt) ? fetchedAt : Date.now(),
+    // APIのsuccessは取得成功を表す。端末キャッシュでは内容の有無をready/emptyで管理する。
+    status: tilePayload.features.length ? "ready" : "empty",
+  };
+}
+
+function ensureOsmTileLoader() {
+  if (osmTileLoader || !window.StepByOsmTileCache) return osmTileLoader;
+  osmTileLoader = new window.StepByOsmTileCache.TileLoader({
+    fetchTile: fetchOsmTactileTile,
+    isEnabled: () => shouldShowOsmTactile() && isOsmTileCacheEnabled(),
+    onFeatures(features, state) {
+      cachedOsmFeatures = cloneSerializable(mergeOsmTileUserMetadata(features)) || [];
+      saveMapReturnCache();
+      showOsmTactileWaysOnMap(cachedOsmFeatures);
+      if (state && state.source === "network") {
+        // 新区画キャッシュへ移行後は、範囲が曖昧な旧localStorageキャッシュを破棄する。
+        try { localStorage.removeItem(OSM_DISPLAY_CACHE_KEY); } catch (_) {}
+      }
+    },
+    onError(error) {
+      if (error && (error.code === "osm_tile_api_unavailable" || error.message === "osm_tile_api_unavailable")) {
+        osmTileApiUnavailable = true;
+        if (!osmTileLegacyFallbackStarted) {
+          osmTileLegacyFallbackStarted = true;
+          loadAndShowOsmTactileWaysLegacy(map.getCenter());
+        }
+      }
+    },
+  });
+  return osmTileLoader;
+}
+
+function loadAndShowOsmTactileWays(centerOverride = null) {
+  if (!isOsmTileCacheEnabled()) {
+    loadAndShowOsmTactileWaysLegacy(centerOverride || map.getCenter());
+    return;
+  }
+  // 初回移行中だけ旧キャッシュを先に表示し、新区画の取得完了を待たせない。
+  const legacyFeatures = loadOsmDisplayCache(centerOverride || map.getCenter());
+  if (legacyFeatures.length && cachedOsmFeatures.length === 0) {
+    cachedOsmFeatures = cloneSerializable(legacyFeatures) || [];
+    showOsmTactileWaysOnMap(cachedOsmFeatures);
+  }
+  const loader = ensureOsmTileLoader();
+  if (!loader) {
+    loadAndShowOsmTactileWaysLegacy(centerOverride || map.getCenter());
+    return;
+  }
+  loader.refresh(map.getBounds(), map.getCenter()).catch((error) => {
+    console.error("[OsmTileCache] viewport refresh failed", error);
+    if (!cachedOsmFeatures.length) showMapToast("保存済みのOSM情報を表示できませんでした。", 3200);
+  });
 }
 
 async function requestOwnedOsmRevert(recordId, button) {
@@ -3558,6 +3694,8 @@ function applyMapInfoVisibility() {
       osmTactileLoadAbortController.abort();
       osmTactileLoadAbortController = null;
     }
+    if (osmTileLoader) osmTileLoader.cancel();
+    window.clearTimeout(osmTactileViewportRefreshTimer);
     clearAllRecordsFromMap();
     clearOsmTactileWaysFromMap();
     clearRoadInfoPointsFromMap();
@@ -3582,9 +3720,9 @@ function applyMapInfoVisibility() {
   if (shouldShowOsmTactile()) {
     if (cachedOsmFeatures.length > 0) {
       showOsmTactileWaysOnMap(cachedOsmFeatures);
-    } else {
-      loadAndShowOsmTactileWays();
     }
+    // 保存済みデータを即時表示した後も、現在の表示範囲の不足・期限切れ区画を更新する。
+    loadAndShowOsmTactileWays();
   } else {
     osmTactileLoadRequestSeq += 1;
     setOsmLoadingVisible(false);
@@ -3592,6 +3730,8 @@ function applyMapInfoVisibility() {
       osmTactileLoadAbortController.abort();
       osmTactileLoadAbortController = null;
     }
+    if (osmTileLoader) osmTileLoader.cancel();
+    window.clearTimeout(osmTactileViewportRefreshTimer);
     clearOsmTactileWaysFromMap();
   }
 

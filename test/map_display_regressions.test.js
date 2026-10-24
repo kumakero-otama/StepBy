@@ -145,6 +145,26 @@ assert.match(mapSource, /saveOsmDisplayCache\(center, cachedOsmFeatures\)/,
   "successful OSM display reads must refresh the short-lived spatial cache");
 assert.doesNotMatch(mapSource, /loadAndShowOsmTactileWays[\s\S]{0,500}?setOsmLoadingVisible\(true\)/,
   "OSM tactile loading must not block the map with a fullscreen spinner");
+assert.match(mapSource, /map\.on\("moveend zoomend"[\s\S]{0,320}?setTimeout\(\(\) => loadAndShowOsmTactileWays\(\), 500\)/,
+  "OSM tactile tiles must follow the visible viewport after a debounce");
+assert.doesNotMatch(mapSource, /movedFromOsmDisplayCenter/,
+  "OSM tactile display downloads must not be driven directly by raw GPS movement");
+assert.match(mapSource, /\/api\/osm-tactile-tiles\?\$\{params\}/,
+  "OSM tactile display must use the bounded tile API");
+assert.match(mapSource, /stepby\.osmTileCache\.disabled\.v1|legacy_osm_tiles/,
+  "tile mode must retain an explicit legacy rollback flag");
+assert.match(mapSource, /tileApiResponseRequiresLegacyFallback\(response\.status\)/,
+  "tile API 5xx responses must trigger the legacy fallback path");
+assert.match(mapSource, /osm_tile_api_network_error/,
+  "tile API timeouts and network failures must trigger the legacy fallback path");
+assert.match(mapSource, /invalid_osm_tile_json/,
+  "invalid tile API JSON must trigger the legacy fallback path");
+assert.match(mapSource, /tileApiResponseRequiresLegacyFallback\(response\.status, payload\)/,
+  "an all-failed tile batch must trigger the legacy fallback path");
+assert.match(mapSource, /rememberOsmTileUserMetadata\(tilePayload\.features\)/,
+  "user-specific ownership metadata must be separated before public tile persistence");
+assert.match(mapSource, /mergeOsmTileUserMetadata\(features\)/,
+  "the current user must retain ownership display from the short-lived metadata cache");
 assert.match(mapSource, /\[bbox:\$\{bbox\}\][\s\S]{0,180}?out geom qt;/,
   "browser fallback queries must use a bounded, quadtile-sorted output");
 assert.match(mapSource, /\[out:json\]\[timeout:10\]/,
