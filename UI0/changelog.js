@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.2",
+      date: "2026-10-24",
+      items: [
+        {
+          id: "1.30.2.osm-display-speed",
+          text: {
+            ja: "OSMの点字ブロック情報を、取得済みの地域ではすぐに表示し、バックグラウンドで更新するよう高速化しました。",
+            en: "Previously fetched OSM tactile-paving information now appears immediately and refreshes in the background.",
+            hi: "पहले प्राप्त OSM टैक्टाइल पेविंग जानकारी अब तुरंत दिखाई जाती है और पृष्ठभूमि में अपडेट होती है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.2", close: "閉じる" },
+        en: { title: "New version v1.30.2", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.2", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.1",
       date: "2026-10-24",
       items: [
