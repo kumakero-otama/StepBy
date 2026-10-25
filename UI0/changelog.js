@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.4",
+      date: "2026-10-25",
+      items: [
+        {
+          id: "1.30.4.osm-cold-load",
+          text: {
+            ja: "OSM点字ブロック情報の初回取得が地図操作を待たせないようにし、同じ範囲の重複通信を減らしました。",
+            en: "Initial OSM tactile-paving retrieval no longer delays map use, and duplicate requests for the same area have been reduced.",
+            hi: "OSM टैक्टाइल पेविंग की पहली प्राप्ति अब नक्शे के उपयोग को नहीं रोकती और एक ही क्षेत्र के दोहराए गए अनुरोध कम किए गए हैं।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.4", close: "閉じる" },
+        en: { title: "New version v1.30.4", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.4", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.3",
       date: "2026-10-25",
       items: [

@@ -10,6 +10,7 @@
   const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
   const MAX_BYTES = 25 * 1024 * 1024;
   const MAX_VISIBLE_TILES = 36;
+  const MAX_NETWORK_TILES_PER_REFRESH = 4;
   const DB_NAME = "stepby-osm-tactile-cache";
   const DB_VERSION = 1;
   const USER_SCOPED_PROPERTY_KEYS = new Set(["stepby_owned_record_id", "stepby_can_revert"]);
@@ -143,14 +144,6 @@
         };
       });
     }
-  }
-
-  function tileApiResponseRequiresLegacyFallback(status, payload = null) {
-    const normalizedStatus = Number(status);
-    return normalizedStatus === 404
-      || normalizedStatus === 501
-      || normalizedStatus >= 500
-      || Boolean(payload && payload.allFailed === true);
   }
 
   function requestResult(request) {
@@ -385,6 +378,9 @@
       this.store = new TileStore();
       this.generation = 0;
       this.controller = null;
+      this.activeQueueKey = "";
+      this.retryTimer = null;
+      this.retryQueueKey = "";
       this.lastCleanupAt = 0;
     }
 
@@ -392,6 +388,10 @@
       this.generation += 1;
       if (this.controller) this.controller.abort();
       this.controller = null;
+      this.activeQueueKey = "";
+      if (this.retryTimer) globalScope.clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+      this.retryQueueKey = "";
     }
 
     async invalidateBounds(bounds, center) {
@@ -399,17 +399,28 @@
       await this.store.invalidate(tiles.map((tile) => tile.tileId));
     }
 
-    async refresh(bounds, center) {
-      this.cancel();
+    async refresh(bounds, center, { mapZoom = DEFAULT_ZOOM } = {}) {
       if (!this.isEnabled()) return;
+      const lowZoom = Number(mapZoom) < 14;
+      const visible = tilesForBounds(bounds, center, {
+        maxTiles: lowZoom ? 4 : this.maxVisibleTiles,
+      });
+      const withRing = lowZoom
+        ? visible
+        : tilesForBounds(bounds, center, { maxTiles: this.maxVisibleTiles, includeRing: true });
+      const visibleIds = new Set(visible.map((tile) => tile.tileId));
+      // 画面内をすべて先に処理し、外周の先読みはその後にだけ並べる。
+      const queue = [...visible, ...withRing.filter((tile) => !visibleIds.has(tile.tileId))];
+      const queueKey = queue.map((tile) => tile.tileId).join(",");
+      if (this.controller && this.activeQueueKey === queueKey) return;
+      if (this.retryTimer && this.retryQueueKey === queueKey) return;
+      this.cancel();
       const generation = this.generation;
       const controller = new AbortController();
       this.controller = controller;
-      const visible = tilesForBounds(bounds, center, { maxTiles: this.maxVisibleTiles });
-      const withRing = tilesForBounds(bounds, center, { maxTiles: this.maxVisibleTiles, includeRing: true });
-      const visibleIds = new Set(visible.map((tile) => tile.tileId));
-      const queue = [...visible, ...withRing.filter((tile) => !visibleIds.has(tile.tileId))];
+      this.activeQueueKey = queueKey;
       const ids = queue.map((tile) => tile.tileId);
+      let retryAfterMs = null;
       try {
         const storedFeatures = await this.store.featuresForTiles(ids);
         if (generation !== this.generation || controller.signal.aborted) return;
@@ -417,15 +428,26 @@
         await this.store.touch(ids);
         const tileRecords = new Map((await this.store.readTiles(ids)).map((record) => [record.tileId, record]));
         let hasAuthoritativeTile = tileRecords.size > 0;
+        let networkTileCount = 0;
         for (const tile of queue) {
           if (generation !== this.generation || controller.signal.aborted || !this.isEnabled()) return;
           const record = tileRecords.get(tile.tileId);
           const age = record ? Date.now() - Number(record.fetchedAt || 0) : Infinity;
           if (record && age < FRESH_MS) continue;
+          // 低速なcold missを一度に全36区画へ流さない。保存済みfresh/emptyは
+          // すべて即時表示し、未取得・staleは1 refreshにつき中央側4区画だけ更新する。
+          if (networkTileCount >= MAX_NETWORK_TILES_PER_REFRESH) continue;
+          networkTileCount += 1;
           try {
             const response = await this.fetchTile(tile, controller.signal);
             if (generation !== this.generation || controller.signal.aborted) return;
             const responseStatus = String(response && response.status || "").toLowerCase();
+            if (responseStatus === "pending") {
+              const suggested = Number(response && response.retryAfterMs);
+              retryAfterMs = Math.min(retryAfterMs ?? Infinity,
+                Number.isFinite(suggested) && suggested > 0 ? suggested : 5000);
+              continue;
+            }
             // 取得失敗を空区画として保存すると、24時間「点字ブロックなし」と誤認するため拒否する。
             if (responseStatus === "error" || responseStatus === "failed") {
               throw new Error("osm_tile_payload_error");
@@ -440,6 +462,11 @@
           } catch (error) {
             if (controller.signal.aborted) return;
             this.onError(error, tile);
+            if (error && error.retryable === true) {
+              const suggested = Number(error.retryAfterMs);
+              retryAfterMs = Math.min(retryAfterMs ?? Infinity,
+                Number.isFinite(suggested) && suggested > 0 ? suggested : 5000);
+            }
             // staleデータが30日以内なら表示を維持し、取得失敗で消さない。
             if (!record || age > STALE_MS) console.warn("[OsmTileCache] tile unavailable", tile.tileId, error);
           }
@@ -455,7 +482,20 @@
           globalScope.setTimeout(() => this.store.cleanup().catch(() => {}), 0);
         }
       } finally {
-        if (generation === this.generation) this.controller = null;
+        if (generation === this.generation) {
+          this.controller = null;
+          this.activeQueueKey = "";
+          if (Number.isFinite(retryAfterMs) && this.isEnabled()) {
+            const retryBounds = bounds;
+            const retryCenter = center;
+            this.retryTimer = globalScope.setTimeout(() => {
+              this.retryTimer = null;
+              this.retryQueueKey = "";
+              this.refresh(retryBounds, retryCenter, { mapZoom }).catch(() => {});
+            }, Math.max(500, retryAfterMs));
+            this.retryQueueKey = queueKey;
+          }
+        }
       }
     }
   }
@@ -467,6 +507,7 @@
     EVICT_MS,
     CLEANUP_INTERVAL_MS,
     MAX_BYTES,
+    MAX_NETWORK_TILES_PER_REFRESH,
     latLngToTile,
     tileToBounds,
     parseTileId,
@@ -474,7 +515,6 @@
     featureId,
     publicFeatureForCache,
     UserMetadataCache,
-    tileApiResponseRequiresLegacyFallback,
     TileStore,
     TileLoader,
   };

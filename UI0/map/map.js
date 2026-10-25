@@ -53,6 +53,7 @@ let osmTactileViewportRefreshTimer = null;
 let osmTileApiUnavailable = false;
 let osmTileLegacyFallbackStarted = false;
 let osmTileLoader = null;
+let osmTileViewportReady = false;
 const MAP_DATA_REFRESH_DISTANCE_METERS = 650;
 const OSM_DISPLAY_RADIUS_KM = 10;
 // 中心付近を先に描画し、広い範囲は地図操作を妨げず後から追加する。
@@ -1233,6 +1234,7 @@ function restoreMapReturnCache() {
   if (!isCenterCurrentEnabled() && cached.center && Number.isFinite(cached.center.lat) && Number.isFinite(cached.center.lng)) {
     const nextZoom = Number.isFinite(Number(cached.zoom)) ? Number(cached.zoom) : map.getZoom();
     map.setView([cached.center.lat, cached.center.lng], nextZoom, { animate: false });
+    osmTileViewportReady = true;
     suppressAutoCenterAfterReturn = true;
   }
 
@@ -1310,6 +1312,7 @@ function applyCachedLocation(cached) {
     suppressAutoCenterAfterReturn = false;
     const currentZoom = map.getZoom();
     map.setView([cached.lat, cached.lng], currentZoom, { animate: false });
+    osmTileViewportReady = true;
   }
   return true;
 }
@@ -2776,6 +2779,11 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
   // 生GPSは追従・記録・フィッティングに利用するが、地図上には直接表示しない。
   // 利用者へ表示する現在地は、道路上へフィッティングした赤いピンへ統一する。
   latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
+  if (!osmTileViewportReady) {
+    // 保存済み表示位置がない初回だけ、既定の東京ではなく実際の現在地を取得基準にする。
+    map.setView([latitude, longitude], map.getZoom(), { animate: false });
+    osmTileViewportReady = true;
+  }
   saveLastKnownLocation(latitude, longitude);
   updateTimestamp();
   if (rawCoordsEl) rawCoordsEl.textContent = `Raw: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
@@ -3320,11 +3328,20 @@ function mergeOsmTileUserMetadata(features) {
   return osmTileUserMetadata ? osmTileUserMetadata.merge(currentUserId, features) : features;
 }
 
-function osmTileApiUnavailableError(message, cause = null) {
+function osmTileApiError(message, { cause = null, unsupported = false, retryAfterMs = 5000 } = {}) {
   const error = new Error(message || "osm_tile_api_unavailable");
-  error.code = "osm_tile_api_unavailable";
+  error.code = unsupported ? "osm_tile_api_unavailable" : "osm_tile_api_retryable";
+  error.retryable = !unsupported;
+  error.retryAfterMs = retryAfterMs;
   if (cause) error.cause = cause;
   return error;
+}
+
+function osmTileRetryAfterMs(response, payload = null) {
+  const payloadMs = Number(payload && (payload.retryAfterMs || payload.retry_after_ms));
+  if (Number.isFinite(payloadMs) && payloadMs > 0) return payloadMs;
+  const headerSeconds = Number(response && response.headers && response.headers.get("Retry-After"));
+  return Number.isFinite(headerSeconds) && headerSeconds > 0 ? headerSeconds * 1000 : 5000;
 }
 
 async function fetchOsmTactileTile(tile, signal) {
@@ -3334,30 +3351,47 @@ async function fetchOsmTactileTile(tile, signal) {
     response = await fetchWithTimeout(authFetch, `/api/osm-tactile-tiles?${params}`, {}, 30000, signal);
   } catch (error) {
     if (signal && signal.aborted) throw error;
-    throw osmTileApiUnavailableError("osm_tile_api_network_error", error);
+    throw osmTileApiError("osm_tile_api_network_error", { cause: error });
   }
-  if (window.StepByOsmTileCache.tileApiResponseRequiresLegacyFallback(response.status)) {
-    throw osmTileApiUnavailableError(`osm_tile_status_${response.status}`);
+  if (response.status === 404 || response.status === 501) {
+    throw osmTileApiError(`osm_tile_status_${response.status}`, { unsupported: true });
+  }
+  if (response.status >= 500) {
+    throw osmTileApiError(`osm_tile_status_${response.status}`, { retryAfterMs: osmTileRetryAfterMs(response) });
   }
   let payload;
   try {
     payload = await response.json();
   } catch (error) {
-    throw osmTileApiUnavailableError("invalid_osm_tile_json", error);
+    throw osmTileApiError("invalid_osm_tile_json", { cause: error });
   }
-  if (!response.ok) throw new Error(payload.error || `osm_tile_status_${response.status}`);
-  if (window.StepByOsmTileCache.tileApiResponseRequiresLegacyFallback(response.status, payload)) {
-    throw osmTileApiUnavailableError("osm_tile_all_failed");
+  if (!response.ok) {
+    const error = osmTileApiError(payload.error || `osm_tile_status_${response.status}`, { retryAfterMs: osmTileRetryAfterMs(response, payload) });
+    error.retryable = response.status === 408 || response.status === 429;
+    throw error;
+  }
+  if (payload && payload.allFailed === true) {
+    throw osmTileApiError("osm_tile_all_failed", { retryAfterMs: osmTileRetryAfterMs(response, payload) });
   }
   const tilePayload = Array.isArray(payload.tiles)
     ? payload.tiles.find((candidate) => candidate && candidate.tileId === tile.tileId) || payload.tiles[0]
     : payload.tile || payload;
   if (!tilePayload || !Array.isArray(tilePayload.features)) {
-    throw osmTileApiUnavailableError("invalid_osm_tile_payload");
+    throw osmTileApiError("invalid_osm_tile_payload");
   }
   const rawStatus = String(tilePayload.status || payload.status || "").toLowerCase();
+  if (rawStatus === "pending") {
+    return {
+      tileId: tile.tileId,
+      status: "pending",
+      features: [],
+      retryAfterMs: osmTileRetryAfterMs(response, tilePayload),
+    };
+  }
   if (rawStatus === "error" || rawStatus === "failed") {
-    throw osmTileApiUnavailableError(tilePayload.error || "osm_tile_payload_error");
+    throw osmTileApiError(tilePayload.error || "osm_tile_payload_error", {
+      retryAfterMs: osmTileRetryAfterMs(response, tilePayload),
+    });
   }
   const fetchedAtValue = tilePayload.fetchedAt;
   const fetchedAt = Number.isFinite(Number(fetchedAtValue))
@@ -3401,6 +3435,7 @@ function ensureOsmTileLoader() {
 }
 
 function loadAndShowOsmTactileWays(centerOverride = null) {
+  if (!osmTileViewportReady) return;
   if (!isOsmTileCacheEnabled()) {
     loadAndShowOsmTactileWaysLegacy(centerOverride || map.getCenter());
     return;
@@ -3416,7 +3451,7 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
     loadAndShowOsmTactileWaysLegacy(centerOverride || map.getCenter());
     return;
   }
-  loader.refresh(map.getBounds(), map.getCenter()).catch((error) => {
+  loader.refresh(map.getBounds(), map.getCenter(), { mapZoom: map.getZoom() }).catch((error) => {
     console.error("[OsmTileCache] viewport refresh failed", error);
     if (!cachedOsmFeatures.length) showMapToast("保存済みのOSM情報を表示できませんでした。", 3200);
   });

@@ -153,14 +153,18 @@ assert.match(mapSource, /\/api\/osm-tactile-tiles\?\$\{params\}/,
   "OSM tactile display must use the bounded tile API");
 assert.match(mapSource, /stepby\.osmTileCache\.disabled\.v1|legacy_osm_tiles/,
   "tile mode must retain an explicit legacy rollback flag");
-assert.match(mapSource, /tileApiResponseRequiresLegacyFallback\(response\.status\)/,
-  "tile API 5xx responses must trigger the legacy fallback path");
+assert.match(mapSource, /response\.status === 404 \|\| response\.status === 501/,
+  "only an unsupported tile API must trigger the legacy fallback path");
+assert.doesNotMatch(mapSource, /response\.status >= 500[\s\S]{0,160}?unsupported:\s*true/,
+  "temporary tile API 5xx responses must not permanently switch to the legacy API");
 assert.match(mapSource, /osm_tile_api_network_error/,
-  "tile API timeouts and network failures must trigger the legacy fallback path");
+  "tile API timeouts and network failures must remain retryable");
 assert.match(mapSource, /invalid_osm_tile_json/,
-  "invalid tile API JSON must trigger the legacy fallback path");
-assert.match(mapSource, /tileApiResponseRequiresLegacyFallback\(response\.status, payload\)/,
-  "an all-failed tile batch must trigger the legacy fallback path");
+  "invalid tile API JSON must remain retryable without entering legacy mode");
+assert.match(mapSource, /payload && payload\.allFailed === true[\s\S]{0,120}?osm_tile_all_failed/,
+  "an all-failed tile batch must remain retryable without entering legacy mode");
+assert.match(mapSource, /if \(!osmTileViewportReady\) return;/,
+  "OSM tile loading must wait until a restored or live viewport is available");
 assert.match(mapSource, /rememberOsmTileUserMetadata\(tilePayload\.features\)/,
   "user-specific ownership metadata must be separated before public tile persistence");
 assert.match(mapSource, /mergeOsmTileUserMetadata\(features\)/,

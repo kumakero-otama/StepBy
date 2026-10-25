@@ -10,11 +10,6 @@ const cache = windowObject.StepByOsmTileCache;
 
 assert.ok(cache, "tile cache module must be exposed");
 assert.strictEqual(cache.CLEANUP_INTERVAL_MS, 6 * 60 * 60 * 1000, "tile cleanup must follow the six-hour specification");
-assert.strictEqual(cache.tileApiResponseRequiresLegacyFallback(404), true, "missing tile API must use legacy mode");
-assert.strictEqual(cache.tileApiResponseRequiresLegacyFallback(501), true, "unimplemented tile API must use legacy mode");
-assert.strictEqual(cache.tileApiResponseRequiresLegacyFallback(503), true, "tile API server failures must use legacy mode");
-assert.strictEqual(cache.tileApiResponseRequiresLegacyFallback(200, { allFailed: true }), true, "an all-failed batch must use legacy mode");
-assert.strictEqual(cache.tileApiResponseRequiresLegacyFallback(200, { success: true }), false, "a successful tile response must stay in tile mode");
 const okayama = cache.latLngToTile(34.66, 133.92);
 assert.strictEqual(okayama.z, 15, "z15 must be the fixed cache grid");
 assert.deepStrictEqual(cache.parseTileId(okayama.tileId), okayama);
@@ -88,6 +83,7 @@ assert.strictEqual(visible[0].tileId, okayama.tileId, "viewport center tile must
   let fetchCount = 0;
   const renders = [];
   const loader = new cache.TileLoader({
+    maxVisibleTiles: 1,
     isEnabled: () => true,
     fetchTile: async (tile) => {
       fetchCount += 1;
@@ -162,6 +158,75 @@ assert.strictEqual(visible[0].tileId, okayama.tileId, "viewport center tile must
   const newRefresh = cancellationLoader.refresh(newBounds, { lat: 35, lng: 135 });
   await Promise.all([oldRefresh, newRefresh]);
   assert.strictEqual(firstRequestAborted, true, "a viewport change must abort the previous in-flight request");
+
+  let sameViewportFetchCount = 0;
+  let finishSameViewportFetch;
+  const sameViewportLoader = new cache.TileLoader({
+    maxVisibleTiles: 1,
+    fetchTile: async () => {
+      sameViewportFetchCount += 1;
+      return new Promise((resolve) => { finishSameViewportFetch = resolve; });
+    },
+    onFeatures: () => {},
+  });
+  const sameFirst = sameViewportLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await sameViewportLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
+  assert.strictEqual(sameViewportFetchCount, 1, "the same active tile set must not be aborted and restarted");
+  finishSameViewportFetch({ status: "empty", features: [], fetchedAt: Date.now() });
+  await sameFirst;
+
+  let lowZoomFetchCount = 0;
+  const lowZoomLoader = new cache.TileLoader({
+    maxVisibleTiles: 36,
+    fetchTile: async () => {
+      lowZoomFetchCount += 1;
+      return { status: "empty", features: [], fetchedAt: Date.now() };
+    },
+    onFeatures: () => {},
+  });
+  await lowZoomLoader.refresh(
+    { north: 35.2, south: 34.2, west: 133.2, east: 134.6 },
+    { lat: 34.66, lng: 133.92 },
+    { mapZoom: 13 }
+  );
+  assert.ok(lowZoomFetchCount > 0 && lowZoomFetchCount <= 4,
+    "zoom levels below 14 must fetch at most four central tiles and skip the outer ring");
+
+  let highZoomFetchCount = 0;
+  const highZoomLoader = new cache.TileLoader({
+    maxVisibleTiles: 36,
+    fetchTile: async () => {
+      highZoomFetchCount += 1;
+      return { status: "empty", features: [], fetchedAt: Date.now() };
+    },
+    onFeatures: () => {},
+  });
+  const wideHighZoomBounds = { north: 34.72, south: 34.60, west: 133.84, east: 134.00 };
+  await highZoomLoader.refresh(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { mapZoom: 15 });
+  assert.strictEqual(highZoomFetchCount, cache.MAX_NETWORK_TILES_PER_REFRESH,
+    "one high-zoom refresh must submit no more than four cold network tiles");
+  await highZoomLoader.refresh(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { mapZoom: 15 });
+  assert.strictEqual(highZoomFetchCount, cache.MAX_NETWORK_TILES_PER_REFRESH * 2,
+    "the next refresh must skip the first fresh/empty group and continue with the next four tiles");
+
+  let pendingFetchCount = 0;
+  const pendingLoader = new cache.TileLoader({
+    maxVisibleTiles: 1,
+    fetchTile: async () => {
+      pendingFetchCount += 1;
+      return pendingFetchCount === 1
+        ? { status: "pending", features: [], retryAfterMs: 10 }
+        : { status: "empty", features: [], fetchedAt: Date.now() };
+    },
+    onFeatures: () => {},
+  });
+  await pendingLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
+  assert.strictEqual((await pendingLoader.store.readTiles([failedTile.tileId])).length, 0,
+    "pending tiles must not be persisted as empty or error results");
+  await new Promise((resolve) => setTimeout(resolve, 650));
+  assert.strictEqual(pendingFetchCount, 2, "pending tiles must be checked again after retryAfter without legacy fallback");
+  pendingLoader.cancel();
 
   const cleanupStore = new cache.TileStore();
   const oldTileId = "15/100/100";
