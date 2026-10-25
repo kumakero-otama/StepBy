@@ -11,6 +11,7 @@
   const MAX_BYTES = 25 * 1024 * 1024;
   const MAX_VISIBLE_TILES = 36;
   const MAX_NETWORK_TILES_PER_REFRESH = 4;
+  const MAX_ANCHOR_RETRIES = 3;
   const DB_NAME = "stepby-osm-tactile-cache";
   const DB_VERSION = 1;
   const USER_SCOPED_PROPERTY_KEYS = new Set(["stepby_owned_record_id", "stepby_can_revert"]);
@@ -381,6 +382,9 @@
       this.activeQueueKey = "";
       this.retryTimer = null;
       this.retryQueueKey = "";
+      this.anchorQueueKey = "";
+      this.anchorRetryCount = 0;
+      this.tileRetryAt = new Map();
       this.lastCleanupAt = 0;
     }
 
@@ -392,6 +396,9 @@
       if (this.retryTimer) globalScope.clearTimeout(this.retryTimer);
       this.retryTimer = null;
       this.retryQueueKey = "";
+      this.anchorQueueKey = "";
+      this.anchorRetryCount = 0;
+      this.tileRetryAt.clear();
     }
 
     async invalidateBounds(bounds, center) {
@@ -412,15 +419,22 @@
       // 画面内をすべて先に処理し、外周の先読みはその後にだけ並べる。
       const queue = [...visible, ...withRing.filter((tile) => !visibleIds.has(tile.tileId))];
       const queueKey = queue.map((tile) => tile.tileId).join(",");
+      // 地図情報表示ON時に最初に得た範囲をanchorとして固定する。
+      // pending・一時障害の再確認中に別範囲へ動いても、現在のanchorを中断しない。
+      if (this.anchorQueueKey && this.anchorQueueKey !== queueKey) return;
       if (this.controller && this.activeQueueKey === queueKey) return;
       if (this.retryTimer && this.retryQueueKey === queueKey) return;
-      this.cancel();
+      if (!this.anchorQueueKey) {
+        this.cancel();
+        this.anchorQueueKey = queueKey;
+      }
       const generation = this.generation;
       const controller = new AbortController();
       this.controller = controller;
       this.activeQueueKey = queueKey;
       const ids = queue.map((tile) => tile.tileId);
       let retryAfterMs = null;
+      let continuationNeeded = false;
       try {
         const storedFeatures = await this.store.featuresForTiles(ids);
         if (generation !== this.generation || controller.signal.aborted) return;
@@ -434,9 +448,17 @@
           const record = tileRecords.get(tile.tileId);
           const age = record ? Date.now() - Number(record.fetchedAt || 0) : Infinity;
           if (record && age < FRESH_MS) continue;
+          const retryAt = Number(this.tileRetryAt.get(tile.tileId) || 0);
+          if (retryAt > Date.now()) {
+            retryAfterMs = Math.min(retryAfterMs ?? Infinity, retryAt - Date.now());
+            continue;
+          }
           // 低速なcold missを一度に全36区画へ流さない。保存済みfresh/emptyは
           // すべて即時表示し、未取得・staleは1 refreshにつき中央側4区画だけ更新する。
-          if (networkTileCount >= MAX_NETWORK_TILES_PER_REFRESH) continue;
+          if (networkTileCount >= MAX_NETWORK_TILES_PER_REFRESH) {
+            continuationNeeded = true;
+            continue;
+          }
           networkTileCount += 1;
           try {
             const response = await this.fetchTile(tile, controller.signal);
@@ -444,8 +466,9 @@
             const responseStatus = String(response && response.status || "").toLowerCase();
             if (responseStatus === "pending") {
               const suggested = Number(response && response.retryAfterMs);
-              retryAfterMs = Math.min(retryAfterMs ?? Infinity,
-                Number.isFinite(suggested) && suggested > 0 ? suggested : 5000);
+              const waitMs = Number.isFinite(suggested) && suggested > 0 ? suggested : 5000;
+              this.tileRetryAt.set(tile.tileId, Date.now() + waitMs);
+              retryAfterMs = Math.min(retryAfterMs ?? Infinity, waitMs);
               continue;
             }
             // 取得失敗を空区画として保存すると、24時間「点字ブロックなし」と誤認するため拒否する。
@@ -455,6 +478,7 @@
             const features = Array.isArray(response && response.features) ? response.features : [];
             const cacheStatus = features.length ? "ready" : "empty";
             await this.store.writeTile(tile.tileId, features, response && response.fetchedAt, cacheStatus);
+            this.tileRetryAt.delete(tile.tileId);
             hasAuthoritativeTile = true;
             const currentFeatures = await this.store.featuresForTiles(ids);
             if (generation !== this.generation || controller.signal.aborted) return;
@@ -464,8 +488,9 @@
             this.onError(error, tile);
             if (error && error.retryable === true) {
               const suggested = Number(error.retryAfterMs);
-              retryAfterMs = Math.min(retryAfterMs ?? Infinity,
-                Number.isFinite(suggested) && suggested > 0 ? suggested : 5000);
+              const waitMs = Number.isFinite(suggested) && suggested > 0 ? suggested : 5000;
+              this.tileRetryAt.set(tile.tileId, Date.now() + waitMs);
+              retryAfterMs = Math.min(retryAfterMs ?? Infinity, waitMs);
             }
             // staleデータが30日以内なら表示を維持し、取得失敗で消さない。
             if (!record || age > STALE_MS) console.warn("[OsmTileCache] tile unavailable", tile.tileId, error);
@@ -485,15 +510,32 @@
         if (generation === this.generation) {
           this.controller = null;
           this.activeQueueKey = "";
-          if (Number.isFinite(retryAfterMs) && this.isEnabled()) {
+          if (continuationNeeded && this.isEnabled()) {
+            // 同じanchorの未取得区画を、次の小さなbatchとして続ける。
+            // 地図移動後の範囲へは切り替えず、既存キャッシュの表示も維持する。
+            this.retryTimer = globalScope.setTimeout(() => {
+              this.retryTimer = null;
+              this.retryQueueKey = "";
+              this.refresh(bounds, center, { mapZoom }).catch(() => {});
+            }, 50);
+            this.retryQueueKey = queueKey;
+          } else if (Number.isFinite(retryAfterMs)
+            && this.isEnabled()
+            && this.anchorRetryCount < MAX_ANCHOR_RETRIES) {
             const retryBounds = bounds;
             const retryCenter = center;
+            this.anchorRetryCount += 1;
             this.retryTimer = globalScope.setTimeout(() => {
               this.retryTimer = null;
               this.retryQueueKey = "";
               this.refresh(retryBounds, retryCenter, { mapZoom }).catch(() => {});
             }, Math.max(500, retryAfterMs));
             this.retryQueueKey = queueKey;
+          } else {
+            // success/empty、再試行不要の最終error、または再試行上限到達でsettle。
+            // ここから後に発生したmoveendだけが次のanchorを取得できる。
+            this.anchorQueueKey = "";
+            this.anchorRetryCount = 0;
           }
         }
       }
@@ -508,6 +550,7 @@
     CLEANUP_INTERVAL_MS,
     MAX_BYTES,
     MAX_NETWORK_TILES_PER_REFRESH,
+    MAX_ANCHOR_RETRIES,
     latLngToTile,
     tileToBounds,
     parseTileId,

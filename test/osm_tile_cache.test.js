@@ -137,13 +137,15 @@ assert.strictEqual(visible[0].tileId, okayama.tileId, "viewport center tile must
   assert.strictEqual(maximumActiveFetches, 1, "viewport tiles must be fetched sequentially");
 
   let firstRequestAborted = false;
-  let cancellationFetchCount = 0;
-  const cancellationLoader = new cache.TileLoader({
+  let anchorFetchCount = 0;
+  let finishAnchorFetch;
+  const anchorLoader = new cache.TileLoader({
     maxVisibleTiles: 1,
     fetchTile: async (_tile, signal) => {
-      cancellationFetchCount += 1;
-      if (cancellationFetchCount > 1) return { status: "empty", features: [], fetchedAt: Date.now() };
+      anchorFetchCount += 1;
+      if (anchorFetchCount > 1) return { status: "empty", features: [], fetchedAt: Date.now() };
       return new Promise((resolve, reject) => {
+        finishAnchorFetch = resolve;
         signal.addEventListener("abort", () => {
           firstRequestAborted = true;
           reject(new Error("aborted"));
@@ -152,12 +154,16 @@ assert.strictEqual(visible[0].tileId, okayama.tileId, "viewport center tile must
     },
     onFeatures: () => {},
   });
-  const oldRefresh = cancellationLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
+  const oldRefresh = anchorLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
   await new Promise((resolve) => setTimeout(resolve, 0));
   const newBounds = { north: 35.01, south: 34.99, west: 134.99, east: 135.01 };
-  const newRefresh = cancellationLoader.refresh(newBounds, { lat: 35, lng: 135 });
-  await Promise.all([oldRefresh, newRefresh]);
-  assert.strictEqual(firstRequestAborted, true, "a viewport change must abort the previous in-flight request");
+  await anchorLoader.refresh(newBounds, { lat: 35, lng: 135 });
+  assert.strictEqual(firstRequestAborted, false, "a different viewport must not abort the initial active anchor");
+  assert.strictEqual(anchorFetchCount, 1, "a different viewport must be ignored while the initial anchor is active");
+  finishAnchorFetch({ status: "empty", features: [], fetchedAt: Date.now() });
+  await oldRefresh;
+  await anchorLoader.refresh(newBounds, { lat: 35, lng: 135 });
+  assert.ok(anchorFetchCount >= 2, "a move after the initial anchor settles must capture the new viewport");
 
   let sameViewportFetchCount = 0;
   let finishSameViewportFetch;
@@ -206,9 +212,50 @@ assert.strictEqual(visible[0].tileId, okayama.tileId, "viewport center tile must
   await highZoomLoader.refresh(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { mapZoom: 15 });
   assert.strictEqual(highZoomFetchCount, cache.MAX_NETWORK_TILES_PER_REFRESH,
     "one high-zoom refresh must submit no more than four cold network tiles");
-  await highZoomLoader.refresh(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { mapZoom: 15 });
-  assert.strictEqual(highZoomFetchCount, cache.MAX_NETWORK_TILES_PER_REFRESH * 2,
-    "the next refresh must skip the first fresh/empty group and continue with the next four tiles");
+  await new Promise((resolve) => setTimeout(resolve, 75));
+  assert.ok(highZoomFetchCount >= cache.MAX_NETWORK_TILES_PER_REFRESH * 2,
+    "the fixed anchor must automatically skip the first fresh/empty group and continue with the next batch");
+  highZoomLoader.cancel();
+
+  let progressiveFetchCount = 0;
+  const progressiveLoader = new cache.TileLoader({
+    maxVisibleTiles: 12,
+    fetchTile: async () => {
+      progressiveFetchCount += 1;
+      return { status: "empty", features: [], fetchedAt: Date.now() };
+    },
+    onFeatures: () => {},
+  });
+  await progressiveLoader.refresh(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { mapZoom: 15 });
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const progressiveTiles = cache.tilesForBounds(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, {
+    maxTiles: 12,
+    includeRing: true,
+  });
+  assert.strictEqual(progressiveFetchCount, progressiveTiles.length,
+    "the fixed anchor must automatically continue through all uncached tiles in bounded batches");
+  progressiveLoader.cancel();
+
+  const immediateRenders = [];
+  let finishUncachedFetch;
+  const immediateLoader = new cache.TileLoader({
+    maxVisibleTiles: 2,
+    fetchTile: async () => new Promise((resolve) => { finishUncachedFetch = resolve; }),
+    onFeatures: (features, meta) => immediateRenders.push({ features, meta }),
+  });
+  const immediateTiles = cache.tilesForBounds(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { maxTiles: 2 });
+  await immediateLoader.store.writeTile(immediateTiles[0].tileId, [{
+    type: "Feature",
+    properties: { osm_type: "way", osm_way_id: 9100, tactile_paving: "yes" },
+    geometry: { type: "LineString", coordinates: [[133.9, 34.6], [133.91, 34.61]] },
+  }], Date.now(), "ready");
+  const immediateRefresh = immediateLoader.refresh(wideHighZoomBounds, { lat: 34.66, lng: 133.92 }, { mapZoom: 15 });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(immediateRenders.some(({ features, meta }) => meta.source === "indexeddb" && features.length === 1),
+    "cached features overlapping the viewport must render before any uncached network request completes");
+  finishUncachedFetch({ status: "empty", features: [], fetchedAt: Date.now() });
+  await immediateRefresh;
+  immediateLoader.cancel();
 
   let pendingFetchCount = 0;
   const pendingLoader = new cache.TileLoader({
@@ -224,9 +271,30 @@ assert.strictEqual(visible[0].tileId, okayama.tileId, "viewport center tile must
   await pendingLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
   assert.strictEqual((await pendingLoader.store.readTiles([failedTile.tileId])).length, 0,
     "pending tiles must not be persisted as empty or error results");
+  await pendingLoader.refresh(newBounds, { lat: 35, lng: 135 });
+  assert.strictEqual(pendingFetchCount, 1,
+    "a different viewport must be ignored while the initial anchor waits for retryAfter");
   await new Promise((resolve) => setTimeout(resolve, 650));
   assert.strictEqual(pendingFetchCount, 2, "pending tiles must be checked again after retryAfter without legacy fallback");
+  await pendingLoader.refresh(newBounds, { lat: 35, lng: 135 });
+  assert.strictEqual(pendingFetchCount, 3,
+    "a viewport move after pending settles must capture a new anchor");
   pendingLoader.cancel();
+
+  let resetFetchCount = 0;
+  const resetLoader = new cache.TileLoader({
+    maxVisibleTiles: 1,
+    fetchTile: async () => {
+      resetFetchCount += 1;
+      return { status: "pending", features: [], retryAfterMs: 5000 };
+    },
+    onFeatures: () => {},
+  });
+  await resetLoader.refresh(smallBounds, { lat: 34.66, lng: 133.92 });
+  resetLoader.cancel();
+  await resetLoader.refresh(newBounds, { lat: 35, lng: 135 });
+  assert.strictEqual(resetFetchCount, 2, "turning the layer off must reset the anchor so re-enable captures the new viewport");
+  resetLoader.cancel();
 
   const cleanupStore = new cache.TileStore();
   const oldTileId = "15/100/100";
