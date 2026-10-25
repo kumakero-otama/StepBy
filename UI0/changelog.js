@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.3",
+      date: "2026-10-25",
+      items: [
+        {
+          id: "1.30.3.osm-tile-cache",
+          text: {
+            ja: "OSMの点字ブロック情報を地図の表示範囲ごとに保存し、取得済みの地域をすばやく表示できるよう改善しました。",
+            en: "OSM tactile-paving information is now cached by visible map area so previously fetched regions appear faster.",
+            hi: "OSM टैक्टाइल पेविंग जानकारी अब दिखाई देने वाले नक्शा क्षेत्र के अनुसार कैश होती है, जिससे पहले प्राप्त क्षेत्र तेज़ी से दिखते हैं।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.3", close: "閉じる" },
+        en: { title: "New version v1.30.3", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.3", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.2",
       date: "2026-10-24",
       items: [
