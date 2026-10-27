@@ -22,6 +22,14 @@
             hi: "रिकॉर्डिंग समाप्त होने के बाद पहले से डाउनलोड सड़क डेटा को प्राथमिकता देकर पुष्टि स्क्रीन अब तेज़ी से खुलती है।",
           },
         },
+        {
+          id: "1.30.5.osm-local-cache-refresh",
+          text: {
+            ja: "岡山市内のOSM点字ブロック情報を繰り返し再取得していた問題を修正し、保存済み情報を安定して表示するよう改善しました。",
+            en: "Fixed repeated reloading of cached OSM tactile-paving data in Okayama City so saved information now displays reliably.",
+            hi: "ओकायामा शहर में कैश किए गए OSM टैक्टाइल पेविंग डेटा को बार-बार लोड करने की समस्या ठीक की गई है, जिससे सहेजी गई जानकारी अब स्थिर रूप से दिखाई देती है।",
+          },
+        },
       ],
       labels: {
         ja: { title: "新バージョン v1.30.5", close: "閉じる" },
