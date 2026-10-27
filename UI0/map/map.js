@@ -874,6 +874,15 @@ const MAX_TRAIL = 100;
 let lastSent = null;
 let lastRequestTime = 0;
 let latestSnappedAt = 0;
+let latestGpsFixSequence = 0;
+let lastLiveGpsReceivedAt = 0;
+let lastGpsWatchRestartAt = 0;
+let browserMatchInFlight = false;
+let queuedBrowserMatch = null;
+const GPS_WATCHDOG_INTERVAL_MS = 10000;
+const GPS_WATCH_STALE_MS = 30000;
+const GPS_WATCH_RESTART_COOLDOWN_MS = 15000;
+const FITTED_MARKER_STALE_MS = 10000;
 let recordEnabled = false;
 let recordPaused = false;
 // post_road 等の他画面で録音が継続されていた場合に備え、localStorage から状態を復元する。
@@ -941,6 +950,9 @@ let hasLiveMatchedFix = false;
 let mapLayoutSyncTimer = null;
 let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
+// 記録停止後は保存確認を優先する。道路網の新規取得が遅い場合も、
+// 生座標を安全に保存して管理者画面で後から再マップマッチングできる。
+const TRACE_PREVIEW_WAIT_MS = 1500;
 let lastGpsUpdateStamp = "";
 let isCurrentUserPro = false;
 let traceTagOptions = [];
@@ -2500,11 +2512,21 @@ async function buildBrowserOsmPreview(tracePoints) {
   if (!browserOsmMatcher || !Array.isArray(tracePoints) || tracePoints.length < 2) {
     return null;
   }
+
+  // すでに端末へ保存した道路網で連続経路を確定できる場合は、確認画面を
+  // 待たせない。道路網の鮮度確認は裏で続け、次回以降の判定へ反映する。
+  const cachedRoute = browserOsmMatcher.finalize(tracePoints);
+  if (cachedRoute) {
+    browserOsmMatcher.ensureTraceCoverage(tracePoints, 450, { force: false })
+      .catch((error) => console.warn("[BrowserMatcher] background trace refresh failed", error));
+    return window.StepByOsmMatcher.buildOsmChangePreview(cachedRoute);
+  }
+
   try {
     await Promise.race([
-      browserOsmMatcher.ensureTraceCoverage(tracePoints, 450, { force: true }),
+      browserOsmMatcher.ensureTraceCoverage(tracePoints, 450, { force: false }),
       new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error("trace_coverage_timeout")), 12000);
+        window.setTimeout(() => reject(new Error("trace_coverage_timeout")), TRACE_PREVIEW_WAIT_MS);
       }),
     ]);
   } catch (error) {
@@ -2739,38 +2761,79 @@ async function handleRecordStopWithConfirmation() {
 }
 
 // 一般利用の現在地フィッティングはブラウザ版だけで完結する。
-function requestSnappedLocation(latitude, longitude, accuracy = null) {
-  // 起動時キャッシュを再フィッティングして「現在位置」と確定しない。
-  // OSからライブGPSを1回以上受け取ってから処理を始める。
-  if (!hasLiveGpsFix) return;
-  if (!currentUserId) return;
-  console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
-  const browserStartedAt = performance.now();
-  const browserPromise = browserOsmMatcher
-    ? browserOsmMatcher.match(latitude, longitude).then((match) => ({ match, duration: Math.round(performance.now() - browserStartedAt), error: null })).catch((error) => ({ match: null, duration: Math.round(performance.now() - browserStartedAt), error }))
-    : Promise.resolve({ match: null, duration: 0, error: new Error("browser matcher unavailable") });
-  return browserPromise
-    .then((browserResult) => {
-      if (!latestLocation || latestLocation.lat !== latitude || latestLocation.lng !== longitude) {
-        return null;
+function browserMatchDistanceMeters(from, to) {
+  if (window.StepByOsmMatcher && typeof window.StepByOsmMatcher.distanceMeters === "function") {
+    return window.StepByOsmMatcher.distanceMeters(from, to);
+  }
+  const latScale = 111320;
+  const meanLat = ((from.lat + to.lat) / 2) * Math.PI / 180;
+  const dx = (to.lng - from.lng) * latScale * Math.cos(meanLat);
+  const dy = (to.lat - from.lat) * latScale;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+async function runQueuedBrowserMatches() {
+  if (browserMatchInFlight) return;
+  browserMatchInFlight = true;
+  try {
+    while (queuedBrowserMatch) {
+      const candidate = queuedBrowserMatch;
+      queuedBrowserMatch = null;
+      const { latitude, longitude, accuracy, fixSequence } = candidate;
+      console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
+      const browserStartedAt = performance.now();
+      let browser = null;
+      try {
+        browser = browserOsmMatcher
+          ? await browserOsmMatcher.match(latitude, longitude)
+          : null;
+      } catch (error) {
+        console.error('[requestSnappedLocation] Browser fitting error:', error);
       }
-      const browser = browserResult.match;
+
+      if (!latestLocation) continue;
+      const movedMeters = browserMatchDistanceMeters(
+        { lat: latitude, lng: longitude },
+        { lat: latestLocation.lat, lng: latestLocation.lng },
+      );
+      const acceptableLagMeters = Math.min(
+        60,
+        Math.max(30, Number(accuracy) || 0, Number(latestLocation.accuracy) || 0),
+      );
+      const isLatestFix = latestLocation.fixSequence === fixSequence;
+      if (!isLatestFix && movedMeters > acceptableLagMeters) {
+        console.log(`[requestSnappedLocation] Ignored superseded match: moved=${movedMeters.toFixed(1)}m`);
+        continue;
+      }
       if (browser) {
         hasLiveMatchedFix = true;
         updateDisplay(latitude, longitude, browser.lat, browser.lng);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
-      } else {
-        // 初回フィッティング前だけ生座標を使う。成功後の一時失敗では直前の
-        // フィッティング済み表示を維持する。
-        if (!hasLiveMatchedFix) updateDisplay(latitude, longitude, latitude, longitude);
+      } else if (!hasLiveMatchedFix || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS) {
+        // 道路データの取得が止まっても、現在地表示まで古い位置へ固定しない。
+        updateDisplay(latitude, longitude, latitude, longitude);
       }
-      return browser;
-    })
-    .catch((error) => {
-      console.error('[requestSnappedLocation] Browser fitting error:', error);
-      if (!hasLiveMatchedFix) updateDisplay(latitude, longitude, latitude, longitude);
-      return null;
-    });
+      console.log(`[requestSnappedLocation] Browser fitting completed in ${Math.round(performance.now() - browserStartedAt)}ms`);
+    }
+  } finally {
+    browserMatchInFlight = false;
+    // finally直前に新しい位置が届いた場合も取りこぼさない。
+    if (queuedBrowserMatch) void runQueuedBrowserMatches();
+  }
+}
+
+function requestSnappedLocation(latitude, longitude, accuracy = null, fixSequence = null) {
+  // 起動時キャッシュを再フィッティングして「現在位置」と確定しない。
+  // OSからライブGPSを1回以上受け取ってから処理を始める。
+  if (!hasLiveGpsFix) return;
+  if (!currentUserId) return;
+  queuedBrowserMatch = {
+    latitude,
+    longitude,
+    accuracy,
+    fixSequence: Number.isFinite(fixSequence) ? fixSequence : latestLocation.fixSequence,
+  };
+  return runQueuedBrowserMatches();
 }
 
 function handleNewLocation(latitude, longitude, accuracy = null) {
@@ -2778,7 +2841,15 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
 
   // 生GPSは追従・記録・フィッティングに利用するが、地図上には直接表示しない。
   // 利用者へ表示する現在地は、道路上へフィッティングした赤いピンへ統一する。
-  latestLocation = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
+  latestGpsFixSequence += 1;
+  lastLiveGpsReceivedAt = Date.now();
+  latestLocation = {
+    lat: latitude,
+    lng: longitude,
+    accuracy: Number.isFinite(accuracy) ? accuracy : null,
+    fixSequence: latestGpsFixSequence,
+    receivedAt: lastLiveGpsReceivedAt,
+  };
   if (!osmTileViewportReady) {
     // 保存済み表示位置がない初回だけ、既定の東京ではなく実際の現在地を取得基準にする。
     map.setView([latitude, longitude], map.getZoom(), { animate: false });
@@ -2810,6 +2881,12 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     // フィッティングが一時停止しても、追従表示だけは古い位置に取り残さない。
     map.setView([latitude, longitude], map.getZoom(), { animate: false });
   }
+  if (hasLiveMatchedFix && (!latestSnappedAt || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS)) {
+    // フィッティング応答が長時間止まった場合だけ、生GPSを赤いピンの一時位置として使う。
+    // 黄緑の生座標点は復活させない。
+    updateCurrentLocationMarker(latitude, longitude);
+    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+  }
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
     browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
@@ -2832,7 +2909,7 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
 function pollAndSendLocation() {
   if (!latestLocation) return;
 
-  const { lat, lng, accuracy } = latestLocation;
+  const { lat, lng, accuracy, fixSequence } = latestLocation;
 
   // 記録アクティブ時はrawデータをメモリへ保存（全体 + 現在セッション）
   if (isRecordingActive()) {
@@ -2844,7 +2921,7 @@ function pollAndSendLocation() {
   }
 
   // サーバーへ送信（読み取り）
-  requestSnappedLocation(lat, lng, accuracy);
+  requestSnappedLocation(lat, lng, accuracy, fixSequence);
 }
 
 function updateTimestamp() {
@@ -2880,8 +2957,12 @@ function recenterToLatestLocation() {
     return;
   }
   const currentZoom = map.getZoom();
-  if (latestSnappedLocation) {
+  if (latestSnappedLocation && latestSnappedAt && Date.now() - latestSnappedAt < FITTED_MARKER_STALE_MS) {
     map.setView([latestSnappedLocation.lat, latestSnappedLocation.lng], currentZoom, { animate: false });
+    return;
+  }
+  if (latestLocation && Number.isFinite(latestLocation.lat) && Number.isFinite(latestLocation.lng)) {
+    map.setView([latestLocation.lat, latestLocation.lng], currentZoom, { animate: false });
     return;
   }
   if (marker) {
@@ -2890,9 +2971,6 @@ function recenterToLatestLocation() {
       map.setView([pos.lat, pos.lng], currentZoom, { animate: false });
       return;
     }
-  }
-  if (latestLocation && Number.isFinite(latestLocation.lat) && Number.isFinite(latestLocation.lng)) {
-    map.setView([latestLocation.lat, latestLocation.lng], currentZoom, { animate: false });
   }
 }
 
@@ -3831,6 +3909,8 @@ if ("geolocation" in navigator) {
   }
 
   let watchId = null;
+  let gpsWatchdogTimer = null;
+  let watchErrorRestartTimer = null;
 
   function startWatching() {
     if (watchId !== null) {
@@ -3843,16 +3923,46 @@ if ("geolocation" in navigator) {
       },
       (err) => {
         console.error("[Geolocation] watchPosition error:", err);
+        // 一時的な測位失敗やOS側watch停止は、画面を開き直さなくても復旧させる。
+        // 権限拒否は再試行しても解消しないため自動再起動しない。
+        if (err && err.code !== 1 && document.visibilityState === "visible") {
+          if (watchErrorRestartTimer !== null) clearTimeout(watchErrorRestartTimer);
+          watchErrorRestartTimer = setTimeout(() => {
+            watchErrorRestartTimer = null;
+            refreshLocationTracking("watch_error");
+          }, 3000);
+        }
       },
       options
     );
   }
 
-  function refreshLocationTracking() {
+  function refreshLocationTracking(reason = "manual") {
     // 一部のモバイルブラウザはPWA復帰後に既存watchが止まるため、単発取得と
     // watchの張り直しをセットで実行する。
+    const now = Date.now();
+    if (reason === "watchdog" && now - lastGpsWatchRestartAt < GPS_WATCH_RESTART_COOLDOWN_MS) return;
+    lastGpsWatchRestartAt = now;
     requestPosition(true);
     startWatching();
+    logMapEvent("gps_watch_restart", {
+      category: "navigation",
+      path: window.location.pathname,
+      method: "WATCH",
+      message: `Geolocation watch restarted: ${reason}`,
+    });
+  }
+
+  function checkLocationWatchHealth() {
+    if (document.visibilityState !== "visible") return;
+    const now = Date.now();
+    if (lastLiveGpsReceivedAt > 0 && now - lastLiveGpsReceivedAt < GPS_WATCH_STALE_MS) return;
+    refreshLocationTracking("watchdog");
+  }
+
+  function startLocationWatchdog() {
+    if (gpsWatchdogTimer !== null) clearInterval(gpsWatchdogTimer);
+    gpsWatchdogTimer = setInterval(checkLocationWatchHealth, GPS_WATCHDOG_INTERVAL_MS);
   }
 
   // 起動時はまずローカルキャッシュの位置を表示し、無ければ従来どおりGPS待ち表示にする。
@@ -3890,7 +4000,8 @@ if ("geolocation" in navigator) {
       }
     }
     // watchPositionの初回通知が遅い端末向けに、単発取得も同時に開始する。
-    refreshLocationTracking();
+    refreshLocationTracking("bootstrap");
+    startLocationWatchdog();
     logMapEvent("gps_watch_start", {
       category: "navigation",
       path: window.location.pathname,
@@ -4018,11 +4129,12 @@ if ("geolocation" in navigator) {
     bindToggleCards();
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") refreshLocationTracking();
+      if (document.visibilityState === "visible") refreshLocationTracking("visibility");
     });
-    window.addEventListener("pageshow", (event) => {
-      if (event.persisted) refreshLocationTracking();
+    window.addEventListener("pageshow", () => {
+      refreshLocationTracking("pageshow");
     });
+    window.addEventListener("focus", () => checkLocationWatchHealth());
 
     if (toggleShowMapInfoBtn) {
       toggleShowMapInfoBtn.addEventListener("change", () => {

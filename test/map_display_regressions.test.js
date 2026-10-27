@@ -105,8 +105,14 @@ assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refr
   "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
 assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,
   "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
-assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints\)/,
-  "record finalization must use current OSM data instead of a fresh-looking browser cache");
+assert.match(mapSource, /const cachedRoute = browserOsmMatcher\.finalize\(tracePoints\)[\s\S]{0,300}?buildOsmChangePreview\(cachedRoute\)/,
+  "record finalization must immediately reuse a connected browser route when available");
+assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*1500/,
+  "a cold road-network read must have a short bounded confirmation wait");
+assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,
+  "record finalization must reuse normal browser/server road-network caches");
+assert.doesNotMatch(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: true \}\)/,
+  "record finalization must not bypass every browser and server road-network cache");
 assert.doesNotMatch(mapSource, /ブラウザ側でOSM Way上の連続した経路を確定できません。記録は保存されていません。/,
   "a temporary browser matching failure must never discard a completed recording");
 assert.match(mapSource, /source:\s*"browser_raw"[\s\S]{0,500}?raw_points:/,

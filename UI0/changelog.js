@@ -3,6 +3,33 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.5",
+      date: "2026-10-27",
+      items: [
+        {
+          id: "1.30.5.gps-recovery",
+          text: {
+            ja: "アプリを開いたままでも現在地追跡が止まった際に自動復旧し、赤い現在地ピンが移動へ追従し続けるよう改善しました。",
+            en: "Location tracking now recovers automatically if it stalls while the app remains open, keeping the red location pin moving with you.",
+            hi: "ऐप खुला रहने पर स्थान ट्रैकिंग रुकने की स्थिति में अब यह अपने-आप फिर शुरू होती है और लाल स्थान पिन आपके साथ चलता रहता है।",
+          },
+        },
+        {
+          id: "1.30.5.record-confirmation-speed",
+          text: {
+            ja: "記録終了後は取得済みの道路情報を優先し、確認画面をより早く表示するよう改善しました。",
+            en: "The confirmation screen now opens faster after recording by prioritizing already downloaded road data.",
+            hi: "रिकॉर्डिंग समाप्त होने के बाद पहले से डाउनलोड सड़क डेटा को प्राथमिकता देकर पुष्टि स्क्रीन अब तेज़ी से खुलती है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.5", close: "閉じる" },
+        en: { title: "New version v1.30.5", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.5", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.4",
       date: "2026-10-25",
       items: [

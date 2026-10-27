@@ -33,10 +33,10 @@ assert.match(ui0MapSource, /recordEnabled = true;[\s\S]{0,180}?確認画面を�
 const ui0MapCss = fs.readFileSync(path.join(ui0, "map/map.css"), "utf8");
 assert.match(ui0MapCss, /\.record-main-btn:disabled\s*\{[\s\S]{0,80}?color:\s*#fff/,
   "the recording label must stay white while stop processing is busy");
-assert.match(ui0MapSource, /function handleNewLocation[\s\S]{0,1000}?if \(!hasLiveMatchedFix\) \{[\s\S]{0,160}?updateCurrentLocationMarker\(latitude, longitude\)/,
+assert.match(ui0MapSource, /function handleNewLocation[\s\S]{0,1800}?if \(!hasLiveMatchedFix\) \{[\s\S]{0,220}?updateCurrentLocationMarker\(latitude, longitude\)/,
   "live GPS must replace the previous-launch marker while the first map match is pending");
-assert.match(ui0MapSource, /if \(browser\)[\s\S]{0,500}?else \{[\s\S]{0,180}?if \(!hasLiveMatchedFix\) updateDisplay\(latitude, longitude, latitude, longitude\)/,
-  "a temporary map-match miss must preserve the last matched marker instead of moving it back to raw GPS");
+assert.match(ui0MapSource, /if \(browser\)[\s\S]{0,500}?else if \(!hasLiveMatchedFix \|\| Date\.now\(\) - latestSnappedAt >= FITTED_MARKER_STALE_MS\)/,
+  "a temporary map-match miss must preserve a recent fitted marker but recover after it becomes stale");
 assert.match(ui0MapSource, /function handleRecordStopWithConfirmation[\s\S]{0,900}?showTraceConfirmPreparing\(\);[\s\S]{0,300}?buildBrowserOsmPreview\(allTracePoints\)/,
   "record stop must show its confirmation progress window before refreshing OSM data");
 assert.match(ui0MapSource, /const redPinIcon = L\.icon\([\s\S]{0,300}?marker-icon-2x-red\.png/,
