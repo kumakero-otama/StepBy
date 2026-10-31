@@ -3336,6 +3336,7 @@ async function fetchOsmTactileDisplay(centerLat, centerLng, radiusKm, { signal =
   // 通常はStepBy APIのキャッシュと順次フォールバックを使う。API自体へ接続
   // できない場合だけ、端末から読取専用ミラーを1台ずつ試す。
   const hosts = [
+    "https://armd-01.sakura.ne.jp/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
   ];

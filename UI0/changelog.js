@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.6",
+      date: "2026-10-31",
+      items: [
+        {
+          id: "1.30.6.overpass-primary",
+          text: {
+            ja: "OSM点字ブロック情報の取得先を改善し、地図情報をより安定して読み込めるようにしました。",
+            en: "Improved the OSM tactile-paving data source so map information loads more reliably.",
+            hi: "OSM टैक्टाइल पेविंग डेटा स्रोत में सुधार किया गया है, जिससे मानचित्र जानकारी अधिक स्थिरता से लोड होती है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.6", close: "閉じる" },
+        en: { title: "New version v1.30.6", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.6", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.5",
       date: "2026-10-27",
       items: [

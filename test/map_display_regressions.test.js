@@ -183,6 +183,8 @@ assert.match(mapSource, /\}, 12000, signal\)/,
   "browser fallback HTTP requests must have a bounded 12 second timeout");
 assert.doesNotMatch(mapSource, /overpass\.kumi\.systems/,
   "the obsolete kumi alias must not duplicate the private.coffee mirror");
+assert.match(mapSource, /const hosts = \[\s*"https:\/\/armd-01\.sakura\.ne\.jp\/api\/interpreter"/,
+  "the permitted StepBy Overpass server must be the first browser fallback");
 const mobileAppBarCss = mapCss.slice(
   mapCss.indexOf("@media (max-width: 520px)"),
   mapCss.indexOf(".map-layout"),

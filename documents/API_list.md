@@ -152,6 +152,7 @@ API version: `1.25.0`
 
 #### `GET /api/osm-tactile-ways`
 - 概要: Overpass経由で点字ブロック関連地物を取得
+- 読取順: 使用許可済みの`armd-01.sakura.ne.jp`を最優先とし、失敗時だけ公開Overpassミラーへ順次切り替える
 - 主なクエリ:
   - 必須: `centerLat`, `centerLng`
   - 任意: `radiusKm`（既定値 `10`）
