@@ -2322,6 +2322,22 @@ async function saveSessionTags(sessionIds, fixedTagIds = null) {
   }
 }
 
+// 一般モードの記録は、利用者にタグ選択を求めず標準の点字ブロックタグを付ける。
+// これにより保存済み経路が一般モード用の表示フィルターから消えない。
+async function resolveDefaultTactileTagId() {
+  let defaultTag = traceTagOptions.find((tag) => tag.code === "tactile_paving");
+  if (!defaultTag) {
+    await fetchTactileTags();
+    defaultTag = traceTagOptions.find((tag) => tag.code === "tactile_paving");
+  }
+  if (!defaultTag) {
+    const error = new Error("default_tactile_tag_unavailable");
+    error.retryable = true;
+    throw error;
+  }
+  return defaultTag.id;
+}
+
 async function saveSessionMemo(sessionIds, memo) {
   const uniqueSessionIds = [...new Set((sessionIds || []).filter(Boolean))];
   for (const sessionId of uniqueSessionIds) {
@@ -2581,6 +2597,11 @@ async function processQueuedRecording(payload, context) {
   if (payload.isPro) {
     await runStage("memo_saved", () => saveSessionMemo(payload.sessionIds, payload.memo || ""));
     await runStage("tags_saved", () => saveSessionTags(payload.sessionIds, payload.tagIds || []));
+  } else {
+    await runStage("tags_saved", async () => {
+      const defaultTagId = await resolveDefaultTactileTagId();
+      await saveSessionTags(payload.sessionIds, [defaultTagId]);
+    });
   }
   if (payload.osmEligible && payload.osmPreview) {
     try {

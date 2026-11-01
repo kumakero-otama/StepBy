@@ -65,6 +65,10 @@ assert.doesNotMatch(mapSource, /tag\.osmExportable \? "OSM公開対象" : "StepB
   "the obsolete StepBy-only tag scope label must not remain");
 assert.match(mapSource, /session_tag_save_failed:\$\{res\.status\}[\s\S]{0,180}?res\.status >= 500/,
   "a PRO authorization rejection must not retry forever");
+assert.match(mapSource, /async function resolveDefaultTactileTagId\(\)[\s\S]{0,700}?tag\.code === "tactile_paving"/,
+  "general-mode recordings must resolve the standard tactile tag automatically");
+assert.match(mapSource, /else \{\s*await runStage\("tags_saved", async \(\) => \{[\s\S]{0,300}?resolveDefaultTactileTagId/,
+  "general-mode recordings must persist the standard tactile tag");
 assert.ok(mapSource.indexOf("const apiResult = await apiAttempt") < mapSource.indexOf("for (const endpoint of hosts)"),
   "the enriched StepBy API response must be preferred over anonymous Overpass data");
 assert.match(mapSource, /data\.osmUpstreamUnavailable && cachedOsmFeatures\.length > 0/,

@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.7",
+      date: "2026-11-01",
+      items: [
+        {
+          id: "1.30.7.general-record-visibility",
+          text: {
+            ja: "一般モードで保存した点字ブロック記録が地図に表示されない問題を修正しました。",
+            en: "Fixed an issue where tactile-paving recordings saved in general mode did not appear on the map.",
+            hi: "सामान्य मोड में सहेजे गए टैक्टाइल पेविंग रिकॉर्ड मानचित्र पर दिखाई न देने की समस्या ठीक की गई है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.7", close: "閉じる" },
+        en: { title: "New version v1.30.7", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.7", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.6",
       date: "2026-10-31",
       items: [
