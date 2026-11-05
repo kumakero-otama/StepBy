@@ -37,7 +37,7 @@ assert.match(ui0MapSource, /function handleNewLocation[\s\S]{0,1800}?if \(!hasLi
   "live GPS must replace the previous-launch marker while the first map match is pending");
 assert.match(ui0MapSource, /if \(browser\)[\s\S]{0,500}?else if \(!hasLiveMatchedFix \|\| Date\.now\(\) - latestSnappedAt >= FITTED_MARKER_STALE_MS\)/,
   "a temporary map-match miss must preserve a recent fitted marker but recover after it becomes stale");
-assert.match(ui0MapSource, /function handleRecordStopWithConfirmation[\s\S]{0,900}?showTraceConfirmPreparing\(\);[\s\S]{0,300}?buildBrowserOsmPreview\(allTracePoints\)/,
+assert.match(ui0MapSource, /function handleRecordStopWithConfirmation[\s\S]{0,1200}?showTraceConfirmPreparing\(\);[\s\S]{0,500}?buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
   "record stop must show its confirmation progress window before refreshing OSM data");
 assert.match(ui0MapSource, /const redPinIcon = L\.icon\([\s\S]{0,300}?marker-icon-2x-red\.png/,
   "the current-location marker must retain the original red pin artwork");

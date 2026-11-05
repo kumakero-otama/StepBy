@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.8",
+      date: "2026-11-05",
+      items: [
+        {
+          id: "1.30.8.apple-recording-road-info",
+          text: {
+            ja: "記録終了時の経路確認と、道情報投稿後の地図表示を安定させました。",
+            en: "Improved route confirmation after recording and map updates after posting road information.",
+            hi: "रिकॉर्डिंग के बाद मार्ग पुष्टि और सड़क जानकारी पोस्ट करने के बाद मानचित्र अपडेट को अधिक स्थिर बनाया गया है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.8", close: "閉じる" },
+        en: { title: "New version v1.30.8", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.8", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.7",
       date: "2026-11-01",
       items: [

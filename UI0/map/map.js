@@ -1725,7 +1725,10 @@ function isRecordingActive() {
 }
 
 function getTraceSourcePoints(snappedPoints, rawPoints) {
-  const sourcePoints = snappedPoints.length >= 2 ? snappedPoints : rawPoints;
+  // 最終経路は、端末が一定間隔で残した完全な生GPS列から再計算する。
+  // リアルタイムのマッチ結果は非同期で間引かれるため、Safari/WebKitなどで
+  // 応答が遅い場合にこちらを優先すると、終了時だけ経路が欠けることがある。
+  const sourcePoints = rawPoints.length >= 2 ? rawPoints : snappedPoints;
   return sourcePoints.filter(
     (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)
   );
@@ -2509,7 +2512,7 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   // 一時停止も通常終了と同じブラウザ版マッチャーを使う。
   // Valhallaを停止した現在、osmPreviewなしで /api/trace を呼ぶと500になるため、
   // 現在の区間だけをOSM Way上の連続経路として確定してから保存する。
-  const effectivePreview = osmPreview || await buildBrowserOsmPreview(tracePoints);
+  const effectivePreview = osmPreview || await buildBrowserOsmPreview(tracePoints, currentSessionSnappedPoints);
   if (!effectivePreview) {
     return { success: false, reason: "browser_route_not_confirmed" };
   }
@@ -2524,14 +2527,20 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   return { success: true, ended: true };
 }
 
-async function buildBrowserOsmPreview(tracePoints) {
+async function buildBrowserOsmPreview(tracePoints, matchedFallbackPoints = []) {
   if (!browserOsmMatcher || !Array.isArray(tracePoints) || tracePoints.length < 2) {
     return null;
   }
 
   // すでに端末へ保存した道路網で連続経路を確定できる場合は、確認画面を
   // 待たせない。道路網の鮮度確認は裏で続け、次回以降の判定へ反映する。
-  const cachedRoute = browserOsmMatcher.finalize(tracePoints);
+  const fallbackPoints = Array.isArray(matchedFallbackPoints)
+    ? matchedFallbackPoints.filter((point) => point && Number.isFinite(point.lat) && Number.isFinite(point.lng))
+    : [];
+  const finalizeAvailableTrace = () =>
+    browserOsmMatcher.finalize(tracePoints) ||
+    (fallbackPoints.length >= 2 ? browserOsmMatcher.finalize(fallbackPoints) : null);
+  const cachedRoute = finalizeAvailableTrace();
   if (cachedRoute) {
     browserOsmMatcher.ensureTraceCoverage(tracePoints, 450, { force: false })
       .catch((error) => console.warn("[BrowserMatcher] background trace refresh failed", error));
@@ -2549,7 +2558,7 @@ async function buildBrowserOsmPreview(tracePoints) {
     // 取得済みの道路網があれば、それを使って確定を続ける。
     console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
   }
-  const browserRoute = browserOsmMatcher.finalize(tracePoints);
+  const browserRoute = finalizeAvailableTrace();
   return browserRoute ? window.StepByOsmMatcher.buildOsmChangePreview(browserRoute) : null;
 }
 
@@ -2728,7 +2737,7 @@ async function handleRecordStopWithConfirmation() {
   showTraceConfirmPreparing();
 
   // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
-  const osmPreview = await buildBrowserOsmPreview(allTracePoints);
+  const osmPreview = await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
   // OSM道路網への確定に失敗しても、利用者が歩いて集めた記録は捨てない。
   // その場合は生座標を確認画面に表示し、サーバーへ保存して後日の再処理対象にする。
   const previewCoords = osmPreview
@@ -2828,11 +2837,13 @@ async function runQueuedBrowserMatches() {
       }
       if (browser) {
         hasLiveMatchedFix = true;
-        updateDisplay(latitude, longitude, browser.lat, browser.lng);
+        updateDisplay(latitude, longitude, browser.lat, browser.lng, false, true);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
       } else if (!hasLiveMatchedFix || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS) {
         // 道路データの取得が止まっても、現在地表示まで古い位置へ固定しない。
-        updateDisplay(latitude, longitude, latitude, longitude);
+        // 一時的にマッチできず生座標を表示した点は、最終経路用の
+        // 「マッチ済み点」には混ぜない。
+        updateDisplay(latitude, longitude, latitude, longitude, false, false);
       }
       console.log(`[requestSnappedLocation] Browser fitting completed in ${Math.round(performance.now() - browserStartedAt)}ms`);
     }
@@ -2995,7 +3006,7 @@ function recenterToLatestLocation() {
   }
 }
 
-function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = false) {
+function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = false, actualMatched = true) {
   console.log(`[updateDisplay] Updating display: raw=(${rawLat}, ${rawLng}), snapped=(${snappedLat}, ${snappedLng})`);
   
   // 座標の妥当性チェック
@@ -3015,7 +3026,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   }
   latestSnappedLocation = { lat: snappedLat, lng: snappedLng };
   latestSnappedAt = Date.now();
-  if (isRecordingActive()) {
+  if (isRecordingActive() && actualMatched) {
     appendUniquePoint(recordedSnappedPoints, snappedLat, snappedLng);
     appendUniquePoint(currentSessionSnappedPoints, snappedLat, snappedLng);
     console.log(
@@ -4242,12 +4253,31 @@ function showRoadInfoPostToastIfNeeded() {
 
 window.addEventListener("stepby:road-info-queue", (event) => {
   const status = event && event.detail && event.detail.status;
-  if (status === "completed") showMapToast("道情報の保存が完了しました。", 3000);
+  if (status === "completed") {
+    showMapToast("道情報の保存が完了しました。", 3000);
+    // history.back()でbfcacheから復帰したSafariでは、遷移前のピンが
+    // そのまま残る。保存完了を受けた時点で必ず最新一覧へ差し替える。
+    cachedVisibleRoadInfoPoints = [];
+    if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints();
+  }
   if (status === "retry") showMapToast("道情報は端末に保管中です。通信回復後に自動で再送します。", 4200);
 });
+
+function refreshRoadInfoPostCompletionIfNeeded() {
+  let completed = false;
+  try {
+    completed = sessionStorage.getItem("roadInfoPostCompleted.v1") === "1";
+    if (completed) sessionStorage.removeItem("roadInfoPostCompleted.v1");
+  } catch (e) {}
+  if (!completed) return;
+  cachedVisibleRoadInfoPoints = [];
+  if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints();
+}
 
 // 初回ロードと bfcache 復元の両方で動くよう、pageshow と DOMContentLoaded 両方にフックする。
 showRoadInfoPostToastIfNeeded();
 window.addEventListener("pageshow", () => {
   showRoadInfoPostToastIfNeeded();
+  refreshRoadInfoPostCompletionIfNeeded();
+  if (window.StepByRoadInfoQueue) void window.StepByRoadInfoQueue.flush();
 });

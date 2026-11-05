@@ -81,6 +81,10 @@ assert.match(mapSource, /radiusKm:\s*getRoadInfoViewportRadiusKm\(center\)\.toFi
   "road information must use the visible map radius instead of a fixed one-kilometer GPS radius");
 assert.doesNotMatch(mapSource, /loadAndShowRoadInfoPoints\(currentPoint\)/,
   "a GPS update must not overwrite road information loaded for the visible map area");
+assert.match(mapSource, /status === "completed"[\s\S]{0,420}?cachedVisibleRoadInfoPoints = \[\][\s\S]{0,160}?loadAndShowRoadInfoPoints\(\)/,
+  "a queued road-information save must refresh pins immediately after completion");
+assert.match(mapSource, /refreshRoadInfoPostCompletionIfNeeded[\s\S]{0,500}?roadInfoPostCompleted\.v1/,
+  "a Safari bfcache return must consume the completed-post flag and refresh pins");
 assert.match(mapSource, /L\.divIcon\([\s\S]{0,180}?road-info-pin-shape/,
   "road information pins must not depend on a third-party marker image");
 assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得に失敗しました/,
@@ -109,8 +113,14 @@ assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refr
   "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
 assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,
   "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
-assert.match(mapSource, /const cachedRoute = browserOsmMatcher\.finalize\(tracePoints\)[\s\S]{0,300}?buildOsmChangePreview\(cachedRoute\)/,
+assert.match(mapSource, /const cachedRoute = finalizeAvailableTrace\(\)[\s\S]{0,300}?buildOsmChangePreview\(cachedRoute\)/,
   "record finalization must immediately reuse a connected browser route when available");
+assert.match(mapSource, /const sourcePoints = rawPoints\.length >= 2 \? rawPoints : snappedPoints/,
+  "record finalization must prefer the complete raw GPS sequence over sparse asynchronous live matches");
+assert.match(mapSource, /updateDisplay\(latitude, longitude, latitude, longitude, false, false\)/,
+  "a raw-coordinate display fallback must not be stored as a genuinely matched point");
+assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
+  "record finalization must retain genuine live matches as a fallback when raw GPS cannot be finalized");
 assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*1500/,
   "a cold road-network read must have a short bounded confirmation wait");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,
@@ -125,7 +135,7 @@ assert.match(mapSource, /payload\.osmPreview[\s\S]{0,180}?requestRawTraceData\(p
   "the durable upload queue must use the raw-only fallback when no route preview exists");
 assert.match(mapSource, /osmEligible:\s*Boolean\(decision\.osmEligible\)/,
   "the raw-only fallback must remain ineligible for an automatic OSM draft");
-assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints\)/,
+assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints, currentSessionSnappedPoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
 assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,
   "recording state must keep raw GPS points across page navigation");
