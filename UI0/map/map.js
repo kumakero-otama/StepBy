@@ -1930,7 +1930,7 @@ function requestRawTraceData(sessionId, rawPoints) {
   });
 }
 
-function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
+function requestBrowserTraceData(osmPreview, sessionId, matchedTracePoints) {
   const coordinates = osmPreview.segments.flatMap((segment, segmentIndex) =>
     segment.coordinates.slice(segmentIndex > 0 ? 1 : 0).map(([lng, lat]) => ({ lat, lon: lng })));
   return authFetch("/api/trace", {
@@ -1940,7 +1940,9 @@ function requestBrowserTraceData(osmPreview, sessionId, rawPoints) {
       sessionId,
       source: "browser",
       route_confirmed: osmPreview.routeConfirmed === true,
-      raw_points: (rawPoints || []).map((point) => ({
+      // APIの互換フィールド名はraw_pointsだが、送る値は表示・保存と同じ
+      // マップマッチ済み座標に限定する。生GPSはブラウザ内の計算入力に留める。
+      raw_points: (matchedTracePoints || []).map((point) => ({
         lat: Number(point.lat),
         lon: Number(point.lng),
         accuracy: Number.isFinite(Number(point.accuracy)) ? Number(point.accuracy) : null,
@@ -2772,7 +2774,7 @@ async function handleRecordStopWithConfirmation() {
       sessionIds: allSessionIds,
       startedAt: currentSessionStartedAt || new Date().toISOString(),
       endedAt: new Date().toISOString(),
-      rawPoints: allTracePoints.map((point) => ({ lat: point.lat, lng: point.lng, accuracy: point.accuracy == null ? null : point.accuracy })),
+      rawPoints: previewCoords.map(([lat, lng]) => ({ lat, lng, accuracy: null })),
       ownerUserId: currentUserId,
       osmPreview,
       matchingPending: false,

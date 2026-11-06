@@ -135,6 +135,8 @@ assert.doesNotMatch(mapSource, /processQueuedRecording[\s\S]{0,1800}?requestRawT
   "the durable upload queue must never persist an unmatched raw-only route");
 assert.match(mapSource, /if \(!osmPreview\)[\s\S]{0,150}?matched_route_required[\s\S]{0,300}?const previewCoords = osmPreview\.segments/,
   "confirmation coordinates must come exclusively from the matched OSM preview");
+assert.match(mapSource, /rawPoints:\s*previewCoords\.map\(/,
+  "the upload queue must send matched preview coordinates instead of raw GPS");
 assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints, currentSessionSnappedPoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
 assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,
