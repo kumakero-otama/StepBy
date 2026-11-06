@@ -879,6 +879,7 @@ let lastLiveGpsReceivedAt = 0;
 let lastGpsWatchRestartAt = 0;
 let browserMatchInFlight = false;
 let queuedBrowserMatch = null;
+let browserMatchDrainPromise = Promise.resolve();
 const GPS_WATCHDOG_INTERVAL_MS = 10000;
 const GPS_WATCH_STALE_MS = 30000;
 const GPS_WATCH_RESTART_COOLDOWN_MS = 15000;
@@ -952,7 +953,7 @@ let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
 // 記録停止後は保存確認を優先する。道路網の新規取得が遅い場合も、
 // 生座標を安全に保存して管理者画面で後から再マップマッチングできる。
-const TRACE_PREVIEW_WAIT_MS = 1500;
+const TRACE_PREVIEW_WAIT_MS = 5000;
 let lastGpsUpdateStamp = "";
 let isCurrentUserPro = false;
 let traceTagOptions = [];
@@ -2668,7 +2669,12 @@ function initRecordUploadQueue() {
       } else if (event.type === "completed") {
         showMapToast("記録しました。", 2800);
       } else if (event.type === "retry") {
-        showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
+        const completed = new Set(event.job && event.job.completedStages || []);
+        const recordSaved = ["session_started", "trace_saved", "session_ended", "tags_saved"]
+          .every((stage) => completed.has(stage));
+        showMapToast(recordSaved
+          ? "記録しました。OSM公開の準備はあとで自動的に続けます。"
+          : "記録は端末に保存され、保存処理を自動で続けています。", 4400);
       } else if (event.type === "blocked") {
         showMapToast("記録は端末に保存されています。", 4000);
       }
@@ -2731,6 +2737,11 @@ async function handleRecordStopWithConfirmation() {
     allSessionIds.push(activeSessionId);
   }
 
+  // 停止クリック直前に処理中だったリアルタイムマッチを短時間だけ待って回収する。
+  await Promise.race([
+    browserMatchDrainPromise.catch(() => {}),
+    new Promise((resolve) => window.setTimeout(resolve, 2500)),
+  ]);
   const allTracePoints = getAllRecordingTracePoints();
   if (allTracePoints.length < 2) {
     alert("記録されたポイントが少なすぎます（最低2点必要）");
@@ -2770,12 +2781,16 @@ async function handleRecordStopWithConfirmation() {
 
   // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
   const osmPreview = await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
-  // OSM道路網への確定に失敗しても、利用者が歩いて集めた記録は捨てない。
-  // その場合は生座標を確認画面に表示し、サーバーへ保存して後日の再処理対象にする。
-  const previewCoords = osmPreview
-    ? osmPreview.segments.flatMap((segment, index) =>
-      segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]))
-    : allTracePoints.map((point) => [Number(point.lat), Number(point.lng)]);
+  // 生GPSを直線で結ぶと、道路に沿った経路に見えてしまう。経路を確定できない場合は
+  // raw線を確認画面へ出さず、記録を保持したまま再試行できるよう停止する。
+  if (!osmPreview) {
+    closeTraceConfirmModal();
+    const error = new Error("browser_route_not_confirmed");
+    error.userMessage = "道路上の経路を確定できませんでした。記録内容は保持されています。少し待って、もう一度記録終了を押してください。";
+    throw error;
+  }
+  const previewCoords = osmPreview.segments.flatMap((segment, index) =>
+    segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
     closeTraceConfirmModal();
     throw new Error("trace_preview_unavailable");
@@ -2841,7 +2856,7 @@ async function runQueuedBrowserMatches() {
     while (queuedBrowserMatch) {
       const candidate = queuedBrowserMatch;
       queuedBrowserMatch = null;
-      const { latitude, longitude, accuracy, fixSequence } = candidate;
+      const { latitude, longitude, accuracy, fixSequence, recordingSessionId } = candidate;
       console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
       const browserStartedAt = performance.now();
       let browser = null;
@@ -2869,13 +2884,15 @@ async function runQueuedBrowserMatches() {
       }
       if (browser) {
         hasLiveMatchedFix = true;
-        updateDisplay(latitude, longitude, browser.lat, browser.lng, false, true);
+        // 停止操作の直前に開始した非同期マッチも、要求時の記録セッションへ回収する。
+        if (recordingSessionId && recordingSessionIds.includes(recordingSessionId)) {
+          appendUniquePoint(recordedSnappedPoints, browser.lat, browser.lng);
+          if (recordingSessionId === currentSessionId) {
+            appendUniquePoint(currentSessionSnappedPoints, browser.lat, browser.lng);
+          }
+        }
+        updateDisplay(latitude, longitude, browser.lat, browser.lng, false, false);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
-      } else if (!hasLiveMatchedFix || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS) {
-        // 道路データの取得が止まっても、現在地表示まで古い位置へ固定しない。
-        // 一時的にマッチできず生座標を表示した点は、最終経路用の
-        // 「マッチ済み点」には混ぜない。
-        updateDisplay(latitude, longitude, latitude, longitude, false, false);
       }
       console.log(`[requestSnappedLocation] Browser fitting completed in ${Math.round(performance.now() - browserStartedAt)}ms`);
     }
@@ -2896,8 +2913,12 @@ function requestSnappedLocation(latitude, longitude, accuracy = null, fixSequenc
     longitude,
     accuracy,
     fixSequence: Number.isFinite(fixSequence) ? fixSequence : latestLocation.fixSequence,
+    recordingSessionId: isRecordingActive() ? currentSessionId : null,
   };
-  return runQueuedBrowserMatches();
+  if (!browserMatchInFlight) {
+    browserMatchDrainPromise = runQueuedBrowserMatches();
+  }
+  return browserMatchDrainPromise;
 }
 
 function handleNewLocation(latitude, longitude, accuracy = null) {
@@ -2927,11 +2948,9 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     hasLiveGpsFix = true;
     latestSnappedLocation = null;
   }
-  // 最初のライブ・フィッティングが得られるまでは、新しいGPSをそのまま表示する。
-  // 認証やOSM読込みが遅れていても、前回起動時の位置へ取り残さない。
+  // 最初のライブ・フィッティング前は生GPSを赤ピンとして表示しない。
+  // 道路上の現在地だけを表示し、raw座標との混同を防ぐ。
   if (!hasLiveMatchedFix) {
-    updateCurrentLocationMarker(latitude, longitude);
-    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
     if (isCenterCurrentEnabled()) {
       suppressAutoCenterAfterReturn = false;
       map.setView([latitude, longitude], map.getZoom(), { animate: false });
@@ -2945,12 +2964,8 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     // フィッティングが一時停止しても、追従表示だけは古い位置に取り残さない。
     map.setView([latitude, longitude], map.getZoom(), { animate: false });
   }
-  if (hasLiveMatchedFix && (!latestSnappedAt || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS)) {
-    // フィッティング応答が長時間止まった場合だけ、生GPSを赤いピンの一時位置として使う。
-    // 黄緑の生座標点は復活させない。
-    updateCurrentLocationMarker(latitude, longitude);
-    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
-  }
+  // GPS受信直後にマッチを開始する。2秒ポーリング開始までraw表示で待たせない。
+  void requestSnappedLocation(latitude, longitude, accuracy, latestGpsFixSequence);
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
     browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
@@ -4132,7 +4147,9 @@ if ("geolocation" in navigator) {
               recordEnabled = true;
               recordPaused = false;
               saveRecordingStateToStorage();
-              alert("確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
+              alert(error && error.userMessage
+                ? error.userMessage
+                : "確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
             }
           }
         } finally {
@@ -4272,14 +4289,16 @@ function showMapToast(message, durationMs = 2800) {
 // 戻るで遷移したときはbfcacheから復元されるためIIFEは再実行されない。pageshow（persistedありなし両方）で毎回チェックする。
 function showRoadInfoPostToastIfNeeded() {
   let flag = null;
+  let completed = false;
   try { flag = sessionStorage.getItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   if (!flag) return;
+  try { completed = sessionStorage.getItem("roadInfoPostCompleted.v1") === "1"; } catch (e) {}
   try { sessionStorage.removeItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   const lang = getCurrentLanguage();
   const messages = {
-    ja: "道情報を受け付けました。保存処理は裏で続けています。",
-    en: "Road information queued. Saving continues in the background.",
-    hi: "सड़क की जानकारी कतार में है। सहेजना पृष्ठभूमि में जारी है।",
+    ja: completed ? "道情報を投稿しました。" : "道情報を受け付けました。保存処理を続けています。",
+    en: completed ? "Road information posted." : "Road information received. Saving continues.",
+    hi: completed ? "सड़क की जानकारी पोस्ट की गई।" : "सड़क की जानकारी प्राप्त हुई। सहेजना जारी है।",
   };
   showMapToast(messages[lang] || messages.ja);
 }
@@ -4298,12 +4317,27 @@ window.addEventListener("stepby:road-info-queue", (event) => {
 
 function refreshRoadInfoPostCompletionIfNeeded() {
   let completed = false;
+  let savedPoint = null;
   try {
     completed = sessionStorage.getItem("roadInfoPostCompleted.v1") === "1";
+    const raw = sessionStorage.getItem("roadInfoPostSavedPoint.v1");
+    if (raw) savedPoint = JSON.parse(raw);
     if (completed) sessionStorage.removeItem("roadInfoPostCompleted.v1");
+    sessionStorage.removeItem("roadInfoPostSavedPoint.v1");
   } catch (e) {}
   if (!completed) return;
-  cachedVisibleRoadInfoPoints = [];
+  if (savedPoint && Number.isFinite(Number(savedPoint.id)) &&
+      Number.isFinite(Number(savedPoint.lat)) && Number.isFinite(Number(savedPoint.lng))) {
+    const point = { ...savedPoint, createdBy: currentUserId };
+    cachedVisibleRoadInfoPoints = cachedVisibleRoadInfoPoints
+      .filter((item) => Number(item && item.id) !== Number(point.id));
+    cachedVisibleRoadInfoPoints.push(point);
+    if (shouldShowRoadInfo()) {
+      showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
+    }
+  } else {
+    cachedVisibleRoadInfoPoints = [];
+  }
   if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints();
 }
 

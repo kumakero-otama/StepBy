@@ -3,6 +3,41 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.31.0",
+      date: "2026-11-06",
+      items: [
+        {
+          id: "1.31.0.cross-device-matching",
+          text: {
+            ja: "現在地と記録終了時の経路を、生座標ではなく道路上の座標としてより安定して確定するよう改善しました。",
+            en: "Improved current-location and completed-route matching so they are determined more reliably on roads instead of using raw coordinates.",
+            hi: "वर्तमान स्थान और रिकॉर्डिंग के अंतिम मार्ग को कच्चे निर्देशांकों के बजाय सड़क पर अधिक विश्वसनीय रूप से निर्धारित किया जाता है।",
+          },
+        },
+        {
+          id: "1.31.0.road-info-immediate-pin",
+          text: {
+            ja: "道情報の投稿後、新しい青いピンを地図へすぐ表示するよう改善しました。",
+            en: "New blue pins now appear immediately after road information is posted.",
+            hi: "सड़क जानकारी पोस्ट करने के बाद नया नीला पिन अब तुरंत दिखाई देता है।",
+          },
+        },
+        {
+          id: "1.31.0.record-save-message",
+          text: {
+            ja: "記録の保存状況を、実際の処理段階に合った分かりやすい文言で表示するよう改善しました。",
+            en: "Recording status messages now reflect the actual processing stage more clearly.",
+            hi: "रिकॉर्डिंग स्थिति संदेश अब वास्तविक प्रक्रिया चरण को अधिक स्पष्ट रूप से दिखाते हैं।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.31.0", close: "閉じる" },
+        en: { title: "New version v1.31.0", close: "Close" },
+        hi: { title: "नया संस्करण v1.31.0", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.9",
       date: "2026-11-06",
       items: [

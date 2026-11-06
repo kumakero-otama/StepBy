@@ -43,10 +43,10 @@ assert.doesNotMatch(
   /latestLocation\.lat\s*!==\s*latitude\s*\|\|\s*latestLocation\.lng\s*!==\s*longitude/,
   "a slow match must not be discarded merely because a newer nearby GPS fix arrived",
 );
-assert.match(
+assert.doesNotMatch(
   mapSource,
-  /Date\.now\(\) - latestSnappedAt >= FITTED_MARKER_STALE_MS[\s\S]{0,250}?updateCurrentLocationMarker\(latitude, longitude\)/,
-  "raw GPS must temporarily move the red marker when fitted updates have become stale",
+  /updateCurrentLocationMarker\(latitude, longitude\)/,
+  "raw GPS must never be drawn using the fitted red marker",
 );
 
 console.log("raw GPS stays hidden while fitted marker tracking remains covered");

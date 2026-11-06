@@ -691,7 +691,7 @@
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
     <script src="../map/async-record-queue.js?v=1.24.0"></script>
-    <script src="../road-info-queue.js?v=1.30.9"></script>
+    <script src="../road-info-queue.js?v=1.31.0"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // 投稿画面の状態管理・画像処理・送信を扱うメインスクリプト。
@@ -1056,7 +1056,13 @@
                   body,
                 });
                 if (!response.ok) throw new Error(`submit_failed:${response.status}`);
-                try { sessionStorage.setItem("roadInfoPostCompleted.v1", "1"); } catch (e) {}
+                const saved = await response.json().catch(() => ({}));
+                try {
+                  sessionStorage.setItem("roadInfoPostCompleted.v1", "1");
+                  sessionStorage.setItem("roadInfoPostSavedPoint.v1", JSON.stringify({
+                    id: Number(saved.pointId), lat: currentMapCenter.lat, lng: currentMapCenter.lng, status: "active",
+                  }));
+                } catch (e) {}
               } catch (error) {
                 if (!window.StepByRoadInfoQueue) throw error;
                 await window.StepByRoadInfoQueue.enqueue(body, submissionId);

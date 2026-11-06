@@ -117,16 +117,30 @@ assert.match(mapSource, /const cachedRoute = finalizeAvailableTrace\(\)[\s\S]{0,
   "record finalization must immediately reuse a connected browser route when available");
 assert.match(mapSource, /const sourcePoints = rawPoints\.length >= 2 \? rawPoints : snappedPoints/,
   "record finalization must prefer the complete raw GPS sequence over sparse asynchronous live matches");
-assert.match(mapSource, /updateDisplay\(latitude, longitude, latitude, longitude, false, false\)/,
-  "a raw-coordinate display fallback must not be stored as a genuinely matched point");
+assert.doesNotMatch(mapSource, /updateDisplay\(latitude, longitude, latitude, longitude/,
+  "a raw-coordinate fallback must not be presented as a fitted location");
 assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
   "record finalization must retain genuine live matches as a fallback when raw GPS cannot be finalized");
 assert.match(mapSource, /rawTravelMeters < 1 && matchedTravelMeters < 1[\s\S]{0,900}?record_route_not_detected/,
   "a stationary desktop location provider must not create a misleading raw-coordinate record");
 assert.match(mapSource, /authFetch\(`\/api\/road-info\?\$\{params\.toString\(\)\}`, \{ cache: "no-store" \}\)/,
   "road-information refreshes must bypass stale browser HTTP caches");
-assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*1500/,
-  "a cold road-network read must have a short bounded confirmation wait");
+assert.match(mapSource, /roadInfoPostSavedPoint\.v1[\s\S]{0,900}?showRoadInfoPointsOnMap/,
+  "a successfully posted road-information point must be drawn immediately on map return");
+assert.match(mapSource, /GPS受信直後にマッチを開始[\s\S]{0,180}?requestSnappedLocation\(latitude, longitude, accuracy, latestGpsFixSequence\)/,
+  "the first fitted-location request must start immediately instead of waiting for the polling timer");
+assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*5000/,
+  "a cold road-network read must have enough bounded time to finish on slower devices");
+assert.match(mapSource, /recordingSessionId: isRecordingActive\(\) \? currentSessionId : null/,
+  "a live match request must remember which active recording owns its eventual response");
+assert.match(mapSource, /recordingSessionIds\.includes\(recordingSessionId\)[\s\S]{0,300}?appendUniquePoint\(recordedSnappedPoints/,
+  "a delayed match response must still be assigned to the recording that requested it");
+assert.match(mapSource, /handleRecordStopWithConfirmation[\s\S]{0,800}?browserMatchDrainPromise\.catch/,
+  "record stop must briefly wait for a match already in flight");
+assert.match(mapSource, /if \(!osmPreview\)[\s\S]{0,500}?browser_route_not_confirmed/,
+  "failed matching must not be shown as a straight raw-GPS route");
+assert.doesNotMatch(mapSource, /通信が不安定です。記録は端末に保存されています。/,
+  "queue retries must not claim that the user's internet connection is bad");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,
   "record finalization must reuse normal browser/server road-network caches");
 assert.doesNotMatch(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: true \}\)/,

@@ -28,15 +28,15 @@ assert.ok(
   "the save confirmation must appear before waiting for PRO tag network access"
 );
 assert.match(ui0MapSource, /tactile_tags_fetch_timeout/, "PRO tag loading must not leave confirmation setup waiting forever");
-assert.match(ui0MapSource, /recordEnabled = true;[\s\S]{0,180}?確認画面を開けませんでした。記録は保持されています。/,
+assert.match(ui0MapSource, /recordEnabled = true;[\s\S]{0,450}?確認画面を開けませんでした。記録は保持されています。/,
   "unexpected confirmation errors must preserve the recording for a retry");
 const ui0MapCss = fs.readFileSync(path.join(ui0, "map/map.css"), "utf8");
 assert.match(ui0MapCss, /\.record-main-btn:disabled\s*\{[\s\S]{0,80}?color:\s*#fff/,
   "the recording label must stay white while stop processing is busy");
-assert.match(ui0MapSource, /function handleNewLocation[\s\S]{0,1800}?if \(!hasLiveMatchedFix\) \{[\s\S]{0,220}?updateCurrentLocationMarker\(latitude, longitude\)/,
-  "live GPS must replace the previous-launch marker while the first map match is pending");
-assert.match(ui0MapSource, /if \(browser\)[\s\S]{0,500}?else if \(!hasLiveMatchedFix \|\| Date\.now\(\) - latestSnappedAt >= FITTED_MARKER_STALE_MS\)/,
-  "a temporary map-match miss must preserve a recent fitted marker but recover after it becomes stale");
+assert.doesNotMatch(ui0MapSource, /if \(!hasLiveMatchedFix\) \{[\s\S]{0,220}?updateCurrentLocationMarker\(latitude, longitude\)/,
+  "raw GPS must not be drawn as the red fitted-location marker before the first match");
+assert.doesNotMatch(ui0MapSource, /updateDisplay\(latitude, longitude, latitude, longitude/,
+  "a temporary map-match miss must never replace the fitted marker with raw GPS");
 assert.match(ui0MapSource, /function handleRecordStopWithConfirmation[\s\S]{0,3000}?showTraceConfirmPreparing\(\);[\s\S]{0,500}?buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
   "record stop must show its confirmation progress window before refreshing OSM data");
 assert.match(ui0MapSource, /const redPinIcon = L\.icon\([\s\S]{0,300}?marker-icon-2x-red\.png/,
@@ -46,7 +46,7 @@ assert.match(ui0MapSource, /trace_coverage_timeout/,
 assert.match(ui0MapSource, /if \(!hasLiveGpsFix\)[\s\S]{0,180}?latestSnappedLocation = null/,
   "the first live GPS fix must invalidate the previous-launch snapped location");
 assert.match(ui0MapSource, /if \(!hasLiveMatchedFix\)[\s\S]{0,350}?map\.setView\(\[latitude, longitude\]/,
-  "live GPS must update the marker and auto-center while the first map match is pending");
+  "live GPS may center the map while waiting, without presenting raw GPS as a fitted marker");
 assert.match(ui0MapSource, /function requestSnappedLocation[\s\S]{0,180}?if \(!hasLiveGpsFix\) return/,
   "a cached previous-launch coordinate must never be accepted as a new live map match");
 
@@ -112,6 +112,8 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const roadPostHtml = fs.readFileSync(path.join(ui0, "post_road", localeFile), "utf8");
   assert.match(roadPostHtml, /const response = await authFetch\("\/api\/road-info"[\s\S]{0,260}?"Idempotency-Key": submissionId/,
     `${localeFile} must wait for ordinary road-information saves before leaving the form`);
+  assert.match(roadPostHtml, /roadInfoPostSavedPoint\.v1/,
+    `${localeFile} must hand the saved point back to the map for immediate display`);
   assert.match(roadPostHtml, /new Set\(\["test", "test１", "テスト", "テスト用", "テスト用2"\]\)/, `${localeFile} must hide test-only database tags`);
   assert.match(roadPostHtml, /!isCompleteTag\(tag\).*tag\.label\.toLowerCase\(\)\.includes\(query\)/, `${localeFile} must exclude complete from the normal tag list`);
   assert.match(roadPostHtml, /id="complete-tag-button"/, `${localeFile} must expose complete as a dedicated action`);
