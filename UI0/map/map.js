@@ -1742,6 +1742,15 @@ function getAllRecordingTracePoints() {
   return getTraceSourcePoints(recordedSnappedPoints, recordedRawPoints);
 }
 
+function traceTravelDistanceMeters(points) {
+  if (!Array.isArray(points) || points.length < 2) return 0;
+  let total = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    total += browserMatchDistanceMeters(points[index - 1], points[index]);
+  }
+  return total;
+}
+
 function clearCurrentSessionPoints() {
   currentSessionRawPoints = [];
   currentSessionSnappedPoints = [];
@@ -2725,6 +2734,29 @@ async function handleRecordStopWithConfirmation() {
   const allTracePoints = getAllRecordingTracePoints();
   if (allTracePoints.length < 2) {
     alert("記録されたポイントが少なすぎます（最低2点必要）");
+    await cancelRecordingSessions(allSessionIds);
+    if (tracePolyline) {
+      map.removeLayer(tracePolyline);
+      tracePolyline = null;
+    }
+    return;
+  }
+
+  const rawTravelMeters = traceTravelDistanceMeters(recordedRawPoints);
+  const matchedTravelMeters = traceTravelDistanceMeters(recordedSnappedPoints);
+  if (rawTravelMeters < 1 && matchedTravelMeters < 1) {
+    logMapEvent("record_route_not_detected", {
+      category: "navigation",
+      level: "warn",
+      message: "Location provider returned no usable movement for the recording",
+      meta: {
+        rawPointCount: recordedRawPoints.length,
+        matchedPointCount: recordedSnappedPoints.length,
+        rawTravelMeters: Number(rawTravelMeters.toFixed(2)),
+        matchedTravelMeters: Number(matchedTravelMeters.toFixed(2)),
+      },
+    });
+    alert("位置情報から移動経路を取得できませんでした。端末の位置情報が更新されていることを確認して、もう一度記録してください。");
     await cancelRecordingSessions(allSessionIds);
     if (tracePolyline) {
       map.removeLayer(tracePolyline);
@@ -3761,7 +3793,8 @@ function loadAndShowRoadInfoPoints() {
   if (shouldShowOnlyMyRoadInfo()) {
     params.set("mine", "1");
   }
-  authFetch(`/api/road-info?${params.toString()}`)
+  params.set("_ts", Date.now().toString());
+  authFetch(`/api/road-info?${params.toString()}`, { cache: "no-store" })
     .then((res) => {
       if (!res.ok) {
         throw new Error(`road-info fetch failed: ${res.status}`);

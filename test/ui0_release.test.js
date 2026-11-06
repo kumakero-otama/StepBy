@@ -37,7 +37,7 @@ assert.match(ui0MapSource, /function handleNewLocation[\s\S]{0,1800}?if \(!hasLi
   "live GPS must replace the previous-launch marker while the first map match is pending");
 assert.match(ui0MapSource, /if \(browser\)[\s\S]{0,500}?else if \(!hasLiveMatchedFix \|\| Date\.now\(\) - latestSnappedAt >= FITTED_MARKER_STALE_MS\)/,
   "a temporary map-match miss must preserve a recent fitted marker but recover after it becomes stale");
-assert.match(ui0MapSource, /function handleRecordStopWithConfirmation[\s\S]{0,1200}?showTraceConfirmPreparing\(\);[\s\S]{0,500}?buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
+assert.match(ui0MapSource, /function handleRecordStopWithConfirmation[\s\S]{0,3000}?showTraceConfirmPreparing\(\);[\s\S]{0,500}?buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
   "record stop must show its confirmation progress window before refreshing OSM data");
 assert.match(ui0MapSource, /const redPinIcon = L\.icon\([\s\S]{0,300}?marker-icon-2x-red\.png/,
   "the current-location marker must retain the original red pin artwork");
@@ -110,6 +110,8 @@ for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
 
 for (const localeFile of ["Index.html", "Index_en.html", "Index_hi.html"]) {
   const roadPostHtml = fs.readFileSync(path.join(ui0, "post_road", localeFile), "utf8");
+  assert.match(roadPostHtml, /const response = await authFetch\("\/api\/road-info"[\s\S]{0,260}?"Idempotency-Key": submissionId/,
+    `${localeFile} must wait for ordinary road-information saves before leaving the form`);
   assert.match(roadPostHtml, /new Set\(\["test", "test１", "テスト", "テスト用", "テスト用2"\]\)/, `${localeFile} must hide test-only database tags`);
   assert.match(roadPostHtml, /!isCompleteTag\(tag\).*tag\.label\.toLowerCase\(\)\.includes\(query\)/, `${localeFile} must exclude complete from the normal tag list`);
   assert.match(roadPostHtml, /id="complete-tag-button"/, `${localeFile} must expose complete as a dedicated action`);

@@ -121,6 +121,10 @@ assert.match(mapSource, /updateDisplay\(latitude, longitude, latitude, longitude
   "a raw-coordinate display fallback must not be stored as a genuinely matched point");
 assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
   "record finalization must retain genuine live matches as a fallback when raw GPS cannot be finalized");
+assert.match(mapSource, /rawTravelMeters < 1 && matchedTravelMeters < 1[\s\S]{0,900}?record_route_not_detected/,
+  "a stationary desktop location provider must not create a misleading raw-coordinate record");
+assert.match(mapSource, /authFetch\(`\/api\/road-info\?\$\{params\.toString\(\)\}`, \{ cache: "no-store" \}\)/,
+  "road-information refreshes must bypass stale browser HTTP caches");
 assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*1500/,
   "a cold road-network read must have a short bounded confirmation wait");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,

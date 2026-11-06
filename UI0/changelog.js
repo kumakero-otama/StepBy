@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.9",
+      date: "2026-11-06",
+      items: [
+        {
+          id: "1.30.9.road-info-confirmed-save",
+          text: {
+            ja: "道情報の保存完了を確認してから地図へ戻り、新しいピンを確実に表示するよう改善しました。",
+            en: "Road information is now confirmed saved before returning to the map so new pins appear reliably.",
+            hi: "अब मानचित्र पर लौटने से पहले सड़क जानकारी के सहेजे जाने की पुष्टि होती है, ताकि नया पिन विश्वसनीय रूप से दिखाई दे।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.9", close: "閉じる" },
+        en: { title: "New version v1.30.9", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.9", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.8",
       date: "2026-11-05",
       items: [
