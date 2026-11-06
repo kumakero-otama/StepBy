@@ -109,10 +109,20 @@ assert.match(mapSource, /context\.checkpoint\("osm_reverted"\)[\s\S]{0,500}?refr
   "revert must be checkpointed before refreshing so a refresh retry cannot repeat the OSM write");
 assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?await clearCaches\(\)/,
   "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
-assert.match(mapSource, /const cachedRoute = browserOsmMatcher\.finalize\(tracePoints\)[\s\S]{0,300}?buildOsmChangePreview\(cachedRoute\)/,
+assert.match(mapSource, /const cachedRoute = finalizeAvailableTrace\(\)[\s\S]{0,300}?buildOsmChangePreview\(cachedRoute\)/,
   "record finalization must immediately reuse a connected browser route when available");
-assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*1500/,
-  "a cold road-network read must have a short bounded confirmation wait");
+assert.match(mapSource, /IS_MAC_DESKTOP_BROWSER[\s\S]{0,160}?rawPoints\.length >= 2 \? rawPoints : snappedPoints[\s\S]{0,160}?snappedPoints\.length >= 2 \? snappedPoints : rawPoints/,
+  "Mac must use the complete raw GPS sequence while Android keeps the v1.30.7 source order");
+assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*IS_MAC_DESKTOP_BROWSER \? 5000 : 1500/,
+  "only slower Mac desktop browsers should receive the extended confirmation wait");
+assert.match(mapSource, /recordingSessionId: isRecordingActive\(\) \? currentSessionId : null/,
+  "delayed matching must retain the recording session that requested it");
+assert.match(mapSource, /recordingSessionIds\.includes\(recordingSessionId\)[\s\S]{0,300}?appendUniquePoint\(recordedSnappedPoints/,
+  "a delayed Mac browser result must return to the correct recording");
+assert.match(mapSource, /handleRecordStopWithConfirmation[\s\S]{0,900}?if \(IS_MAC_DESKTOP_BROWSER\)[\s\S]{0,200}?browserMatchDrainPromise\.catch/,
+  "only Mac record stop should wait for a delayed match already in flight");
+assert.match(mapSource, /位置情報を受けた直後[\s\S]{0,180}?if \(IS_MAC_DESKTOP_BROWSER\)[\s\S]{0,160}?requestSnappedLocation\(latitude, longitude, accuracy, latestGpsFixSequence\)/,
+  "Mac matching must start when a GPS fix arrives while Android keeps its normal polling");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,
   "record finalization must reuse normal browser/server road-network caches");
 assert.doesNotMatch(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: true \}\)/,
@@ -125,7 +135,7 @@ assert.match(mapSource, /payload\.osmPreview[\s\S]{0,180}?requestRawTraceData\(p
   "the durable upload queue must use the raw-only fallback when no route preview exists");
 assert.match(mapSource, /osmEligible:\s*Boolean\(decision\.osmEligible\)/,
   "the raw-only fallback must remain ineligible for an automatic OSM draft");
-assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints\)/,
+assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints, currentSessionSnappedPoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
 assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,
   "recording state must keep raw GPS points across page navigation");

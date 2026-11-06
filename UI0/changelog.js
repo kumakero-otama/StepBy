@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.8",
+      date: "2026-11-06",
+      items: [
+        {
+          id: "1.30.8.mac-desktop-matching-only",
+          text: {
+            ja: "MacのChrome・Safariで、記録終了時の経路を道路上へ安定してマップマッチングできるよう改善しました。",
+            en: "Improved route matching at the end of a recording on Chrome and Safari for Mac.",
+            hi: "Mac के Chrome और Safari में रिकॉर्डिंग समाप्त होने पर मार्ग मिलान को अधिक स्थिर बनाया गया है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.30.8", close: "閉じる" },
+        en: { title: "New version v1.30.8", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.8", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.30.7",
       date: "2026-11-01",
       items: [

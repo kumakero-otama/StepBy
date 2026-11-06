@@ -879,6 +879,11 @@ let lastLiveGpsReceivedAt = 0;
 let lastGpsWatchRestartAt = 0;
 let browserMatchInFlight = false;
 let queuedBrowserMatch = null;
+let browserMatchDrainPromise = Promise.resolve();
+// MacのChrome/SafariはいずれもmacOSの位置情報基盤を使い、Androidより
+// 更新間隔が長くマッチ結果が遅れて返ることがある。iPadはここに含めない。
+const IS_MAC_DESKTOP_BROWSER = /Macintosh|Mac OS X/i.test(navigator.userAgent || "") &&
+  Number(navigator.maxTouchPoints || 0) === 0;
 const GPS_WATCHDOG_INTERVAL_MS = 10000;
 const GPS_WATCH_STALE_MS = 30000;
 const GPS_WATCH_RESTART_COOLDOWN_MS = 15000;
@@ -952,7 +957,7 @@ let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
 // 記録停止後は保存確認を優先する。道路網の新規取得が遅い場合も、
 // 生座標を安全に保存して管理者画面で後から再マップマッチングできる。
-const TRACE_PREVIEW_WAIT_MS = 1500;
+const TRACE_PREVIEW_WAIT_MS = IS_MAC_DESKTOP_BROWSER ? 5000 : 1500;
 let lastGpsUpdateStamp = "";
 let isCurrentUserPro = false;
 let traceTagOptions = [];
@@ -1725,7 +1730,11 @@ function isRecordingActive() {
 }
 
 function getTraceSourcePoints(snappedPoints, rawPoints) {
-  const sourcePoints = snappedPoints.length >= 2 ? snappedPoints : rawPoints;
+  // 最終経路は端末が残した完全な生GPS列から再計算する。非同期のリアルタイム
+  // マッチ結果はMacのChrome/Safariで欠けることがあるため、補助としてだけ使う。
+  const sourcePoints = IS_MAC_DESKTOP_BROWSER
+    ? (rawPoints.length >= 2 ? rawPoints : snappedPoints)
+    : (snappedPoints.length >= 2 ? snappedPoints : rawPoints);
   return sourcePoints.filter(
     (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)
   );
@@ -2509,7 +2518,7 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   // 一時停止も通常終了と同じブラウザ版マッチャーを使う。
   // Valhallaを停止した現在、osmPreviewなしで /api/trace を呼ぶと500になるため、
   // 現在の区間だけをOSM Way上の連続経路として確定してから保存する。
-  const effectivePreview = osmPreview || await buildBrowserOsmPreview(tracePoints);
+  const effectivePreview = osmPreview || await buildBrowserOsmPreview(tracePoints, currentSessionSnappedPoints);
   if (!effectivePreview) {
     return { success: false, reason: "browser_route_not_confirmed" };
   }
@@ -2524,14 +2533,20 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   return { success: true, ended: true };
 }
 
-async function buildBrowserOsmPreview(tracePoints) {
+async function buildBrowserOsmPreview(tracePoints, matchedFallbackPoints = []) {
   if (!browserOsmMatcher || !Array.isArray(tracePoints) || tracePoints.length < 2) {
     return null;
   }
 
   // すでに端末へ保存した道路網で連続経路を確定できる場合は、確認画面を
   // 待たせない。道路網の鮮度確認は裏で続け、次回以降の判定へ反映する。
-  const cachedRoute = browserOsmMatcher.finalize(tracePoints);
+  const fallbackPoints = Array.isArray(matchedFallbackPoints)
+    ? matchedFallbackPoints.filter((point) => point && Number.isFinite(point.lat) && Number.isFinite(point.lng))
+    : [];
+  const finalizeAvailableTrace = () =>
+    browserOsmMatcher.finalize(tracePoints) ||
+    (fallbackPoints.length >= 2 ? browserOsmMatcher.finalize(fallbackPoints) : null);
+  const cachedRoute = finalizeAvailableTrace();
   if (cachedRoute) {
     browserOsmMatcher.ensureTraceCoverage(tracePoints, 450, { force: false })
       .catch((error) => console.warn("[BrowserMatcher] background trace refresh failed", error));
@@ -2549,7 +2564,7 @@ async function buildBrowserOsmPreview(tracePoints) {
     // 取得済みの道路網があれば、それを使って確定を続ける。
     console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
   }
-  const browserRoute = browserOsmMatcher.finalize(tracePoints);
+  const browserRoute = finalizeAvailableTrace();
   return browserRoute ? window.StepByOsmMatcher.buildOsmChangePreview(browserRoute) : null;
 }
 
@@ -2713,6 +2728,14 @@ async function handleRecordStopWithConfirmation() {
     allSessionIds.push(activeSessionId);
   }
 
+  // 停止直前に処理中だったMac/WebKitの遅延マッチ結果を短時間だけ待って回収する。
+  if (IS_MAC_DESKTOP_BROWSER) {
+    await Promise.race([
+      browserMatchDrainPromise.catch(() => {}),
+      new Promise((resolve) => window.setTimeout(resolve, 2500)),
+    ]);
+  }
+
   const allTracePoints = getAllRecordingTracePoints();
   if (allTracePoints.length < 2) {
     alert("記録されたポイントが少なすぎます（最低2点必要）");
@@ -2728,7 +2751,7 @@ async function handleRecordStopWithConfirmation() {
   showTraceConfirmPreparing();
 
   // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
-  const osmPreview = await buildBrowserOsmPreview(allTracePoints);
+  const osmPreview = await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
   // OSM道路網への確定に失敗しても、利用者が歩いて集めた記録は捨てない。
   // その場合は生座標を確認画面に表示し、サーバーへ保存して後日の再処理対象にする。
   const previewCoords = osmPreview
@@ -2800,7 +2823,7 @@ async function runQueuedBrowserMatches() {
     while (queuedBrowserMatch) {
       const candidate = queuedBrowserMatch;
       queuedBrowserMatch = null;
-      const { latitude, longitude, accuracy, fixSequence } = candidate;
+      const { latitude, longitude, accuracy, fixSequence, recordingSessionId } = candidate;
       console.log(`[requestSnappedLocation] Browser fitting: lat=${latitude}, lng=${longitude}`);
       const browserStartedAt = performance.now();
       let browser = null;
@@ -2828,11 +2851,19 @@ async function runQueuedBrowserMatches() {
       }
       if (browser) {
         hasLiveMatchedFix = true;
-        updateDisplay(latitude, longitude, browser.lat, browser.lng);
+        // 停止直前に開始した応答も、要求時の記録セッションへ確実に回収する。
+        if (recordingSessionId && recordingSessionIds.includes(recordingSessionId)) {
+          appendUniquePoint(recordedSnappedPoints, browser.lat, browser.lng);
+          if (recordingSessionId === currentSessionId) {
+            appendUniquePoint(currentSessionSnappedPoints, browser.lat, browser.lng);
+          }
+        }
+        updateDisplay(latitude, longitude, browser.lat, browser.lng, false, false);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
       } else if (!hasLiveMatchedFix || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS) {
         // 道路データの取得が止まっても、現在地表示まで古い位置へ固定しない。
-        updateDisplay(latitude, longitude, latitude, longitude);
+        // 生座標表示は最終経路用の「マッチ済み点」へ混ぜない。
+        updateDisplay(latitude, longitude, latitude, longitude, false, !IS_MAC_DESKTOP_BROWSER);
       }
       console.log(`[requestSnappedLocation] Browser fitting completed in ${Math.round(performance.now() - browserStartedAt)}ms`);
     }
@@ -2853,8 +2884,12 @@ function requestSnappedLocation(latitude, longitude, accuracy = null, fixSequenc
     longitude,
     accuracy,
     fixSequence: Number.isFinite(fixSequence) ? fixSequence : latestLocation.fixSequence,
+    recordingSessionId: isRecordingActive() ? currentSessionId : null,
   };
-  return runQueuedBrowserMatches();
+  if (!browserMatchInFlight) {
+    browserMatchDrainPromise = runQueuedBrowserMatches();
+  }
+  return browserMatchDrainPromise;
 }
 
 function handleNewLocation(latitude, longitude, accuracy = null) {
@@ -2907,6 +2942,10 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     // 黄緑の生座標点は復活させない。
     updateCurrentLocationMarker(latitude, longitude);
     if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+  }
+  // 位置情報を受けた直後にマッチを開始し、2秒間隔のポーリング待ちをなくす。
+  if (IS_MAC_DESKTOP_BROWSER) {
+    void requestSnappedLocation(latitude, longitude, accuracy, latestGpsFixSequence);
   }
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
@@ -2995,7 +3034,7 @@ function recenterToLatestLocation() {
   }
 }
 
-function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = false) {
+function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = false, actualMatched = true) {
   console.log(`[updateDisplay] Updating display: raw=(${rawLat}, ${rawLng}), snapped=(${snappedLat}, ${snappedLng})`);
   
   // 座標の妥当性チェック
@@ -3015,7 +3054,7 @@ function updateDisplay(rawLat, rawLng, snappedLat, snappedLng, skipMarker = fals
   }
   latestSnappedLocation = { lat: snappedLat, lng: snappedLng };
   latestSnappedAt = Date.now();
-  if (isRecordingActive()) {
+  if (isRecordingActive() && actualMatched) {
     appendUniquePoint(recordedSnappedPoints, snappedLat, snappedLng);
     appendUniquePoint(currentSessionSnappedPoints, snappedLat, snappedLng);
     console.log(
