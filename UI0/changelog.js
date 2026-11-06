@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.31.1",
+      date: "2026-11-06",
+      items: [
+        {
+          id: "1.31.1.short-indoor-records",
+          text: {
+            ja: "1m未満の短い点字ブロック記録を距離だけで除外しないよう改善し、屋内でも保存動作を安全にテストできるようにしました。",
+            en: "Sub-metre tactile-paving recordings are no longer rejected by distance alone, and save behavior can now be tested safely indoors.",
+            hi: "एक मीटर से छोटी टैक्टाइल-पेविंग रिकॉर्डिंग अब केवल दूरी के कारण अस्वीकार नहीं होती, और घर के अंदर सहेजने की प्रक्रिया सुरक्षित रूप से जाँची जा सकती है।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.31.1", close: "閉じる" },
+        en: { title: "New version v1.31.1", close: "Close" },
+        hi: { title: "नया संस्करण v1.31.1", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.31.0",
       date: "2026-11-06",
       items: [

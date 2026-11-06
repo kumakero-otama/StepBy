@@ -91,8 +91,8 @@ assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得�
   "a temporary upstream failure must not interrupt users with a blocking alert");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
   "owned green OSM lines need centered line and circular tap targets");
-assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
-  "saved StepBy paths need a wider invisible detail tap target");
+assert.match(mapSource, /const hitPolyline = osmManaged \? null : \(pointRecord[\s\S]{0,700}?radius:\s*24[\s\S]{0,700}?weight:\s*48/,
+  "saved StepBy paths and point records need wider invisible detail tap targets");
 assert.match(mapSource, /path\.osm_status === "merged" \|\| path\.osm_status === "revert_draft"/,
   "OSM-managed records must not retain a second, offset StepBy hit target");
 assert.match(mapSource, /loadAndShowAllRecords\(map\.getCenter\(\)\)/,
@@ -121,8 +121,16 @@ assert.doesNotMatch(mapSource, /updateDisplay\(latitude, longitude, latitude, lo
   "a raw-coordinate fallback must not be presented as a fitted location");
 assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
   "record finalization must retain genuine live matches as a fallback when raw GPS cannot be finalized");
-assert.match(mapSource, /rawTravelMeters < 1 && matchedTravelMeters < 1[\s\S]{0,900}?record_route_not_detected/,
-  "a stationary desktop location provider must not create a misleading raw-coordinate record");
+assert.doesNotMatch(mapSource, /rawTravelMeters < 1 && matchedTravelMeters < 1[\s\S]{0,900}?record_route_not_detected/,
+  "a valid sub-metre tactile-paving recording must not be rejected solely by travel distance");
+assert.match(mapSource, /isIndoorTestModeEnabled\(\)[\s\S]{0,1400}?shortTrace && indoorTestMode[\s\S]{0,900}?osmPreview\s*\?/,
+  "indoor test mode must allow only a short raw-only preview when road matching is unavailable");
+assert.match(mapSource, /屋内テスト記録を保存しますか（OSM公開対象外）/,
+  "the indoor confirmation must clearly say that the record is not published to OSM");
+assert.match(mapSource, /previewTravelMeters < 0\.1[\s\S]{0,500}?L\.circleMarker/,
+  "a stationary indoor test must be visible as a point in the confirmation map");
+assert.match(mapSource, /pointRecord = recordTravelMeters < 0\.1[\s\S]{0,500}?L\.circleMarker/,
+  "a saved zero-length indoor test must remain visible on the main map");
 assert.match(mapSource, /authFetch\(`\/api\/road-info\?\$\{params\.toString\(\)\}`, \{ cache: "no-store" \}\)/,
   "road-information refreshes must bypass stale browser HTTP caches");
 assert.match(mapSource, /roadInfoPostSavedPoint\.v1[\s\S]{0,900}?showRoadInfoPointsOnMap/,
@@ -137,8 +145,8 @@ assert.match(mapSource, /recordingSessionIds\.includes\(recordingSessionId\)[\s\
   "a delayed match response must still be assigned to the recording that requested it");
 assert.match(mapSource, /handleRecordStopWithConfirmation[\s\S]{0,800}?browserMatchDrainPromise\.catch/,
   "record stop must briefly wait for a match already in flight");
-assert.match(mapSource, /if \(!osmPreview\)[\s\S]{0,500}?browser_route_not_confirmed/,
-  "failed matching must not be shown as a straight raw-GPS route");
+assert.match(mapSource, /if \(!osmPreview && !\(shortTrace && indoorTestMode\)\)[\s\S]{0,500}?browser_route_not_confirmed/,
+  "failed matching must not be shown as a straight raw-GPS route outside explicit short indoor testing");
 assert.doesNotMatch(mapSource, /通信が不安定です。記録は端末に保存されています。/,
   "queue retries must not claim that the user's internet connection is bad");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,

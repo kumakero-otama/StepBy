@@ -229,6 +229,26 @@ function showSafetyConfirmModal() {
 }
 
 const SAFETY_CONFIRM_ACCEPTED_KEY = "safetyConfirmAccepted.v1";
+const INDOOR_TEST_MODE_KEY = "stepby.indoorTestMode.v1";
+
+// 屋内でGPS・保存・再表示の一連を確認する開発者向けモード。
+// OSM Wayを確定できない短い記録もStepBy内だけに保存し、OSM変更案にはしない。
+function isIndoorTestModeEnabled() {
+  try {
+    const requested = new URLSearchParams(window.location.search).get("indoorTest");
+    if (requested === "1") {
+      sessionStorage.setItem(INDOOR_TEST_MODE_KEY, "1");
+      return true;
+    }
+    if (requested === "0") {
+      sessionStorage.removeItem(INDOOR_TEST_MODE_KEY);
+      return false;
+    }
+    return sessionStorage.getItem(INDOOR_TEST_MODE_KEY) === "1";
+  } catch (error) {
+    return false;
+  }
+}
 
 function initSafetyConfirmModal() {
   if (!safetyConfirmModalEl || !safetyConfirmAcceptBtn || !safetyConfirmRejectBtn) {
@@ -2017,11 +2037,22 @@ function displayTraceLine(coordinates) {
   }
   
   if (coordinates.length > 1) {
-    tracePolyline = L.polyline(coordinates, {
-      color: "#9acd32",  // 黄緑色
-      weight: 4,
-      opacity: 0.8,
-    }).addTo(map);
+    const travelMeters = traceTravelDistanceMeters(
+      coordinates.map(([lat, lng]) => ({ lat, lng }))
+    );
+    tracePolyline = travelMeters < 0.1
+      ? L.circleMarker(coordinates[0], {
+          radius: 6,
+          color: "#6f9d20",
+          weight: 2,
+          fillColor: "#9acd32",
+          fillOpacity: 0.85,
+        }).addTo(map)
+      : L.polyline(coordinates, {
+          color: "#9acd32",  // 黄緑色
+          weight: 4,
+          opacity: 0.8,
+        }).addTo(map);
     console.log(`[displayTraceLine] Displayed trace with ${coordinates.length} points`);
   }
 }
@@ -2431,7 +2462,7 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
   return result;
 }
 
-function openTraceConfirmModal(coordinates, osmPreview = null) {
+function openTraceConfirmModal(coordinates, osmPreview = null, { indoorTest = false } = {}) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) {
       resolve("cancel");
@@ -2443,7 +2474,11 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       // 記録停止後に画面が何も出ず、記録ボタンだけが無効に見える状態にしない。
       traceConfirmModalEl.classList.remove("hidden");
       traceConfirmModalEl.classList.remove("is-preparing");
-      if (traceConfirmTitleEl) traceConfirmTitleEl.textContent = "この経路で保存しますか";
+      if (traceConfirmTitleEl) {
+        traceConfirmTitleEl.textContent = indoorTest
+          ? "屋内テスト記録を保存しますか（OSM公開対象外）"
+          : "この経路で保存しますか";
+      }
       traceConfirmCancelBtn.disabled = false;
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -2451,12 +2486,26 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(traceConfirmMap);
 
-      traceConfirmPathLayer = L.polyline(coordinates, {
-        color: "#68747d",
-        weight: 4,
-        opacity: 0.65,
-      }).addTo(traceConfirmMap);
-      traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
+      const previewTravelMeters = traceTravelDistanceMeters(
+        coordinates.map(([lat, lng]) => ({ lat, lng }))
+      );
+      if (previewTravelMeters < 0.1) {
+        traceConfirmPathLayer = L.circleMarker(coordinates[0], {
+          radius: 7,
+          color: "#68747d",
+          weight: 2,
+          fillColor: "#9acd32",
+          fillOpacity: 0.8,
+        }).addTo(traceConfirmMap);
+        traceConfirmMap.setView(coordinates[0], 19);
+      } else {
+        traceConfirmPathLayer = L.polyline(coordinates, {
+          color: "#68747d",
+          weight: 4,
+          opacity: 0.65,
+        }).addTo(traceConfirmMap);
+        traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
+      }
 
       const cleanupAndResolve = (result) => {
         traceConfirmOkBtn.removeEventListener("click", onOk);
@@ -2755,48 +2804,37 @@ async function handleRecordStopWithConfirmation() {
 
   const rawTravelMeters = traceTravelDistanceMeters(recordedRawPoints);
   const matchedTravelMeters = traceTravelDistanceMeters(recordedSnappedPoints);
-  if (rawTravelMeters < 1 && matchedTravelMeters < 1) {
-    logMapEvent("record_route_not_detected", {
-      category: "navigation",
-      level: "warn",
-      message: "Location provider returned no usable movement for the recording",
-      meta: {
-        rawPointCount: recordedRawPoints.length,
-        matchedPointCount: recordedSnappedPoints.length,
-        rawTravelMeters: Number(rawTravelMeters.toFixed(2)),
-        matchedTravelMeters: Number(matchedTravelMeters.toFixed(2)),
-      },
-    });
-    alert("位置情報から移動経路を取得できませんでした。端末の位置情報が更新されていることを確認して、もう一度記録してください。");
-    await cancelRecordingSessions(allSessionIds);
-    if (tracePolyline) {
-      map.removeLayer(tracePolyline);
-      tracePolyline = null;
-    }
-    return;
-  }
+  const shortTrace = rawTravelMeters < 1 && matchedTravelMeters < 1;
+  const indoorTestMode = isIndoorTestModeEnabled();
 
   // OSM取得と経路確定の開始時点で表示し、処理中の無反応状態をなくす。
   showTraceConfirmPreparing();
 
-  // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
-  const osmPreview = await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
+  // 屋内テストの短距離記録は外部道路データを待たず、StepBy内だけへ保存する。
+  // 通常記録は、短距離であっても最新のOSM Way上で確定できれば公開候補にできる。
+  const osmPreview = shortTrace && indoorTestMode
+    ? null
+    : await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
   // 生GPSを直線で結ぶと、道路に沿った経路に見えてしまう。経路を確定できない場合は
   // raw線を確認画面へ出さず、記録を保持したまま再試行できるよう停止する。
-  if (!osmPreview) {
+  if (!osmPreview && !(shortTrace && indoorTestMode)) {
     closeTraceConfirmModal();
     const error = new Error("browser_route_not_confirmed");
     error.userMessage = "道路上の経路を確定できませんでした。記録内容は保持されています。少し待って、もう一度記録終了を押してください。";
     throw error;
   }
-  const previewCoords = osmPreview.segments.flatMap((segment, index) =>
-    segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
+  const previewCoords = osmPreview
+    ? osmPreview.segments.flatMap((segment, index) =>
+        segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]))
+    : allTracePoints.map((point) => [point.lat, point.lng]);
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
     closeTraceConfirmModal();
     throw new Error("trace_preview_unavailable");
   }
 
-  const decision = await openTraceConfirmModal(previewCoords, osmPreview);
+  const decision = await openTraceConfirmModal(previewCoords, osmPreview, {
+    indoorTest: !osmPreview && indoorTestMode,
+  });
   if (decision && decision.action === "ok") {
     if (!recordUploadQueue || !activeSessionId) {
       throw new Error("record_queue_unavailable");
@@ -3197,23 +3235,45 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
     }
 
     const recordColor = path.record_class === "pro_private" ? "#d92d20" : "#00b050";
-    const polyline = L.polyline(coordinates, {
-      color: recordColor,
-      weight: 4,
-      opacity: 0.85,
-      interactive: false,
-    }).addTo(map);
+    const recordTravelMeters = traceTravelDistanceMeters(
+      coordinates.map(([lat, lng]) => ({ lat, lng }))
+    );
+    const pointRecord = recordTravelMeters < 0.1;
+    const polyline = pointRecord
+      ? L.circleMarker(coordinates[0], {
+          radius: 6,
+          color: recordColor,
+          weight: 2,
+          fillColor: recordColor,
+          fillOpacity: 0.85,
+          interactive: false,
+        }).addTo(map)
+      : L.polyline(coordinates, {
+          color: recordColor,
+          weight: 4,
+          opacity: 0.85,
+          interactive: false,
+        }).addTo(map);
     polyline.options.stepByBaseColor = recordColor;
     // OSM送信済みの記録はOSM表示レイヤーだけでクリックを受け、保存経路との
     // 二重判定（わずかな位置差）を避ける。
     const osmManaged = path.osm_status === "merged" || path.osm_status === "revert_draft";
-    const hitPolyline = osmManaged ? null : L.polyline(coordinates, {
-      color: recordColor,
-      // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
-      weight: 48,
-      opacity: 0,
-      bubblingMouseEvents: false,
-    }).addTo(map);
+    const hitPolyline = osmManaged ? null : (pointRecord
+      ? L.circleMarker(coordinates[0], {
+          radius: 24,
+          color: recordColor,
+          weight: 0,
+          opacity: 0,
+          fillOpacity: 0,
+          bubblingMouseEvents: false,
+        }).addTo(map)
+      : L.polyline(coordinates, {
+          color: recordColor,
+          // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
+          weight: 48,
+          opacity: 0,
+          bubblingMouseEvents: false,
+        }).addTo(map));
     const sessionId = typeof path.session_id === "string" ? path.session_id : "";
     if (sessionId && hitPolyline) {
       hitPolyline.on("click", (event) => {
