@@ -43,10 +43,12 @@ assert.doesNotMatch(
   /latestLocation\.lat\s*!==\s*latitude\s*\|\|\s*latestLocation\.lng\s*!==\s*longitude/,
   "a slow match must not be discarded merely because a newer nearby GPS fix arrived",
 );
-assert.doesNotMatch(
+assert.match(
   mapSource,
-  /updateCurrentLocationMarker\(latitude, longitude\)/,
-  "raw GPS must never be drawn using the fitted red marker",
+  /!IS_MAC_DESKTOP_BROWSER && hasLiveMatchedFix[\s\S]{0,180}?FITTED_MARKER_STALE_MS[\s\S]{0,250}?updateCurrentLocationMarker\(latitude, longitude\)/,
+  "the legacy raw-marker recovery must be excluded from Mac desktop browsers",
 );
+assert.match(mapSource, /if \(!osmPreview\)[\s\S]{0,120}?throw new Error\("matched_route_required"\)/,
+  "an unmatched recording must never be displayed or stored as a raw route");
 
 console.log("raw GPS stays hidden while fitted marker tracking remains covered");

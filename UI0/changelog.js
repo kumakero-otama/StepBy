@@ -3,107 +3,15 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
-      version: "1.31.2",
-      date: "2026-11-06",
-      items: [
-        {
-          id: "1.31.2.short-records-normal-flow",
-          text: {
-            ja: "短い点字ブロック記録も距離で区別せず通常どおり保存し、OSM公開の確認対象に含めるよう改善しました。",
-            en: "Short tactile-paving recordings are now saved normally without a distance-based distinction and included in OSM publication review.",
-            hi: "छोटी टैक्टाइल-पेविंग रिकॉर्डिंग अब दूरी के आधार पर अलग किए बिना सामान्य रूप से सहेजी जाती हैं और OSM प्रकाशन समीक्षा में शामिल होती हैं।",
-          },
-        },
-      ],
-      labels: {
-        ja: { title: "新バージョン v1.31.2", close: "閉じる" },
-        en: { title: "New version v1.31.2", close: "Close" },
-        hi: { title: "नया संस्करण v1.31.2", close: "बंद करें" },
-      },
-    },
-    {
-      version: "1.31.1",
-      date: "2026-11-06",
-      items: [
-        {
-          id: "1.31.1.short-indoor-records",
-          text: {
-            ja: "1m未満の短い点字ブロック記録を距離だけで除外しないよう改善し、屋内でも保存動作を安全にテストできるようにしました。",
-            en: "Sub-metre tactile-paving recordings are no longer rejected by distance alone, and save behavior can now be tested safely indoors.",
-            hi: "एक मीटर से छोटी टैक्टाइल-पेविंग रिकॉर्डिंग अब केवल दूरी के कारण अस्वीकार नहीं होती, और घर के अंदर सहेजने की प्रक्रिया सुरक्षित रूप से जाँची जा सकती है।",
-          },
-        },
-      ],
-      labels: {
-        ja: { title: "新バージョン v1.31.1", close: "閉じる" },
-        en: { title: "New version v1.31.1", close: "Close" },
-        hi: { title: "नया संस्करण v1.31.1", close: "बंद करें" },
-      },
-    },
-    {
-      version: "1.31.0",
-      date: "2026-11-06",
-      items: [
-        {
-          id: "1.31.0.cross-device-matching",
-          text: {
-            ja: "現在地と記録終了時の経路を、生座標ではなく道路上の座標としてより安定して確定するよう改善しました。",
-            en: "Improved current-location and completed-route matching so they are determined more reliably on roads instead of using raw coordinates.",
-            hi: "वर्तमान स्थान और रिकॉर्डिंग के अंतिम मार्ग को कच्चे निर्देशांकों के बजाय सड़क पर अधिक विश्वसनीय रूप से निर्धारित किया जाता है।",
-          },
-        },
-        {
-          id: "1.31.0.road-info-immediate-pin",
-          text: {
-            ja: "道情報の投稿後、新しい青いピンを地図へすぐ表示するよう改善しました。",
-            en: "New blue pins now appear immediately after road information is posted.",
-            hi: "सड़क जानकारी पोस्ट करने के बाद नया नीला पिन अब तुरंत दिखाई देता है।",
-          },
-        },
-        {
-          id: "1.31.0.record-save-message",
-          text: {
-            ja: "記録の保存状況を、実際の処理段階に合った分かりやすい文言で表示するよう改善しました。",
-            en: "Recording status messages now reflect the actual processing stage more clearly.",
-            hi: "रिकॉर्डिंग स्थिति संदेश अब वास्तविक प्रक्रिया चरण को अधिक स्पष्ट रूप से दिखाते हैं।",
-          },
-        },
-      ],
-      labels: {
-        ja: { title: "新バージョン v1.31.0", close: "閉じる" },
-        en: { title: "New version v1.31.0", close: "Close" },
-        hi: { title: "नया संस्करण v1.31.0", close: "बंद करें" },
-      },
-    },
-    {
-      version: "1.30.9",
-      date: "2026-11-06",
-      items: [
-        {
-          id: "1.30.9.road-info-confirmed-save",
-          text: {
-            ja: "道情報の保存完了を確認してから地図へ戻り、新しいピンを確実に表示するよう改善しました。",
-            en: "Road information is now confirmed saved before returning to the map so new pins appear reliably.",
-            hi: "अब मानचित्र पर लौटने से पहले सड़क जानकारी के सहेजे जाने की पुष्टि होती है, ताकि नया पिन विश्वसनीय रूप से दिखाई दे।",
-          },
-        },
-      ],
-      labels: {
-        ja: { title: "新バージョン v1.30.9", close: "閉じる" },
-        en: { title: "New version v1.30.9", close: "Close" },
-        hi: { title: "नया संस्करण v1.30.9", close: "बंद करें" },
-      },
-    },
-    {
       version: "1.30.8",
-      date: "2026-11-05",
+      date: "2026-11-06",
       items: [
         {
-          id: "1.30.8.apple-recording-road-info",
+          id: "1.30.8.mac-desktop-matching-only",
           text: {
-            ja: "記録終了時の経路確認と、道情報投稿後の地図表示を安定させました。",
-            en: "Improved route confirmation after recording and map updates after posting road information.",
-            hi: "रिकॉर्डिंग के बाद मार्ग पुष्टि और सड़क जानकारी पोस्ट करने के बाद मानचित्र अपडेट को अधिक स्थिर बनाया गया है।",
+            ja: "MacのChrome・Safariで、記録終了時の経路を道路上へ安定してマップマッチングできるよう改善しました。",
+            en: "Improved route matching at the end of a recording on Chrome and Safari for Mac.",
+            hi: "Mac के Chrome और Safari में रिकॉर्डिंग समाप्त होने पर मार्ग मिलान को अधिक स्थिर बनाया गया है।",
           },
         },
       ],

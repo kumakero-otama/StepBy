@@ -691,7 +691,7 @@
     <script src="../config.js"></script>
     <script src="../auth/token_client.js"></script>
     <script src="../map/async-record-queue.js?v=1.24.0"></script>
-    <script src="../road-info-queue.js?v=1.31.0"></script>
+    <script src="../road-info-queue.js?v=1.24.0"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // 投稿画面の状態管理・画像処理・送信を扱うメインスクリプト。
@@ -1045,28 +1045,23 @@
               window.history.back();
             };
 
-            const submissionId = "road:" + (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+            if (window.StepByRoadInfoQueue) {
+              const submissionId = "road:" + (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+              await window.StepByRoadInfoQueue.enqueue(body, submissionId);
+              clearInputsAndGoBack();
+              return;
+            }
+
             if (bodySize <= KEEPALIVE_BODY_LIMIT) {
-              // 通常の投稿はサーバー保存完了を確認してからマップへ戻る。
-              // 画面遷移で完了通知を失うブラウザでも、新しいピンを確実に再取得できる。
+              // 小さいリクエストは keepalive でバックグラウンド送信し、即座にマップ画面へ戻る。
               try {
-                const response = await authFetch("/api/road-info", {
+                authFetch("/api/road-info", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json", "Idempotency-Key": submissionId },
+                  headers: { "Content-Type": "application/json" },
                   body,
-                });
-                if (!response.ok) throw new Error(`submit_failed:${response.status}`);
-                const saved = await response.json().catch(() => ({}));
-                try {
-                  sessionStorage.setItem("roadInfoPostCompleted.v1", "1");
-                  sessionStorage.setItem("roadInfoPostSavedPoint.v1", JSON.stringify({
-                    id: Number(saved.pointId), lat: currentMapCenter.lat, lng: currentMapCenter.lng, status: "active",
-                  }));
-                } catch (e) {}
-              } catch (error) {
-                if (!window.StepByRoadInfoQueue) throw error;
-                await window.StepByRoadInfoQueue.enqueue(body, submissionId);
-              }
+                  keepalive: true,
+                }).catch(() => {});
+              } catch (e) { /* ignore fetch start errors */ }
               clearInputsAndGoBack();
             } else {
               // 大きい（画像入りなど）リクエストは keepalive のサイズ制限を超えるので、
@@ -1087,10 +1082,7 @@
                 }
               } catch (e) {}
 
-              if (window.StepByRoadInfoQueue) {
-                await window.StepByRoadInfoQueue.enqueue(body, submissionId);
-                clearInputsAndGoBack();
-              } else if (activeSw) {
+              if (activeSw) {
                 const apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "https://stepby-api-8-229-191-182.sslip.io";
                 const fullUrl = apiBase.replace(/\/+$/, "") + "/api/road-info";
                 const accessToken = (window.AuthToken && typeof window.AuthToken.getAccessToken === "function")

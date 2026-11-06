@@ -81,18 +81,14 @@ assert.match(mapSource, /radiusKm:\s*getRoadInfoViewportRadiusKm\(center\)\.toFi
   "road information must use the visible map radius instead of a fixed one-kilometer GPS radius");
 assert.doesNotMatch(mapSource, /loadAndShowRoadInfoPoints\(currentPoint\)/,
   "a GPS update must not overwrite road information loaded for the visible map area");
-assert.match(mapSource, /status === "completed"[\s\S]{0,420}?cachedVisibleRoadInfoPoints = \[\][\s\S]{0,160}?loadAndShowRoadInfoPoints\(\)/,
-  "a queued road-information save must refresh pins immediately after completion");
-assert.match(mapSource, /refreshRoadInfoPostCompletionIfNeeded[\s\S]{0,500}?roadInfoPostCompleted\.v1/,
-  "a Safari bfcache return must consume the completed-post flag and refresh pins");
 assert.match(mapSource, /L\.divIcon\([\s\S]{0,180}?road-info-pin-shape/,
   "road information pins must not depend on a third-party marker image");
 assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得に失敗しました/,
   "a temporary upstream failure must not interrupt users with a blocking alert");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
   "owned green OSM lines need centered line and circular tap targets");
-assert.match(mapSource, /const hitPolyline = osmManaged \? null : \(pointRecord[\s\S]{0,700}?radius:\s*24[\s\S]{0,700}?weight:\s*48/,
-  "saved StepBy paths and point records need wider invisible detail tap targets");
+assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
+  "saved StepBy paths need a wider invisible detail tap target");
 assert.match(mapSource, /path\.osm_status === "merged" \|\| path\.osm_status === "revert_draft"/,
   "OSM-managed records must not retain a second, offset StepBy hit target");
 assert.match(mapSource, /loadAndShowAllRecords\(map\.getCenter\(\)\)/,
@@ -115,52 +111,30 @@ assert.match(matcherSource, /async refreshAfterOsmChange\(points\)[\s\S]{0,900}?
   "post-write refresh must clear stale IndexedDB and in-memory OSM regions");
 assert.match(mapSource, /const cachedRoute = finalizeAvailableTrace\(\)[\s\S]{0,300}?buildOsmChangePreview\(cachedRoute\)/,
   "record finalization must immediately reuse a connected browser route when available");
-assert.match(mapSource, /const sourcePoints = rawPoints\.length >= 2 \? rawPoints : snappedPoints/,
-  "record finalization must prefer the complete raw GPS sequence over sparse asynchronous live matches");
-assert.doesNotMatch(mapSource, /updateDisplay\(latitude, longitude, latitude, longitude/,
-  "a raw-coordinate fallback must not be presented as a fitted location");
-assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints, recordedSnappedPoints\)/,
-  "record finalization must retain genuine live matches as a fallback when raw GPS cannot be finalized");
-assert.doesNotMatch(mapSource, /rawTravelMeters < 1 && matchedTravelMeters < 1[\s\S]{0,900}?record_route_not_detected/,
-  "a valid sub-metre tactile-paving recording must not be rejected solely by travel distance");
-assert.doesNotMatch(mapSource, /indoorTest|shortTrace|rawTravelMeters|matchedTravelMeters/,
-  "record handling must not change at a one-metre threshold or require a separate indoor mode");
-assert.match(mapSource, /previewTravelMeters < 0\.1[\s\S]{0,500}?L\.circleMarker/,
-  "a stationary indoor test must be visible as a point in the confirmation map");
-assert.match(mapSource, /pointRecord = recordTravelMeters < 0\.1[\s\S]{0,500}?L\.circleMarker/,
-  "a saved zero-length indoor test must remain visible on the main map");
-assert.match(mapSource, /authFetch\(`\/api\/road-info\?\$\{params\.toString\(\)\}`, \{ cache: "no-store" \}\)/,
-  "road-information refreshes must bypass stale browser HTTP caches");
-assert.match(mapSource, /roadInfoPostSavedPoint\.v1[\s\S]{0,900}?showRoadInfoPointsOnMap/,
-  "a successfully posted road-information point must be drawn immediately on map return");
-assert.match(mapSource, /GPS受信直後にマッチを開始[\s\S]{0,180}?requestSnappedLocation\(latitude, longitude, accuracy, latestGpsFixSequence\)/,
-  "the first fitted-location request must start immediately instead of waiting for the polling timer");
-assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*5000/,
-  "a cold road-network read must have enough bounded time to finish on slower devices");
+assert.match(mapSource, /IS_MAC_DESKTOP_BROWSER[\s\S]{0,160}?rawPoints\.length >= 2 \? rawPoints : snappedPoints[\s\S]{0,160}?snappedPoints\.length >= 2 \? snappedPoints : rawPoints/,
+  "Mac must use the complete raw GPS sequence while Android keeps the v1.30.7 source order");
+assert.match(mapSource, /TRACE_PREVIEW_WAIT_MS\s*=\s*IS_MAC_DESKTOP_BROWSER \? 5000 : 1500/,
+  "only slower Mac desktop browsers should receive the extended confirmation wait");
 assert.match(mapSource, /recordingSessionId: isRecordingActive\(\) \? currentSessionId : null/,
-  "a live match request must remember which active recording owns its eventual response");
+  "delayed matching must retain the recording session that requested it");
 assert.match(mapSource, /recordingSessionIds\.includes\(recordingSessionId\)[\s\S]{0,300}?appendUniquePoint\(recordedSnappedPoints/,
-  "a delayed match response must still be assigned to the recording that requested it");
-assert.match(mapSource, /handleRecordStopWithConfirmation[\s\S]{0,800}?browserMatchDrainPromise\.catch/,
-  "record stop must briefly wait for a match already in flight");
-assert.match(mapSource, /const previewCoords = osmPreview[\s\S]{0,500}?: allTracePoints\.map/,
-  "an unmatched recording must still reach the normal confirmation screen without a distance distinction");
-assert.doesNotMatch(mapSource, /通信が不安定です。記録は端末に保存されています。/,
-  "queue retries must not claim that the user's internet connection is bad");
+  "a delayed Mac browser result must return to the correct recording");
+assert.match(mapSource, /handleRecordStopWithConfirmation[\s\S]{0,900}?if \(IS_MAC_DESKTOP_BROWSER\)[\s\S]{0,200}?browserMatchDrainPromise\.catch/,
+  "only Mac record stop should wait for a delayed match already in flight");
+assert.match(mapSource, /位置情報を受けた直後[\s\S]{0,180}?if \(IS_MAC_DESKTOP_BROWSER\)[\s\S]{0,160}?requestSnappedLocation\(latitude, longitude, accuracy, latestGpsFixSequence\)/,
+  "Mac matching must start when a GPS fix arrives while Android keeps its normal polling");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,
   "record finalization must reuse normal browser/server road-network caches");
 assert.doesNotMatch(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: true \}\)/,
   "record finalization must not bypass every browser and server road-network cache");
 assert.doesNotMatch(mapSource, /ブラウザ側でOSM Way上の連続した経路を確定できません。記録は保存されていません。/,
   "a temporary browser matching failure must never discard a completed recording");
-assert.match(mapSource, /source:\s*"browser_raw"[\s\S]{0,500}?raw_points:/,
-  "unmatched recordings must retain their raw GPS points on the server");
-assert.match(mapSource, /payload\.osmPreview[\s\S]{0,180}?requestRawTraceData\(payload\.sessionId, payload\.rawPoints\)/,
-  "the durable upload queue must use the raw-only fallback when no route preview exists");
-assert.match(mapSource, /osmEligible:\s*Boolean\(decision\.osmEligible\)/,
-  "the raw-only fallback must retain the normal recording publication policy");
-assert.match(mapSource, /payload\.osmPreview[\s\S]{0,260}?saveOsmSplitDraft[\s\S]{0,200}?savePendingOsmReview/,
-  "an unmatched OSM-eligible record must enter the administrator review queue for refitting");
+assert.match(mapSource, /if \(!payload\.osmPreview\) throw new Error\("matched_route_required"\)/,
+  "the durable upload queue must reject an unmatched raw-only route");
+assert.doesNotMatch(mapSource, /processQueuedRecording[\s\S]{0,1800}?requestRawTraceData\(/,
+  "the durable upload queue must never persist an unmatched raw-only route");
+assert.match(mapSource, /if \(!osmPreview\)[\s\S]{0,150}?matched_route_required[\s\S]{0,300}?const previewCoords = osmPreview\.segments/,
+  "confirmation coordinates must come exclusively from the matched OSM preview");
 assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints, currentSessionSnappedPoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
 assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,

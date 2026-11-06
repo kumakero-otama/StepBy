@@ -880,6 +880,10 @@ let lastGpsWatchRestartAt = 0;
 let browserMatchInFlight = false;
 let queuedBrowserMatch = null;
 let browserMatchDrainPromise = Promise.resolve();
+// MacのChrome/SafariはいずれもmacOSの位置情報基盤を使い、Androidより
+// 更新間隔が長くマッチ結果が遅れて返ることがある。iPadはここに含めない。
+const IS_MAC_DESKTOP_BROWSER = /Macintosh|Mac OS X/i.test(navigator.userAgent || "") &&
+  Number(navigator.maxTouchPoints || 0) === 0;
 const GPS_WATCHDOG_INTERVAL_MS = 10000;
 const GPS_WATCH_STALE_MS = 30000;
 const GPS_WATCH_RESTART_COOLDOWN_MS = 15000;
@@ -953,7 +957,7 @@ let gpsBlinkTimer = null;
 const GPS_BLINK_DURATION_MS = 80;
 // 記録停止後は保存確認を優先する。道路網の新規取得が遅い場合も、
 // 生座標を安全に保存して管理者画面で後から再マップマッチングできる。
-const TRACE_PREVIEW_WAIT_MS = 5000;
+const TRACE_PREVIEW_WAIT_MS = IS_MAC_DESKTOP_BROWSER ? 5000 : 1500;
 let lastGpsUpdateStamp = "";
 let isCurrentUserPro = false;
 let traceTagOptions = [];
@@ -1726,10 +1730,11 @@ function isRecordingActive() {
 }
 
 function getTraceSourcePoints(snappedPoints, rawPoints) {
-  // 最終経路は、端末が一定間隔で残した完全な生GPS列から再計算する。
-  // リアルタイムのマッチ結果は非同期で間引かれるため、Safari/WebKitなどで
-  // 応答が遅い場合にこちらを優先すると、終了時だけ経路が欠けることがある。
-  const sourcePoints = rawPoints.length >= 2 ? rawPoints : snappedPoints;
+  // 最終経路は端末が残した完全な生GPS列から再計算する。非同期のリアルタイム
+  // マッチ結果はMacのChrome/Safariで欠けることがあるため、補助としてだけ使う。
+  const sourcePoints = IS_MAC_DESKTOP_BROWSER
+    ? (rawPoints.length >= 2 ? rawPoints : snappedPoints)
+    : (snappedPoints.length >= 2 ? snappedPoints : rawPoints);
   return sourcePoints.filter(
     (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)
   );
@@ -1741,15 +1746,6 @@ function getCurrentSessionTracePoints() {
 
 function getAllRecordingTracePoints() {
   return getTraceSourcePoints(recordedSnappedPoints, recordedRawPoints);
-}
-
-function traceTravelDistanceMeters(points) {
-  if (!Array.isArray(points) || points.length < 2) return 0;
-  let total = 0;
-  for (let index = 1; index < points.length; index += 1) {
-    total += browserMatchDistanceMeters(points[index - 1], points[index]);
-  }
-  return total;
 }
 
 function clearCurrentSessionPoints() {
@@ -1887,9 +1883,8 @@ function extractTraceCoordinates(data, rawShape) {
       .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
   }
 
-  return rawShape
-    .map((p) => [p.lat, p.lon])
-    .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
+  // マッチング結果がない場合に、生座標を経路として返してはいけない。
+  return [];
 }
 
 function requestTraceData(shape, { sessionId = null, persist = false } = {}) {
@@ -2017,22 +2012,11 @@ function displayTraceLine(coordinates) {
   }
   
   if (coordinates.length > 1) {
-    const travelMeters = traceTravelDistanceMeters(
-      coordinates.map(([lat, lng]) => ({ lat, lng }))
-    );
-    tracePolyline = travelMeters < 0.1
-      ? L.circleMarker(coordinates[0], {
-          radius: 6,
-          color: "#6f9d20",
-          weight: 2,
-          fillColor: "#9acd32",
-          fillOpacity: 0.85,
-        }).addTo(map)
-      : L.polyline(coordinates, {
-          color: "#9acd32",  // 黄緑色
-          weight: 4,
-          opacity: 0.8,
-        }).addTo(map);
+    tracePolyline = L.polyline(coordinates, {
+      color: "#9acd32",  // 黄緑色
+      weight: 4,
+      opacity: 0.8,
+    }).addTo(map);
     console.log(`[displayTraceLine] Displayed trace with ${coordinates.length} points`);
   }
 }
@@ -2442,23 +2426,6 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
   return result;
 }
 
-async function savePendingOsmReview(recordId) {
-  const response = await authFetch("/api/osm/pending-review", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ recordId }),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(result.error || `HTTP ${response.status}`);
-    error.code = result.error || `HTTP_${response.status}`;
-    error.status = response.status;
-    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
-    throw error;
-  }
-  return result;
-}
-
 function openTraceConfirmModal(coordinates, osmPreview = null) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) {
@@ -2479,26 +2446,12 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(traceConfirmMap);
 
-      const previewTravelMeters = traceTravelDistanceMeters(
-        coordinates.map(([lat, lng]) => ({ lat, lng }))
-      );
-      if (previewTravelMeters < 0.1) {
-        traceConfirmPathLayer = L.circleMarker(coordinates[0], {
-          radius: 7,
-          color: "#68747d",
-          weight: 2,
-          fillColor: "#9acd32",
-          fillOpacity: 0.8,
-        }).addTo(traceConfirmMap);
-        traceConfirmMap.setView(coordinates[0], 19);
-      } else {
-        traceConfirmPathLayer = L.polyline(coordinates, {
-          color: "#68747d",
-          weight: 4,
-          opacity: 0.65,
-        }).addTo(traceConfirmMap);
-        traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
-      }
+      traceConfirmPathLayer = L.polyline(coordinates, {
+        color: "#68747d",
+        weight: 4,
+        opacity: 0.65,
+      }).addTo(traceConfirmMap);
+      traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
 
       const cleanupAndResolve = (result) => {
         traceConfirmOkBtn.removeEventListener("click", onOk);
@@ -2516,9 +2469,9 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
           return;
         }
         setTraceTagError("");
-        // 道路網への確定に失敗しても通常記録として保存し、OSM公開対象なら
-        // 管理者確認画面で最新OSMへ再マップマッチングしてから公開する。
-        const osmEligible = isCurrentRecordingOsmEligible();
+        // 道路網への確定に失敗した記録は生座標だけを安全に保存し、
+        // OSM変更案にはしない。管理者側で後から再マップマッチングできる。
+        const osmEligible = Boolean(osmPreview) && isCurrentRecordingOsmEligible();
         cleanupAndResolve({ action: "ok", osmEligible });
       };
       const onCancel = () => cleanupAndResolve({ action: "cancel" });
@@ -2642,11 +2595,8 @@ async function processQueuedRecording(payload, context) {
     if (!response.ok) throw new Error(`queued_session_start_failed:${response.status}`);
   });
   await runStage("trace_saved", async () => {
-    if (payload.osmPreview) {
-      await requestBrowserTraceData(payload.osmPreview, payload.sessionId, payload.rawPoints);
-    } else {
-      await requestRawTraceData(payload.sessionId, payload.rawPoints);
-    }
+    if (!payload.osmPreview) throw new Error("matched_route_required");
+    await requestBrowserTraceData(payload.osmPreview, payload.sessionId, payload.rawPoints);
   });
   await runStage("session_ended", async () => {
     const response = await authFetch("/api/session/end", {
@@ -2664,11 +2614,9 @@ async function processQueuedRecording(payload, context) {
       await saveSessionTags(payload.sessionIds, [defaultTagId]);
     });
   }
-  if (payload.osmEligible) {
+  if (payload.osmEligible && payload.osmPreview) {
     try {
-      await runStage("osm_draft_saved", () => payload.osmPreview
-        ? saveOsmSplitDraft(payload.osmPreview, payload.sessionId)
-        : savePendingOsmReview(payload.sessionId));
+      await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
     } catch (error) {
       const safeSkipReasons = new Set([
         "non_walkway_way_not_eligible",
@@ -2713,12 +2661,7 @@ function initRecordUploadQueue() {
       } else if (event.type === "completed") {
         showMapToast("記録しました。", 2800);
       } else if (event.type === "retry") {
-        const completed = new Set(event.job && event.job.completedStages || []);
-        const recordSaved = ["session_started", "trace_saved", "session_ended", "tags_saved"]
-          .every((stage) => completed.has(stage));
-        showMapToast(recordSaved
-          ? "記録しました。OSM公開の準備はあとで自動的に続けます。"
-          : "記録は端末に保存され、保存処理を自動で続けています。", 4400);
+        showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
       } else if (event.type === "blocked") {
         showMapToast("記録は端末に保存されています。", 4000);
       }
@@ -2781,11 +2724,14 @@ async function handleRecordStopWithConfirmation() {
     allSessionIds.push(activeSessionId);
   }
 
-  // 停止クリック直前に処理中だったリアルタイムマッチを短時間だけ待って回収する。
-  await Promise.race([
-    browserMatchDrainPromise.catch(() => {}),
-    new Promise((resolve) => window.setTimeout(resolve, 2500)),
-  ]);
+  // 停止直前に処理中だったMac/WebKitの遅延マッチ結果を短時間だけ待って回収する。
+  if (IS_MAC_DESKTOP_BROWSER) {
+    await Promise.race([
+      browserMatchDrainPromise.catch(() => {}),
+      new Promise((resolve) => window.setTimeout(resolve, 2500)),
+    ]);
+  }
+
   const allTracePoints = getAllRecordingTracePoints();
   if (allTracePoints.length < 2) {
     alert("記録されたポイントが少なすぎます（最低2点必要）");
@@ -2800,13 +2746,16 @@ async function handleRecordStopWithConfirmation() {
   // OSM取得と経路確定の開始時点で表示し、処理中の無反応状態をなくす。
   showTraceConfirmPreparing();
 
-  // 距離による扱いの差は設けない。道路上で確定できなかった場合もraw記録を保存し、
-  // 管理者確認画面で最新OSMへ再マップマッチングしてから公開可否を判断する。
+  // 軌跡の開始・途中・終了をすべて道路網で覆い、最新のOSM Wayで経路を確定する。
   const osmPreview = await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
-  const previewCoords = osmPreview
-    ? osmPreview.segments.flatMap((segment, index) =>
-        segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]))
-    : allTracePoints.map((point) => [point.lat, point.lng]);
+  // 確認・保存にはOSM Way上へ確定した座標だけを使う。
+  // 未確定時に生GPSを表示・保存経路として使うフォールバックは禁止する。
+  if (!osmPreview) {
+    closeTraceConfirmModal();
+    throw new Error("matched_route_required");
+  }
+  const previewCoords = osmPreview.segments.flatMap((segment, index) =>
+    segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]));
   if (!Array.isArray(previewCoords) || previewCoords.length < 2) {
     closeTraceConfirmModal();
     throw new Error("trace_preview_unavailable");
@@ -2826,7 +2775,7 @@ async function handleRecordStopWithConfirmation() {
       rawPoints: allTracePoints.map((point) => ({ lat: point.lat, lng: point.lng, accuracy: point.accuracy == null ? null : point.accuracy })),
       ownerUserId: currentUserId,
       osmPreview,
-      matchingPending: !osmPreview,
+      matchingPending: false,
       isPro: Boolean(isCurrentUserPro),
       memo: traceMemoInputEl ? traceMemoInputEl.value : "",
       tagIds: Array.from(selectedTraceTagIds),
@@ -2900,7 +2849,7 @@ async function runQueuedBrowserMatches() {
       }
       if (browser) {
         hasLiveMatchedFix = true;
-        // 停止操作の直前に開始した非同期マッチも、要求時の記録セッションへ回収する。
+        // 停止直前に開始した応答も、要求時の記録セッションへ確実に回収する。
         if (recordingSessionId && recordingSessionIds.includes(recordingSessionId)) {
           appendUniquePoint(recordedSnappedPoints, browser.lat, browser.lng);
           if (recordingSessionId === currentSessionId) {
@@ -2909,6 +2858,11 @@ async function runQueuedBrowserMatches() {
         }
         updateDisplay(latitude, longitude, browser.lat, browser.lng, false, false);
         lastSent = { latitude: browser.lat, longitude: browser.lng };
+      } else if (!IS_MAC_DESKTOP_BROWSER &&
+        (!hasLiveMatchedFix || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS)) {
+        // 道路データの取得が止まっても、現在地表示まで古い位置へ固定しない。
+        // 生座標表示は最終経路用の「マッチ済み点」へ混ぜない。
+        updateDisplay(latitude, longitude, latitude, longitude, false, !IS_MAC_DESKTOP_BROWSER);
       }
       console.log(`[requestSnappedLocation] Browser fitting completed in ${Math.round(performance.now() - browserStartedAt)}ms`);
     }
@@ -2964,15 +2918,17 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     hasLiveGpsFix = true;
     latestSnappedLocation = null;
   }
-  // 最初のライブ・フィッティング前は生GPSを赤ピンとして表示しない。
-  // 道路上の現在地だけを表示し、raw座標との混同を防ぐ。
-  if (!hasLiveMatchedFix) {
+  // 最初のライブ・フィッティングが得られるまでは、新しいGPSをそのまま表示する。
+  // 認証やOSM読込みが遅れていても、前回起動時の位置へ取り残さない。
+  if (!IS_MAC_DESKTOP_BROWSER && !hasLiveMatchedFix) {
+    updateCurrentLocationMarker(latitude, longitude);
+    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
     if (isCenterCurrentEnabled()) {
       suppressAutoCenterAfterReturn = false;
       map.setView([latitude, longitude], map.getZoom(), { animate: false });
     }
   }
-  if (hasLiveMatchedFix &&
+  if (!IS_MAC_DESKTOP_BROWSER && hasLiveMatchedFix &&
     isCenterCurrentEnabled()
     && !suppressAutoCenterAfterReturn
     && (!latestSnappedAt || Date.now() - latestSnappedAt > Math.max(MIN_REQUEST_INTERVAL_MS * 3, 6000))
@@ -2980,8 +2936,17 @@ function handleNewLocation(latitude, longitude, accuracy = null) {
     // フィッティングが一時停止しても、追従表示だけは古い位置に取り残さない。
     map.setView([latitude, longitude], map.getZoom(), { animate: false });
   }
-  // GPS受信直後にマッチを開始する。2秒ポーリング開始までraw表示で待たせない。
-  void requestSnappedLocation(latitude, longitude, accuracy, latestGpsFixSequence);
+  if (!IS_MAC_DESKTOP_BROWSER && hasLiveMatchedFix &&
+    (!latestSnappedAt || Date.now() - latestSnappedAt >= FITTED_MARKER_STALE_MS)) {
+    // フィッティング応答が長時間止まった場合だけ、生GPSを赤いピンの一時位置として使う。
+    // 黄緑の生座標点は復活させない。
+    updateCurrentLocationMarker(latitude, longitude);
+    if (coordsEl) coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+  }
+  // 位置情報を受けた直後にマッチを開始し、2秒間隔のポーリング待ちをなくす。
+  if (IS_MAC_DESKTOP_BROWSER) {
+    void requestSnappedLocation(latitude, longitude, accuracy, latestGpsFixSequence);
+  }
   if (browserOsmMatcher && Date.now() - lastNetworkPrefetchAt >= 5000) {
     lastNetworkPrefetchAt = Date.now();
     browserOsmMatcher.prefetchForLocation(latitude, longitude).catch((error) => {
@@ -3213,45 +3178,23 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
     }
 
     const recordColor = path.record_class === "pro_private" ? "#d92d20" : "#00b050";
-    const recordTravelMeters = traceTravelDistanceMeters(
-      coordinates.map(([lat, lng]) => ({ lat, lng }))
-    );
-    const pointRecord = recordTravelMeters < 0.1;
-    const polyline = pointRecord
-      ? L.circleMarker(coordinates[0], {
-          radius: 6,
-          color: recordColor,
-          weight: 2,
-          fillColor: recordColor,
-          fillOpacity: 0.85,
-          interactive: false,
-        }).addTo(map)
-      : L.polyline(coordinates, {
-          color: recordColor,
-          weight: 4,
-          opacity: 0.85,
-          interactive: false,
-        }).addTo(map);
+    const polyline = L.polyline(coordinates, {
+      color: recordColor,
+      weight: 4,
+      opacity: 0.85,
+      interactive: false,
+    }).addTo(map);
     polyline.options.stepByBaseColor = recordColor;
     // OSM送信済みの記録はOSM表示レイヤーだけでクリックを受け、保存経路との
     // 二重判定（わずかな位置差）を避ける。
     const osmManaged = path.osm_status === "merged" || path.osm_status === "revert_draft";
-    const hitPolyline = osmManaged ? null : (pointRecord
-      ? L.circleMarker(coordinates[0], {
-          radius: 24,
-          color: recordColor,
-          weight: 0,
-          opacity: 0,
-          fillOpacity: 0,
-          bubblingMouseEvents: false,
-        }).addTo(map)
-      : L.polyline(coordinates, {
-          color: recordColor,
-          // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
-          weight: 48,
-          opacity: 0,
-          bubblingMouseEvents: false,
-        }).addTo(map));
+    const hitPolyline = osmManaged ? null : L.polyline(coordinates, {
+      color: recordColor,
+      // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
+      weight: 48,
+      opacity: 0,
+      bubblingMouseEvents: false,
+    }).addTo(map);
     const sessionId = typeof path.session_id === "string" ? path.session_id : "";
     if (sessionId && hitPolyline) {
       hitPolyline.on("click", (event) => {
@@ -3846,8 +3789,7 @@ function loadAndShowRoadInfoPoints() {
   if (shouldShowOnlyMyRoadInfo()) {
     params.set("mine", "1");
   }
-  params.set("_ts", Date.now().toString());
-  authFetch(`/api/road-info?${params.toString()}`, { cache: "no-store" })
+  authFetch(`/api/road-info?${params.toString()}`)
     .then((res) => {
       if (!res.ok) {
         throw new Error(`road-info fetch failed: ${res.status}`);
@@ -4185,9 +4127,7 @@ if ("geolocation" in navigator) {
               recordEnabled = true;
               recordPaused = false;
               saveRecordingStateToStorage();
-              alert(error && error.userMessage
-                ? error.userMessage
-                : "確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
+              alert("確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
             }
           }
         } finally {
@@ -4327,62 +4267,26 @@ function showMapToast(message, durationMs = 2800) {
 // 戻るで遷移したときはbfcacheから復元されるためIIFEは再実行されない。pageshow（persistedありなし両方）で毎回チェックする。
 function showRoadInfoPostToastIfNeeded() {
   let flag = null;
-  let completed = false;
   try { flag = sessionStorage.getItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   if (!flag) return;
-  try { completed = sessionStorage.getItem("roadInfoPostCompleted.v1") === "1"; } catch (e) {}
   try { sessionStorage.removeItem("roadInfoPostJustSubmitted.v1"); } catch (e) {}
   const lang = getCurrentLanguage();
   const messages = {
-    ja: completed ? "道情報を投稿しました。" : "道情報を受け付けました。保存処理を続けています。",
-    en: completed ? "Road information posted." : "Road information received. Saving continues.",
-    hi: completed ? "सड़क की जानकारी पोस्ट की गई।" : "सड़क की जानकारी प्राप्त हुई। सहेजना जारी है।",
+    ja: "道情報を受け付けました。保存処理は裏で続けています。",
+    en: "Road information queued. Saving continues in the background.",
+    hi: "सड़क की जानकारी कतार में है। सहेजना पृष्ठभूमि में जारी है।",
   };
   showMapToast(messages[lang] || messages.ja);
 }
 
 window.addEventListener("stepby:road-info-queue", (event) => {
   const status = event && event.detail && event.detail.status;
-  if (status === "completed") {
-    showMapToast("道情報の保存が完了しました。", 3000);
-    // history.back()でbfcacheから復帰したSafariでは、遷移前のピンが
-    // そのまま残る。保存完了を受けた時点で必ず最新一覧へ差し替える。
-    cachedVisibleRoadInfoPoints = [];
-    if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints();
-  }
+  if (status === "completed") showMapToast("道情報の保存が完了しました。", 3000);
   if (status === "retry") showMapToast("道情報は端末に保管中です。通信回復後に自動で再送します。", 4200);
 });
-
-function refreshRoadInfoPostCompletionIfNeeded() {
-  let completed = false;
-  let savedPoint = null;
-  try {
-    completed = sessionStorage.getItem("roadInfoPostCompleted.v1") === "1";
-    const raw = sessionStorage.getItem("roadInfoPostSavedPoint.v1");
-    if (raw) savedPoint = JSON.parse(raw);
-    if (completed) sessionStorage.removeItem("roadInfoPostCompleted.v1");
-    sessionStorage.removeItem("roadInfoPostSavedPoint.v1");
-  } catch (e) {}
-  if (!completed) return;
-  if (savedPoint && Number.isFinite(Number(savedPoint.id)) &&
-      Number.isFinite(Number(savedPoint.lat)) && Number.isFinite(Number(savedPoint.lng))) {
-    const point = { ...savedPoint, createdBy: currentUserId };
-    cachedVisibleRoadInfoPoints = cachedVisibleRoadInfoPoints
-      .filter((item) => Number(item && item.id) !== Number(point.id));
-    cachedVisibleRoadInfoPoints.push(point);
-    if (shouldShowRoadInfo()) {
-      showRoadInfoPointsOnMap(cachedVisibleRoadInfoPoints, { preFiltered: true });
-    }
-  } else {
-    cachedVisibleRoadInfoPoints = [];
-  }
-  if (shouldShowRoadInfo()) loadAndShowRoadInfoPoints();
-}
 
 // 初回ロードと bfcache 復元の両方で動くよう、pageshow と DOMContentLoaded 両方にフックする。
 showRoadInfoPostToastIfNeeded();
 window.addEventListener("pageshow", () => {
   showRoadInfoPostToastIfNeeded();
-  refreshRoadInfoPostCompletionIfNeeded();
-  if (window.StepByRoadInfoQueue) void window.StepByRoadInfoQueue.flush();
 });
