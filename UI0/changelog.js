@@ -3,6 +3,25 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.31.2",
+      date: "2026-11-06",
+      items: [
+        {
+          id: "1.31.2.short-records-normal-flow",
+          text: {
+            ja: "短い点字ブロック記録も距離で区別せず通常どおり保存し、OSM公開の確認対象に含めるよう改善しました。",
+            en: "Short tactile-paving recordings are now saved normally without a distance-based distinction and included in OSM publication review.",
+            hi: "छोटी टैक्टाइल-पेविंग रिकॉर्डिंग अब दूरी के आधार पर अलग किए बिना सामान्य रूप से सहेजी जाती हैं और OSM प्रकाशन समीक्षा में शामिल होती हैं।",
+          },
+        },
+      ],
+      labels: {
+        ja: { title: "新バージョン v1.31.2", close: "閉じる" },
+        en: { title: "New version v1.31.2", close: "Close" },
+        hi: { title: "नया संस्करण v1.31.2", close: "बंद करें" },
+      },
+    },
+    {
       version: "1.31.1",
       date: "2026-11-06",
       items: [

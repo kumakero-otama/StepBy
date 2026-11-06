@@ -229,26 +229,6 @@ function showSafetyConfirmModal() {
 }
 
 const SAFETY_CONFIRM_ACCEPTED_KEY = "safetyConfirmAccepted.v1";
-const INDOOR_TEST_MODE_KEY = "stepby.indoorTestMode.v1";
-
-// 屋内でGPS・保存・再表示の一連を確認する開発者向けモード。
-// OSM Wayを確定できない短い記録もStepBy内だけに保存し、OSM変更案にはしない。
-function isIndoorTestModeEnabled() {
-  try {
-    const requested = new URLSearchParams(window.location.search).get("indoorTest");
-    if (requested === "1") {
-      sessionStorage.setItem(INDOOR_TEST_MODE_KEY, "1");
-      return true;
-    }
-    if (requested === "0") {
-      sessionStorage.removeItem(INDOOR_TEST_MODE_KEY);
-      return false;
-    }
-    return sessionStorage.getItem(INDOOR_TEST_MODE_KEY) === "1";
-  } catch (error) {
-    return false;
-  }
-}
 
 function initSafetyConfirmModal() {
   if (!safetyConfirmModalEl || !safetyConfirmAcceptBtn || !safetyConfirmRejectBtn) {
@@ -2462,7 +2442,24 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
   return result;
 }
 
-function openTraceConfirmModal(coordinates, osmPreview = null, { indoorTest = false } = {}) {
+async function savePendingOsmReview(recordId) {
+  const response = await authFetch("/api/osm/pending-review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ recordId }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || `HTTP ${response.status}`);
+    error.code = result.error || `HTTP_${response.status}`;
+    error.status = response.status;
+    error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+    throw error;
+  }
+  return result;
+}
+
+function openTraceConfirmModal(coordinates, osmPreview = null) {
   return new Promise((resolve) => {
     if (!traceConfirmModalEl || !traceConfirmMapEl || !traceConfirmOkBtn || !traceConfirmCancelBtn) {
       resolve("cancel");
@@ -2474,11 +2471,7 @@ function openTraceConfirmModal(coordinates, osmPreview = null, { indoorTest = fa
       // 記録停止後に画面が何も出ず、記録ボタンだけが無効に見える状態にしない。
       traceConfirmModalEl.classList.remove("hidden");
       traceConfirmModalEl.classList.remove("is-preparing");
-      if (traceConfirmTitleEl) {
-        traceConfirmTitleEl.textContent = indoorTest
-          ? "屋内テスト記録を保存しますか（OSM公開対象外）"
-          : "この経路で保存しますか";
-      }
+      if (traceConfirmTitleEl) traceConfirmTitleEl.textContent = "この経路で保存しますか";
       traceConfirmCancelBtn.disabled = false;
       traceConfirmMap = L.map(traceConfirmMapEl, { zoomControl: true });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -2523,9 +2516,9 @@ function openTraceConfirmModal(coordinates, osmPreview = null, { indoorTest = fa
           return;
         }
         setTraceTagError("");
-        // 道路網への確定に失敗した記録は生座標だけを安全に保存し、
-        // OSM変更案にはしない。管理者側で後から再マップマッチングできる。
-        const osmEligible = Boolean(osmPreview) && isCurrentRecordingOsmEligible();
+        // 道路網への確定に失敗しても通常記録として保存し、OSM公開対象なら
+        // 管理者確認画面で最新OSMへ再マップマッチングしてから公開する。
+        const osmEligible = isCurrentRecordingOsmEligible();
         cleanupAndResolve({ action: "ok", osmEligible });
       };
       const onCancel = () => cleanupAndResolve({ action: "cancel" });
@@ -2671,9 +2664,11 @@ async function processQueuedRecording(payload, context) {
       await saveSessionTags(payload.sessionIds, [defaultTagId]);
     });
   }
-  if (payload.osmEligible && payload.osmPreview) {
+  if (payload.osmEligible) {
     try {
-      await runStage("osm_draft_saved", () => saveOsmSplitDraft(payload.osmPreview, payload.sessionId));
+      await runStage("osm_draft_saved", () => payload.osmPreview
+        ? saveOsmSplitDraft(payload.osmPreview, payload.sessionId)
+        : savePendingOsmReview(payload.sessionId));
     } catch (error) {
       const safeSkipReasons = new Set([
         "non_walkway_way_not_eligible",
@@ -2802,27 +2797,12 @@ async function handleRecordStopWithConfirmation() {
     return;
   }
 
-  const rawTravelMeters = traceTravelDistanceMeters(recordedRawPoints);
-  const matchedTravelMeters = traceTravelDistanceMeters(recordedSnappedPoints);
-  const shortTrace = rawTravelMeters < 1 && matchedTravelMeters < 1;
-  const indoorTestMode = isIndoorTestModeEnabled();
-
   // OSM取得と経路確定の開始時点で表示し、処理中の無反応状態をなくす。
   showTraceConfirmPreparing();
 
-  // 屋内テストの短距離記録は外部道路データを待たず、StepBy内だけへ保存する。
-  // 通常記録は、短距離であっても最新のOSM Way上で確定できれば公開候補にできる。
-  const osmPreview = shortTrace && indoorTestMode
-    ? null
-    : await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
-  // 生GPSを直線で結ぶと、道路に沿った経路に見えてしまう。経路を確定できない場合は
-  // raw線を確認画面へ出さず、記録を保持したまま再試行できるよう停止する。
-  if (!osmPreview && !(shortTrace && indoorTestMode)) {
-    closeTraceConfirmModal();
-    const error = new Error("browser_route_not_confirmed");
-    error.userMessage = "道路上の経路を確定できませんでした。記録内容は保持されています。少し待って、もう一度記録終了を押してください。";
-    throw error;
-  }
+  // 距離による扱いの差は設けない。道路上で確定できなかった場合もraw記録を保存し、
+  // 管理者確認画面で最新OSMへ再マップマッチングしてから公開可否を判断する。
+  const osmPreview = await buildBrowserOsmPreview(allTracePoints, recordedSnappedPoints);
   const previewCoords = osmPreview
     ? osmPreview.segments.flatMap((segment, index) =>
         segment.coordinates.slice(index > 0 ? 1 : 0).map(([lng, lat]) => [lat, lng]))
@@ -2832,9 +2812,7 @@ async function handleRecordStopWithConfirmation() {
     throw new Error("trace_preview_unavailable");
   }
 
-  const decision = await openTraceConfirmModal(previewCoords, osmPreview, {
-    indoorTest: !osmPreview && indoorTestMode,
-  });
+  const decision = await openTraceConfirmModal(previewCoords, osmPreview);
   if (decision && decision.action === "ok") {
     if (!recordUploadQueue || !activeSessionId) {
       throw new Error("record_queue_unavailable");

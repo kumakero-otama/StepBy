@@ -123,10 +123,8 @@ assert.match(mapSource, /buildBrowserOsmPreview\(allTracePoints, recordedSnapped
   "record finalization must retain genuine live matches as a fallback when raw GPS cannot be finalized");
 assert.doesNotMatch(mapSource, /rawTravelMeters < 1 && matchedTravelMeters < 1[\s\S]{0,900}?record_route_not_detected/,
   "a valid sub-metre tactile-paving recording must not be rejected solely by travel distance");
-assert.match(mapSource, /isIndoorTestModeEnabled\(\)[\s\S]{0,1400}?shortTrace && indoorTestMode[\s\S]{0,900}?osmPreview\s*\?/,
-  "indoor test mode must allow only a short raw-only preview when road matching is unavailable");
-assert.match(mapSource, /屋内テスト記録を保存しますか（OSM公開対象外）/,
-  "the indoor confirmation must clearly say that the record is not published to OSM");
+assert.doesNotMatch(mapSource, /indoorTest|shortTrace|rawTravelMeters|matchedTravelMeters/,
+  "record handling must not change at a one-metre threshold or require a separate indoor mode");
 assert.match(mapSource, /previewTravelMeters < 0\.1[\s\S]{0,500}?L\.circleMarker/,
   "a stationary indoor test must be visible as a point in the confirmation map");
 assert.match(mapSource, /pointRecord = recordTravelMeters < 0\.1[\s\S]{0,500}?L\.circleMarker/,
@@ -145,8 +143,8 @@ assert.match(mapSource, /recordingSessionIds\.includes\(recordingSessionId\)[\s\
   "a delayed match response must still be assigned to the recording that requested it");
 assert.match(mapSource, /handleRecordStopWithConfirmation[\s\S]{0,800}?browserMatchDrainPromise\.catch/,
   "record stop must briefly wait for a match already in flight");
-assert.match(mapSource, /if \(!osmPreview && !\(shortTrace && indoorTestMode\)\)[\s\S]{0,500}?browser_route_not_confirmed/,
-  "failed matching must not be shown as a straight raw-GPS route outside explicit short indoor testing");
+assert.match(mapSource, /const previewCoords = osmPreview[\s\S]{0,500}?: allTracePoints\.map/,
+  "an unmatched recording must still reach the normal confirmation screen without a distance distinction");
 assert.doesNotMatch(mapSource, /通信が不安定です。記録は端末に保存されています。/,
   "queue retries must not claim that the user's internet connection is bad");
 assert.match(mapSource, /ensureTraceCoverage\(tracePoints, 450, \{ force: false \}\)/,
@@ -160,7 +158,9 @@ assert.match(mapSource, /source:\s*"browser_raw"[\s\S]{0,500}?raw_points:/,
 assert.match(mapSource, /payload\.osmPreview[\s\S]{0,180}?requestRawTraceData\(payload\.sessionId, payload\.rawPoints\)/,
   "the durable upload queue must use the raw-only fallback when no route preview exists");
 assert.match(mapSource, /osmEligible:\s*Boolean\(decision\.osmEligible\)/,
-  "the raw-only fallback must remain ineligible for an automatic OSM draft");
+  "the raw-only fallback must retain the normal recording publication policy");
+assert.match(mapSource, /payload\.osmPreview[\s\S]{0,260}?saveOsmSplitDraft[\s\S]{0,200}?savePendingOsmReview/,
+  "an unmatched OSM-eligible record must enter the administrator review queue for refitting");
 assert.match(mapSource, /persistCurrentSessionWithoutConfirmation[\s\S]{0,900}?buildBrowserOsmPreview\(tracePoints, currentSessionSnappedPoints\)/,
   "pause persistence must use the browser OSM matcher instead of the retired Valhalla trace");
 assert.match(mapSource, /rawPoints:\s*recordedRawPoints\.slice\(-5000\)/,
