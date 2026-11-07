@@ -488,7 +488,8 @@
   async function logEvent(entry) {
     const record = createLogRecord(entry || {});
     safeConsoleLog(record.level, record);
-    await putPendingLog(record);
+    // 診断ログDBの停止で利用者のAPI処理を止めない（OSM監査はサーバーで別途保証）。
+    void putPendingLog(record).catch(() => {});
     return record;
   }
 

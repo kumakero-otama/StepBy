@@ -3,6 +3,19 @@
 (function initializeStepByChangelog(globalScope) {
   const entries = [
     {
+      version: "1.30.9", date: "2026-11-08",
+      items: [{ id: "1.30.9.api-unblock", text: {
+        ja: "プロフィール保存・道情報のタグ取得や投稿が止まる問題と、現在地・広域の点字ブロック表示を修正しました。",
+        en: "Fixed stalled profile saves, road-information tags and submissions, and location and wider-area tactile paving display.",
+        hi: "प्रोफ़ाइल保存、सड़क जानकारी और स्थान प्रदर्शन की समस्याएँ सुधारी गईं।"
+      } }],
+      labels: {
+        ja: { title: "新バージョン v1.30.9", close: "閉じる" },
+        en: { title: "New version v1.30.9", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.9", close: "बंद करें" }
+      }
+    },
+    {
       version: "1.30.8",
       date: "2026-11-06",
       items: [

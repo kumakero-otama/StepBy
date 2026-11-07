@@ -454,4 +454,8 @@ if (proHelpModalEl) {
   });
 }
 
-loadCurrentProfile();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", loadCurrentProfile, { once: true });
+} else {
+  loadCurrentProfile();
+}

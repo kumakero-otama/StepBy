@@ -1315,7 +1315,8 @@ function applyCachedLocation(cached) {
     return false;
   }
   latestLocation = { lat: cached.lat, lng: cached.lng };
-  latestSnappedLocation = { lat: cached.lat, lng: cached.lng };
+  // 保存された生GPSをマッチ済み現在地と偽って描画しない。
+  latestSnappedLocation = null;
   updateTimestamp();
   if (coordsEl) {
     coordsEl.textContent = `Lat: ${cached.lat.toFixed(6)}, Lng: ${cached.lng.toFixed(6)}`;
@@ -1323,7 +1324,6 @@ function applyCachedLocation(cached) {
   if (rawCoordsEl) {
     rawCoordsEl.textContent = `Raw: ${cached.lat.toFixed(6)}, ${cached.lng.toFixed(6)}`;
   }
-  updateCurrentLocationMarker(cached.lat, cached.lng);
   if (isCenterCurrentEnabled()) {
     // 追従ONでは保存済みの地図中心より現在地を必ず優先する。
     suppressAutoCenterAfterReturn = false;
@@ -3596,6 +3596,10 @@ function loadAndShowOsmTactileWays(centerOverride = null) {
     console.error("[OsmTileCache] viewport refresh failed", error);
     if (!cachedOsmFeatures.length) showMapToast("保存済みのOSM情報を表示できませんでした。", 3200);
   });
+  // 区画キャッシュは表示領域を優先し、従来の10km範囲も裏で補完する。
+  if (!osmTactileLoadAbortController && loadOsmDisplayCache(centerOverride || map.getCenter()).length === 0) {
+    loadAndShowOsmTactileWaysLegacy(centerOverride || map.getCenter());
+  }
 }
 
 async function requestOwnedOsmRevert(recordId, button) {
