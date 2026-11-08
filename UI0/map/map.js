@@ -2534,6 +2534,53 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   return { success: true, ended: true };
 }
 
+// 座標・メモを含めない短時間記録診断。IndexedDBが止まっても収集できる別経路。
+const RECORD_DIAGNOSTIC_KEY = "record_diagnostics.v1";
+let recordDiagnosticSending = false;
+function logRecordingDiagnostic(event, extra = {}) {
+  try {
+    const points = recordedRawPoints || [];
+    const uniqueCount = new Set(points.map(p => `${p.lat},${p.lng}`)).size;
+    const entry = {
+      logId: `record_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      createdAt: new Date().toISOString(), category: "recording", event, level: "info",
+      meta: { recordingSessionId: currentSessionId,
+        durationMs: currentSessionStartedAt ? Math.max(0, Date.now() - Date.parse(currentSessionStartedAt)) : null,
+        rawCount: points.length, uniqueCount, duplicateCount: points.length - uniqueCount,
+        matchedCount: recordedSnappedPoints.length,
+        networkWayCount: browserOsmMatcher && browserOsmMatcher.network ? browserOsmMatcher.network.length : 0,
+        macDesktop: IS_MAC_DESKTOP_BROWSER, ...extra },
+    };
+    const pending = JSON.parse(localStorage.getItem(RECORD_DIAGNOSTIC_KEY) || "[]");
+    localStorage.setItem(RECORD_DIAGNOSTIC_KEY, JSON.stringify([...pending, entry].slice(-40)));
+    void flushRecordingDiagnostics();
+  } catch (error) { console.warn("[RecordDiagnostic] unavailable", error); }
+}
+async function flushRecordingDiagnostics() {
+  if (recordDiagnosticSending) return;
+  recordDiagnosticSending = true;
+  let timer;
+  try {
+    const pending = JSON.parse(localStorage.getItem(RECORD_DIAGNOSTIC_KEY) || "[]");
+    if (!pending.length) return;
+    const controller = new AbortController();
+    timer = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(AppPath.toApi("/api/client-logs"), {
+      method: "POST", credentials: "include", signal: controller.signal,
+      headers: { ...Object.fromEntries(new Headers(window.AuthToken.buildAuthHeaders({}))), "Content-Type": "application/json" },
+      body: JSON.stringify({ client: { userAgent: navigator.userAgent, platform: "web" }, logs: pending }),
+    });
+    if (!response.ok) return;
+    const result = await response.json();
+    const accepted = new Set([...(result.accepted || []), ...(result.duplicate || [])]);
+    const latest = JSON.parse(localStorage.getItem(RECORD_DIAGNOSTIC_KEY) || "[]");
+    localStorage.setItem(RECORD_DIAGNOSTIC_KEY, JSON.stringify(latest.filter(log => !accepted.has(log.logId))));
+  } catch (_) { /* 再起動・オンライン復帰時に再送する。記録処理は止めない。 */ }
+  finally { clearTimeout(timer); recordDiagnosticSending = false; }
+}
+window.addEventListener("online", () => void flushRecordingDiagnostics());
+window.addEventListener("pageshow", () => void flushRecordingDiagnostics());
+
 async function buildBrowserOsmPreview(tracePoints, matchedFallbackPoints = []) {
   if (!browserOsmMatcher || !Array.isArray(tracePoints) || tracePoints.length < 2) {
     return null;
@@ -2564,8 +2611,10 @@ async function buildBrowserOsmPreview(tracePoints, matchedFallbackPoints = []) {
   } catch (error) {
     // 取得済みの道路網があれば、それを使って確定を続ける。
     console.warn("[BrowserMatcher] trace network refresh failed; cached network will be used", error);
+    logRecordingDiagnostic("record_coverage_failed", { reason: String(error.message || error).slice(0, 120) });
   }
   const browserRoute = finalizeAvailableTrace();
+  logRecordingDiagnostic("record_route_finalized", { routeConfirmed: Boolean(browserRoute), inputCount: tracePoints.length });
   return browserRoute ? window.StepByOsmMatcher.buildOsmChangePreview(browserRoute) : null;
 }
 
@@ -2735,7 +2784,9 @@ async function handleRecordStopWithConfirmation() {
   }
 
   const allTracePoints = getAllRecordingTracePoints();
+  logRecordingDiagnostic("record_stop_requested", { inputCount: allTracePoints.length });
   if (allTracePoints.length < 2) {
+    logRecordingDiagnostic("record_insufficient_points");
     alert("記録されたポイントが少なすぎます（最低2点必要）");
     await cancelRecordingSessions(allSessionIds);
     if (tracePolyline) {
@@ -4129,6 +4180,7 @@ if ("geolocation" in navigator) {
               // 予期しない通信・地図処理エラーで確認画面を開けなかった場合は、
               // 記録内容を消さず記録中へ戻し、もう一度停止操作を試せるようにする。
               console.error("[Record] Failed to open or finish confirmation:", error);
+              logRecordingDiagnostic("record_confirmation_failed", { reason: String(error.message || error).slice(0, 120) });
               closeTraceConfirmModal();
               recordEnabled = true;
               recordPaused = false;

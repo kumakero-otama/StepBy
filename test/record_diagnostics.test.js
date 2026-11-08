@@ -1,0 +1,13 @@
+const assert = require("assert");
+const fs = require("fs");
+const source = fs.readFileSync("UI0/map/map.js", "utf8");
+const diagnostic = source.slice(source.indexOf("function logRecordingDiagnostic"), source.indexOf("async function buildBrowserOsmPreview"));
+assert.match(diagnostic, /duplicateCount/);
+assert.match(diagnostic, /durationMs/);
+assert.match(diagnostic, /slice\(-40\)/);
+assert.match(diagnostic, /controller\.abort\(\), 8000/);
+assert.match(diagnostic, /accepted\.has\(log\.logId\)/);
+assert.doesNotMatch(diagnostic, /meta:.*latitude|meta:.*longitude|memo:/);
+assert.match(source, /record_confirmation_failed/);
+assert.match(source, /record_insufficient_points/);
+console.log("record diagnostics remain bounded and exclude coordinates");
