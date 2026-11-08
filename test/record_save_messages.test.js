@@ -1,0 +1,11 @@
+const fs = require("fs"), vm = require("vm"), assert = require("assert");
+const source = fs.readFileSync("UI0/map/map.js", "utf8");
+const context = {}; vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf("function recordingQueueMessage"), source.indexOf("function initRecordUploadQueue")), context);
+const message = (type, completedStages) => context.recordingQueueMessage({type, job: {completedStages}});
+assert.match(message("retry", []), /サーバーへの保存を再試行/);
+assert.match(message("retry", ["trace_saved", "session_ended"]), /追加情報/);
+assert.match(message("retry", ["trace_saved", "session_ended", "tags_saved"]), /^記録しました。公開の準備/);
+assert.match(message("blocked", ["trace_saved", "session_ended", "tags_saved"]), /確認が必要/);
+for (const type of ["retry", "blocked", "completed"]) assert.doesNotMatch(message(type, []), /通信が不安定/);
+console.log("save messages distinguish persisted records from publication preparation");

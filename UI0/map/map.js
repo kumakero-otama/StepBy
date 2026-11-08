@@ -2014,7 +2014,10 @@ function displayTraceLine(coordinates) {
   }
   
   if (coordinates.length > 1) {
-    tracePolyline = L.polyline(coordinates, {
+    const stationary = coordinates.every(point => point[0] === coordinates[0][0] && point[1] === coordinates[0][1]);
+    tracePolyline = stationary ? L.circleMarker(coordinates[0], {
+      radius: 6, color: "#6f9d20", fillColor: "#9acd32", fillOpacity: 0.85,
+    }).addTo(map) : L.polyline(coordinates, {
       color: "#9acd32",  // 黄緑色
       weight: 4,
       opacity: 0.8,
@@ -2448,12 +2451,16 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(traceConfirmMap);
 
-      traceConfirmPathLayer = L.polyline(coordinates, {
+      const stationary = coordinates.every(point => point[0] === coordinates[0][0] && point[1] === coordinates[0][1]);
+      traceConfirmPathLayer = stationary ? L.circleMarker(coordinates[0], {
+        radius: 7, color: "#68747d", fillColor: "#9acd32", fillOpacity: 0.8,
+      }).addTo(traceConfirmMap) : L.polyline(coordinates, {
         color: "#68747d",
         weight: 4,
         opacity: 0.65,
       }).addTo(traceConfirmMap);
-      traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
+      if (stationary) traceConfirmMap.setView(coordinates[0], 19);
+      else traceConfirmMap.fitBounds(traceConfirmPathLayer.getBounds(), { padding: [20, 20] });
 
       const cleanupAndResolve = (result) => {
         traceConfirmOkBtn.removeEventListener("click", onOk);
@@ -2582,7 +2589,7 @@ window.addEventListener("online", () => void flushRecordingDiagnostics());
 window.addEventListener("pageshow", () => void flushRecordingDiagnostics());
 
 async function buildBrowserOsmPreview(tracePoints, matchedFallbackPoints = []) {
-  if (!browserOsmMatcher || !Array.isArray(tracePoints) || tracePoints.length < 2) {
+  if (!browserOsmMatcher || !Array.isArray(tracePoints) || !tracePoints.length) {
     return null;
   }
 
@@ -2634,9 +2641,18 @@ async function processQueuedRecording(payload, context) {
   const completed = new Set(context.job.completedStages || []);
   const runStage = async (name, operation) => {
     if (completed.has(name)) return;
-    await operation();
-    completed.add(name);
-    await context.checkpoint(name);
+    try {
+      await operation();
+      completed.add(name);
+      await context.checkpoint(name);
+    } catch (error) {
+      logRecordingDiagnostic("record_save_stage_failed", {
+        failedStage: name, reason: String(error.code || error.message || "unknown").slice(0, 120),
+        jobSessionId: payload.sessionId, traceSaved: completed.has("trace_saved"),
+        sessionEnded: completed.has("session_ended"), tagsSaved: completed.has("tags_saved"),
+      });
+      throw error;
+    }
   };
   await runStage("session_started", async () => {
     const response = await authFetch("/api/session/start", {
@@ -2702,6 +2718,21 @@ function refreshVisibleMapDataAfterOsmChange() {
   }
 }
 
+function recordingQueueMessage(event) {
+  const stages = new Set(event.job && event.job.completedStages || []);
+  const saved = stages.has("trace_saved") && stages.has("session_ended");
+  if (event.type === "completed") return "記録しました。";
+  if (saved && stages.has("tags_saved")) {
+    return event.type === "blocked"
+      ? "記録しました。公開の準備には確認が必要です。"
+      : "記録しました。公開の準備はあとで自動的に続けます。";
+  }
+  if (saved) return "記録しました。追加情報の保存を完了できていません。";
+  return event.type === "blocked"
+    ? "保存を完了できませんでした。記録は端末に残っています。"
+    : "記録は端末に保存されています。サーバーへの保存を再試行します。";
+}
+
 function initRecordUploadQueue() {
   if (!window.StepByRecordQueue) return;
   recordUploadQueue = new window.StepByRecordQueue.RecordQueue({
@@ -2710,11 +2741,11 @@ function initRecordUploadQueue() {
       if (event.type === "queued" || event.type === "sending") {
         showMapToast("記録を保存しています…", 2400);
       } else if (event.type === "completed") {
-        showMapToast("記録しました。", 2800);
+        showMapToast(recordingQueueMessage(event), 2800);
       } else if (event.type === "retry") {
-        showMapToast("通信が不安定です。記録は端末に保存されています。", 4400);
+        showMapToast(recordingQueueMessage(event), 4400);
       } else if (event.type === "blocked") {
-        showMapToast("記録は端末に保存されています。", 4000);
+        showMapToast(recordingQueueMessage(event), 4000);
       }
     },
   });
@@ -2785,7 +2816,7 @@ async function handleRecordStopWithConfirmation() {
 
   const allTracePoints = getAllRecordingTracePoints();
   logRecordingDiagnostic("record_stop_requested", { inputCount: allTracePoints.length });
-  if (allTracePoints.length < 2) {
+  if (allTracePoints.length < 1) {
     logRecordingDiagnostic("record_insufficient_points");
     alert("記録されたポイントが少なすぎます（最低2点必要）");
     await cancelRecordingSessions(allSessionIds);
@@ -2832,7 +2863,7 @@ async function handleRecordStopWithConfirmation() {
       isPro: Boolean(isCurrentUserPro),
       memo: traceMemoInputEl ? traceMemoInputEl.value : "",
       tagIds: Array.from(selectedTraceTagIds),
-      osmEligible: Boolean(decision.osmEligible),
+      osmEligible: Boolean(decision.osmEligible) && osmPreview.stationary !== true,
     };
     try {
       await recordUploadQueue.enqueue(payload);

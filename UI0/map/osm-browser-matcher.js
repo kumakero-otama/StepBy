@@ -155,7 +155,20 @@
   }
 
   function finalizeTrace(points, ways) {
-    if (!Array.isArray(points) || points.length < 2) return null;
+    if (!Array.isArray(points) || !points.length) return null;
+    // 静止記録は線の長さを捏造せず、道路上の同一点を始点・終点として扱う。
+    // 精度不良の移動経路を救済するのではなく、全入力が同じ位置の場合だけ適用。
+    const stationary = points.every(point => point.lat === points[0].lat && point.lng === points[0].lng);
+    if (stationary) {
+      const match = chooseBestMatch(points[0], ways, null);
+      if (!match) return null;
+      const way = ways.find(way => way.id === match.wayId);
+      return { start: match, end: match, matches: [match, match],
+        wayIds: [match.wayId], observedWayIds: [match.wayId], connectorWayIds: [],
+        routeConfirmed: true, stationary: true, ways: [way], rawPoints: points,
+        quality: { interpolatedPointCount: 0, discardedPointCount: 0, discardedPoints: [] } };
+    }
+    if (points.length < 2) return null;
     const prepared = preparePoints(points);
     const sampled = prepared.filter((point, index) => point.quality !== "discarded" && (index === 0 || index === points.length - 1 || index % 3 === 0));
     let matches = [];
@@ -314,11 +327,14 @@
           : side ? `sidewalk:${side}:tactile_paving=yes` : "左右判定不可",
         from,
         to,
-        coordinates: sliceWayCoordinates(way, from, to),
+        coordinates: route.stationary === true
+          ? [projectedCoordinate(route.start), projectedCoordinate(route.start)]
+          : sliceWayCoordinates(way, from, to),
       };
     });
     return {
       segments,
+      stationary: route.stationary === true,
       matchedSamples: (route.matches || []).map((match) => ({
         lat: match.lat,
         lon: match.lng,

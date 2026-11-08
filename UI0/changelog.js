@@ -2,6 +2,16 @@
 // 各項目のidは閲覧記録の識別子になるため、公開後は変更・再利用しない。
 (function initializeStepByChangelog(globalScope) {
   const entries = [
+    { version: "1.30.10", date: "2026-11-08",
+      items: [{ id: "1.30.10.stationary-save-status", text: {
+        ja: "静止したままでも点の記録を保存できるようにし、保存済みなのに通信不良と表示される問題を修正しました。",
+        en: "Added stationary point recordings and corrected misleading connection-error messages after saving.",
+        hi: "स्थिर स्थान की रिकॉर्डिंग और सहेजने की स्थिति के संदेश सुधारे गए।"
+      }}], labels: {
+        ja: { title: "新バージョン v1.30.10", close: "閉じる" },
+        en: { title: "New version v1.30.10", close: "Close" },
+        hi: { title: "नया संस्करण v1.30.10", close: "बंद करें" }
+      } },
     {
       version: "1.30.9", date: "2026-11-08",
       items: [{ id: "1.30.9.api-unblock", text: {

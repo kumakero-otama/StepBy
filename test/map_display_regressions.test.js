@@ -26,7 +26,7 @@ assert.doesNotMatch(mapSource, /通信できないため端末に保管してい
   "queue failures must not be mislabeled as loss of internet connectivity");
 assert.doesNotMatch(mapSource, /サーバーへの送信を完了できないため端末に保管しています/,
   "normal users must not see internal server-delivery wording");
-assert.match(mapSource, /showMapToast\("記録しました。"/,
+assert.match(mapSource, /if \(event.type === "completed"\) return "記録しました。"/,
   "record completion must use a short general-user message");
 assert.match(mapSource, /non_walkway_way_not_eligible/);
 assert.match(mapSource, /osm_draft_skipped_safely/,
