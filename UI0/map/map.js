@@ -4046,6 +4046,8 @@ if ("geolocation" in navigator) {
       },
       (err) => {
         console.error("[Geolocation] getCurrentPosition error:", err);
+        logMapEvent("gps_position_failed", { level: "warn", message: `geolocation_code_${err && err.code}` });
+        if (err && err.code === 1) showMapToast("位置情報を利用できません。iPhoneとSafariの位置情報の許可を確認してください。", 6500);
         if (!latestLocation && coordsEl) {
           coordsEl.textContent = "Lat: unavailable, Lng: unavailable";
         }
@@ -4127,17 +4129,22 @@ if ("geolocation" in navigator) {
   }
 
   // 設定を読み込んでから位置情報取得を開始
-  loadConfig().then(async () => {
+  // API応答待ちでGPS開始・ボタン登録まで止めない。特に古いSafariの復帰時に重要。
+  Promise.resolve().then(() => {
+    void loadConfig();
     logMapEvent("map_gps_bootstrap_start", {
       category: "navigation",
       path: window.location.pathname,
       method: "LOAD",
       message: "Starting GPS bootstrap after config load",
     });
-    try {
+    void (async () => { try {
       await loadCurrentUserId();
       await requireOsmConnectionBeforeMapUse();
       await loadCurrentUserProStatus();
+      if (latestLocation) void requestSnappedLocation(latestLocation.lat, latestLocation.lng,
+        latestLocation.accuracy, latestLocation.fixSequence);
+      applyMapInfoVisibility();
     } catch (error) {
       logMapEvent("map_gps_bootstrap_partial", {
         category: "auth",
@@ -4147,7 +4154,7 @@ if ("geolocation" in navigator) {
       if (error && (error.message === "unauthorized" || error.message === "invalid_user" || error.message === "osm_required")) {
         return;
       }
-    }
+    } })();
     // watchPositionの初回通知が遅い端末向けに、単発取得も同時に開始する。
     refreshLocationTracking("bootstrap");
     startLocationWatchdog();
@@ -4179,6 +4186,13 @@ if ("geolocation" in navigator) {
         }
 
         const nextEnabled = !recordEnabled;
+        if (nextEnabled && !currentUserId) {
+          showMapToast("ログイン状態を確認しています。少し待ってからもう一度お試しください。", 4000);
+          isHandlingRecordToggle = false;
+          recordActionBtn.disabled = false;
+          if (pauseActionBtn) pauseActionBtn.disabled = false;
+          return;
+        }
         try {
           if (nextEnabled) {
             // レコードON：前回の黄緑線を削除し、新しいセッション開始

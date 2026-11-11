@@ -1,5 +1,5 @@
 // UI0開発環境専用Service Worker。UI0のキャッシュには触れない。
-const CACHE_VERSION = "1.38.4-stationary-save-status";
+const CACHE_VERSION = "1.38.5-ios-bootstrap";
 const APP_BASE_PATH = "/StepBy/UI0";
 const API_BASE_URL = "https://stepby-api-8-229-191-182.sslip.io";
 // 時刻を含めるとService Worker再起動のたびに別名になり、既存キャッシュを
@@ -49,6 +49,9 @@ const CORE_ASSETS = [
   `${APP_BASE_PATH}/setting/Index_hi.html`,
   `${APP_BASE_PATH}/setting/ui4-layout.css`,
   `${APP_BASE_PATH}/pwa.js`,
+  `${APP_BASE_PATH}/post_road/Index.html`,
+  `${APP_BASE_PATH}/help/Index.html`,
+  `${APP_BASE_PATH}/language_redirect.js`,
 ];
 
 self.addEventListener("install", (event) => {
@@ -147,11 +150,7 @@ self.addEventListener("fetch", (event) => {
         .catch(async () => {
           const cached = await caches.match(request, { ignoreSearch: true });
           if (cached) return cached;
-          const fallbackPath = url.pathname.includes("/auth/")
-            ? `${APP_BASE_PATH}/auth/login.html`
-            : `${APP_BASE_PATH}/map/Index.html`;
-          const fallback = await caches.match(fallbackPath, { ignoreSearch: true });
-          if (fallback) return fallback;
+          // 別ページのHTMLをこのURLで返すと、相対CSS/JSの参照先が壊れる。
           return new Response(
             "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>StepBy</title><p>画面を読み込めませんでした。通信を確認して再読み込みしてください。</p>",
             { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } }

@@ -2,6 +2,11 @@
 // 各項目のidは閲覧記録の識別子になるため、公開後は変更・再利用しない。
 (function initializeStepByChangelog(globalScope) {
   const entries = [
+    { version: "1.30.11", date: "2026-11-11", items: [{ id: "1.30.11.ios-startup", text: {
+      ja: "設定・認証の待機中に現在地取得や操作が止まる問題と、オフラインで別の画面が表示される問題を修正しました。",
+      en: "Decoupled location and map controls from startup API waits and fixed incorrect offline page fallback.",
+      hi: "स्थान और मानचित्र नियंत्रण के आरंभ तथा ऑफ़लाइन पृष्ठ की समस्या सुधारी गई।"
+    }}], labels: { ja: {title: "新バージョン v1.30.11", close: "閉じる"}, en: {title: "New version v1.30.11", close: "Close"}, hi: {title: "नया संस्करण v1.30.11", close: "बंद करें"} } },
     { version: "1.30.10", date: "2026-11-08",
       items: [{ id: "1.30.10.stationary-save-status", text: {
         ja: "静止したままでも点の記録を保存できるようにし、保存済みなのに通信不良と表示される問題を修正しました。",
