@@ -52,7 +52,9 @@
       this.onChange = options.onChange || (() => {});
       this.online = options.online || (() => global.navigator ? global.navigator.onLine !== false : true);
       this.now = options.now || (() => Date.now());
+      this.currentUserId = options.currentUserId || (() => null);
       this.running = false;
+      this.flushRequested = false;
       this.timer = null;
     }
 
@@ -91,14 +93,38 @@
       await Promise.all(expired.map((job) => this.storage.delete(job.id)));
     }
 
+    async recoverBlockedTagSaves() {
+      const userId = Number(this.currentUserId());
+      if (!Number.isFinite(userId) || userId <= 0) return;
+      for (const job of await this.storage.getAll()) {
+        const stages = new Set(job.completedStages || []);
+        if (job.status !== "blocked" || job.lastError !== "session_tag_save_failed:403" ||
+            job.tagSave403RecoveryVersion === 1 ||
+            !job.payload || Number(job.payload.ownerUserId) !== userId ||
+            !stages.has("trace_saved") || !stages.has("session_ended") || stages.has("tags_saved")) continue;
+        // Retry only this fixed failure once. Keep the original payload, checkpoints and error.
+        job.status = "pending";
+        job.nextAttemptAt = this.now();
+        job.updatedAt = this.now();
+        job.tagSave403RecoveryVersion = 1;
+        await this.storage.put(job);
+      }
+    }
+
     async flush() {
-      if (this.running || !this.handler || !this.online()) return;
+      if (this.running) {
+        this.flushRequested = true;
+        return;
+      }
+      if (!this.handler || !this.online()) return;
+      this.flushRequested = false;
       this.running = true;
       if (this.timer) {
         global.clearTimeout(this.timer);
         this.timer = null;
       }
       try {
+        await this.recoverBlockedTagSaves();
         await this.pruneCompleted();
         const jobs = (await this.pending()).sort((a, b) => a.createdAt - b.createdAt);
         for (const job of jobs) {
@@ -141,8 +167,9 @@
       } finally {
         this.running = false;
         const remaining = await this.pending().catch(() => []);
-        if (remaining.length && this.online()) {
-          const nextAt = Math.min(...remaining.map((job) => Number(job.nextAttemptAt || this.now())));
+        if ((remaining.length || this.flushRequested) && this.online()) {
+          const nextAt = this.flushRequested ? this.now()
+            : Math.min(...remaining.map((job) => Number(job.nextAttemptAt || this.now())));
           this.timer = global.setTimeout(() => void this.flush(), Math.max(250, nextAt - this.now()));
         }
       }

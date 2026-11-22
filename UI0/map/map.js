@@ -1669,6 +1669,7 @@ async function loadCurrentUserId() {
       throw new Error("invalid_user");
     }
     currentUserId = userId;
+    if (recordUploadQueue) void recordUploadQueue.flush();
   } catch (error) {
     const isTemporaryError = window.AuthToken && typeof window.AuthToken.isTemporaryError === "function"
       ? window.AuthToken.isTemporaryError(error)
@@ -2646,7 +2647,7 @@ async function buildBrowserOsmPreview(tracePoints, matchedFallbackPoints = []) {
 
 async function processQueuedRecording(payload, context) {
   if (Number.isFinite(Number(payload.ownerUserId))) {
-    if (!Number.isFinite(Number(currentUserId))) {
+    if (!Number.isFinite(Number(currentUserId)) || Number(currentUserId) <= 0) {
       const error = new Error("record_owner_not_loaded");
       error.retryable = true;
       throw error;
@@ -2756,6 +2757,7 @@ function initRecordUploadQueue() {
   if (!window.StepByRecordQueue) return;
   recordUploadQueue = new window.StepByRecordQueue.RecordQueue({
     handler: processQueuedRecording,
+    currentUserId: () => currentUserId,
     onChange(event) {
       if (event.type === "queued" || event.type === "sending") {
         showMapToast("記録を保存しています…", 2400);

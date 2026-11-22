@@ -2,6 +2,11 @@
 // 各項目のidは閲覧記録の識別子になるため、公開後は変更・再利用しない。
 (function initializeStepByChangelog(globalScope) {
   const entries = [
+    { version: "1.30.13", date: "2026-11-22", items: [{ id: "1.30.13.tag-save-recovery", text: {
+      ja: "追加情報の保存エラーで停止していた本人の記録を、保存済みデータを保ったまま自動的に再試行します。",
+      en: "Your recordings stopped by a tag-save permission error now retry automatically while keeping saved data.",
+      hi: "टैग सहेजने की अनुमति संबंधी त्रुटि से रुकी आपकी रिकॉर्डिंग सहेजा गया डेटा रखते हुए फिर प्रयास करती हैं।"
+    }}], labels: { ja: {title: "新バージョン v1.30.13", close: "閉じる"}, en: {title: "New version v1.30.13", close: "Close"}, hi: {title: "नया संस्करण v1.30.13", close: "बंद करें"} } },
     { version: "1.30.12", date: "2026-11-22", items: [{ id: "1.30.12.zero-length-display", text: {
       ja: "長さ0の点字ブロック記録も、通常の緑線と同じ太さの緑の点で表示するよう統一しました。",
       en: "Zero-length tactile recordings now use green dots matching the normal line width.",
