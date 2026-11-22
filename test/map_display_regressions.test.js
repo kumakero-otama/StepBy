@@ -87,7 +87,7 @@ assert.doesNotMatch(mapSource, /alert\("OSM点字ブロックデータの取得�
   "a temporary upstream failure must not interrupt users with a blocking alert");
 assert.match(mapSource, /createCenteredPolylineHitTarget[\s\S]{0,700}?weight:\s*48[\s\S]{0,500}?radius:\s*24/,
   "owned green OSM lines need centered line and circular tap targets");
-assert.match(mapSource, /const hitPolyline = osmManaged \? null : L\.polyline\(coordinates,[\s\S]{0,220}?weight:\s*48/,
+assert.match(mapSource, /const hitPolyline = osmManaged \? null : createRecordedPathLayer\(coordinates,[\s\S]{0,220}?weight:\s*48/,
   "saved StepBy paths need a wider invisible detail tap target");
 assert.match(mapSource, /path\.osm_status === "merged" \|\| path\.osm_status === "revert_draft"/,
   "OSM-managed records must not retain a second, offset StepBy hit target");

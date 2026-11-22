@@ -2,6 +2,11 @@
 // 各項目のidは閲覧記録の識別子になるため、公開後は変更・再利用しない。
 (function initializeStepByChangelog(globalScope) {
   const entries = [
+    { version: "1.30.12", date: "2026-11-22", items: [{ id: "1.30.12.zero-length-display", text: {
+      ja: "長さ0の点字ブロック記録も、通常の緑線と同じ太さの緑の点で表示するよう統一しました。",
+      en: "Zero-length tactile recordings now use green dots matching the normal line width.",
+      hi: "शून्य लंबाई की रिकॉर्डिंग अब सामान्य रेखा की चौड़ाई वाले हरे बिंदु से दिखाई जाती है。"
+    }}], labels: { ja: {title: "新バージョン v1.30.12", close: "閉じる"}, en: {title: "New version v1.30.12", close: "Close"}, hi: {title: "नया संस्करण v1.30.12", close: "बंद करें"} } },
     { version: "1.30.11", date: "2026-11-11", items: [{ id: "1.30.11.ios-startup", text: {
       ja: "設定・認証の待機中に現在地取得や操作が止まる問題と、オフラインで別の画面が表示される問題を修正しました。",
       en: "Decoupled location and map controls from startup API waits and fixed incorrect offline page fallback.",

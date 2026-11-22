@@ -596,6 +596,9 @@ function hideTactileSessionCard() {
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
       color: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
+      fillColor: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
+      fillOpacity: 0.85,
+      radius: 2,
       weight: 4,
       opacity: 0.85,
     });
@@ -621,6 +624,9 @@ function setActiveTactileSessionPolyline(polyline) {
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
       color: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
+      fillColor: activeTactileSessionPolyline.options.stepByBaseColor || "#00b050",
+      fillOpacity: 0.85,
+      radius: 2,
       weight: 4,
       opacity: 0.85,
     });
@@ -630,6 +636,9 @@ function setActiveTactileSessionPolyline(polyline) {
   if (activeTactileSessionPolyline && typeof activeTactileSessionPolyline.setStyle === "function") {
     activeTactileSessionPolyline.setStyle({
       color: "#ff7a00",
+      fillColor: "#ff7a00",
+      fillOpacity: 1,
+      radius: 4,
       weight: 8,
       opacity: 1,
     });
@@ -2006,6 +2015,21 @@ function processAndDisplayTrace(sessionId = null, sourcePoints = null, osmPrevie
 }
 
 // 黄緑の線を表示
+// 長さ0でも架空の経路は足さず、線幅と同じ直径の点で表示する。
+// 確認画面・保存直後・再読込で同じ描画規則を使う。
+function createRecordedPathLayer(coordinates, options = {}) {
+  const stationary = coordinates.every(point => point[0] === coordinates[0][0] && point[1] === coordinates[0][1]);
+  if (!stationary) return L.polyline(coordinates, options);
+  return L.circleMarker(coordinates[0], {
+    ...options,
+    radius: (options.weight || 4) / 2,
+    stroke: false,
+    fill: true,
+    fillColor: options.color,
+    fillOpacity: options.opacity == null ? 1 : options.opacity,
+  });
+}
+
 function displayTraceLine(coordinates) {
   // 前回の線を削除
   if (tracePolyline) {
@@ -2014,11 +2038,8 @@ function displayTraceLine(coordinates) {
   }
   
   if (coordinates.length > 1) {
-    const stationary = coordinates.every(point => point[0] === coordinates[0][0] && point[1] === coordinates[0][1]);
-    tracePolyline = stationary ? L.circleMarker(coordinates[0], {
-      radius: 6, color: "#6f9d20", fillColor: "#9acd32", fillOpacity: 0.85,
-    }).addTo(map) : L.polyline(coordinates, {
-      color: "#9acd32",  // 黄緑色
+    tracePolyline = createRecordedPathLayer(coordinates, {
+      color: "#00b050",
       weight: 4,
       opacity: 0.8,
     }).addTo(map);
@@ -2452,10 +2473,8 @@ function openTraceConfirmModal(coordinates, osmPreview = null) {
       }).addTo(traceConfirmMap);
 
       const stationary = coordinates.every(point => point[0] === coordinates[0][0] && point[1] === coordinates[0][1]);
-      traceConfirmPathLayer = stationary ? L.circleMarker(coordinates[0], {
-        radius: 7, color: "#68747d", fillColor: "#9acd32", fillOpacity: 0.8,
-      }).addTo(traceConfirmMap) : L.polyline(coordinates, {
-        color: "#68747d",
+      traceConfirmPathLayer = createRecordedPathLayer(coordinates, {
+        color: "#00b050",
         weight: 4,
         opacity: 0.65,
       }).addTo(traceConfirmMap);
@@ -3262,7 +3281,7 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
     }
 
     const recordColor = path.record_class === "pro_private" ? "#d92d20" : "#00b050";
-    const polyline = L.polyline(coordinates, {
+    const polyline = createRecordedPathLayer(coordinates, {
       color: recordColor,
       weight: 4,
       opacity: 0.85,
@@ -3272,7 +3291,7 @@ function showAllSessionPathsOnMap(paths, { preFiltered = false } = {}) {
     // OSM送信済みの記録はOSM表示レイヤーだけでクリックを受け、保存経路との
     // 二重判定（わずかな位置差）を避ける。
     const osmManaged = path.osm_status === "merged" || path.osm_status === "revert_draft";
-    const hitPolyline = osmManaged ? null : L.polyline(coordinates, {
+    const hitPolyline = osmManaged ? null : createRecordedPathLayer(coordinates, {
       color: recordColor,
       // 従来の透明な12px判定に対して4倍。見た目は4pxのままにする。
       weight: 48,
