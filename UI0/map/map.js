@@ -851,8 +851,13 @@ function isNonProVisibleTactileSession(path) {
   if (isCurrentUserPro) {
     return true;
   }
-  const tags = Array.isArray(path && path.tags) ? path.tags : [];
-  return tags.length === 1 && String(tags[0] || "").trim() === "点字ブロック";
+  const publicCodes = new Set(["tactile_paving", "tactile_paving_jis", "tactile_paving_non_jis"]);
+  if (Array.isArray(path && path.tag_codes)) {
+    return path.tag_codes.some((code) => publicCodes.has(String(code).trim()));
+  }
+  // Older cached responses have labels only. Never infer visibility from private tags.
+  const publicLabels = new Set(["点字ブロック", "JISの点字ブロック", "JISではない点字ブロック"]);
+  return (Array.isArray(path && path.tags) ? path.tags : []).some((tag) => publicLabels.has(String(tag).trim()));
 }
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -1169,6 +1174,12 @@ function getVisibleTactilePaths(paths) {
     return [];
   }
   return paths.filter((path) => {
+    // Older map-return caches may still contain private geometry from another user.
+    if (path && path.record_class === "pro_private") {
+      const ownerUserId = Number(path.user_id);
+      if (!Number.isFinite(ownerUserId) || !Number.isFinite(Number(currentUserId)) ||
+          Number(currentUserId) <= 0 || ownerUserId !== Number(currentUserId)) return false;
+    }
     if (!isNonProVisibleTactileSession(path)) {
       return false;
     }
@@ -1821,6 +1832,7 @@ async function startRecordingSession() {
   currentSessionStartedAt = new Date().toISOString();
   clearCurrentSessionPoints();
   recordingSessionIds.push(currentSessionId);
+  saveRecordingStateToStorage();
   await postSessionLifecycle("start", {
     sessionId: currentSessionId,
     startedAt: currentSessionStartedAt,
@@ -1846,14 +1858,15 @@ function postSessionLifecycle(action, payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
-    .then((res) => {
+    .then(async (res) => {
       if (!res.ok) {
-        throw new Error(`session ${action} failed: ${res.status}`);
+        await throwRecordingResponseError(res, `session ${action} failed: ${res.status}`);
       }
       return res.json();
     })
     .catch((err) => {
       console.error(`[Session] ${action} error:`, err);
+      throw err;
     });
 }
 
@@ -1940,6 +1953,25 @@ function requestRawTraceData(sessionId, rawPoints) {
   });
 }
 
+function recordingResponseError(response, payload = {}, message = `HTTP ${response.status}`) {
+  const error = new Error(message);
+  error.status = response.status;
+  error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+  const header = response.headers && response.headers.get("Retry-After");
+  const seconds = header !== null && header !== undefined && String(header).trim() !== "" ? Number(header) : NaN;
+  const headerDelay = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000
+    : header ? Math.max(0, Date.parse(header) - Date.now()) : 0;
+  const payloadSeconds = Number(payload.retryAfterSeconds);
+  error.retryAfterMs = Math.max(Number.isFinite(headerDelay) ? headerDelay : 0,
+    Number.isFinite(payloadSeconds) && payloadSeconds >= 0 ? payloadSeconds * 1000 : 0);
+  return error;
+}
+
+async function throwRecordingResponseError(response, message) {
+  const payload = await response.json().catch(() => ({}));
+  throw recordingResponseError(response, payload, message);
+}
+
 function requestBrowserTraceData(osmPreview, sessionId, matchedTracePoints) {
   const coordinates = osmPreview.segments.flatMap((segment, segmentIndex) =>
     segment.coordinates.slice(segmentIndex > 0 ? 1 : 0).map(([lng, lat]) => ({ lat, lon: lng })));
@@ -1982,7 +2014,7 @@ function requestBrowserTraceData(osmPreview, sessionId, matchedTracePoints) {
     }),
   }).then(async (res) => {
     const payload = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(payload.error || `browser trace failed: ${res.status}`);
+    if (!res.ok) throw recordingResponseError(res, payload, payload.error || `browser trace failed: ${res.status}`);
     return payload;
   });
 }
@@ -2349,9 +2381,7 @@ async function saveSessionTags(sessionIds, fixedTagIds = null) {
         body: JSON.stringify({ sessionId, tagId: tag.id }),
       });
       if (!res.ok) {
-        const error = new Error(`session_tag_save_failed:${res.status}`);
-        error.retryable = res.status >= 500 || res.status === 408 || res.status === 429;
-        throw error;
+        await throwRecordingResponseError(res, `session_tag_save_failed:${res.status}`);
       }
     }
   }
@@ -2385,7 +2415,7 @@ async function saveSessionMemo(sessionIds, memo) {
       }),
     });
     if (!res.ok) {
-      throw new Error(`session_memo_save_failed:${res.status}`);
+      await throwRecordingResponseError(res, `session_memo_save_failed:${res.status}`);
     }
   }
 }
@@ -2444,7 +2474,7 @@ async function saveOsmSplitDraft(osmPreview, recordId) {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(result.error || `HTTP ${response.status}`);
+    const error = recordingResponseError(response, result, result.error || `HTTP ${response.status}`);
     error.code = result.error || `HTTP_${response.status}`;
     error.status = response.status;
     error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
@@ -2539,7 +2569,9 @@ async function persistCurrentSessionWithoutConfirmation(osmPreview = null) {
   const tracePoints = getCurrentSessionTracePoints();
   if (tracePoints.length < 2) {
     await postSessionLifecycle("cancel", { sessionId });
+    recordingSessionIds = recordingSessionIds.filter((id) => id !== sessionId);
     rollbackCurrentSessionPointsFromRecording();
+    saveRecordingStateToStorage();
     return { success: true, canceled: true };
   }
 
@@ -2679,7 +2711,7 @@ async function processQueuedRecording(payload, context) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId: payload.sessionId, startedAt: payload.startedAt }),
     });
-    if (!response.ok) throw new Error(`queued_session_start_failed:${response.status}`);
+    if (!response.ok) await throwRecordingResponseError(response, `queued_session_start_failed:${response.status}`);
   });
   await runStage("trace_saved", async () => {
     if (!payload.osmPreview) throw new Error("matched_route_required");
@@ -2690,7 +2722,7 @@ async function processQueuedRecording(payload, context) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId: payload.sessionId, endedAt: payload.endedAt }),
     });
-    if (!response.ok) throw new Error(`queued_session_end_failed:${response.status}`);
+    if (!response.ok) await throwRecordingResponseError(response, `queued_session_end_failed:${response.status}`);
   });
   if (payload.isPro) {
     await runStage("memo_saved", () => saveSessionMemo(payload.sessionIds, payload.memo || ""));
@@ -2785,7 +2817,7 @@ async function processQueuedOsmRevert(payload, context) {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const error = new Error(result.error || `osm_revert_failed:${response.status}`);
+      const error = recordingResponseError(response, result, result.error || `osm_revert_failed:${response.status}`);
       error.retryable = response.status >= 500 || response.status === 408 || response.status === 429;
       throw error;
     }
@@ -4254,6 +4286,10 @@ if ("geolocation" in navigator) {
               alert("確認画面を開けませんでした。記録は保持されています。もう一度、記録終了を押してください。");
             }
           }
+        } catch (error) {
+          console.error("[Record] Session start failed:", error);
+          saveRecordingStateToStorage();
+          alert("記録開始をサーバーへ保存できませんでした。端末の記録は保持されています。通信状況を確認してください。");
         } finally {
           isHandlingRecordToggle = false;
           recordActionBtn.disabled = false;
@@ -4300,6 +4336,12 @@ if ("geolocation" in navigator) {
             recordPaused = false;
             console.log(`[Pause] Resumed with session=${currentSessionId}`);
           }
+        } catch (error) {
+          console.error("[Pause] Session persistence failed:", error);
+          // Keep the session and its points available for another pause/end attempt.
+          recordPaused = false;
+          saveRecordingStateToStorage();
+          alert("一時停止・再開の保存に失敗しました。記録は保持されています。通信状況を確認してもう一度お試しください。");
         } finally {
           isHandlingPauseToggle = false;
           pauseActionBtn.disabled = false;

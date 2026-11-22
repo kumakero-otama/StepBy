@@ -1704,7 +1704,10 @@ body {
   opacity: 0;
   transition: opacity 0.25s ease;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  text-align: center;
   max-width: calc(100vw - 32px);
 }
 .map-toast.visible { opacity: 1; }

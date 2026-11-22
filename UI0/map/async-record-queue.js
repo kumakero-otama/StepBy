@@ -52,6 +52,7 @@
       this.onChange = options.onChange || (() => {});
       this.online = options.online || (() => global.navigator ? global.navigator.onLine !== false : true);
       this.now = options.now || (() => Date.now());
+      this.random = options.random || (() => Math.random());
       this.currentUserId = options.currentUserId || (() => null);
       this.running = false;
       this.flushRequested = false;
@@ -159,7 +160,10 @@
             job.attempts += 1;
             job.lastError = String(error && error.message ? error.message : error);
             job.updatedAt = this.now();
-            job.nextAttemptAt = this.now() + retryDelay(job.attempts);
+            const serverDelay = Number(error && error.retryAfterMs);
+            job.nextAttemptAt = this.now() + Math.max(retryDelay(job.attempts),
+              Number.isFinite(serverDelay) && serverDelay > 0 ? serverDelay : 0)
+              + 100 + Math.floor(this.random() * 400);
             await this.storage.put(job);
             this.onChange({ type: "retry", job, error });
           }

@@ -2,6 +2,11 @@
 // 各項目のidは閲覧記録の識別子になるため、公開後は変更・再利用しない。
 (function initializeStepByChangelog(globalScope) {
   const entries = [
+    { version: "1.30.14", date: "2026-11-22", items: [{ id: "1.30.14.save-retry-public-tags", text: {
+      ja: "混雑時の保存再試行はサーバーの待機時間に従うよう改善し、一時停止後の保存、通常モードの公開点字ブロック表示、長い通知の折り返しを修正しました。",
+      en: "Saving now respects server retry delays. Saving after pauses, public tactile tags in normal mode and wrapping of long notifications were fixed.",
+      hi: "सहेजने के पुनः प्रयास अब सर्वर के प्रतीक्षा समय का पालन करते हैं। सामान्य मोड में सार्वजनिक स्पर्शनीय टैग और लंबे संदेशों का प्रदर्शन सुधारा गया है।"
+    }}], labels: { ja: {title: "新バージョン v1.30.14", close: "閉じる"}, en: {title: "New version v1.30.14", close: "Close"}, hi: {title: "नया संस्करण v1.30.14", close: "बंद करें"} } },
     { version: "1.30.13", date: "2026-11-22", items: [{ id: "1.30.13.tag-save-recovery", text: {
       ja: "追加情報の保存エラーで停止していた本人の記録を、保存済みデータを保ったまま自動的に再試行します。",
       en: "Your recordings stopped by a tag-save permission error now retry automatically while keeping saved data.",

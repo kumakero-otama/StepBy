@@ -63,7 +63,7 @@ assert.match(mapSource, /privateScope:\s*"本人のみ表示"/,
   "private PRO tags must describe their actual owner-only visibility");
 assert.doesNotMatch(mapSource, /tag\.osmExportable \? "OSM公開対象" : "StepByのみ"/,
   "the obsolete StepBy-only tag scope label must not remain");
-assert.match(mapSource, /session_tag_save_failed:\$\{res\.status\}[\s\S]{0,180}?res\.status >= 500/,
+assert.match(mapSource, /throwRecordingResponseError\(res, `session_tag_save_failed:\$\{res\.status\}`\)/,
   "a PRO authorization rejection must not retry forever");
 assert.match(mapSource, /async function resolveDefaultTactileTagId\(\)[\s\S]{0,700}?tag\.code === "tactile_paving"/,
   "general-mode recordings must resolve the standard tactile tag automatically");
